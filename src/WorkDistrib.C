@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/06/21 22:24:32 $
- * $Revision: 1.1263 $
+ * $Date: 2013/06/26 18:18:34 $
+ * $Revision: 1.1264 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -45,6 +45,7 @@
 #include "Priorities.h"
 #include "SortAtoms.h"
 #include <algorithm>
+#include "TopoManager.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
@@ -1544,6 +1545,296 @@ void WorkDistrib::assignPatchesRecursiveBisection()
   }
 }
 
+// class to re-order dimensions in decreasing size
+struct TopoManagerWrapper {
+  TopoManager tmgr;
+  int a_dim, b_dim, c_dim, d_dim, e_dim;
+  int a_rot, b_rot, c_rot, d_rot, e_rot;
+  int a_mod, b_mod, c_mod, d_mod, e_mod;
+  int fixpe(int pe) {  // compensate for lame fallback topology information
+    return CmiGetFirstPeOnPhysicalNode(CmiPhysicalNodeID(pe));
+  }
+  TopoManagerWrapper() {
+#if CMK_BLUEGENEQ
+    int na=tmgr.getDimNA();
+    int nb=tmgr.getDimNB();
+    int nc=tmgr.getDimNC();
+    int nd=tmgr.getDimND();
+    int ne=tmgr.getDimNE();
+#else
+    int na=tmgr.getDimNX();
+    int nb=tmgr.getDimNY();
+    int nc=tmgr.getDimNZ();
+    int nd=1;
+    int ne=1;
+#endif
+    ResizeArray<int> a_flags(na);
+    ResizeArray<int> b_flags(nb);
+    ResizeArray<int> c_flags(nc);
+    ResizeArray<int> d_flags(nd);
+    ResizeArray<int> e_flags(ne);
+    for ( int i=0; i<na; ++i ) { a_flags[i] = 0; }
+    for ( int i=0; i<nb; ++i ) { b_flags[i] = 0; }
+    for ( int i=0; i<nc; ++i ) { c_flags[i] = 0; }
+    for ( int i=0; i<nd; ++i ) { d_flags[i] = 0; }
+    for ( int i=0; i<ne; ++i ) { e_flags[i] = 0; }
+    int npes = CkNumPes();
+    for ( int pe=0; pe<npes; ++pe ) {
+      int a,b,c,d,e,t;
+#if CMK_BLUEGENEQ
+      tmgr.rankToCoordinates(fixpe(pe),a,b,c,d,e,t);
+#else
+      tmgr.rankToCoordinates(fixpe(pe),a,b,c,t);
+      d=0; e=0;
+#endif
+      if ( a < 0 || a >= na ) NAMD_bug("inconsistent torus topology!");
+      if ( b < 0 || b >= nb ) NAMD_bug("inconsistent torus topology!");
+      if ( c < 0 || c >= nc ) NAMD_bug("inconsistent torus topology!");
+      if ( d < 0 || d >= nd ) NAMD_bug("inconsistent torus topology!");
+      if ( e < 0 || e >= ne ) NAMD_bug("inconsistent torus topology!");
+      a_flags[a] = 1;
+      b_flags[b] = 1;
+      c_flags[c] = 1;
+      d_flags[d] = 1;
+      e_flags[e] = 1;
+    }
+    iout << iINFO << "TORUS A SIZE " << na << " USING";
+    for ( int i=0; i<na; ++i ) { if ( a_flags[i] ) iout << " " << i; }
+    iout << "\n" << endi;
+    iout << iINFO << "TORUS B SIZE " << nb << " USING";
+    for ( int i=0; i<nb; ++i ) { if ( b_flags[i] ) iout << " " << i; }
+    iout << "\n" << endi;
+    iout << iINFO << "TORUS C SIZE " << nc << " USING";
+    for ( int i=0; i<nc; ++i ) { if ( c_flags[i] ) iout << " " << i; }
+    iout << "\n" << endi;
+#if CMK_BLUEGENEQ
+    iout << iINFO << "TORUS D SIZE " << nd << " USING";
+    for ( int i=0; i<nd; ++i ) { if ( d_flags[i] ) iout << " " << i; }
+    iout << "\n" << endi;
+    iout << iINFO << "TORUS E SIZE " << ne << " USING";
+    for ( int i=0; i<ne; ++i ) { if ( e_flags[i] ) iout << " " << i; }
+    iout << "\n" << endi;
+#endif
+    // find most compact representation of our subset
+    a_rot = b_rot = c_rot = d_rot = e_rot = 0;
+    a_mod = na; b_mod = nb; c_mod = nc; d_mod = nd; e_mod = ne;
+#if CMK_BLUEGENEQ
+    if ( tmgr.absA(na) == 0 ) // torus
+#else
+    if ( tmgr.absX(na) == 0 ) // torus
+#endif
+      for ( int i=0, gaplen=0, gapstart=0; i<2*na; ++i ) {
+        if ( a_flags[i%na] ) gapstart = i+1;
+        else if ( i - gapstart >= gaplen ) {
+          a_rot = 2*na-i-1; gaplen = i - gapstart;
+        }
+      }
+#if CMK_BLUEGENEQ
+    if ( tmgr.absB(nb) == 0 ) // torus
+#else
+    if ( tmgr.absY(nb) == 0 ) // torus
+#endif
+      for ( int i=0, gaplen=0, gapstart=0; i<2*nb; ++i ) {
+        if ( b_flags[i%nb] ) gapstart = i+1;
+        else if ( i - gapstart >= gaplen ) {
+          b_rot = 2*nb-i-1; gaplen = i - gapstart;
+        }
+      }
+#if CMK_BLUEGENEQ
+    if ( tmgr.absC(nc) == 0 ) // torus
+#else
+    if ( tmgr.absZ(nc) == 0 ) // torus
+#endif
+      for ( int i=0, gaplen=0, gapstart=0; i<2*nc; ++i ) {
+        if ( c_flags[i%nc] ) gapstart = i+1;
+        else if ( i - gapstart >= gaplen ) {
+          c_rot = 2*nc-i-1; gaplen = i - gapstart;
+        }
+      }
+#if CMK_BLUEGENEQ
+    if ( tmgr.absD(nd) == 0 ) // torus
+      for ( int i=0, gaplen=0, gapstart=0; i<2*nd; ++i ) {
+        if ( d_flags[i%nd] ) gapstart = i+1;
+        else if ( i - gapstart >= gaplen ) {
+          d_rot = 2*nd-i-1; gaplen = i - gapstart;
+        }
+      }
+    if ( tmgr.absE(ne) == 0 ) // torus
+      for ( int i=0, gaplen=0, gapstart=0; i<2*ne; ++i ) {
+        if ( e_flags[i%ne] ) gapstart = i+1;
+        else if ( i - gapstart >= gaplen ) {
+          e_rot = 2*ne-i-1; gaplen = i - gapstart;
+        }
+      }
+#endif
+    // order dimensions by length
+    int a_min=na, a_max=-1;
+    int b_min=nb, b_max=-1;
+    int c_min=nc, c_max=-1;
+    int d_min=nd, d_max=-1;
+    int e_min=ne, e_max=-1;
+    for ( int pe=0; pe<npes; ++pe ) {
+      int a,b,c,d,e,t;
+#if CMK_BLUEGENEQ
+      tmgr.rankToCoordinates(fixpe(pe),a,b,c,d,e,t);
+#else
+      tmgr.rankToCoordinates(fixpe(pe),a,b,c,t);
+      d=0; e=0;
+#endif
+      a = (a+a_rot)%a_mod;
+      b = (b+b_rot)%b_mod;
+      c = (c+c_rot)%c_mod;
+      d = (d+d_rot)%d_mod;
+      e = (e+e_rot)%e_mod;
+      if ( a < a_min ) a_min = a;
+      if ( b < b_min ) b_min = b;
+      if ( c < c_min ) c_min = c;
+      if ( d < d_min ) d_min = d;
+      if ( e < e_min ) e_min = e;
+      if ( a > a_max ) a_max = a;
+      if ( b > b_max ) b_max = b;
+      if ( c > c_max ) c_max = c;
+      if ( d > d_max ) d_max = d;
+      if ( e > e_max ) e_max = e;
+    }
+    int a_len = a_max - a_min + 1;
+    int b_len = b_max - b_min + 1;
+    int c_len = c_max - c_min + 1;
+    int d_len = d_max - d_min + 1;
+    int e_len = e_max - e_min + 1;
+    int lensort[5];
+    lensort[0] = (a_len << 3) + 0;
+    lensort[1] = (b_len << 3) + 1;
+    lensort[2] = (c_len << 3) + 2;
+    lensort[3] = (d_len << 3) + 3;
+    lensort[4] = (e_len << 3) + 4;
+    // CkPrintf("TopoManagerWrapper lensort before %d %d %d %d %d\n", lensort[0] & 7, lensort[1] & 7, lensort[2] & 7, lensort[3] & 7, lensort[4] & 7);
+    std::sort(lensort, lensort+5);
+    // CkPrintf("TopoManagerWrapper lensort after %d %d %d %d %d\n", lensort[0] & 7, lensort[1] & 7, lensort[2] & 7, lensort[3] & 7, lensort[4] & 7);
+    for ( int i=0; i<5; ++i ) { if ( (lensort[i] & 7) == 0 ) a_dim = 4-i; }
+    for ( int i=0; i<5; ++i ) { if ( (lensort[i] & 7) == 1 ) b_dim = 4-i; }
+    for ( int i=0; i<5; ++i ) { if ( (lensort[i] & 7) == 2 ) c_dim = 4-i; }
+    for ( int i=0; i<5; ++i ) { if ( (lensort[i] & 7) == 3 ) d_dim = 4-i; }
+    for ( int i=0; i<5; ++i ) { if ( (lensort[i] & 7) == 4 ) e_dim = 4-i; }
+#if 0
+    if ( a_len >= b_len && a_len >= c_len ) {
+      a_dim = 0;
+      if ( b_len >= c_len ) {
+        b_dim = 1; c_dim = 2;
+      } else {
+        b_dim = 2; c_dim = 1;
+      }
+    } else if ( b_len >= a_len && b_len >= c_len ) {
+      b_dim = 0;
+      if ( a_len >= c_len ) {
+        a_dim = 1; c_dim = 2;
+      } else {
+        a_dim = 2; c_dim = 1;
+      }
+    } else { // c is longest
+      c_dim = 0;
+      if ( a_len >= b_len ) {
+        a_dim = 1; b_dim = 2;
+      } else {
+        a_dim = 2; b_dim = 1;
+      }
+    }
+#endif
+    iout << iINFO << "TORUS MINIMAL MESH SIZE IS " << a_len << " BY " << b_len << " BY " << c_len
+#if CMK_BLUEGENEQ
+    << " BY " << d_len << " BY " << e_len
+#endif
+    << "\n" << endi;
+    // CkPrintf("TopoManagerWrapper dims %d %d %d %d %d\n", a_dim, b_dim, c_dim, d_dim, e_dim);
+  }
+  void coords(int pe, int *crds) {
+    int a,b,c,d,e,t;
+#if CMK_BLUEGENEQ
+    tmgr.rankToCoordinates(fixpe(pe),a,b,c,d,e,t);
+#else
+    tmgr.rankToCoordinates(fixpe(pe),a,b,c,t);
+    d=0; e=0;
+#endif
+    if ( a_dim < 3 ) crds[a_dim] = (a+a_rot)%a_mod;
+    if ( b_dim < 3 ) crds[b_dim] = (b+b_rot)%b_mod;
+    if ( c_dim < 3 ) crds[c_dim] = (c+c_rot)%c_mod;
+    if ( d_dim < 3 ) crds[d_dim] = (d+d_rot)%d_mod;
+    if ( e_dim < 3 ) crds[e_dim] = (e+e_rot)%e_mod;
+  }
+  int coord(int pe, int dim) {
+    int crds[3];
+    coords(pe,crds);
+    return crds[dim];
+  }
+  struct pe_sortop_topo {
+    TopoManagerWrapper &tmgr;
+    const int *sortdims;
+    pe_sortop_topo(TopoManagerWrapper &t, int *d) : tmgr(t), sortdims(d) {}
+    bool operator() (int pe1, int pe2) const {
+      int crds1[3], crds2[3];
+      tmgr.coords(pe1,crds1);
+      tmgr.coords(pe2,crds2);
+      for ( int i=0; i<3; ++i ) {
+        int d = sortdims[i];
+        if ( crds1[d] != crds2[d] ) return ( crds1[d] < crds2[d] );
+      }
+      const int *index = WorkDistrib::peCompactOrderingIndex;
+      return ( index[pe1] < index[pe2] );
+    }
+  };
+  int* sortAndSplit(int *node_begin, int *node_end, int splitdim) {
+    if ( node_begin == node_end ) return node_begin;
+    int tmins[3], tmaxs[3], tlens[3], sortdims[3];
+    coords(*node_begin, tmins);
+    coords(*node_begin, tmaxs);
+    for ( int *peitr = node_begin; peitr != node_end; ++peitr ) {
+      int tvals[3];
+      coords(*peitr, tvals);
+      for ( int i=0; i<3; ++i ) {
+        if ( tvals[i] < tmins[i] ) tmins[i] = tvals[i];
+        if ( tvals[i] > tmaxs[i] ) tmaxs[i] = tvals[i];
+      }
+    }
+    for ( int i=0; i<3; ++i ) {
+      tlens[i] = tmaxs[i] - tmins[i];
+    }
+    sortdims[0] = splitdim;
+    for ( int i=0, j=0; i<3; ++i ) {
+      if ( i != splitdim ) sortdims[++j] = i;
+    }
+    if ( tlens[sortdims[1]] < tlens[sortdims[2]] ) {
+      int tmp = sortdims[1];
+      sortdims[1] = sortdims[2];
+      sortdims[2] = tmp;
+    }
+    std::sort(node_begin,node_end,pe_sortop_topo(*this,sortdims));
+    int *nodes = node_begin;
+    int nnodes = node_end - node_begin;
+    int i_split = 0;
+#if 0
+    int c_split = coord(nodes[0],splitdim);
+    for ( int i=0; i<nnodes; ++i ) {
+      if ( coord(nodes[i],splitdim) != c_split ) {
+        int mid = (nnodes+1)/2;
+        if ( abs(i-mid) < abs(i_split-mid) ) {
+          i_split = i;
+          c_split = coord(i,splitdim);
+        }
+        else break;
+      }
+    }
+#endif
+    for ( int i=0; i<nnodes; ++i ) {
+      if ( ! CmiPeOnSamePhysicalNode(nodes[i_split],nodes[i]) ) {
+        int mid = (nnodes+1)/2;
+        if ( abs(i-mid) < abs(i_split-mid) ) i_split = i;
+        else break;
+      }
+    }
+    return ( node_begin + i_split );
+  }
+};
+
 struct patch_sortop_curve_a {
   PatchMap *pmap;
   patch_sortop_curve_a(PatchMap *m) : pmap(m) {}
@@ -1612,7 +1903,8 @@ static void recursive_bisect_with_curve(
   int *node_begin, int *node_end,
   double *patchLoads,
   double *sortedLoads,
-  int *assignedNode
+  int *assignedNode,
+  TopoManagerWrapper &tmgr
   ) {
 
   PatchMap *patchMap = PatchMap::Object();
@@ -1655,23 +1947,12 @@ static void recursive_bisect_with_curve(
   if ( nnodes * maxPatchLoad > totalLoad )
     NAMD_bug("algorithm failure in WorkDistrib recursive_bisect_with_curve()");
 
-  int node = 0;
-  // find physical node boundary to split on
-  int i_split = 0;
-  for ( int i=0; i<nnodes; ++i ) {
-    if ( ! CmiPeOnSamePhysicalNode(nodes[i_split],nodes[i]) ) {
-      int mid = (nnodes+1)/2;
-      if ( abs(i-mid) < abs(i_split-mid) ) i_split = i;
-      else break;
-    }
-  }
-  int *node_split = node_begin + i_split;
-
   int a_len, b_len, c_len;
+  int a_min, b_min, c_min;
   { // find dimensions
-    int a_min = patchMap->index_a(patches[0]);
-    int b_min = patchMap->index_b(patches[0]);
-    int c_min = patchMap->index_c(patches[0]);
+    a_min = patchMap->index_a(patches[0]);
+    b_min = patchMap->index_b(patches[0]);
+    c_min = patchMap->index_c(patches[0]);
     int a_max = a_min;
     int b_max = b_min;
     int c_max = c_min;
@@ -1691,10 +1972,41 @@ static void recursive_bisect_with_curve(
     c_len = c_max - c_min;
   }
 
+  int *node_split = node_begin;
+
+  if ( a_len >= b_len && a_len >= c_len ) {
+    node_split = tmgr.sortAndSplit(node_begin,node_end,0);
+  } else if ( b_len >= a_len && b_len >= c_len ) {
+    node_split = tmgr.sortAndSplit(node_begin,node_end,1);
+  } else if ( c_len >= a_len && c_len >= b_len ) {
+    node_split = tmgr.sortAndSplit(node_begin,node_end,2);
+  }
+
+  if ( node_split == node_begin ) {  // unable to split torus
+    // make sure physical nodes are together
+    std::sort(node_begin, node_end, WorkDistrib::pe_sortop_compact());
+    // find physical node boundary to split on
+    int i_split = 0;
+    for ( int i=0; i<nnodes; ++i ) {
+      if ( ! CmiPeOnSamePhysicalNode(nodes[i_split],nodes[i]) ) {
+        int mid = (nnodes+1)/2;
+        if ( abs(i-mid) < abs(i_split-mid) ) i_split = i;
+        else break;
+      }
+    }
+    node_split = node_begin + i_split;
+  }
+
   if ( node_split == node_begin ) {
-    if ( 0 ) CkPrintf("WorkDistrib: physnode %5d has %5d patches %5d x %5d x %5d load %7f pes %5d\n",
-               CmiPhysicalNodeID(*node_begin), npatches,
+    if ( 0 ) {
+      int crds[3];
+      tmgr.coords(*node_begin, crds);
+      CkPrintf("WorkDistrib: physnode %5d pe %5d node %5d at %5d %5d %5d from %5d %5d %5d has %5d patches %5d x %5d x %5d load %7f pes %5d\n",
+               CmiPhysicalNodeID(*node_begin), *node_begin,
+               CkNodeOf(*node_begin), crds[0], crds[1], crds[2],
+               a_min, b_min, c_min, npatches,
                a_len+1, b_len+1, c_len+1, totalRawLoad, nnodes);
+    }
 
     // final sort along a to minimize pme message count
     std::sort(patch_begin,patch_end,patch_sortop_curve_a(patchMap));
@@ -1762,15 +2074,16 @@ static void recursive_bisect_with_curve(
   // recurse
   recursive_bisect_with_curve(
     patch_begin, patch_split, node_begin, node_split,
-    patchLoads, sortedLoads, assignedNode);
+    patchLoads, sortedLoads, assignedNode, tmgr);
   recursive_bisect_with_curve(
     patch_split, patch_end, node_split, node_end,
-    patchLoads, sortedLoads, assignedNode);
+    patchLoads, sortedLoads, assignedNode, tmgr);
 }
 
 //----------------------------------------------------------------------
 void WorkDistrib::assignPatchesSpaceFillingCurve() 
 {
+  TopoManagerWrapper tmgr;
   PatchMap *patchMap = PatchMap::Object();
   const int numPatches = patchMap->numPatches();
   int *assignedNode = new int[numPatches];
@@ -1825,7 +2138,9 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   recursive_bisect_with_curve(
     patchOrdering.begin(), patchOrdering.end(),
     node_begin, node_end,
-    patchLoads.begin(), sortedLoads.begin(), assignedNode);
+    patchLoads.begin(), sortedLoads.begin(), assignedNode, tmgr);
+
+  std::sort(node_begin, node_end, pe_sortop_compact());
 
   int samenodecount = 0;
 
