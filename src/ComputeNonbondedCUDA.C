@@ -280,6 +280,7 @@ void cuda_initialize() {
       }
     }
     if ( shared_gpu && devicePe == CkMyPe() ) {
+      if ( CmiPhysicalNodeID(devicePe) < 2 )
       CkPrintf("Pe %d sharing CUDA device %d\n", CkMyPe(), dev);
     }
   } else {  // in case phys node code is lying
@@ -291,6 +292,7 @@ void cuda_initialize() {
   }
 
   if ( devicePe != CkMyPe() ) {
+    if ( CmiPhysicalNodeID(devicePe) < 2 )
     CkPrintf("Pe %d physical rank %d will use CUDA device of pe %d\n",
              CkMyPe(), myRankInPhysicalNode, devicePe);
     return;
@@ -314,6 +316,7 @@ void cuda_initialize() {
   cudaDeviceProp deviceProp;
   err = cudaGetDeviceProperties(&deviceProp, dev);
   if (err == cudaSuccess) {
+    if ( CmiPhysicalNodeID(devicePe) < 2 )
     CkPrintf("Pe %d physical rank %d binding to CUDA device %d on %s: '%s'  Mem: %dMB  Rev: %d.%d\n",
              CkMyPe(), myRankInPhysicalNode, dev, host,
              deviceProp.name, deviceProp.totalGlobalMem / (1024*1024),
@@ -847,6 +850,7 @@ void ComputeNonbondedCUDA::registerPatches() {
   }
   if ( master == this ) setNumPatches(activePatches.size());
   else setNumPatches(hostedPatches.size());
+  if ( CmiPhysicalNodeID(CkMyPe()) < 2 )
   CkPrintf("Pe %d hosts %d local and %d remote patches for pe %d\n", CkMyPe(), localHostedPatches.size(), remoteHostedPatches.size(), masterPe);
 }
 
@@ -1296,7 +1300,7 @@ CkMyPe(), sequence(), gbisPhase, workStarted);
       pp.patch1_force_list_size = force_lists[lp1].force_list_size;
     }
 
-   if ( 1 || simParams->outputCudaTiming ) {
+   if ( CmiPhysicalNodeID(CkMyPe()) < 2 ) {
     CkPrintf("Pe %d has %d local and %d remote patches and %d local and %d remote computes.\n",
 	CkMyPe(), localActivePatches.size(), remoteActivePatches.size(),
 	localComputeRecords.size(), remoteComputeRecords.size());
