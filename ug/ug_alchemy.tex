@@ -508,9 +508,9 @@ alchEquilSteps 5000
 set Lambda0    0.0
 set dLambda    0.1
 
-while {$Lambda0 <= 1.0} {
+while {$Lambda0 < 1.0} {
  alchLambda $Lambda0
- set Lambda0 [expr \$Lambda0 + \$dLambda]
+ set Lambda0 [expr $Lambda0 + $dLambda]
  alchLambda2 $Lambda0
  run  10000
 }
@@ -589,16 +589,16 @@ The following second input is proposed for the measuring via TI the free energy
 of a particle insertion.
 
 \begin{verbatim}
-    alch           On             # Enable alchemical simulation module
-    alchType       ti             # Set method to thermodynamic integration
-    alchFile       ion.alch.pdb   # PDB file with perturbation flags
-    alchCol        B              # Perturbation flags in Beta column
+    alch           On             ;# Enable alchemical simulation module
+    alchType       ti             ;# Set method to thermodynamic integration
+    alchFile       ion.alch.pdb   ;# PDB file with perturbation flags
+    alchCol        B              ;# Perturbation flags in Beta column
     alchOutfile    ion.ti.out
     alchOutFreq    5
     alchEquilSteps 5000
 
-    alchVdWShiftCoeff    1         # Enable soft-core vdW potential
-    alchElecLambdaStart  0.1       # Introduce electrostatics for lambda > 0.1
+    alchVdWShiftCoeff    1        ;# Enable soft-core vdW potential
+    alchElecLambdaStart  0.1      ;# Introduce electrostatics for lambda > 0.1
     alchLambda 0
     run 10000
     alchLambda 0.00001
