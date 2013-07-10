@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2013/06/26 18:23:11 $
- * $Revision: 1.120 $
+ * $Date: 2013/07/10 17:20:45 $
+ * $Revision: 1.121 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -470,6 +470,9 @@ extern int isPmeProcessor(int);
 #ifdef MEM_OPT_VERSION
 extern int isOutputProcessor(int); 
 #endif
+#if defined(NAMD_MIC)
+extern int isMICProcessor(int);
+#endif
 
 int NamdCentLB::buildData(LDStats* stats)
 {
@@ -592,6 +595,19 @@ int NamdCentLB::buildData(LDStats* stats)
       }
   }
 #endif
+
+  // Unload PEs driving MIC devices
+  // DMK - TODO | NOTE - Make a config file option to enable/disable this (including
+  //   the allocation of the memory for the flag array in ComputeMgr or not)
+  #if defined(NAMD_MIC)
+    for (i = 0; i < n_pes; i++) {
+      if (isMICProcessor(i) != 0) { processorArray[i].available = CmiFalse; }
+
+      //// DMK - DEBUG
+      //printf("[DEBUG] peData[%d]:%d\n", i, isMICProcessor(i));
+
+    }
+  #endif
 
   int nMoveableComputes=0;
   int nProxies = 0;		// total number of estimated proxies

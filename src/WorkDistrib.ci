@@ -38,6 +38,7 @@ module WorkDistrib {
     entry void enqueueCUDA(LocalWorkMsg *);
     entry void enqueueCUDAP2(LocalWorkMsg *);
     entry void enqueueCUDAP3(LocalWorkMsg *);
+    entry void enqueueMIC(LocalWorkMsg *);
     entry void enqueuePme(LocalWorkMsg *);
     entry void enqueueSelfA1(LocalWorkMsg *);
     entry void enqueueSelfA2(LocalWorkMsg *);

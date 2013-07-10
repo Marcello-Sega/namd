@@ -72,6 +72,11 @@ template <class Elem> class ResizeArrayRaw {
     inline int size(void) const { return arraySize; }
     inline Elem &operator[](int index) const { return array[index]; }
 
+    // DMK - MIC Support - Allow us to see the buffer's size, not just how much of it is used
+    #if NAMD_MIC != 0
+      inline int bufSize(void) const { return allocSize; }
+    #endif
+
     // Default constructor 
     ResizeArrayRaw(void) : 
       array((Elem *)0), varray((unsigned char *)0), arraySize(0), allocSize(0) { }

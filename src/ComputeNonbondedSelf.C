@@ -184,6 +184,11 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
       NAMD_die(estr); 
     }
 
+    // DMK - DEBUG
+    // params.p1 = patchID;
+    // params.p2 = patchID;
+    // params.abSwapFlag = 0;
+
     params.offset = 0.;
     params.p[0] = p;
     params.p[1] = p;

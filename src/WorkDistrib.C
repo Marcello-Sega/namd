@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/06/26 18:18:34 $
- * $Revision: 1.1264 $
+ * $Date: 2013/07/10 17:20:47 $
+ * $Revision: 1.1265 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1140,7 +1140,7 @@ void WorkDistrib::patchMapInit(void)
     memset(patchMap->nPatchesOnNode, 0, numpes*sizeof(int));	
   }
 
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
   // for CUDA be sure there are more patches than pes
 
   int numPatches = patchMap->sizeGrid(
@@ -1165,7 +1165,11 @@ void WorkDistrib::patchMapInit(void)
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
   }
   if ( numPatches < numpes ) {
+    #if defined(NAMD_CUDA)
     NAMD_die("CUDA-enabled NAMD requires at least one patch per process.");
+    #elif defined(NAMD_MIC)
+    NAMD_die("MIC-enabled NAMD requires at least one patch per process.");
+    #endif
   }
   if ( numPatches % numpes && numPatches <= 1.4 * numpes ) {
     int exactFit = numPatches - numPatches % numpes;
@@ -2240,6 +2244,10 @@ void WorkDistrib::mapComputes(void)
   mapComputePatch(computeSelfExclsType);
 #endif
 
+#ifdef NAMD_MIC
+  mapComputeNode(computeNonbondedMICType);
+#endif
+
   mapComputeNonbonded();
 
   if ( node->simParameters->LCPOOn ) {
@@ -2734,6 +2742,11 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     msg->compute->doWork();  traceUserEvent(eventMachineProgress);  CmiMachineProgressImpl();
 #endif
     break;
+  case computeNonbondedMICType:
+#ifdef NAMD_MIC
+    wdProxy[CkMyPe()].enqueueMIC(msg);
+#endif
+    break;
   case computePmeType:
     // CkPrintf("PME %d %d %x\n", CkMyPe(), seq, compute->priority());
     wdProxy[CkMyPe()].enqueuePme(msg);
@@ -2898,6 +2911,9 @@ void WorkDistrib::enqueueCUDAP2(LocalWorkMsg *msg) {
   msg->compute->doWork();  traceUserEvent(eventMachineProgress);  CmiMachineProgressImpl();
 }
 void WorkDistrib::enqueueCUDAP3(LocalWorkMsg *msg) {
+  msg->compute->doWork();  traceUserEvent(eventMachineProgress);  CmiMachineProgressImpl();
+}
+void WorkDistrib::enqueueMIC(LocalWorkMsg *msg) {
   msg->compute->doWork();  traceUserEvent(eventMachineProgress);  CmiMachineProgressImpl();
 }
 

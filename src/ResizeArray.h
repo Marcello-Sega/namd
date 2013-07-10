@@ -126,6 +126,11 @@ public:
     // returns size of ResizeArray
     inline int size(void) const { return rep.size(); }
 
+    // DMK - MIC Support - Allow us to see the buffer's size, not just how much of it is used
+    #if NAMD_MIC != 0
+      inline int bufSize(void) const { return rep.bufSize(); }
+    #endif
+
     // reduce storage size
     // void reduce(void) { rep.reduce(); }
 

@@ -17,6 +17,8 @@
 //#define DEBUGM
 #include "Debug.h"
 
+#include "ComputeNonbondedMICKernel.h"
+
 ComputeMap* ComputeMap::instance;
 
 // Singleton method
@@ -169,6 +171,15 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids,
 
   computeData[cid].numPids = 0;
 
+  #if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+    // By default, pass all non-bonded selfs and pairs to the device
+    if (type == computeNonbondedSelfType || type == computeNonbondedPairType) {
+      computeData[cid].directToDevice = 1;
+    } else {
+      computeData[cid].directToDevice = 0;
+    }
+  #endif
+
   return cid;
 }
 
@@ -281,3 +292,21 @@ void ComputeMap::loadComputeMap(const char *fname)
   fclose(fp);
 }
 
+//----------------------------------------------------------------------
+#if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+
+void ComputeMap::setDirectToDevice(const ComputeID cid, const int d) {
+  if (cid < 0 || cid >= nComputes) {
+    NAMD_bug("ComputeMap::setDirectToDevice() called with an invalid cid value");
+  }
+  computeData[cid].directToDevice = ((d == 0) ? (0) : (1));
+}
+
+int ComputeMap::directToDevice(const ComputeID cid) const {
+  if (cid < 0 || cid >= nComputes) {
+    NAMD_bug("ComputeMap::directToDevice() called with an invalid cid value");
+  }
+  return computeData[cid].directToDevice;
+}
+
+#endif // defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)

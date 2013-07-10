@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/06/25 16:58:04 $
- * $Revision: 1.1417 $
+ * $Date: 2013/07/10 17:20:47 $
+ * $Revision: 1.1418 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -73,6 +73,8 @@ extern "C" {
 #endif
 
 #include "strlib.h"    //  For strcasecmp and strncasecmp
+
+#include "ComputeNonbondedMICKernel.h"
 
 //#define DEBUGM
 #include "Debug.h"
@@ -1990,6 +1992,10 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      "maximum number of exclusion flags per atom", &maxExclusionFlags, 256);
    opts.range("maxExclusionFlags",POSITIVE);
 
+   // MIC host/device split - default: all on device
+   opts.optional("main", "mic_hostsplit", "DMK - TODO - Fill me in once established", &mic_hostSplit, 0);
+   opts.range("mic_hostsplit", NOT_NEGATIVE);
+
 }
 
 #ifdef MEM_OPT_VERSION
@@ -3805,6 +3811,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
 #ifdef NAMD_CUDA
     maxSelfPart = maxPairPart = 1;
+#endif
+#if defined(NAMD_MIC)
+  #if MIC_ENABLE_COMPUTE_PARTITIONING == 0
+    maxSelfPart = maxPairPart = 1;
+  #endif
 #endif
 
    if (ldBalancer == LDBAL_HYBRID) {

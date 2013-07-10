@@ -82,6 +82,8 @@ void NAMD_new_handler() {
 
 void cuda_getargs(char**);
 void cuda_initialize();
+void mic_getargs(char**);
+void mic_initialize();
 
 // called on all procs
 void all_init(int argc, char **argv)
@@ -98,11 +100,19 @@ void all_init(int argc, char **argv)
   cuda_getargs(argv);
   argc = CmiGetArgc(argv);
 #endif
+#ifdef NAMD_MIC
+  CmiGetArgFlag(argv, "+idlepoll");  // remove +idlepoll if it's still there
+  mic_getargs(argv);
+  argc = CmiGetArgc(argv);
+#endif
   
   _initCharm(argc, argv);  // message main Chare
 
 #ifdef NAMD_CUDA
   if ( CkMyPe() < CkNumPes() ) cuda_initialize();
+#endif
+#ifdef NAMD_MIC
+  if ( CkMyPe() < CkNumPes() ) mic_initialize();
 #endif
 }
 
@@ -206,7 +216,7 @@ void BackEnd::init(int argc, char **argv) {
     gNAMDBinaryName--;
   }
 
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
   // look for but don't remove +idlepoll on command line
   int idlepoll = 0;
   for ( int i = 0; i < argc; ++i ) {
@@ -220,7 +230,7 @@ void BackEnd::init(int argc, char **argv) {
   ConverseInit(argc, argv, slave_init, 1, 1);  // calls slave_init on others
 
 // idlepoll only matters for non-smp UDP layer
-#if defined(NAMD_CUDA) && CMK_NET_VERSION && CMK_SHARED_VARS_UNAVAILABLE && CMK_WHEN_PROCESSOR_IDLE_USLEEP && ! CMK_USE_IBVERBS && ! CMK_USE_TCP
+#if (defined(NAMD_CUDA) || defined(NAMD_MIC)) && CMK_NET_VERSION && CMK_SHARED_VARS_UNAVAILABLE && CMK_WHEN_PROCESSOR_IDLE_USLEEP && ! CMK_USE_IBVERBS && ! CMK_USE_TCP
   if ( ! idlepoll ) {
     NAMD_die("Please add +idlepoll to command line for proper performance.");
   }
@@ -229,6 +239,12 @@ void BackEnd::init(int argc, char **argv) {
   master_init(argc, argv);
 }
 
+
+// DMK - DEBUG
+#ifdef NAMD_MIC
+  extern void mic_print_stats();
+#endif
+
 // called on proc 0 by front end
 void BackEnd::exit(void) {
   float cpuTime = CmiCpuTimer() - cpuTime_start;
@@ -236,6 +252,12 @@ void BackEnd::exit(void) {
   CmiPrintf("====================================================\n\n"
 	    "WallClock: %f  CPUTime: %f  Memory: %f MB\n",
 	    wallTime, cpuTime, memusage_MB());
+
+  // DMK - DEBUG
+  #ifdef NAMD_MIC
+    mic_print_stats();
+  #endif
+
   int i;
   for(i=1; i < CmiNumPes(); i++)
     ExitSchedOn(i);

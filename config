@@ -32,6 +32,8 @@ syntax:
   echo '  --without-memopt (default)  --with-memopt'
   echo '  --without-cuda (default)  --with-cuda'
   echo '      (do NOT use CUDA-enabled Charm++, NAMD does not need it)'
+  echo '  --without-mic (default)  --with-mic'
+  echo '      (do NOT use MIC-enabled Charm++, NAMD does not need it)'
   echo '  --cuda-prefix <directory containing CUDA bin, lib, and include>'
   echo ''
   if ( $?PRINT_ARCH_LIST ) then
@@ -102,6 +104,7 @@ begin:
   set use_fftw3 = 0
   set use_cuda = 0
   set use_memopt = 0
+  set use_mic = 0
   set use_spec = 0
 
   if ($#argv < 1) then
@@ -141,6 +144,12 @@ begin:
   if ($#argv < 1) goto syntax
   if ( $1 == memopt ) then
     set use_memopt = 1
+    shift
+  endif
+
+  if ($#argv < 1) goto syntax
+  if ( $1 == mic ) then
+    set use_mic = 1
     shift
   endif
 
@@ -241,6 +250,13 @@ begin:
 
       case --with-memopt:
         set use_memopt = 1
+      breaksw
+
+      case --with-mic:
+        set use_mic = 1
+      breaksw
+      case --without-mic:
+        set use_mic = 0
       breaksw
 
       case --with-spec:
@@ -396,6 +412,11 @@ begin:
     if ( "$ARCH_SUFFIX_ARG" =~ *CUDA* ) set SUF = ""
     set ARCH_SUFFIX = ${ARCH_SUFFIX}${SUF}
   endif
+  if ( $use_mic ) then
+    set SUF = "-MIC"
+    if ( "$ARCH_SUFFIX_ARG" =~ *MIC* ) set SUF = ""
+    set ARCH_SUFFIX = ${ARCH_SUFFIX}${SUF}
+  endif
   if ( $use_memopt ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-memopt
   if ( $use_spec ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-SPEC
   echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Make.config
@@ -409,6 +430,8 @@ begin:
   if ( $use_cuda ) echo 'include .rootdir/arch/$(NAMD_ARCH).cuda' >> Make.config
 
   if ( $use_memopt ) echo 'MEMOPT=-DMEM_OPT_VERSION' >> Make.config
+
+  if ( $use_mic ) echo 'include .rootdir/arch/$(NAMD_ARCH).mic' >> Make.config
 
   if ( $use_spec ) echo 'RELEASEFLAGS=-DSPEC_DISABLED_VERSION' >> Make.config
 

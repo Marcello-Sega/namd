@@ -20,6 +20,7 @@ enum ComputeType
   computeNonbondedSelfType,
   computeNonbondedPairType,
   computeNonbondedCUDAType,
+  computeNonbondedMICType,
   computeExclsType,
   computeBondsType,
   computeAnglesType,
@@ -143,6 +144,11 @@ public:
   // compute id cid.
   void newPid(ComputeID cid, int pid, int trans = 13);
 
+  #if defined(NAMD_MIC)
+    void setDirectToDevice(const ComputeID cid, const int d);
+    int directToDevice(const ComputeID cid) const;
+  #endif
+
   ComputeID cloneCompute(ComputeID src, int partition);
 
   void printComputeMap(void);
@@ -178,6 +184,9 @@ public:
     char newNumPartitions;
     char numPids;
     PatchRec pids[numPidsAllocated];
+    #if defined(NAMD_MIC)
+      char directToDevice;
+    #endif
   };
 protected:
   friend class WorkDistrib;

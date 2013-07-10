@@ -23,6 +23,11 @@ void register_cuda_compute_self(ComputeID c, PatchID pid);
 void register_cuda_compute_pair(ComputeID c, PatchID pid[], int t[]);
 void unregister_cuda_compute(ComputeID c);
 #endif
+#ifdef NAMD_MIC
+void register_mic_compute_self(ComputeID c, PatchID pid, int part, int numParts);
+void register_mic_compute_pair(ComputeID c, PatchID pid[], int t[], int part, int numParts);
+void unregister_mic_compute(ComputeID c);
+#endif
 
 typedef unsigned short plint;
 
@@ -202,6 +207,11 @@ struct nonbonded {
   #if NAMD_ComputeNonbonded_SortAtoms != 0
     Vector projLineVec;
   #endif
+
+  // DMK - DEBUG
+  // int p1;
+  // int p2;
+  // int abSwapFlag;
 };
 
 class ComputeNonbondedUtil {
@@ -270,6 +280,11 @@ public:
   static BigReal *vdwa_table;
   static BigReal *vdwb_table;
   static BigReal *r2_table;
+  #if defined(NAMD_MIC)
+    static BigReal *mic_table_base_ptr; // DMK - NOTE : Duplicate but, use so that nothing breaks if the ordering of sub-arrays changes
+    static int mic_table_n;
+    static int mic_table_n_16;
+  #endif
   static BigReal scaling;
   static BigReal scale14;
   static BigReal switchOn;

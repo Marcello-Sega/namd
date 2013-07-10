@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/03/04 13:43:03 $
- * $Revision: 1.1290 $
+ * $Date: 2013/07/10 17:20:45 $
+ * $Revision: 1.1291 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -38,6 +38,8 @@
 #include "BackEnd.h"
 #include <iomanip>
 #include <errno.h>
+
+#include "ComputeNonbondedMICKernel.h"
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
 extern "C" void CApplicationDepositNode0Data(char *);
@@ -1976,6 +1978,12 @@ void Controller::compareChecksums(int step, int forgiving) {
         NAMD_bug(errmsg);
       }
     }
+
+    // DMK - DEBUG
+    // DMK - TODO | FIXME : Have the ComputeNonbondedMIC object submit exclusion counts
+    //   from the device via the reduction.
+    #if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+    #else
     if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions ) {
       if ( forgiving || ! simParams->fullElectFrequency ) {
         iout << iWARN << "Low global exclusion count!  ("
@@ -1995,6 +2003,7 @@ void Controller::compareChecksums(int step, int forgiving) {
         NAMD_bug(errmsg);
       }
     }
+    #endif
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) && ! marginViolations ) {

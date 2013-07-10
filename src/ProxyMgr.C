@@ -32,6 +32,14 @@
 #include "qd.h"
 #endif
 
+#include "ComputeNonbondedMICKernel.h"
+#include "SimParameters.h"
+#include "Node.h"
+
+#ifdef NAMD_MIC
+  extern int mic_get_device_count();
+#endif
+
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
 #include "Debug.h"
@@ -445,15 +453,103 @@ void ProxyMgr::createProxies(void)
     }
   }
 
-  // Check all patch-based compute objects.
   ComputeMap *computeMap = ComputeMap::Object();
+
+  // If there is a MIC device, then loop through the computes, flagging each one
+  //   to be excuted on either a host or on a device
+  #if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+
+    //int deviceThreshold = (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) - 2;
+    //int deviceThreshold = ((int)(0.5f * (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) + 1.5f) - 3)
+    //                    + mic_get_device_count();
+
+    int dt_base = ((int)(0.5f * (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) + 1.5f) - 2);
+    int dt_procs = 1 * mic_get_device_count() - 1;
+    int dt_nodes = 0;
+    //int numNodes = CkNumNodes() / 4;  // Starting at 4 nodes, increase the threshold by one each time the the number of nodes doubles
+    //while (numNodes > 0) { dt_nodes++; numNodes /= 2; }
+    int deviceThreshold = dt_base + dt_procs + dt_nodes;
+
+    int mic_hostSplit = Node::Object()->simParameters->mic_hostSplit;
+
+    // DMK - DEBUG
+    if (CkMyPe() == 0) {
+      printf("[MIC] :: deviceThreshold:%d\n", deviceThreshold);
+      printf("[MIC] :: mic_hostSplit:%d\n", mic_hostSplit);
+    }
+
+    int nComputes = computeMap->numComputes();
+    for (int i = 0; i < nComputes; i++) {
+      switch (computeMap->type(i)) {
+
+        case computeNonbondedSelfType:
+          // Direct all non-bonded self computes to the device
+          #if MIC_SPLIT_WITH_HOST != 0
+            if (mic_hostSplit > 0) { // Apply patch selection heuristic
+              computeMap->setDirectToDevice(i, ((computeMap->pid(i, 0) < mic_hostSplit) ? (0) : (1)));
+	    } else {
+              if (0 <= deviceThreshold) { computeMap->setDirectToDevice(i, 1); }
+	    }
+          #else
+            computeMap->setDirectToDevice(i, 1); // Force to the device
+          #endif
+          break;
+
+        case computeNonbondedPairType:
+          #if MIC_SPLIT_WITH_HOST != 0
+            if (mic_hostSplit > 0) {
+              int pid0 = computeMap->pid(i, 0);
+              int pid1 = computeMap->pid(i, 1);
+              computeMap->setDirectToDevice(i , ((pid0 < mic_hostSplit || pid1 < mic_hostSplit) ? (0) : (1)));
+            } else {
+              int aSize = patchMap->gridsize_a();
+              int bSize = patchMap->gridsize_b();
+              int cSize = patchMap->gridsize_c();
+              int pid0 = computeMap->pid(i, 0);
+              int pid1 = computeMap->pid(i, 1);
+              int trans0 = computeMap->trans(i, 0);
+              int trans1 = computeMap->trans(i, 1);
+              int index_a0 = patchMap->index_a(pid0) + aSize * Lattice::offset_a(trans0);
+              int index_b0 = patchMap->index_b(pid0) + bSize * Lattice::offset_b(trans0);
+              int index_c0 = patchMap->index_c(pid0) + cSize * Lattice::offset_c(trans0);
+              int index_a1 = patchMap->index_a(pid1) + aSize * Lattice::offset_a(trans1);
+              int index_b1 = patchMap->index_b(pid1) + bSize * Lattice::offset_b(trans1);
+              int index_c1 = patchMap->index_c(pid1) + cSize * Lattice::offset_c(trans1);
+              int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1));
+              int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1));
+              int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1));
+              int manDist = da + db + dc;
+              computeMap->setDirectToDevice(i, ((manDist <= deviceThreshold) ? (1) : (0)));
+            }
+          #else
+            computeMap->setDirectToDevice(i, 1); // Force to the device
+          #endif
+          break;
+
+        default:
+          // All other computes should be directed to the host (flag is ignored, but set it)
+          computeMap->setDirectToDevice(i, 0);
+          break;
+
+      } // end switch (map->type(i))
+    } // end for (i < map->nComputes)
+  #endif // NAMD_MIC && MIC_SPLIT_WITH_HOST != 0
+
+  // Check all patch-based compute objects.
   int nc = computeMap->numComputes();
   for ( i = 0; i < nc; ++i )
   {
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA)
     ComputeType t = computeMap->type(i);
     if ( t == computeNonbondedSelfType || t == computeNonbondedPairType )
       continue;
+#elif defined(NAMD_MIC)
+    ComputeType t = computeMap->type(i);
+    #if MIC_SPLIT_WITH_HOST != 0
+      if ( computeMap->directToDevice(i) ) { continue; } // NOTE: Compute for device will take care of requiring the patch
+    #else
+      if ( t == computeNonbondedSelfType || t == computeNonbondedPairType ) { continue; }
+    #endif
 #endif
     if ( computeMap->node(i) != myNode ) 
       continue;

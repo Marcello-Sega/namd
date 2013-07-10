@@ -69,6 +69,7 @@ public:
   void enqueueCUDA(LocalWorkMsg *msg);
   void enqueueCUDAP2(LocalWorkMsg *msg);
   void enqueueCUDAP3(LocalWorkMsg *msg);
+  void enqueueMIC(LocalWorkMsg *msg);
   void enqueueLCPO(LocalWorkMsg *msg);
 
   void mapComputes(void);

@@ -196,7 +196,8 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   memcpy(p.begin(), msg->positionList, sizeof(CompAtom)*(msg->plLen));
 #endif
 
-#ifdef NAMD_CUDA
+// DMK
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
   cudaAtomPtr = msg->cudaAtomList;
 #endif
   
@@ -272,7 +273,8 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
   memcpy(p.begin(), msg->positionList, sizeof(CompAtom)*(msg->plLen));
 #endif
 
-#ifdef NAMD_CUDA
+// DMK
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
   cudaAtomPtr = msg->cudaAtomList;
 #endif
 

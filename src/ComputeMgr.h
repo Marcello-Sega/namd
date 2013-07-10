@@ -40,6 +40,9 @@ class ComputeEwaldMsg;
 class ComputeNonbondedCUDA;
 class NonbondedCUDASlaveMsg;
 
+class ComputeNonbondedMIC;
+class NonbondedMICSlaveMsg;
+
 class ComputeNonbondedWorkArrays;
 
 class ComputeMgr : public BOCclass
@@ -87,11 +90,24 @@ public:
   void recvYieldDevice(int pe);
   void sendBuildCudaForceTable();
   void recvBuildCudaForceTable();
+
+  // DMK
+  void sendBuildMICForceTable();
+  void recvBuildMICForceTable();
+
   void sendCreateNonbondedCUDASlave(int,int);
   void recvCreateNonbondedCUDASlave(NonbondedCUDASlaveMsg *);
   void sendNonbondedCUDASlaveReady(int,int,int,int);
   void recvNonbondedCUDASlaveReady(int,int,int);
   void sendNonbondedCUDASlaveEnqueue(ComputeNonbondedCUDA *c, int,int,int,int);
+  void sendCreateNonbondedMICSlave(int,int);
+  void recvCreateNonbondedMICSlave(NonbondedMICSlaveMsg *);
+  void sendNonbondedMICSlaveReady(int,int,int,int);
+  void recvNonbondedMICSlaveReady(int,int,int);
+  void sendNonbondedMICSlaveEnqueue(ComputeNonbondedMIC *c, int,int,int,int);
+  void sendMICPEData(int,int);
+  void recvMICPEData(int,int);
+  int isMICProcessor(int);
   
 private:
   void createCompute(ComputeID, ComputeMap *);
@@ -103,6 +119,8 @@ private:
 
   ComputeNonbondedCUDA *computeNonbondedCUDAObject;
 
+  ComputeNonbondedMIC *computeNonbondedMICObject;
+
   ComputeNonbondedWorkArrays *computeNonbondedWorkArrays;
 
   int skipSplitting;
@@ -111,7 +129,10 @@ private:
   CkGroupID updateComputesReturnChareID;
 
   ResizeArray<int> computeFlag;
+
+  int* micPEData;  // DMK : An array (1 bit per PE) which will hold a flag indicating if a given PE is driving a MIC card or not
 };
+
 
 #endif /* COMPUTEMGR_H */
 

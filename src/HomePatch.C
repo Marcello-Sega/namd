@@ -58,6 +58,8 @@ typedef zVector HGArrayVector[MAXHGS];
 typedef BigReal HGMatrixBigReal[MAXHGS][MAXHGS];
 typedef zVector HGMatrixVector[MAXHGS][MAXHGS];
 
+#include "ComputeNonbondedMICKernel.h"
+
 int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,const int m, const HGArrayBigReal &imass, const HGArrayBigReal &length2, const HGArrayInt &ial, const HGArrayInt &ibl, const HGArrayVector &refab, const BigReal tolf, const int ntrial);
 
 void mollify(CompAtom *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab);
@@ -946,10 +948,12 @@ void HomePatch::positionsReady(int doMigration)
     }
   }
 
-#ifdef NAMD_CUDA
+// DMK
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
   if ( doMigration ) {
     int n = numAtoms;
     FullAtom *a_i = atom.begin();
+    #if defined(NAMD_CUDA) || (defined(NAMD_MIC) && MIC_SORT_ATOMS != 0)
     int *ao = new int[n];
     int nfree;
     if ( simParams->fixedAtomsOn && ! simParams->fixedAtomsForces ) {
@@ -974,6 +978,11 @@ void HomePatch::positionsReady(int doMigration)
       a_i[i].sortOrder = ao[i];
     }
     delete [] ao;
+    #else
+      for (int i = 0; i < n; ++i) {
+        a_i[i].sortOrder = i;
+      }
+    #endif
   }
 
   { 
@@ -983,16 +992,51 @@ void HomePatch::positionsReady(int doMigration)
     const BigReal ucenter_y = ucenter.y;
     const BigReal ucenter_z = ucenter.z;
     const int n = numAtoms;
+    #if defined(NAMD_MIC) && (MIC_HANDCODE_FORCE_SOA_VS_AOS == 0)
+      int n_16 = n;
+      n_16 = (n + 15) & (~15);
+      cudaAtomList.resize(n_16);
+      CudaAtom *ac = cudaAtomPtr = cudaAtomList.begin();
+      //memset(ac, 0, sizeof(atom) * n_16); // DMK - DEBUG
+      mic_position_t *atom_x = ((mic_position_t*)ac) + (0 * n_16);
+      mic_position_t *atom_y = ((mic_position_t*)ac) + (1 * n_16);
+      mic_position_t *atom_z = ((mic_position_t*)ac) + (2 * n_16);
+      mic_position_t *atom_q = ((mic_position_t*)ac) + (3 * n_16);
+    #else
     cudaAtomList.resize(n);
     CudaAtom *ac = cudaAtomPtr = cudaAtomList.begin();
+      //memset(ac, 0, sizeof(atom) * n); // DMK - DEBUG
+    #endif
     const FullAtom *a = atom.begin();
     for ( int k=0; k<n; ++k ) {
+      #if defined(NAMD_MIC) && (MIC_HANDCODE_FORCE_SOA_VS_AOS == 0)
+        int j = a[k].sortOrder;
+        atom_x[k] = a[j].position.x - ucenter_x;
+        atom_y[k] = a[j].position.y - ucenter_y;
+        atom_z[k] = a[j].position.z - ucenter_z;
+        atom_q[k] = charge_scaling * a[j].charge;
+      #else
       int j = a[k].sortOrder;
       ac[k].x = a[j].position.x - ucenter_x;
       ac[k].y = a[j].position.y - ucenter_y;
       ac[k].z = a[j].position.z - ucenter_z;
       ac[k].q = charge_scaling * a[j].charge;
+      #endif
     }
+
+    // DMK - DEBUG
+    #if defined(NAMD_MIC) && 0
+      for (int k = 0; k < n; k++) {
+        printf("<< atom[%3d,%3d] = { x:%f, y:%f, z:%f, q:%f }\n", patchID, k,
+               #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
+	         ac[k].x, ac[k].y, ac[k].z, ac[k].charge
+               #else
+	         atom_x[k], atom_y[k], atom_z[k], atom_q[k]
+               #endif
+              );
+      }
+    #endif
+
   }
 #endif
 
@@ -1114,6 +1158,14 @@ void HomePatch::positionsReady(int doMigration)
     cudaAtomLen = numAtoms;
 #endif
 
+    #ifdef NAMD_MIC
+      #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
+        cudaAtomLen = numAtoms;
+      #else
+        cudaAtomLen = (numAtoms + 15) & (~15);
+      #endif
+    #endif
+
     ProxyDataMsg *nmsg = new (pdMsgPLLen, pdMsgAvgPLLen, pdMsgVLLen, intRadLen,
       lcpoTypeLen, pdMsgPLExtLen, cudaAtomLen, PRIORITY_SIZE) ProxyDataMsg; // BEGIN LA, END LA
 
@@ -1151,7 +1203,8 @@ void HomePatch::positionsReady(int doMigration)
         memcpy(nmsg->positionExtList, pExt.begin(), sizeof(CompAtomExt)*pdMsgPLExtLen);
     }
 
-#ifdef NAMD_CUDA
+// DMK
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
     memcpy(nmsg->cudaAtomList, cudaAtomPtr, sizeof(CudaAtom)*cudaAtomLen);
 #endif
     

@@ -35,7 +35,7 @@
 
 #define MSM_PRIORITY PME_PRIORITY
  
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
 // higher priority so offloaded work can overlap
 #define PROXY_DATA_PRIORITY (1<<8)
 #else
@@ -62,6 +62,11 @@
 #define GB2_COMPUTE_HOME_PRIORITY (10<<8)
 //used in HomePatch::gbisP3Ready          DONE
 #define GB3_PROXY_DATA_PRIORITY (11<<8)
+
+
+// DMK - DEBUG
+#define COMPUTE_MIC_PRIORITY (4<<8)
+
 
 // from here on GB computes use normal compute priorities
 //use in Compute::gbisP3PatchReady        DONE

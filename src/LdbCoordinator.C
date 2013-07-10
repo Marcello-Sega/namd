@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:17 $
- * $Revision: 1.118 $
+ * $Author: jim $
+ * $Date: 2013/07/10 17:20:45 $
+ * $Revision: 1.119 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -27,6 +27,7 @@
 #include "SimParameters.h"
 #include "PatchMap.inl"
 #include "ComputeMap.h"
+#include "ComputeNonbondedMICKernel.h"
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
@@ -276,7 +277,12 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   for(i=0;i<numComputes;i++)  {
     if ( (computeMap->node(i) == Node::Object()->myid())
 	 && ( 0
-#ifndef NAMD_CUDA
+              #if (defined(NAMD_CUDA) || defined(NAMD_MIC))
+                #if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+                  || ((computeMap->type(i) == computeNonbondedSelfType) && (computeMap->directToDevice(i) == 0))
+                  || ((computeMap->type(i) == computeNonbondedPairType) && (computeMap->directToDevice(i) == 0))
+                #endif
+              #else
 	      || (computeMap->type(i) == computeNonbondedSelfType)
 	      || (computeMap->type(i) == computeNonbondedPairType)
 #endif
@@ -347,7 +353,12 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	if ( computeMap->node(i) == Node::Object()->myid())
         {
 	  if ( 0
-#ifndef NAMD_CUDA
+               #if (defined(NAMD_CUDA) || defined(NAMD_MIC))
+                 #if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+                   || ((computeMap->type(i) == computeNonbondedSelfType) && (computeMap->directToDevice(i) == 0))
+                   || ((computeMap->type(i) == computeNonbondedPairType) && (computeMap->directToDevice(i) == 0))
+                 #endif
+               #else
 	          || (computeMap->type(i) == computeNonbondedSelfType)
 	          || (computeMap->type(i) == computeNonbondedPairType)
 #endif

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dhardy $
- * $Date: 2013/05/21 17:27:11 $
- * $Revision: 1.1221 $
+ * $Author: jim $
+ * $Date: 2013/07/10 17:20:47 $
+ * $Revision: 1.1222 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -858,6 +858,9 @@ public:
 	char computeMapFilename[128];		//  store compute map
         Bool storeComputeMap;
         Bool loadComputeMap;
+
+        // MIC host/device split
+        int mic_hostSplit;
 
 public:
 

@@ -161,6 +161,8 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedTabEnergies.o \
 	$(DSTDIR)/ComputeNonbondedCUDA.o \
 	$(DSTDIR)/ComputeNonbondedCUDAExcl.o \
+	$(DSTDIR)/ComputeNonbondedMIC.o \
+	$(DSTDIR)/ComputeNonbondedMICKernel.o \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
 	$(DSTDIR)/ComputePme.o \
@@ -390,11 +392,11 @@ CHARM_MODULES = -module NeighborLB -module HybridLB -module RefineLB -module Gre
 LIBS = $(CUDAOBJS) $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(FMMLIBS) $(TCLDLL)
 
 # CXX is platform dependent
-CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(FMM) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS) $(MSA)
-CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
-CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
-CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
-CXXNOALIASFLAGS = $(CXXBASEFLAGS) $(CXXNOALIASOPTS)
+CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(FMM) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MIC) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS) $(MSA)
+CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS) $(CXXMICOPTS)
+CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS) $(CXXMICOPTS)
+CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS) $(CXXMICOPTS)
+CXXNOALIASFLAGS = $(CXXBASEFLAGS) $(CXXNOALIASOPTS) $(CXXMICOPTS)
 GXXFLAGS = $(CXXBASEFLAGS) -DNO_STRSTREAM_H
 CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
 PLUGINGCCFLAGS = $(COPTI)$(PLUGINSRCDIR) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN
@@ -421,7 +423,7 @@ all:	$(BINARIES) $(LIBCUDARTSO)
 namd2:	$(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
-	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
+	'$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS) $(CXXMICOPTS)' \
 	"$(CHARM_MODULES)" -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
@@ -521,7 +523,7 @@ updatefiles:
 tracecomputes: updatefiles $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
-	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
+	'$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS) $(CXXMICOPTS)' \
 	-module NeighborLB -module CkMulticast -language charm++ \
 	-tracemode projections \
 	$(BUILDINFO).o \
@@ -541,7 +543,7 @@ tracecomputes: updatefiles $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 projections: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
-	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
+	'$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS) $(CXXMICOPTS)' \
 	-module NeighborLB -module CkMulticast -language charm++ \
 	-tracemode projections \
 	$(BUILDINFO).o \
@@ -561,7 +563,7 @@ projections: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 summary: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
-	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
+	'$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS) $(CXXMICOPTS)' \
 	-module NeighborLB -module CkMulticast -language charm++ \
 	-tracemode summary \
 	$(BUILDINFO).o \

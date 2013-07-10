@@ -29,6 +29,10 @@ extern "C" {
   void send_build_cuda_force_table();
 #endif
 
+#ifdef NAMD_MIC
+  extern void send_build_mic_force_table();
+#endif
+
 Bool		ComputeNonbondedUtil::commOnly;
 Bool		ComputeNonbondedUtil::fixedAtomsOn;
 BigReal         ComputeNonbondedUtil::cutoff;
@@ -53,6 +57,11 @@ BigReal*	ComputeNonbondedUtil::full_table;
 BigReal*	ComputeNonbondedUtil::vdwa_table;
 BigReal*	ComputeNonbondedUtil::vdwb_table;
 BigReal*	ComputeNonbondedUtil::r2_table;
+#if defined(NAMD_MIC)
+  BigReal*      ComputeNonbondedUtil::mic_table_base_ptr;
+  int           ComputeNonbondedUtil::mic_table_n;
+  int           ComputeNonbondedUtil::mic_table_n_16;
+#endif
 BigReal         ComputeNonbondedUtil::scaling;
 BigReal         ComputeNonbondedUtil::scale14;
 BigReal         ComputeNonbondedUtil::switchOn;
@@ -585,6 +594,9 @@ void ComputeNonbondedUtil::select(void)
 
   int i;
   int n = (r2_delta_exp + cutoff2_exp) * 64 + 1;
+  #if defined(NAMD_MIC)
+    int n_16 = (n + 15) & (~15);
+  #endif
 
   if ( ! CkMyPe() ) {
     iout << iINFO << "NONBONDED TABLE SIZE: " <<
@@ -592,6 +604,24 @@ void ComputeNonbondedUtil::select(void)
   }
 
   if ( table_alloc ) delete [] table_alloc;
+  #if defined(NAMD_MIC)
+    table_alloc = new BigReal[61*n_16+16];
+    BigReal *table_align = table_alloc;
+    while ( ((long)table_align) % 128 ) ++table_align;
+    mic_table_base_ptr = table_align;
+    mic_table_n = n;
+    mic_table_n_16 = n_16;
+    table_noshort = table_align;
+    table_short = table_align + 16*n_16;
+    slow_table = table_align + 32*n_16;
+    fast_table = table_align + 36*n_16;
+    scor_table = table_align + 40*n_16;
+    corr_table = table_align + 44*n_16;
+    full_table = table_align + 48*n_16;
+    vdwa_table = table_align + 52*n_16;
+    vdwb_table = table_align + 56*n_16;
+    r2_table = table_align + 60*n_16;
+  #else
   table_alloc = new BigReal[61*n+16];
   BigReal *table_align = table_alloc;
   while ( ((long)table_align) % 128 ) ++table_align;
@@ -605,6 +635,7 @@ void ComputeNonbondedUtil::select(void)
   vdwa_table = table_align + 52*n;
   vdwb_table = table_align + 56*n;
   r2_table = table_align + 60*n;
+  #endif
   BigReal *fast_i = fast_table + 4;
   BigReal *scor_i = scor_table + 4;
   BigReal *slow_i = slow_table + 4;
@@ -1145,5 +1176,8 @@ void ComputeNonbondedUtil::select(void)
   send_build_cuda_force_table();
 #endif
 
+  #ifdef NAMD_MIC
+    send_build_mic_force_table();
+  #endif
 }
 

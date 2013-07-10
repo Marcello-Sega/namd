@@ -14,6 +14,11 @@
 #include "Lattice.h"
 #include "PatchTypes.h"
 
+#ifdef NAMD_MIC
+// defined here to avoid including ComputeNonbondedMICKernel.h
+#define MIC_MAX_DEVICES_PER_NODE          ( 16 )
+#endif
+
 typedef SortedArray<Compute*> ComputePtrList;
 
 class Compute;
@@ -112,6 +117,19 @@ class Patch
 
      Lattice &lattice;
      Flags flags;
+
+     // DMK
+    // NOTE : Just placing the variables in public for now so only one location, move to protected if this actually helps performance
+     #if defined(NAMD_MIC)
+       pthread_mutex_t mic_atomData_mutex;
+       void* mic_atomData;
+       void* mic_atomData_prev[MIC_MAX_DEVICES_PER_NODE];
+       int mic_atomData_seq;
+       int mic_atomData_deviceSeq[MIC_MAX_DEVICES_PER_NODE];
+       uint64_t mic_atomData_devicePtr[MIC_MAX_DEVICES_PER_NODE];
+       int mic_atomData_allocSize_host;
+       int mic_atomData_allocSize_device[MIC_MAX_DEVICES_PER_NODE];
+     #endif
 
   protected:
 

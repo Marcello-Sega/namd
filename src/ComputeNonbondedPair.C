@@ -276,6 +276,11 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
 
     #endif
 
+      // DMK - DEBUG
+      // params.p1 = patchID[a];
+      // params.p2 = patchID[b];
+      // params.abSwapFlag = a;
+
       params.p[0] = p[a];
       params.p[1] = p[b];
       params.pExt[0] = pExt[a]; 

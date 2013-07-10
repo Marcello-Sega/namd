@@ -19,6 +19,7 @@ module ComputeMgr {
   };
 
   message NonbondedCUDASlaveMsg;
+  message NonbondedMICSlaveMsg;
 
   group ComputeMgr
   {
@@ -48,8 +49,12 @@ module ComputeMgr {
 
     entry void recvYieldDevice(int pe);
     entry void recvBuildCudaForceTable();
+    entry void recvBuildMICForceTable();
     entry void recvCreateNonbondedCUDASlave(NonbondedCUDASlaveMsg *);
     entry void recvNonbondedCUDASlaveReady(int, int, int);
+    entry void recvCreateNonbondedMICSlave(NonbondedMICSlaveMsg *);
+    entry void recvNonbondedMICSlaveReady(int, int, int);
+    entry void recvMICPEData(int, int);
   } ;
 }
 

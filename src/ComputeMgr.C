@@ -27,6 +27,7 @@
 #include "ComputeNonbondedSelf.h"
 #include "ComputeNonbondedPair.h"
 #include "ComputeNonbondedCUDA.h"
+#include "ComputeNonbondedMIC.h"
 #include "ComputeAngles.h"
 #include "ComputeDihedrals.h"
 #include "ComputeImpropers.h"
@@ -87,6 +88,8 @@
 #include "GlobalMasterFreeEnergy.h"
 #include "GlobalMasterColvars.h"
 
+#include "ComputeNonbondedMICKernel.h"
+
 ComputeMgr::ComputeMgr()
 {
     CkpvAccess(BOCclass_group).computeMgr = thisgroup;
@@ -94,8 +97,21 @@ ComputeMgr::ComputeMgr()
     computeDPMEObject = 0;
     computeEwaldObject = 0;
     computeNonbondedCUDAObject = 0;
+    computeNonbondedMICObject = 0;
     computeNonbondedWorkArrays = new ComputeNonbondedWorkArrays;
     skipSplitting = 0;
+
+    #if defined(NAMD_MIC)
+      // Create the micPEData flag array (1 bit per PE) and initially set each PE as "not driving
+      //   a MIC card" (unset).  PEs that are driving MIC card will identify themselves during startup.
+      int numPEs = CkNumPes();
+      int numInts = ((numPEs + (sizeof(int)*8-1)) & (~(sizeof(int)*8-1))) / (sizeof(int)*8);  // Round up to sizeof(int) then divide by the size of an int
+      micPEData = new int[numInts];
+      if (micPEData == NULL) { NAMD_die("Unable to allocate memory for micPEData"); }
+      memset(micPEData, 0, sizeof(int) * numInts);
+    #else
+      micPEData = NULL;
+    #endif
 }
 
 ComputeMgr::~ComputeMgr(void)
@@ -339,6 +355,24 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     case computeNonbondedSelfType:
 #ifdef NAMD_CUDA
         register_cuda_compute_self(i,map->computeData[i].pids[0].pid);
+#elif defined(NAMD_MIC)
+        #if MIC_SPLIT_WITH_HOST != 0
+          // DMK - NOTE | TODO | FIXME : For now, just use the define to hard-code
+          //   a "split amount".  If it ends up being helpful, create a more general
+          //   solution that can move work back and forth.
+	  if (map->directToDevice(i) == 0) { //map->computeData[i].pids[0].pid < simParams->mic_hostSplit/*MIC_SPLIT_WITH_HOST*/) {
+            c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
+                                         computeNonbondedWorkArrays,
+                                         map->partition(i),map->partition(i)+1,
+                                         map->numPartitions(i)); // unknown delete
+            map->registerCompute(i,c);
+            c->initialize();
+          } else {
+        #endif
+            register_mic_compute_self(i,map->computeData[i].pids[0].pid,map->partition(i),map->numPartitions(i));
+        #if MIC_SPLIT_WITH_HOST != 0
+          }
+        #endif
 #else
         c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
                                      computeNonbondedWorkArrays,
@@ -368,6 +402,24 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         trans2[1] = map->computeData[i].pids[1].trans;
 #ifdef NAMD_CUDA
         register_cuda_compute_pair(i,pid2,trans2);
+#elif defined(NAMD_MIC)
+        #if MIC_SPLIT_WITH_HOST != 0
+          // DMK - NOTE | TODO | FIXME : For now, just use the define to hard-code
+          //   a "split amount".  If it ends up being helpful, create a more general
+          //   solution that can move work back and forth.
+	  if (map->directToDevice(i) == 0) { //pid2[0] < simParams->mic_hostSplit/*MIC_SPLIT_WITH_HOST*/ || pid2[1] < simParams->mic_hostSplit/*MIC_SPLIT_WITH_HOST*/) {
+            c = new ComputeNonbondedPair(i,pid2,trans2,
+                                         computeNonbondedWorkArrays,
+                                         map->partition(i),map->partition(i)+1,
+                                         map->numPartitions(i)); // unknown delete
+            map->registerCompute(i,c);
+            c->initialize();
+          } else {
+        #endif
+            register_mic_compute_pair(i,pid2,trans2,map->partition(i),map->numPartitions(i));
+        #if MIC_SPLIT_WITH_HOST != 0
+          }
+        #endif
 #else
         c = new ComputeNonbondedPair(i,pid2,trans2,
                                      computeNonbondedWorkArrays,
@@ -381,6 +433,17 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     case computeNonbondedCUDAType:
 	c = computeNonbondedCUDAObject = new ComputeNonbondedCUDA(i,this); // unknown delete
 	map->registerCompute(i,c);
+	c->initialize();
+	break;
+#endif
+#ifdef NAMD_MIC
+    case computeNonbondedMICType:
+	c = computeNonbondedMICObject = new ComputeNonbondedMIC(i,this); // unknown delete
+	map->registerCompute(i,c);
+
+        //// DMK - DEBUG
+        //printf("[%d] :: registering MIC compute with map...\n", CkMyPe()); fflush(NULL);
+
 	c->initialize();
 	break;
 #endif
@@ -815,20 +878,98 @@ ComputeMgr::createComputes(ComputeMap *map)
     bool deviceIsMine = ( cuda_device_pe() == CkMyPe() );
 #endif
 
+    // If there is a MIC device, then loop through the computes, flagging each one
+    //   to be excuted on either a host or on a device
+    #ifdef NAMD_MIC
+      bool deviceIsMine = ( mic_device_pe() == CkMyPe() );
+      /*
+      #if MIC_SPLIT_WITH_HOST != 0
+        PatchMap *patchMap = PatchMap::Object();
+        int deviceThreshold = (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) - 2;
+        for (int i = 0; i < map->nComputes; i++) {
+          switch (map->type(i)) {
+
+            case computeNonbondedSelfType:
+              // Direct all non-bonded self computes to the device
+              map->setDirectToDevice(i, 1);
+              break;
+
+            case computeNonbondedPairType:
+              // Direct some non-bonded pair computes to the device, based on the manhattan distance
+              {
+                int pid0 = map->pid(i, 0);
+                int pid1 = map->pid(i, 1);
+                int index_a0 = patchMap->index_a(pid0);
+                int index_b0 = patchMap->index_b(pid0);
+                int index_c0 = patchMap->index_c(pid0);
+                int index_a1 = patchMap->index_a(pid1);
+                int index_b1 = patchMap->index_b(pid1);
+                int index_c1 = patchMap->index_c(pid1);
+                int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1));
+                int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1));
+                int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1));
+                int manDist = da + db + dc;
+                map->setDirectToDevice(i, ((manDist <= deviceThreshold) ? (1) : (0)));
+              }
+              break;
+
+            default:
+              // All other computes should be directed to the host (flag is ignored, but set it)
+              map->setDirectToDevice(i, 0);
+              break;
+
+          } // end switch (map->type(i))
+        } // end for (i < map->nComputes)
+      #endif // MIC_SPLIT_WITH_HOST != 0
+      */
+    #endif // NAMD_MIC
+
     for (int i=0; i < map->nComputes; i++)
     {
         if ( ! ( i % 100 ) )
         {
         }
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
         switch ( map->type(i) )
         {
+#ifdef NAMD_CUDA
           case computeNonbondedSelfType:
           case computeNonbondedPairType:
             if ( ! deviceIsMine ) continue;
             if ( ! cuda_device_shared_with_pe(map->computeData[i].node) ) continue;
           break;
+#endif
+#ifdef NAMD_MIC
+
+	  case computeNonbondedSelfType:
+            #if MIC_SPLIT_WITH_HOST != 0
+              if (map->directToDevice(i)) { // If should be directed to the device...
+            #endif
+                if ( ! deviceIsMine ) continue;
+                if ( ! mic_device_shared_with_pe(map->computeData[i].node) ) continue;
+            #if MIC_SPLIT_WITH_HOST != 0
+              } else { // ... otherwise, direct to host...
+                if (map->computeData[i].node != myNode) { continue; }
+	      }
+            #endif
+            break;
+
+	  case computeNonbondedPairType:
+            #if MIC_SPLIT_WITH_HOST != 0
+              if (map->directToDevice(i)) { // If should be directed to the device...
+            #endif
+                if ( ! deviceIsMine ) continue;
+                if ( ! mic_device_shared_with_pe(map->computeData[i].node) ) continue;
+            #if MIC_SPLIT_WITH_HOST != 0
+              } else { // ... otherwise, direct to host...
+                if (map->computeData[i].node != myNode) { continue; }
+	      }
+            #endif
+            break;
+
+#endif
           case computeNonbondedCUDAType:
+          case computeNonbondedMICType:
             if ( ! deviceIsMine ) continue;
           default:
             if ( map->computeData[i].node != myNode ) continue;
@@ -857,6 +998,11 @@ ComputeMgr::createComputes(ComputeMap *map)
 #ifdef NAMD_CUDA
     if ( computeNonbondedCUDAObject ) {
       computeNonbondedCUDAObject->assignPatches();
+    }
+#endif
+#ifdef NAMD_MIC
+    if ( computeNonbondedMICObject ) {
+      computeNonbondedMICObject->assignPatches();
     }
 #endif
 
@@ -1032,6 +1178,9 @@ void ComputeMgr::recvYieldDevice(int pe) {
 #ifdef NAMD_CUDA
     computeNonbondedCUDAObject->recvYieldDevice(pe);
 #endif
+#ifdef NAMD_MIC
+    computeNonbondedMICObject->recvYieldDevice(pe);
+#endif
 }
 
 void ComputeMgr::sendBuildCudaForceTable() {
@@ -1052,6 +1201,27 @@ void ComputeMgr::recvBuildCudaForceTable() {
     build_cuda_force_table();
 #endif
 }
+
+void ComputeMgr::sendBuildMICForceTable() {
+  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+  int pe = CkNodeFirst(CkMyNode());
+  int end = pe + CkNodeSize(CkMyNode());
+  for( ; pe != end; ++pe ) {
+    cm[pe].recvBuildMICForceTable();
+  }
+}
+
+#ifdef NAMD_MIC
+  void build_mic_force_table();
+#endif
+
+void ComputeMgr::recvBuildMICForceTable() {
+  #ifdef NAMD_MIC
+    build_mic_force_table();
+  #endif
+}
+
+
 
 class NonbondedCUDASlaveMsg : public CMessage_NonbondedCUDASlaveMsg {
 public:
@@ -1093,6 +1263,75 @@ void ComputeMgr::sendNonbondedCUDASlaveEnqueue(ComputeNonbondedCUDA *c, int pe, 
   SET_PRIORITY(msg,seq,prio);
   CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
   wdProxy[pe].enqueueCUDA(msg);
+}
+
+class NonbondedMICSlaveMsg : public CMessage_NonbondedMICSlaveMsg {
+public:
+  int index;
+  ComputeNonbondedMIC *master;
+};
+
+void ComputeMgr::sendCreateNonbondedMICSlave(int pe, int index) {
+  NonbondedMICSlaveMsg *msg = new NonbondedMICSlaveMsg;
+  msg->master = computeNonbondedMICObject;
+  msg->index = index;
+  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+  cm[pe].recvCreateNonbondedMICSlave(msg);
+}
+
+void ComputeMgr::recvCreateNonbondedMICSlave(NonbondedMICSlaveMsg *msg) {
+#ifdef NAMD_MIC
+  ComputeNonbondedMIC *c = new ComputeNonbondedMIC(msg->master->cid,this,msg->master,msg->index);
+#endif
+}
+
+void ComputeMgr::sendNonbondedMICSlaveReady(int pe, int np, int ac, int seq) {
+  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+  cm[pe].recvNonbondedMICSlaveReady(np,ac,seq);
+}
+
+void ComputeMgr::recvNonbondedMICSlaveReady(int np, int ac, int seq) {
+  for ( int i=0; i<np; ++i ) {
+    computeNonbondedMICObject->patchReady(-1,ac,seq);
+  }
+}
+
+void ComputeMgr::sendNonbondedMICSlaveEnqueue(ComputeNonbondedMIC *c, int pe, int seq, int prio, int ws) {
+  if ( ws == 2 && c->localHostedPatches.size() == 0 ) return;
+  LocalWorkMsg *msg = ( ws == 1 ? c->localWorkMsg : c->localWorkMsg2 );
+  msg->compute = c;
+  int type = c->type();
+  int cid = c->cid;
+  SET_PRIORITY(msg,seq,prio);
+  CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
+  wdProxy[pe].enqueueMIC(msg);
+}
+
+void ComputeMgr::sendMICPEData(int pe, int data) {
+  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+  cm.recvMICPEData(pe, data);
+}
+
+void ComputeMgr::recvMICPEData(int pe, int data) {
+  if (pe < 0 || pe >= CkNumPes() || micPEData == NULL) { return; }
+  int majorIndex = pe / (sizeof(int)*8);
+  int minorIndex = pe % (sizeof(int)*8);
+  if (data != 0) {
+    micPEData[majorIndex] |= (0x01 << minorIndex);
+  } else {
+    micPEData[majorIndex] &= ((~0x01) << minorIndex);
+  }
+}
+
+int isMICProcessor(int pe) {
+  return CProxy_ComputeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computeMgr)->isMICProcessor(pe);
+}
+
+int ComputeMgr::isMICProcessor(int pe) {
+  if (pe < 0 || pe >= CkNumPes() || micPEData == NULL) { return 0; }
+  int majorIndex = pe / (sizeof(int)*8);
+  int minorIndex = pe % (sizeof(int)*8);
+  return ((micPEData[majorIndex] >> minorIndex) & 0x01);
 }
 
 #include "ComputeMgr.def.h"
