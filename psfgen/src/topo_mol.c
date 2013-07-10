@@ -1322,7 +1322,7 @@ static int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *segp) {
 }
 
 static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
-  int ires, nres, iseg, nseg, found, atomid;
+  int ires, nres, iseg, nseg, found, atomid, count1, count2;
   topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
   topo_mol_angle_t *g1, *g2;
@@ -1348,12 +1348,13 @@ static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
     }
   }
 
+  /*  number atoms, needed to avoid duplicate dihedrals below  */
+  /*  assumes no inter-segment bonds if segp is non-null  */
+  atomid = 0;
   for ( iseg=0; iseg<nseg; ++iseg ) {
   seg = segp ? segp : mol->segment_array[iseg];
   if ( ! seg ) continue;
 
-  /*  number atoms, needed to avoid duplicate dihedrals below  */
-  atomid = 0;
   nres = hasharray_count(seg->residue_hash);
   for ( ires=0; ires<nres; ++ires ) {
     res = &(seg->residue_array[ires]);
@@ -1362,6 +1363,8 @@ static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
     }
   }
   }
+
+  count1 = count2 = 0;
 
   for ( iseg=0; iseg<nseg; ++iseg ) {
   seg = segp ? segp : mol->segment_array[iseg];
@@ -1385,12 +1388,14 @@ static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
               a3 = g1->atom[0];  /* == g2->atom[1] */
               a4 = g2->atom[2];
               found = ( a1->atomid < a4->atomid );
+              ++count2;
             } else if ( g2->atom[1] == g1->atom[2] ) {  /*  ABC BCD  */
               a1 = g1->atom[0];
               a2 = g1->atom[1];  /* == g2->atom[0] */
               a3 = g1->atom[2];  /* == g2->atom[1] */
               a4 = g2->atom[2];
               found = ( a1->atomid < a4->atomid );
+              ++count2;
             }
           } else if ( g2->atom[2] == atom ) {  /*  XBX XXB  */
             if ( g2->atom[1] == g1->atom[0] ) {  /*  CBA DCB  */
@@ -1399,15 +1404,18 @@ static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
               a3 = g1->atom[0];  /* == g2->atom[1] */
               a4 = g2->atom[0];
               found = ( a1->atomid < a4->atomid );
+              ++count2;
             } else if ( g2->atom[1] == g1->atom[2] ) {  /*  ABC DCB  */
               a1 = g1->atom[0];
               a2 = g1->atom[1];  /* == g2->atom[2] */
               a3 = g1->atom[2];  /* == g2->atom[1] */
               a4 = g2->atom[0];
               found = ( a1->atomid < a4->atomid );
+              ++count2;
             }
           } else return -6;
           if ( ! found ) continue;
+          ++count1;
           tuple = memarena_alloc(mol->arena,sizeof(topo_mol_dihedral_t));
           if ( ! tuple ) return -10;
           tuple->next[0] = a1->dihedrals;
@@ -1428,6 +1436,8 @@ static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
     }
   }
   }
+
+  if ( count2 != 2 * count1 ) return -15;  /* missing dihedrals */
 
   return 0;
 }
