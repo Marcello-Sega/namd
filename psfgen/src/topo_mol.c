@@ -1388,14 +1388,14 @@ static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
               a3 = g1->atom[0];  /* == g2->atom[1] */
               a4 = g2->atom[2];
               found = ( a1->atomid < a4->atomid );
-              ++count2;
+              if ( a1 != a4 ) ++count2;
             } else if ( g2->atom[1] == g1->atom[2] ) {  /*  ABC BCD  */
               a1 = g1->atom[0];
               a2 = g1->atom[1];  /* == g2->atom[0] */
               a3 = g1->atom[2];  /* == g2->atom[1] */
               a4 = g2->atom[2];
               found = ( a1->atomid < a4->atomid );
-              ++count2;
+              if ( a1 != a4 ) ++count2;
             }
           } else if ( g2->atom[2] == atom ) {  /*  XBX XXB  */
             if ( g2->atom[1] == g1->atom[0] ) {  /*  CBA DCB  */
@@ -1404,14 +1404,14 @@ static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
               a3 = g1->atom[0];  /* == g2->atom[1] */
               a4 = g2->atom[0];
               found = ( a1->atomid < a4->atomid );
-              ++count2;
+              if ( a1 != a4 ) ++count2;
             } else if ( g2->atom[1] == g1->atom[2] ) {  /*  ABC DCB  */
               a1 = g1->atom[0];
               a2 = g1->atom[1];  /* == g2->atom[2] */
               a3 = g1->atom[2];  /* == g2->atom[1] */
               a4 = g2->atom[0];
               found = ( a1->atomid < a4->atomid );
-              ++count2;
+              if ( a1 != a4 ) ++count2;
             }
           } else return -6;
           if ( ! found ) continue;
