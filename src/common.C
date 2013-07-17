@@ -63,10 +63,13 @@ char *NAMD_stringdup(const char *s) {
 void NAMD_quit(const char *err_msg)
 
 {
-   char *new_err_msg = new char[strlen(err_msg) + 20];
+   char *new_err_msg = new char[strlen(err_msg) + 40];
    sprintf(new_err_msg,"EXITING: %s\n",err_msg);
    CkPrintf(new_err_msg);
    fflush(stdout);
+   if ( CmiNumPartitions() > 1 ) {
+     sprintf(new_err_msg,"REPLICA %d EXITING: %s\n", CmiMyPartition(), err_msg);
+   }
    CmiAbort(new_err_msg);
    delete [] new_err_msg;
 }
@@ -76,10 +79,13 @@ void NAMD_quit(const char *err_msg)
 void NAMD_die(const char *err_msg)
 
 {
-   char *new_err_msg = new char[strlen(err_msg) + 20];
+   char *new_err_msg = new char[strlen(err_msg) + 40];
    sprintf(new_err_msg,"FATAL ERROR: %s\n",err_msg);
    CkPrintf(new_err_msg);
    fflush(stdout);
+   if ( CmiNumPartitions() > 1 ) {
+     sprintf(new_err_msg,"REPLICA %d FATAL ERROR: %s\n", CmiMyPartition(), err_msg);
+   }
    CmiAbort(new_err_msg);
    delete [] new_err_msg;
 }
@@ -91,10 +97,13 @@ void NAMD_err(const char *err_msg)
 {
    char *sys_err_msg = strerror(errno);
    if ( ! sys_err_msg ) sys_err_msg = "(unknown error)";
-   char *new_err_msg = new char[strlen(err_msg) + 20 + strlen(sys_err_msg)];
+   char *new_err_msg = new char[strlen(err_msg) + 40 + strlen(sys_err_msg)];
    sprintf(new_err_msg,"FATAL ERROR: %s: %s\n",err_msg, sys_err_msg);
    CkPrintf(new_err_msg);
    fflush(stdout);
+   if ( CmiNumPartitions() > 1 ) {
+     sprintf(new_err_msg,"REPLICA %d FATAL ERROR: %s: %s\n", CmiMyPartition(), err_msg, sys_err_msg);
+   }
    CmiAbort(new_err_msg);
    delete [] new_err_msg;
 }
@@ -106,10 +115,13 @@ void NAMD_bug(const char *err_msg)
 {
    const char *bug_msg = 
      "FATAL ERROR: See http://www.ks.uiuc.edu/Research/namd/bugreport.html";
-   char *new_err_msg = new char[strlen(err_msg) + 20 + strlen(bug_msg)];
+   char *new_err_msg = new char[strlen(err_msg) + 40 + strlen(bug_msg)];
    sprintf(new_err_msg,"FATAL ERROR: %s\n%s\n",err_msg,bug_msg);
    CkPrintf(new_err_msg);
    fflush(stdout);
+   if ( CmiNumPartitions() > 1 ) {
+     sprintf(new_err_msg,"REPLICA %d FATAL ERROR: %s\n%s\n", CmiMyPartition(), err_msg,bug_msg);
+   }
    CmiAbort(new_err_msg);
    delete [] new_err_msg;
 }
