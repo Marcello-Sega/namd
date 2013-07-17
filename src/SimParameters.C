@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/07/10 17:20:47 $
- * $Revision: 1.1418 $
+ * $Date: 2013/07/17 22:09:57 $
+ * $Revision: 1.1419 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -5179,6 +5179,7 @@ if ( openatomOn )
        fftwf_free(grid1);
        fftwf_free(grid2);
 
+      if ( CmiNumPartitions() == 1 ) {
        iout << iINFO << "Writing FFTW data to "
 		<< FFTWWisdomFile << "\n" << endi;
        wisdom_file = fopen(FFTWWisdomFile,"w");
@@ -5190,6 +5191,7 @@ if ( openatomOn )
 #endif
 	 fclose(wisdom_file);
        }
+      }
 
 #ifdef NAMD_FFTW_3 
        FFTWWisdomString = fftwf_export_wisdom_to_string();
