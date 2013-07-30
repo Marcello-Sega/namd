@@ -308,7 +308,13 @@ template <class Elem> class UniqueSetRaw {
              if ( ( rval = 30011 ) <= size )
               if ( ( rval = 100003 ) <= size )
                if ( ( rval = 300007 ) <= size )
-                rval = 1000003;
+                if ( ( rval = 1000003 ) <= size )
+                 if ( ( rval = 3000017 ) <= size )
+                  if ( ( rval = 10000019 ) <= size )
+                   if ( ( rval = 30000023 ) <= size )
+                    if ( ( rval = 100000007 ) <= size )
+                     if ( ( rval = 300000007 ) <= size )
+                      rval = 1000000007;
       return rval;
     }
 
