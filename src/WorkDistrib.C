@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/07/10 17:20:47 $
- * $Revision: 1.1265 $
+ * $Date: 2013/08/16 21:48:53 $
+ * $Revision: 1.1266 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -20,6 +20,7 @@
 #include <stdio.h>
 
 #include "InfoStream.h"
+#include "Communicate.h"
 #include "ProcessorPrivate.h"
 #include "BOCgroup.h"
 #include "WorkDistrib.decl.h"
@@ -283,20 +284,7 @@ void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
   saveComputeMapReturnEP = ep;
   saveComputeMapReturnChareID = chareID;
 
-  ComputeMap *computeMap = ComputeMap::Object();
-
-  int i;
-  int nc = computeMap->numComputes();
-  
-  ComputeMapChangeMsg *mapMsg = new (nc, nc, 0) ComputeMapChangeMsg ;
-
-  mapMsg->numNewNodes = nc;
-  for(i=0; i<nc; i++)
-    mapMsg->newNodes[i] = computeMap->newNode(i);
-  mapMsg->numNewNumPartitions = nc;
-  for(i=0; i<nc; i++)
-    mapMsg->newNumPartitions[i] = computeMap->newNumPartitions(i);
-
+  ComputeMapChangeMsg *mapMsg = new (0, 0, 0) ComputeMapChangeMsg;
   CProxy_WorkDistrib(thisgroup).recvComputeMapChanges(mapMsg);
 
 /*
@@ -310,22 +298,53 @@ void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
 }
 
 void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
-  
-  if ( ! CkMyRank() ) {
-    ComputeMap *computeMap = ComputeMap::Object();
-    int nc = computeMap->numComputes();
-    if ( nc != msg->numNewNodes ) NAMD_bug("recvComputeMapChanges 1");
-    int i;
-    for(i=0; i<nc; i++)
-      computeMap->setNewNode(i,msg->newNodes[i]);
-    if ( msg->numNewNumPartitions ) {
-      if ( nc != msg->numNewNumPartitions ) NAMD_bug("recvComputeMapChanges 2");
-      for(i=0; i<nc; i++)
-        computeMap->setNewNumPartitions(i,msg->newNumPartitions[i]);
-    }
-  }
 
   delete msg;
+
+  ComputeMap *computeMap = ComputeMap::Object();
+
+  int i;
+  int nc = computeMap->numComputes();
+  
+  if ( ! CkMyPe() ) { // send
+    // CkPrintf("At %f on %d WorkDistrib::recvComputeMapChanges %d\n", CmiWallTimer(), CkMyPe(), nc);
+    MOStream *msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, COMPUTEMAPTAG, BUFSIZE);
+    msg->put(nc);
+    for (i=0; i<nc; i++) {
+      int data = computeMap->newNode(i);
+      msg->put(data);
+    }
+    msg->put(nc);
+    for (i=0; i<nc; i++) {
+      char data = computeMap->newNumPartitions(i);
+      msg->put(data);
+    }
+    msg->put(nc);
+    msg->end();
+    delete msg;
+    // CkPrintf("At %f on %d done WorkDistrib::recvComputeMapChanges %d\n", CmiWallTimer(), CkMyPe(), nc);
+  } else if ( ! CkMyRank() ) { // receive
+    // if ( CkMyNode() == 1 ) CkPrintf("At %f on %d WorkDistrib::recvComputeMapChanges %d\n", CmiWallTimer(), CkMyPe(), nc);
+    MIStream *msg = CkpvAccess(comm)->newInputStream(0, COMPUTEMAPTAG);
+    msg->get(i);
+    if ( i != nc ) NAMD_bug("WorkDistrib::recvComputeMapChanges check 1 failed\n");
+    for (i=0; i<nc; i++) {
+      int data;
+      msg->get(data);
+      computeMap->setNewNode(i,data);
+    }
+    msg->get(i);
+    if ( i != nc ) NAMD_bug("WorkDistrib::recvComputeMapChanges check 2 failed\n");
+    for (i=0; i<nc; i++) {
+      char data;
+      msg->get(data);
+      computeMap->setNewNumPartitions(i,data);
+    }
+    msg->get(i);
+    if ( i != nc ) NAMD_bug("WorkDistrib::recvComputeMapChanges check 3 failed\n");
+    delete msg;
+    // if ( CkMyNode() == 1 ) CkPrintf("At %f on %d done WorkDistrib::recvComputeMapChanges %d\n", CmiWallTimer(), CkMyPe(), nc);
+  }
 
   CkCallback cb(CkIndex_WorkDistrib::doneSaveComputeMap(NULL), 0, thisgroup);
   contribute(0, NULL, CkReduction::random, cb);
