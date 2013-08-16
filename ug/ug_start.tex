@@ -97,7 +97,7 @@ is parsed by Tcl in a fully backwards compatible manner with the
 added bonus that any Tcl command may also be used.  This alone allows:
 \begin{itemize}
  \item the ``\icommand{source}'' command to include other files (works w/o Tcl too!),
- \item the ``\icommand{print}'' command to display messages (``puts'' is broken, sorry),
+ \item the ``\icommand{print}'' command to display messages (``puts'' to stdout fails on some platforms),
  \item environment variables through the env array (``\$env(USER)''), and
  \item user-defined variables (``set base sim23'', ``dcdfile \${base}.dcd'').
 \end{itemize}
