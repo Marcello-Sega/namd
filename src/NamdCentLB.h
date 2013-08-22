@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.h,v $
  * $Author: jim $
- * $Date: 2013/06/07 22:34:37 $
- * $Revision: 1.18 $
+ * $Date: 2013/08/22 15:17:18 $
+ * $Revision: 1.19 $
  *****************************************************************************/
 
 /** \file NamdCentLB.h
@@ -54,11 +54,7 @@ class NamdCentLB : public CentralLB {
 public:
   NamdCentLB();
   NamdCentLB(CkMigrateMessage *);
-#if CHARM_VERSION > 60301
   CLBMigrateMsg* Strategy(LDStats* stats);
-#else
-  CLBMigrateMsg* Strategy(LDStats* stats, int n_pes);
-#endif
 
 private:
   bool QueryBalanceNow(int step);

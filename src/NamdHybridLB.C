@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2013/06/07 22:34:37 $
- * $Revision: 1.36 $
+ * $Date: 2013/08/22 15:17:19 $
+ * $Revision: 1.37 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -57,12 +57,8 @@ NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
     tree = new TwoLevelTree;   // similar to centralized load balancing
   }
   else {
-#if CHARM_VERSION > 60304
     tree = new ThreeLevelTree(simParams->hybridGroupSize);
     initTree();
-#else
-    tree = new ThreeLevelTree();
-#endif
     // can only do shrink strategy on levels > 1
     statsStrategy = SHRINK_NULL;
   }
@@ -126,11 +122,7 @@ LBVectorMigrateMsg* NamdHybridLB::VectorStrategy(LDStats* stats){
 /*
  * Runs the load balancing strategy
  */
-#if CHARM_VERSION > 60301
 CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats)
-#else
-CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes)
-#endif
 {
 	int i;
   	// CkPrintf("[%d] NamdHybridLB at Strategy\n",CkMyPe());
@@ -140,11 +132,7 @@ CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes)
 		LevelData *lData = levelData[currentLevel];
 		CLBMigrateMsg *msg;
 		LocalLBInfoMsg *newMsg;
-	     #if CHARM_VERSION > 60301
 		msg = GrpLevelStrategy(stats);
-	     #else
-		msg = GrpLevelStrategy(stats, n_pes);
-	     #endif
 
 		// creating a new message to send to its parent
 		newMsg = new(msg->n_moves,endPE-startPE+1) LocalLBInfoMsg;
@@ -161,13 +149,8 @@ CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes)
 		thisProxy[0].UpdateLocalLBInfo(newMsg);
 		return msg;
 	}else{
-	     #if CHARM_VERSION > 60301
 		dummyLB->work(stats);
 		return createMigrateMsg(stats);
-	     #else
-		dummyLB->work(stats, n_pes);
-		return createMigrateMsg(stats, n_pes);
-	     #endif
 	}
 }
 
@@ -220,13 +203,8 @@ void NamdHybridLB::UpdateLocalLBInfo(LocalLBInfoMsg *msg){
  * This function implements a strategy similar to the one used in the 
  * centralized case in NamdCentLB.
  */
-#if CHARM_VERSION > 60301
 CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
   int numProcessors = stats->nprocs();	// number of processors at group level
-#else
-CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int n_pes) {
-  int numProcessors = stats->count;	// number of processors at group level
-#endif
   int numPatches = PatchMap::Object()->numPatches();
   ComputeMap *computeMap = ComputeMap::Object();
   const int numComputes = computeMap->numComputes();
@@ -268,11 +246,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int n_pes) {
    }
    double avgCompute = total / nMoveableComputes;
 
-#if CHARM_VERSION > 60301
     int P = stats->nprocs();
-#else
-    int P = stats->count;
-#endif
    int numPesAvailable = 0;
    for (i=0; i<P; i++) {
       if (processorArray[i].available) {
@@ -400,11 +374,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int n_pes) {
   // CkPrintf("LOAD BALANCING READY %d\n",CkMyPe()); 
 
   LBMigrateMsg* msg;
-#if CHARM_VERSION > 60300
   msg = createMigrateMsg(migrateInfo, numProcessors);
-#else
-  CmiAbort("NamdHybridLB is not supported, please install a newer version of charm.");
-#endif
 
   peLoads = new double [numProcessors]; 
   startPE = processorArray[0].Id;
@@ -498,11 +468,7 @@ void NamdHybridLB::dumpDataASCII(char *file, int numProcessors,
  * @brief Builds the data structures required for the load balancing strategies in NAMD.
  */ 
 int NamdHybridLB::buildData(LDStats* stats) {
-#if CHARM_VERSION > 60301
   int n_pes = stats->nprocs();
-#else
-  int n_pes = stats->count;
-#endif
 
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
@@ -794,26 +760,6 @@ void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
 CmiAssert(0);
 
    // sort into mactched and unmatched list
-#if CHARM_VERSION < 60200
-   CkVec<Location> &unmatchedObjs = lData->unmatchedObjs;
-   for (int i=0; i<n; i++) {
-     // search and see if we have answer, put to matched
-     // store in unknown
-     int found = 0;
-     for (int obj=0; obj<unmatchedObjs.size(); obj++) {
-       if (loc[i].key == unmatchedObjs[obj].key) {
-         // answer must exist
-         CmiAssert(unmatchedObjs[obj].loc != -1 || loc[i].loc != -1);
-         if (unmatchedObjs[obj].loc == -1) unmatchedObjs[obj].loc = loc[i].loc;
-         matchedObjs.push_back(unmatchedObjs[obj]);
-         unmatchedObjs.remove(obj);
-         found = 1;
-         break;
-       }
-     }
-     if (!found) unmatchedObjs.push_back(loc[i]);
-   }
-#else
    std::map<LDObjKey, int> &unmatchedObjs = lData->unmatchedObjs;
    for (int i=0; i<n; i++) {
      std::map<LDObjKey, int>::iterator iter = unmatchedObjs.find(loc[i].key);
@@ -826,7 +772,6 @@ CmiAssert(0);
      else
        unmatchedObjs[loc[i].key] = loc[i].loc;
    }
-#endif
 
 //  DEBUGF(("[%d] level %d has %d unmatched and %d matched. \n", CkMyPe(), atlevel, unmatchedObjs.size(), matchedObjs.size()));
 
@@ -838,14 +783,10 @@ CmiAssert(0);
      if (lData->parent != -1) {
 
 		// NAMD specific
-#if CHARM_VERSION < 60200
-#define unmatchedbuf unmatchedObjs
-#else
 		CkVec<Location> unmatchedbuf;
    		for(std::map<LDObjKey, int>::const_iterator it = unmatchedObjs.begin(); it != unmatchedObjs.end(); ++it){
     		unmatchedbuf.push_back(Location(it->first, it->second));
    		}
-#endif
 		// checking if update of ComputeMap is ready before calling parent
 		if(CkMyPe() == 0){
 			if(updateFlag){

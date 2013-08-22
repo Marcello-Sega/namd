@@ -170,7 +170,7 @@ unsigned long memusage(const char **source) {
   if( ! memtotal) { memtotal = memusage_bgp(); s="mallinfo on BG/P"; }
 #endif
 
-#if defined(WIN32) && !defined(__CYGWIN__) && CHARM_VERSION > 60102
+#if defined(WIN32) && !defined(__CYGWIN__)
   if ( ! memtotal ) {
     memtotal = CmiMemoryUsage();  s = "GetProcessMemoryInfo";
   }

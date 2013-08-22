@@ -251,9 +251,7 @@ void OptPmeMgr::initialize(CkQdMsg *msg) {
 
     _iter = 0;
 
-#if CHARM_VERSION > 60000
     handle = CmiDirect_manytomany_allocate_handle ();
-#endif
 
     SimParameters *simParams = Node::Object()->simParameters;
     PatchMap *patchMap = PatchMap::Object();
@@ -286,14 +284,12 @@ void OptPmeMgr::initialize(CkQdMsg *msg) {
       useManyToMany = false;
     }
     
-#if CHARM_VERSION > 60000
     if (useManyToMany)  {
       if (CkMyPe() == 0)
 	printf ("Enabling the Many-to-many optimization\n");
       //defaults to max integer
       many_to_many_start = MANY_TO_MANY_START;
     }
-#endif
 
     if (CkMyRank() == 0) { //create the pencil pme processor map
       pencilPMEProcessors = new char [CkNumPes()];
@@ -795,7 +791,6 @@ void OptPmeCompute::initializeOptPmeCompute () {
   //We dont need the sparse array anymore
   delete [] pencilActive;
   
-#if CHARM_VERSION > 60000
   /******************************* Initialize Many to Many ***********************************/
   OptPmeDummyMsg *m = new (PRIORITY_SIZE) OptPmeDummyMsg;
   m->to_pe = CkMyPe();
@@ -828,7 +823,6 @@ void OptPmeCompute::initializeOptPmeCompute () {
 					  srcnode, offset, fcount*sizeof(float), pe);
   }
   /********************************** End initialize many to many ****************************/
-#endif
 
 }
 
@@ -955,12 +949,10 @@ void OptPmeCompute::doWorkOnPeer()
   
   if (myMgr->_iter <= many_to_many_start)
     sendPencils();
-#if CHARM_VERSION > 60000
   else {
     pme_d2f (sp_zstorage, zline_storage, nzlines * zlen);
     CmiDirect_manytomany_start (myMgr->handle, PHASE_GR);
   }
-#endif
 }
 
 

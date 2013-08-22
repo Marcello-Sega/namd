@@ -1109,11 +1109,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
         CkArrayOptions zo(xBlocks,yBlocks,1);  zo.setMap(zm);
         CkArrayOptions yo(xBlocks,1,zBlocks);  yo.setMap(ym);
         CkArrayOptions xo(1,yBlocks,zBlocks);  xo.setMap(xm);
-#if CHARM_VERSION > 60301
         zo.setAnytimeMigration(false);  zo.setStaticInsertion(true);
         yo.setAnytimeMigration(false);  yo.setStaticInsertion(true);
         xo.setAnytimeMigration(false);  xo.setStaticInsertion(true);
-#endif
         zPencil = CProxy_PmeZPencil::ckNew(zo);  // (xBlocks,yBlocks,1);
         yPencil = CProxy_PmeYPencil::ckNew(yo);  // (xBlocks,1,zBlocks);
         xPencil = CProxy_PmeXPencil::ckNew(xo);  // (1,yBlocks,zBlocks);

@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2013/07/10 17:20:45 $
- * $Revision: 1.121 $
+ * $Date: 2013/08/22 15:17:18 $
+ * $Revision: 1.122 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -84,21 +84,12 @@ bool NamdCentLB::QueryDumpData()
   return false;
 }
 
-#if CHARM_VERSION > 60301
 CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats)
-#else
-// ignore n_pes in the function below
-CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
-#endif
 {
   //  CkPrintf("LDB: All statistics received at %f, %f\n",
   //  CmiTimer(),CmiWallTimer());
 
-#if CHARM_VERSION > 60301
   int numProcessors = stats->nprocs();
-#else
-  int numProcessors = stats->count;
-#endif
   int numPatches = PatchMap::Object()->numPatches();
   ComputeMap *computeMap = ComputeMap::Object();
   const int numComputes = computeMap->numComputes();
@@ -137,11 +128,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
    }
    avgCompute = total / nMoveableComputes;
 
-#if CHARM_VERSION > 60301
     int P = stats->nprocs();
-#else
-    int P = stats->count;
-#endif
    int numPesAvailable = 0;
    for (i=0; i<P; i++) {
       if (processorArray[i].available) {
@@ -476,11 +463,7 @@ extern int isMICProcessor(int);
 
 int NamdCentLB::buildData(LDStats* stats)
 {
-#if CHARM_VERSION > 60301
   int n_pes = stats->nprocs();
-#else
-  int n_pes = stats->count;
-#endif
 
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();

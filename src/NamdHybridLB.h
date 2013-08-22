@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
  * $Author: jim $
- * $Date: 2013/06/07 22:34:37 $
- * $Revision: 1.12 $
+ * $Date: 2013/08/22 15:17:19 $
+ * $Revision: 1.13 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -40,7 +40,6 @@ public:
 	LocalLBInfoMsg(): n_moves(0), startPE(0), endPE(0){}
 
 	// Pup method
-#if CHARM_VERSION > 60301
 	void pup(PUP::er &p) {
 		int i;
 		p | n_moves;
@@ -49,7 +48,6 @@ public:
 		for (i=0; i<n_moves; ++i) p | moves[i];
 		for (i=0; i<endPE-startPE+1; ++i) p | cpuloads[i];
 	}
-#endif
 
 };
 
@@ -84,13 +82,8 @@ private:
   bool QueryDumpData();
   // LBVectorMigrateMsg* VectorStrategy(LDStats* stats);
 
-#if CHARM_VERSION > 60301
   CLBMigrateMsg* Strategy(LDStats* stats);
   LBMigrateMsg* GrpLevelStrategy(LDStats* stats);
-#else
-  CLBMigrateMsg* Strategy(LDStats* stats, int n_pes);
-  LBMigrateMsg* GrpLevelStrategy(LDStats* stats, int n_pes);
-#endif
   
   int buildData(LDStats* stats);
   int requiredProxies(PatchID id, int neighborNodes[]);

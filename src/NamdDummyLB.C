@@ -40,10 +40,6 @@ bool NamdDummyLB::QueryDumpData() {
 
 // Dummy work function
 
-#if CHARM_VERSION > 60301
 void NamdDummyLB::work(LDStats* stats) {
-#else
-void NamdDummyLB::work(LDStats* stats, int n_pes) {
-#endif
   // CkPrintf("[%d] NamdDummyLB At WORK\n",CkMyPe());
 }

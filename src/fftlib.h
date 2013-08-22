@@ -2,9 +2,7 @@
 #ifndef   __FFT_LIB_H__
 #define   __FFT_LIB_H__
 
-#if CHARM_VERSION > 60000
 #include <cmidirectmanytomany.h>
-#endif
 
 #define  MANY_TO_MANY_START  10
 #define  MANY_TO_MANY_SETUP  2

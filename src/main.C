@@ -166,8 +166,8 @@ public:
     char charm_version[64];
     sprintf(charm_version,"%d",CHARM_VERSION);
 
-#if CHARM_VERSION < 60000
-#error "We do not support Charm 5 any more"
+#if CHARM_VERSION < 60500
+#error "Charm++ 6.5.1 or later is required to build NAMD"
 #endif
 
     iout << iINFO << "Based on Charm++/Converse " << charm_version
@@ -188,9 +188,7 @@ public:
     iout << iINFO << "Running on " << CkNumPes() << " processors, "
          << CmiNumNodes() << " nodes, "
          << CmiNumPhysicalNodes() << " physical nodes.\n" << endi;
-#if CHARM_VERSION > 60102
     iout << iINFO << "CPU topology information " << (CmiCpuTopologyEnabled()?"available":"unavailable") << ".\n" << endi;
-#endif
     iout << iINFO << "Charm++/Converse parallel runtime startup completed at "
 	 << CmiWallTimer() << " s\n"<< endi;
     const char* memsource;
