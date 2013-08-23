@@ -9165,8 +9165,11 @@ void Molecule::build_atom_status(void) {
     for (i=0; i < numAngles; i++) {
       a2 = angles[i].atom2;
       if ( ! is_water(a2) ) continue;
+      if ( ! is_oxygen(a2) ) continue;
       a1 = angles[i].atom1;
+      if ( ! is_hydrogen(a1) ) continue;
       a3 = angles[i].atom3;
+      if ( ! is_hydrogen(a3) ) continue;
       if (is_lp(a2) || is_lp(a1) || is_lp(a3) ||
           is_drude(a2) || is_drude(a1) || is_drude(a3)) continue;
       if ( rigidBondLengths[a1] != rigidBondLengths[a3] ) {
@@ -9221,6 +9224,9 @@ void Molecule::build_atom_status(void) {
              h_i[1].isGP || h_i[2].isGP || h_i->atomsInGroup != 3 ) {
           NAMD_die("Abnormal water detected.");
         }
+        if ( CkNumNodes() > 1 ) {
+          NAMD_die("Unable to determine H-H distance for rigid water because structure has neither H-O-H angle nor H-H bond.");
+        }
         Bond btmp;
         btmp.atom1 = h_i[1].atomID;
         char atom1name[11];
@@ -9247,6 +9253,7 @@ void Molecule::build_atom_status(void) {
     if ( numBondWaters ) {
       iout << iWARN << "Obtained H-H distance from bond parameters for " <<
 	      numBondWaters << " waters.\n" << endi;
+      iout << iWARN << "This would not be possible in a multi-process run.\n" << endi;
     }
     if ( numFailedWaters ) {
       iout << iERROR << "Failed to obtain H-H distance from angles or bonds for " <<
