@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
  * $Author: jim $
- * $Date: 2013/08/22 15:17:19 $
- * $Revision: 1.13 $
+ * $Date: 2013/08/28 17:23:34 $
+ * $Revision: 1.14 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -51,6 +51,13 @@ public:
 
 };
 
+class SplitComputesMsg : public CMessage_SplitComputesMsg {
+public:
+  int n;
+  int *cid;
+  char *nparts;
+};
+
 class NamdHybridLB : public HybridBaseLB {
 
 public:
@@ -58,6 +65,7 @@ public:
   NamdHybridLB(CkMigrateMessage *m):HybridBaseLB(m) {}
   void UpdateLocalLBInfo(LocalLBInfoMsg *msg);
   //void CollectInfo(Location *loc, int n, int fromlevel);
+  void splitComputes(SplitComputesMsg*);
 
 private:
   CProxy_NamdHybridLB thisProxy;

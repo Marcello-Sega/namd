@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2013/08/22 15:17:19 $
- * $Revision: 1.37 $
+ * $Date: 2013/08/28 17:23:34 $
+ * $Revision: 1.38 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -154,6 +154,19 @@ CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats)
 	}
 }
 
+void NamdHybridLB::splitComputes(SplitComputesMsg *msg) {
+  ComputeMap *computeMap = ComputeMap::Object();
+  int n = msg->n;
+  // CkPrintf("Pe %d NamdHybridLB::splitComputes %d\n", CkMyPe(), n);
+  for ( int i=0; i<n; ++i ) {
+    // CkPrintf("setNewNumPartitions %d %d\n",msg->cid[i],msg->nparts[i]);
+    if ( msg->nparts[i] ) {
+      computeMap->setNewNumPartitions(msg->cid[i],msg->nparts[i]);
+    }
+  }
+  delete msg;
+}
+
 
 /**
  * Updates the compute map with the migration information from its children.
@@ -234,6 +247,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
 #endif
 
   double averageLoad = 0.;
+  double avgCompute;
   {
    int i;
    double total = 0.;
@@ -244,7 +258,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
       total += load;
       if ( load > maxCompute ) { maxCompute = load;  maxi = i; }
    }
-   double avgCompute = total / nMoveableComputes;
+   avgCompute = total / nMoveableComputes;
 
     int P = stats->nprocs();
    int numPesAvailable = 0;
@@ -265,8 +279,54 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
             avgCompute, 100. * avgCompute / averageLoad, averageLoad);
   }
 
-  if (simParams->ldbStrategy == LDBSTRAT_DEFAULT) { // default
-    if (step() < 2)
+  if ( step() == 1 ) {
+    // compute splitting only
+    // partitions are stored as char but mostly limited by
+    // high load noise at low outer-loop iteration counts
+    int maxParts = 10;
+#ifdef NAMD_CUDA
+//split LCPO compute very small, else CUDA compute is delayed
+    if (simParams->LCPOOn) {
+      maxParts = 20;
+    }
+#endif
+    int totalAddedParts = 0;
+    double maxCompute = averageLoad / 10.;
+    if ( maxCompute < 2. * avgCompute ) maxCompute = 2. * avgCompute;
+    if ( simParams->ldbRelativeGrainsize > 0. ) {
+      maxCompute = averageLoad * simParams->ldbRelativeGrainsize;
+    }
+    CkPrintf("LDB: Partitioning computes with target load %f\n", maxCompute);
+    double maxUnsplit = 0.;
+    SplitComputesMsg *msg = new(nMoveableComputes,nMoveableComputes) SplitComputesMsg;
+    msg->n = nMoveableComputes;
+    for (int i=0; i<nMoveableComputes; i++) {
+      computeArray[i].processor = computeArray[i].oldProcessor;
+      const int cid = computeArray[i].handle.id.id[0];
+      msg->cid[i] = cid;
+      const double load = computeArray[i].load;
+      if ( computeMap->numPartitions(cid) == 0 ) {
+        if ( load > maxUnsplit ) maxUnsplit = load;
+        msg->nparts[i] = 0;
+        continue;
+      }
+      int nparts = (int) ceil(load / maxCompute);
+      if ( nparts > maxParts ) nparts = maxParts;
+      if ( nparts < 1 ) nparts = 1;
+      if ( 0 && nparts > 1 ) {
+        CkPrintf("LDB: Partitioning compute %d with load %f by %d\n",
+                  cid, load, nparts);
+      }
+      msg->nparts[i] = nparts;
+      // computeMap->setNewNumPartitions(cid,nparts);
+      totalAddedParts += nparts - 1;
+    }
+    thisProxy[0].splitComputes(msg);
+    CkPrintf("LDB: Increased migratable compute count from %d to %d\n",
+              nMoveableComputes,nMoveableComputes+totalAddedParts);
+    CkPrintf("LDB: Largest unpartitionable compute is %f\n", maxUnsplit);
+  } else if (simParams->ldbStrategy == LDBSTRAT_DEFAULT) { // default
+    if (step() < 4)
       TorusLB(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors);
     else
@@ -280,7 +340,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
                   nMoveableComputes, numPatches, numProcessors, 1);
   } else if (simParams->ldbStrategy == LDBSTRAT_OLD) {
     NAMD_die("Old load balancer strategy is not compatible with hybrid balancer.");
-    if (step() < 2)
+    if (step() < 4)
       Alg7(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors);
     else

@@ -13,10 +13,16 @@ message LocalLBInfoMsg{
 	double cpuloads[];
 };
 
+message SplitComputesMsg {
+	int cid[];
+	char nparts[];
+};
+
 group [migratable] NamdHybridLB : HybridBaseLB {
   entry void NamdHybridLB(void);
   entry void UpdateLocalLBInfo(LocalLBInfoMsg*);
 //  entry void CollectInfo(Location loc[n], int n, int fromlevel);	
+  entry void splitComputes(SplitComputesMsg*);
 };
 
 };

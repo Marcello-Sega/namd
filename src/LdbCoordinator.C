@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2013/07/10 17:20:45 $
- * $Revision: 1.119 $
+ * $Date: 2013/08/28 17:23:33 $
+ * $Revision: 1.120 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -316,7 +316,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
   // If this is the first time through, we need it register patches
   if (ldbCycleNum == reg_all_objs) {
-    if ( Node::Object()->simParameters->ldBalancer == LDBAL_CENTRALIZED ) {
+    if ( 1 ) { // ( Node::Object()->simParameters->ldBalancer == LDBAL_CENTRALIZED ) {
       reg_all_objs = 3;
     }
     // Tell the lbdb that I'm registering objects, until I'm done
@@ -436,7 +436,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   
   // iout << "LDB Cycle Num: " << ldbCycleNum << "\n";
 
- if ( simParams->ldBalancer == LDBAL_CENTRALIZED ) {
+ if ( 1 ) { // ( simParams->ldBalancer == LDBAL_CENTRALIZED ) {
   if (ldbCycleNum == 1 || ldbCycleNum == 3) {
     numStepsToRun = stepsPerCycle;
     totalStepsDone += numStepsToRun;

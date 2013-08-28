@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/08/16 21:48:53 $
- * $Revision: 1.1266 $
+ * $Date: 2013/08/28 17:23:34 $
+ * $Revision: 1.1267 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -2459,6 +2459,7 @@ void WorkDistrib::mapComputeNonbonded(void)
   {
 
    int numPartitions = 1;
+#if 0
    if ( simParams->ldBalancer == LDBAL_HYBRID ) {
 #ifdef  MEM_OPT_VERSION    
     int64 numFixed = patchMap->numFixedAtoms(i);
@@ -2480,6 +2481,7 @@ void WorkDistrib::mapComputeNonbonded(void)
     DebugM(4,"Mapping " << numPartitions << " ComputeNonbondedSelf objects for patch " << i << "\n");
 //    iout <<"Self numPartitions = " <<numPartitions <<" numAtoms " <<numAtoms <<std::endl;
    }
+#endif
 
     for(int partition=0; partition < numPartitions; partition++)
     {
@@ -2501,6 +2503,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 	int dsp = oneAwayDownstream[j];
 
       int numPartitions = 1;
+#if 0
       if ( simParams->ldBalancer == LDBAL_HYBRID ) {
 #ifdef  MEM_OPT_VERSION        
         int64 numAtoms1 = patchMap->numAtoms(p1);
@@ -2561,6 +2564,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 			numPartitions = node->simParameters->maxPairPart;
 //	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << "(" << numAtoms1 << ") and " << p2 << "(" << numAtoms2 << ")\n" << endi;
       }
+#endif
 		for(int partition=0; partition < numPartitions; partition++)
 		{
 		  cid=computeMap->storeCompute( patchMap->basenode(dsp),
