@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2013/08/28 17:23:34 $
- * $Revision: 1.38 $
+ * $Date: 2013/08/29 02:20:57 $
+ * $Revision: 1.39 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -12,11 +12,26 @@
 
 #include "InfoStream.h"
 #include "NamdHybridLB.h"
-#include "NamdHybridLB.def.h"
 #include "Node.h"
 #include "PatchMap.h"
 #include "ComputeMap.h"
 #include "LdbCoordinator.h"
+
+class SplitComputesMsg : public CMessage_SplitComputesMsg {
+public:
+  double maxUnsplit;
+  double averageLoad;
+  double avgCompute;
+  double maxCompute;
+  int maxComputeId;
+  int nMoveableComputes;
+  int numPesAvailable;
+  int n;
+  int *cid;
+  float *load;
+};
+
+#include "NamdHybridLB.def.h"
 
 // #define DUMP_LDBDATA 1
 // #define LOAD_LDBDATA 1
@@ -78,6 +93,8 @@ NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
   patchArray = NULL;
   processorArray = NULL;
   updateCount = 0;
+  splitCount = 0;
+  splitComputesMsgs = 0;
   updateFlag = false;
   collectFlag = false;
 
@@ -154,20 +171,6 @@ CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats)
 	}
 }
 
-void NamdHybridLB::splitComputes(SplitComputesMsg *msg) {
-  ComputeMap *computeMap = ComputeMap::Object();
-  int n = msg->n;
-  // CkPrintf("Pe %d NamdHybridLB::splitComputes %d\n", CkMyPe(), n);
-  for ( int i=0; i<n; ++i ) {
-    // CkPrintf("setNewNumPartitions %d %d\n",msg->cid[i],msg->nparts[i]);
-    if ( msg->nparts[i] ) {
-      computeMap->setNewNumPartitions(msg->cid[i],msg->nparts[i]);
-    }
-  }
-  delete msg;
-}
-
-
 /**
  * Updates the compute map with the migration information from its children.
  */
@@ -212,6 +215,91 @@ void NamdHybridLB::UpdateLocalLBInfo(LocalLBInfoMsg *msg){
         delete msg;
 }
 
+void NamdHybridLB::splitComputes(SplitComputesMsg *msg) {
+  const int children = tree->numNodes(1);
+
+  if ( ! splitComputesMsgs ) {
+    splitComputesMsgs = new SplitComputesMsg*[children];
+  }
+  
+  splitComputesMsgs[splitCount] = msg;
+
+  if ( ++splitCount == children ) {
+    splitCount = 0;
+
+    const SimParameters* simParams = Node::Object()->simParameters;
+    ComputeMap *computeMap = ComputeMap::Object();
+
+    double maxUnsplit = 0.;
+    double averageLoad = 0.;
+    double avgCompute = 0.;
+    double maxCompute = 0.;
+    int maxComputeId = -1;
+    int nMoveableComputes = 0;
+    int numPesAvailable = 0;
+    int nToSplit = 0;
+
+    for ( int j=0; j < children; ++j ) {
+      SplitComputesMsg *msg = splitComputesMsgs[j];
+      if ( msg->maxUnsplit > maxUnsplit ) { maxUnsplit = msg->maxUnsplit; }
+      if ( msg->maxCompute > maxCompute ) { maxCompute = msg->maxCompute; maxComputeId = msg->maxComputeId; }
+      averageLoad += msg->averageLoad * msg->numPesAvailable;
+      numPesAvailable += msg->numPesAvailable;
+      avgCompute += msg->avgCompute * msg->nMoveableComputes;
+      nMoveableComputes += msg->nMoveableComputes;
+      nToSplit += msg->n;
+    }
+    
+    averageLoad /= numPesAvailable;
+    avgCompute /= nMoveableComputes;
+
+    CkPrintf("LDB: Largest compute %d load %f is %.1f%% of average load %f\n",
+            maxComputeId, maxCompute, 100. * maxCompute / averageLoad, averageLoad);
+    CkPrintf("LDB: Average compute %f is %.1f%% of average load %f\n",
+            avgCompute, 100. * avgCompute / averageLoad, averageLoad);
+
+    if ( ! nToSplit ) {
+      for ( int j=0; j < children; ++j ) {
+        delete splitComputesMsgs[j];
+      }
+    } else {
+      // partitions are stored as char but mostly limited by
+      // high load noise at low outer-loop iteration counts
+      int maxParts = 10;
+#ifdef NAMD_CUDA
+//split LCPO compute very small, else CUDA compute is delayed
+      if (simParams->LCPOOn) {
+        maxParts = 20;
+      }
+#endif
+      int totalAddedParts = 0;
+      maxCompute = averageLoad / 10.;
+      if ( maxCompute < 2. * avgCompute ) maxCompute = 2. * avgCompute;
+      if ( simParams->ldbRelativeGrainsize > 0. ) {
+        maxCompute = averageLoad * simParams->ldbRelativeGrainsize;
+      }
+      CkPrintf("LDB: Partitioning computes with target load %f\n", maxCompute);
+
+      for ( int j=0; j < children; ++j ) {
+        SplitComputesMsg *msg = splitComputesMsgs[j];
+        for (int i=0; i < msg->n; ++i) {
+          int nparts = (int) ceil(msg->load[i] / maxCompute);
+          if ( nparts > maxParts ) nparts = maxParts;
+          if ( nparts < 1 ) nparts = 1;
+          computeMap->setNewNumPartitions(msg->cid[i],nparts);
+          totalAddedParts += nparts - 1;
+        }
+        delete msg;
+      }
+
+      CkPrintf("LDB: Increased migratable compute count from %d to %d\n",
+              nMoveableComputes,nMoveableComputes+totalAddedParts);
+      CkPrintf("LDB: Largest unpartitionable compute is %f\n", maxUnsplit);
+    }
+  }
+}
+
+
 /**
  * This function implements a strategy similar to the one used in the 
  * centralized case in NamdCentLB.
@@ -248,10 +336,13 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
 
   double averageLoad = 0.;
   double avgCompute;
+  double maxCompute;
+  int maxComputeId;
+  int numPesAvailable;
   {
    int i;
    double total = 0.;
-   double maxCompute = 0.;
+   maxCompute = 0.;
    int maxi = 0;
    for (i=0; i<nMoveableComputes; i++) {
       double load = computeArray[i].load;
@@ -259,9 +350,10 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
       if ( load > maxCompute ) { maxCompute = load;  maxi = i; }
    }
    avgCompute = total / nMoveableComputes;
+   maxComputeId = computeArray[maxi].handle.id.id[0];
 
     int P = stats->nprocs();
-   int numPesAvailable = 0;
+   numPesAvailable = 0;
    for (i=0; i<P; i++) {
       if (processorArray[i].available) {
         ++numPesAvailable;
@@ -272,59 +364,53 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
      NAMD_die("No processors available for load balancing!\n");
 
    averageLoad = total/numPesAvailable;
-   CkPrintf("LDB: Largest compute %d load %f is %.1f%% of average load %f\n",
-            computeArray[maxi].handle.id.id[0],
-            maxCompute, 100. * maxCompute / averageLoad, averageLoad);
-   CkPrintf("LDB: Average compute %f is %.1f%% of average load %f\n",
-            avgCompute, 100. * avgCompute / averageLoad, averageLoad);
+  }
+
+  int i_split = 0;
+  double maxUnsplit = 0.;
+
+  if ( step() == 1 ) {
+    for (int i=0; i<nMoveableComputes; i++) {
+      const int cid = computeArray[i].handle.id.id[0];
+      if ( computeMap->numPartitions(cid) == 0 ) {
+        const double load = computeArray[i].load;
+        if ( load > maxUnsplit ) maxUnsplit = load;
+        continue;
+      }
+      ++i_split;
+    }
+  }
+
+  {
+    SplitComputesMsg *msg = new(i_split,i_split) SplitComputesMsg;
+    msg->maxUnsplit = maxUnsplit;
+    msg->averageLoad = averageLoad;
+    msg->avgCompute = avgCompute;
+    msg->maxCompute = maxCompute;
+    msg->maxComputeId = maxComputeId;
+    msg->nMoveableComputes = nMoveableComputes;
+    msg->numPesAvailable = numPesAvailable;
+    msg->n = i_split;
+
+    if ( step() == 1 ) {
+      i_split = 0;
+      for (int i=0; i<nMoveableComputes; i++) {
+        computeArray[i].processor = computeArray[i].oldProcessor;
+        const int cid = computeArray[i].handle.id.id[0];
+        if ( computeMap->numPartitions(cid) == 0 ) {
+          continue;
+        }
+        msg->cid[i_split] = cid;
+        msg->load[i_split] = computeArray[i].load;
+        ++i_split;
+      }
+    }
+
+    thisProxy[0].splitComputes(msg);
   }
 
   if ( step() == 1 ) {
     // compute splitting only
-    // partitions are stored as char but mostly limited by
-    // high load noise at low outer-loop iteration counts
-    int maxParts = 10;
-#ifdef NAMD_CUDA
-//split LCPO compute very small, else CUDA compute is delayed
-    if (simParams->LCPOOn) {
-      maxParts = 20;
-    }
-#endif
-    int totalAddedParts = 0;
-    double maxCompute = averageLoad / 10.;
-    if ( maxCompute < 2. * avgCompute ) maxCompute = 2. * avgCompute;
-    if ( simParams->ldbRelativeGrainsize > 0. ) {
-      maxCompute = averageLoad * simParams->ldbRelativeGrainsize;
-    }
-    CkPrintf("LDB: Partitioning computes with target load %f\n", maxCompute);
-    double maxUnsplit = 0.;
-    SplitComputesMsg *msg = new(nMoveableComputes,nMoveableComputes) SplitComputesMsg;
-    msg->n = nMoveableComputes;
-    for (int i=0; i<nMoveableComputes; i++) {
-      computeArray[i].processor = computeArray[i].oldProcessor;
-      const int cid = computeArray[i].handle.id.id[0];
-      msg->cid[i] = cid;
-      const double load = computeArray[i].load;
-      if ( computeMap->numPartitions(cid) == 0 ) {
-        if ( load > maxUnsplit ) maxUnsplit = load;
-        msg->nparts[i] = 0;
-        continue;
-      }
-      int nparts = (int) ceil(load / maxCompute);
-      if ( nparts > maxParts ) nparts = maxParts;
-      if ( nparts < 1 ) nparts = 1;
-      if ( 0 && nparts > 1 ) {
-        CkPrintf("LDB: Partitioning compute %d with load %f by %d\n",
-                  cid, load, nparts);
-      }
-      msg->nparts[i] = nparts;
-      // computeMap->setNewNumPartitions(cid,nparts);
-      totalAddedParts += nparts - 1;
-    }
-    thisProxy[0].splitComputes(msg);
-    CkPrintf("LDB: Increased migratable compute count from %d to %d\n",
-              nMoveableComputes,nMoveableComputes+totalAddedParts);
-    CkPrintf("LDB: Largest unpartitionable compute is %f\n", maxUnsplit);
   } else if (simParams->ldbStrategy == LDBSTRAT_DEFAULT) { // default
     if (step() < 4)
       TorusLB(computeArray, patchArray, processorArray,
