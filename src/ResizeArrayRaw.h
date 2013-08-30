@@ -194,7 +194,7 @@ template <class Elem> class ResizeArrayRaw {
         arraySize++;
     }
 
-    inline int find(const Elem &e) {
+    inline int find(const Elem &e) const {
       for (int i=0; i<arraySize; i++)
         if (array[i] == e) return i;
       return -1;
