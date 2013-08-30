@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.h,v $
  * $Author: jim $
- * $Date: 2013/08/30 18:18:19 $
- * $Revision: 1.45 $
+ * $Date: 2013/08/30 21:43:01 $
+ * $Revision: 1.46 $
  *****************************************************************************/
 
 #ifndef LDBCOORDINATOR_H
@@ -137,6 +137,7 @@ public:
   void collectLoads(CollectLoadsMsg*);
 private:
   int collPes;
+  int reverted;
   int initTotalProxies;
   int finalTotalProxies;
   int initMaxPeProxies;
@@ -157,6 +158,7 @@ class CollectLoadsMsg : public CMessage_CollectLoadsMsg {
 public:
   int firstPe;
   int lastPe;
+  int reverted;
   int initTotalProxies;
   int finalTotalProxies;
   int initMaxPeProxies;

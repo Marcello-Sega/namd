@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2013/08/30 18:18:18 $
- * $Revision: 1.121 $
+ * $Date: 2013/08/30 21:43:01 $
+ * $Revision: 1.122 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -800,6 +800,7 @@ void LdbCoordinator::sendCollectLoads(CollectLoadsMsg *msg) {
 void LdbCoordinator::collectLoads(CollectLoadsMsg *msg) {
   // CkPrintf("LdbCoordinator::collectLoads recv %d-%d\n", msg->firstPe, msg->lastPe);
   if ( collPes == 0 ) {
+    reverted = 0;
     initTotalProxies = 0;
     finalTotalProxies = 0;
     initMaxPeProxies = 0;
@@ -820,6 +821,7 @@ void LdbCoordinator::collectLoads(CollectLoadsMsg *msg) {
 #define COLL_MAX(F) if ( msg->F > F ) F = msg->F;
 #define COLL_AVG(F) F += msg->F * (double) numPes / (double) CkNumPes();
 #define COLL_SUM(F) F += msg->F;
+  COLL_SUM(reverted)
   COLL_SUM(initTotalProxies)
   COLL_SUM(finalTotalProxies)
   COLL_MAX(initMaxPeProxies)
@@ -843,10 +845,12 @@ void LdbCoordinator::collectLoads(CollectLoadsMsg *msg) {
       << " MAX " << initMaxPeLoad << "  PROXIES: TOTAL " << initTotalProxies << " MAXPE " <<
       initMaxPeProxies << " MAXPATCH " << initMaxPatchProxies << " " << "None"
       << " MEM: " << initMemory << " MB\n";
+    if ( reverted ) iout << " Reverting to original mapping on " << reverted << " balancers\n";
     iout << "LDB: TIME " << finalTime << " LOAD: AVG " << finalAvgPeLoad
       << " MAX " << finalMaxPeLoad << "  PROXIES: TOTAL " << finalTotalProxies << " MAXPE " <<
       finalMaxPeProxies << " MAXPATCH " << finalMaxPatchProxies << " " << msg->strategyName
-      << " MEM: " << finalMemory << " MB\n" << endi;
+      << " MEM: " << finalMemory << " MB\n";
+    iout << endi;
     fflush(stdout);
   }
 
