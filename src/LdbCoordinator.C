@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2013/08/30 21:43:01 $
- * $Revision: 1.122 $
+ * $Date: 2013/08/30 21:50:04 $
+ * $Revision: 1.123 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -845,7 +845,7 @@ void LdbCoordinator::collectLoads(CollectLoadsMsg *msg) {
       << " MAX " << initMaxPeLoad << "  PROXIES: TOTAL " << initTotalProxies << " MAXPE " <<
       initMaxPeProxies << " MAXPATCH " << initMaxPatchProxies << " " << "None"
       << " MEM: " << initMemory << " MB\n";
-    if ( reverted ) iout << " Reverting to original mapping on " << reverted << " balancers\n";
+    if ( reverted ) iout << "LDB: Reverting to original mapping on " << reverted << " balancers\n";
     iout << "LDB: TIME " << finalTime << " LOAD: AVG " << finalAvgPeLoad
       << " MAX " << finalMaxPeLoad << "  PROXIES: TOTAL " << finalTotalProxies << " MAXPE " <<
       finalMaxPeProxies << " MAXPATCH " << finalMaxPatchProxies << " " << msg->strategyName
