@@ -4853,14 +4853,14 @@ obj/NamdHybridLB.o: \
 	src/RefineTorusLB.h \
 	src/NamdDummyLB.h \
 	inc/NamdDummyLB.decl.h \
-	inc/NamdHybridLB.def.h \
 	src/ComputeMap.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	inc/NamdHybridLB.decl.h \
-	inc/NamdDummyLB.decl.h
+	inc/NamdDummyLB.decl.h \
+	inc/NamdHybridLB.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdHybridLB.o $(COPTC) src/NamdHybridLB.C
 obj/NamdDummyLB.o: \
 	src/NamdDummyLB.C \
@@ -5602,6 +5602,12 @@ obj/Rebalancer.o: \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/memusage.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Rebalancer.o $(COPTC) src/Rebalancer.C
 obj/RecBisection.o: \
@@ -6008,14 +6014,16 @@ obj/TorusLB.o: \
 obj/WorkDistrib.o: \
 	src/WorkDistrib.C \
 	src/InfoStream.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Vector.h \
+	src/common.h \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	inc/WorkDistrib.decl.h \
 	src/WorkDistrib.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/common.h \
-	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
@@ -6077,7 +6085,6 @@ obj/WorkDistrib.o: \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
-	src/MStream.h \
 	src/Molecule.h \
 	src/structures.h \
 	src/ConfigList.h \
