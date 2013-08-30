@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.h,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:17 $
- * $Revision: 1.44 $
+ * $Author: jim $
+ * $Date: 2013/08/30 18:18:19 $
+ * $Revision: 1.45 $
  *****************************************************************************/
 
 #ifndef LDBCOORDINATOR_H
@@ -132,6 +132,46 @@ public:
   LDBarrierClient ldBarrierHandle;
   int reg_all_objs;
   LDObjHandle* patchHandles;
+
+  void sendCollectLoads(CollectLoadsMsg*);
+  void collectLoads(CollectLoadsMsg*);
+private:
+  int collPes;
+  int initTotalProxies;
+  int finalTotalProxies;
+  int initMaxPeProxies;
+  int finalMaxPeProxies;
+  int initMaxPatchProxies;
+  int finalMaxPatchProxies;
+  double initTime;
+  double finalTime;
+  double initMemory;
+  double finalMemory;
+  double initAvgPeLoad;
+  double finalAvgPeLoad;
+  double initMaxPeLoad;
+  double finalMaxPeLoad;
+};
+
+class CollectLoadsMsg : public CMessage_CollectLoadsMsg {
+public:
+  int firstPe;
+  int lastPe;
+  int initTotalProxies;
+  int finalTotalProxies;
+  int initMaxPeProxies;
+  int finalMaxPeProxies;
+  int initMaxPatchProxies;
+  int finalMaxPatchProxies;
+  double initTime;
+  double finalTime;
+  double initMemory;
+  double finalMemory;
+  double initAvgPeLoad;
+  double finalAvgPeLoad;
+  double initMaxPeLoad;
+  double finalMaxPeLoad;
+  char strategyName[16];
 };
 
 class LdbMigrateMsg : public CMessage_LdbMigrateMsg

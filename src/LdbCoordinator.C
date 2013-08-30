@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2013/08/28 17:23:33 $
- * $Revision: 1.120 $
+ * $Date: 2013/08/30 18:18:18 $
+ * $Revision: 1.121 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -134,6 +134,7 @@ LdbCoordinator::LdbCoordinator()
   }
 #endif
 
+  collPes = 0;
   ldbCycleNum = 1;
   takingLdbData = 1;
   totalStepsDone = 0;
@@ -790,6 +791,66 @@ void LdbCoordinator::printRequiredProxies(PatchID id, FILE *fp)
 
   for(int i=0;i<nProxyNodes;i++)
     fprintf(fp,"%4d ",neighborNodes[i]);
+}
+
+void LdbCoordinator::sendCollectLoads(CollectLoadsMsg *msg) {
+  CProxy_LdbCoordinator(thisgroup)[0].collectLoads(msg);
+}
+
+void LdbCoordinator::collectLoads(CollectLoadsMsg *msg) {
+  // CkPrintf("LdbCoordinator::collectLoads recv %d-%d\n", msg->firstPe, msg->lastPe);
+  if ( collPes == 0 ) {
+    initTotalProxies = 0;
+    finalTotalProxies = 0;
+    initMaxPeProxies = 0;
+    finalMaxPeProxies = 0;
+    initMaxPatchProxies = 0;
+    finalMaxPatchProxies = 0;
+    initTime = 0;
+    finalTime = 0;
+    initMemory = 0;
+    finalMemory = 0;
+    initAvgPeLoad = 0;
+    finalAvgPeLoad = 0;
+    initMaxPeLoad = 0;
+    finalMaxPeLoad = 0;
+  }
+  int numPes = msg->lastPe - msg->firstPe + 1;
+  collPes += numPes;
+#define COLL_MAX(F) if ( msg->F > F ) F = msg->F;
+#define COLL_AVG(F) F += msg->F * (double) numPes / (double) CkNumPes();
+#define COLL_SUM(F) F += msg->F;
+  COLL_SUM(initTotalProxies)
+  COLL_SUM(finalTotalProxies)
+  COLL_MAX(initMaxPeProxies)
+  COLL_MAX(finalMaxPeProxies)
+  COLL_MAX(initMaxPatchProxies)
+  COLL_MAX(finalMaxPatchProxies)
+  if ( (msg->finalTime - msg->initTime) > (finalTime - initTime) ) {
+    initTime = msg->initTime;
+    finalTime = msg->finalTime;
+  }
+  COLL_MAX(initMemory)
+  COLL_MAX(finalMemory)
+  COLL_AVG(initAvgPeLoad)
+  COLL_AVG(finalAvgPeLoad)
+  COLL_MAX(initMaxPeLoad)
+  COLL_MAX(finalMaxPeLoad)
+
+  if ( collPes == CkNumPes() ) {
+    collPes = 0;
+    iout << "LDB: TIME " << initTime << " LOAD: AVG " << initAvgPeLoad
+      << " MAX " << initMaxPeLoad << "  PROXIES: TOTAL " << initTotalProxies << " MAXPE " <<
+      initMaxPeProxies << " MAXPATCH " << initMaxPatchProxies << " " << "None"
+      << " MEM: " << initMemory << " MB\n";
+    iout << "LDB: TIME " << finalTime << " LOAD: AVG " << finalAvgPeLoad
+      << " MAX " << finalMaxPeLoad << "  PROXIES: TOTAL " << finalTotalProxies << " MAXPE " <<
+      finalMaxPeProxies << " MAXPATCH " << finalMaxPatchProxies << " " << msg->strategyName
+      << " MEM: " << finalMemory << " MB\n" << endi;
+    fflush(stdout);
+  }
+
+  delete msg;
 }
 
 #include "LdbCoordinator.def.h"

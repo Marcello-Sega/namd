@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: jim $
- * $Date: 2013/06/07 22:34:38 $
- * $Revision: 1.34 $
+ * $Date: 2013/08/30 18:18:20 $
+ * $Revision: 1.35 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -380,7 +380,7 @@ void TorusLB::strategy() {
  
   } // end of computes for-loop
 
-  printLoads();
+  printLoads(3);
 }
 
 void TorusLB::selectPes(processorInfo *p, computeInfo *c) {

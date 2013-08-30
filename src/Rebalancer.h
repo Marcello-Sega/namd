@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.h,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:19 $
- * $Revision: 1.34 $
+ * $Author: jim $
+ * $Date: 2013/08/30 18:18:20 $
+ * $Revision: 1.35 $
  *****************************************************************************/
 
 /** \file Rebalancer.h
@@ -104,6 +104,7 @@ class ProxyUsage {
   }
 };
   
+class CollectLoadsMsg;
 
 class Rebalancer {
 public:
@@ -159,7 +160,8 @@ protected:
   void multirefine(double overload_start=1.02);
   void printSummary();
   void printResults();
-  void printLoads();
+  void printLoads(int phase=0);
+  CollectLoadsMsg *collMsg;
   double computeAverage();
   void adjustBackgroundLoadAndComputeAverage();
   double computeMax();

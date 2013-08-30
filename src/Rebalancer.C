@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: jim $
- * $Date: 2013/06/07 22:34:38 $
- * $Revision: 1.98 $
+ * $Date: 2013/08/30 18:18:19 $
+ * $Revision: 1.99 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -16,6 +16,7 @@
 #include "Rebalancer.h"
 #include "ProxyMgr.h"
 #include "PatchMap.h"
+#include "LdbCoordinator.h"
 #include "memusage.h"
 #include <iomanip>
 
@@ -42,6 +43,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    overLoad = 0.;
    numPesAvailable = 0;
    firstAssignInRefine = 0;
+   collMsg = 0;
 
   const int beginGroup = processors[0].Id;
   const int endGroup = beginGroup + P;
@@ -98,7 +100,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    origMaxLoad = computeMax();
 
    // iout << iINFO << "Initial load" << "\n";
-   printLoads();
+   printLoads(1);
 
    for(i=0;i<P; i++)
    {
@@ -853,7 +855,7 @@ void Rebalancer::printResults()
 }
 
 
-void Rebalancer::printLoads()
+void Rebalancer::printLoads(int phase)  // 0=nocollective, 1=initial, 2=proxies, 3=final
 {
 
    int i, total = 0, numBytes = 0;
@@ -887,6 +889,7 @@ void Rebalancer::printLoads()
    computeAverage();
    max = computeMax();
 
+  if ( P == CkNumPes() ) {
    iout << "LDB:";
    if ( P != CkNumPes() ) {
      int w = 1;   
@@ -905,6 +908,52 @@ void Rebalancer::printLoads()
      maxproxies << " MAXPATCH " << maxpatchproxies << " " << strategyName 
      << " MEM: " << memusage_MB() << " MB\n" << endi;
    fflush(stdout);
+  }
+
+   if ( P != CkNumPes() ) {  // collect stats on pe 0
+     switch ( phase ) {
+     case 0:  // no collective
+       NAMD_bug("Rebalancer::printLoads(0) called with hybrid balancer.");
+     break;
+     case 1:  // initial
+       if ( collMsg ) NAMD_bug("Rebalancer::printLoads(1) collMsg not null.");
+       collMsg = new CollectLoadsMsg;
+       collMsg->firstPe = processors[0].Id;
+       collMsg->lastPe = processors[P-1].Id;
+       collMsg->initTime = CmiWallTimer();
+       collMsg->initMemory = memusage_MB();
+       collMsg->initAvgPeLoad = averageLoad;
+       collMsg->initMaxPeLoad = max;
+       collMsg->initTotalProxies = total;
+       collMsg->initMaxPeProxies = maxproxies;
+       collMsg->initMaxPatchProxies = maxpatchproxies;
+     break;
+     case 2:  // proxies (optional)
+       if ( ! collMsg ) NAMD_bug("Rebalancer::printLoads(2) collMsg null.");
+       collMsg->initAvgPeLoad = averageLoad;
+       collMsg->initMaxPeLoad = max;
+       collMsg->initTotalProxies = total;
+       collMsg->initMaxPeProxies = maxproxies;
+       collMsg->initMaxPatchProxies = maxpatchproxies;
+     break;
+     case 3:  // final
+       if ( ! collMsg ) NAMD_bug("Rebalancer::printLoads(3) collMsg null.");
+       collMsg->finalTime = CmiWallTimer();
+       collMsg->finalMemory = memusage_MB();
+       collMsg->finalAvgPeLoad = averageLoad;
+       collMsg->finalMaxPeLoad = max;
+       collMsg->finalTotalProxies = total;
+       collMsg->finalMaxPeProxies = maxproxies;
+       collMsg->finalMaxPatchProxies = maxpatchproxies;
+       strncpy(collMsg->strategyName,strategyName,15);
+       collMsg->strategyName[15] = 0;
+       LdbCoordinator::Object()->sendCollectLoads(collMsg);
+       collMsg = 0;
+     break;
+     default:
+       NAMD_bug("Rebalancer::printLoads() called with unknown phase.");
+     }
+   }
 
 }
 
