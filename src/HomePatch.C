@@ -744,7 +744,7 @@ void HomePatch::buildSpanningTree(void)
   nChild = 0;
   int psize = proxy.size();
   if (psize == 0) return;
-  NodeIDList oldtree = tree;
+  NodeIDList oldtree;  oldtree.swap(tree);
   int oldsize = oldtree.size();
   tree.resize(psize + 1);
   tree.setall(-1);
