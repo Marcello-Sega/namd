@@ -152,10 +152,11 @@ public:
 class ProxyDataMsg : public ProxyDataMsg_not_32_byte {
   // Adding padding bytes to make sure that positionList is
   // 32-byte aligned which usually gives better cache performance.
-  char padding[(32-sizeof(ProxyDataMsg_not_32_byte)%32)%32];
+  char padding[(32-(sizeof(envelope)+sizeof(ProxyDataMsg_not_32_byte))%32)%32];
 };
 class assert_ProxyDataMsg {
-  char assert_sizeof_ProxyDataMsg_is_multiple_of_32[(sizeof(ProxyDataMsg)%32)?-1:1];
+  char assert_sizeof_envelope_is_multiple_of_ptr[(sizeof(envelope)%sizeof(void*))?-1:1];
+  char assert_sizeof_ProxyDataMsg_is_multiple_of_32[((sizeof(envelope)+sizeof(ProxyDataMsg))%32)?-1:1];
 };
 #endif
 
@@ -193,7 +194,8 @@ public:
 };
 
 class assert_ProxyResultVarsizeMsg {
-  char assert_sizeof_ProxyResultVarsizeMsg_is_multiple_of_8[(sizeof(ProxyDataMsg)%8)?-1:1];
+  char assert_sizeof_envelope_is_multiple_of_ptr[(sizeof(envelope)%sizeof(void*))?-1:1];
+  char assert_sizeof_ProxyResultVarsizeMsg_is_multiple_of_8[((sizeof(envelope)+sizeof(ProxyDataMsg))%8)?-1:1];
 };
 
 class ProxyNodeAwareSpanningTreeMsg: public CMessage_ProxyNodeAwareSpanningTreeMsg{
