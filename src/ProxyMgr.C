@@ -300,6 +300,7 @@ ProxyCombinedResultRawMsg* ProxyCombinedResultMsg::toRaw(ProxyCombinedResultMsg 
       }
     }
   }
+  delete msg;
   return msg_buf;
 }
 
