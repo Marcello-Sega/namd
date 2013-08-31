@@ -88,7 +88,11 @@ public:
 //list as not all the ProxyPatches that are managed by ProxyMgr are
 //newly created ProxyPatches. 
 //--Chao Mei
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+class ProxyDataMsg_not_32_byte : public CMessage_ProxyDataMsg {
+#else
 class ProxyDataMsg : public CMessage_ProxyDataMsg {
+#endif
 public:
   PatchID patch;
   Flags flags;
@@ -141,33 +145,19 @@ public:
     int numWaterAtoms;  // Number of atoms in positionList (from start)
 	                //   that are part of water hydrogen groups.
   #endif
-#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
-  //Adding padding bytes to make sure that positionList is
-  //32-byte aligned which usually gives better cache performance,
-  //especially on BlueGene/L machine. Otherwise, we have to
-  //do the extra copy.
-  //The basic method to calculate padding is to add up
-  //the size of all the fields so far, including
-  //the message header (the envelope) , then mod (alignment)
-  // --Chao Mei
-#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
- #if NAMD_SeparateWaters != 0
-  char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+sizeof(isFromImmMsgCall)+4*sizeof(int)+3*sizeof(void *))%32)%32];
- #else
-  char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+sizeof(isFromImmMsgCall)+3*sizeof(int)+3*sizeof(void *))%32)%32];
- #endif
-#else
- #if NAMD_SeparateWaters != 0
-  char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+4*sizeof(int)+3*sizeof(void *))%32)%32];
- #else
-  char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+3*sizeof(int)+3*sizeof(void *))%32)%32];
- #endif
-#endif
-
-#endif
 
 };
 
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+class ProxyDataMsg : public ProxyDataMsg_not_32_byte {
+  // Adding padding bytes to make sure that positionList is
+  // 32-byte aligned which usually gives better cache performance.
+  char padding[(32-sizeof(ProxyDataMsg_not_32_byte)%32)%32];
+};
+class assert_ProxyDataMsg {
+  char assert_sizeof_ProxyDataMsg_is_multiple_of_32[(sizeof(ProxyDataMsg)%32)?-1:1];
+};
+#endif
 
 
 class ProxyResultMsg : public CMessage_ProxyResultMsg {
@@ -200,6 +190,10 @@ public:
 
     //The length of "fls" is Results::maxNumForces
     static ProxyResultVarsizeMsg *getANewMsg(NodeID nid, PatchID pid, int prioSize, ForceList *fls); 
+};
+
+class assert_ProxyResultVarsizeMsg {
+  char assert_sizeof_ProxyResultVarsizeMsg_is_multiple_of_8[(sizeof(ProxyDataMsg)%8)?-1:1];
 };
 
 class ProxyNodeAwareSpanningTreeMsg: public CMessage_ProxyNodeAwareSpanningTreeMsg{
