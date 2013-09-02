@@ -926,16 +926,11 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
             curNode->nodeID = swapNode->nodeID;
             swapNode->nodeID = tmp;
             tmp = curNode->numPes;
-            ALLOCA(int,tmpPes,tmp);
-            memcpy(tmpPes, curNode->peIDs, sizeof(int)*tmp);
-            delete [] curNode->peIDs;
             curNode->numPes = swapNode->numPes;
-            curNode->peIDs = new int[swapNode->numPes];
-            memcpy(curNode->peIDs, swapNode->peIDs, sizeof(int)*swapNode->numPes);
             swapNode->numPes = tmp;
-            delete [] swapNode->peIDs;
-            swapNode->peIDs = new int[tmp];
-            memcpy(swapNode->peIDs, tmpPes, sizeof(int)*tmp);                      
+            int *tmpPes = curNode->peIDs;
+            curNode->peIDs = swapNode->peIDs;
+            swapNode->peIDs = tmpPes;
         }
     }
     delete [] proxyNodeMap;    
