@@ -184,13 +184,15 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   flags = msg->flags;
 
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
-  //We could set them to 0 for the sake of easy debugging
-  //if there are something wrong in the "reuse position arrays" code
-  //--Chao Mei
-  //p.resize(0);
-  //p_avg.resize(0);  
-  positionPtrBegin = msg->positionList;
-  positionPtrEnd = msg->positionList + msg->plLen;
+  if ( ((int64)msg->positionList) % 32 ) { // not aligned
+    p.resize(msg->plLen);
+    positionPtrBegin = p.begin();
+    memcpy(positionPtrBegin, msg->positionList, sizeof(CompAtom)*(msg->plLen));
+  } else { // aligned
+    positionPtrBegin = msg->positionList;
+  }
+  positionPtrEnd = positionPtrBegin + msg->plLen;
+  if ( ((int64)positionPtrBegin) % 32 ) NAMD_bug("ProxyPatch::receiveData positionPtrBegin not 32-byte aligned");
 #else
   p.resize(msg->plLen);
   memcpy(p.begin(), msg->positionList, sizeof(CompAtom)*(msg->plLen));
@@ -261,13 +263,15 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
   flags = msg->flags;
 
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
-  //We could set them to 0 for the sake of easy debugging
-  //if there are something wrong in the "reuse position arrays" code
-  //--Chao Mei
-  //p.resize(0);
-  //p_avg.resize(0);  
-  positionPtrBegin = msg->positionList;
-  positionPtrEnd = msg->positionList + msg->plLen;
+  if ( ((int64)msg->positionList) % 32 ) { // not aligned
+    p.resize(msg->plLen);
+    positionPtrBegin = p.begin();
+    memcpy(positionPtrBegin, msg->positionList, sizeof(CompAtom)*(msg->plLen));
+  } else { // aligned
+    positionPtrBegin = msg->positionList;
+  }
+  positionPtrEnd = positionPtrBegin + msg->plLen;
+  if ( ((int64)positionPtrBegin) % 32 ) NAMD_bug("ProxyPatch::receiveAll positionPtrBegin not 32-byte aligned");
 #else
   p.resize(msg->plLen);
   memcpy(p.begin(), msg->positionList, sizeof(CompAtom)*(msg->plLen));
