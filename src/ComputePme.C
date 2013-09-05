@@ -3478,7 +3478,7 @@ private:
           int nz1 = block3;
           if ( (kb+1)*block3 > dim3/2 ) nz1 = dim3/2 - kb*block3;
           int peer = yPencil_local->homePe(CkArrayIndex3D(thisIndex.x, 0, kb));
-          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz1*2 +sizeof( envelope)+PRIORITY_SIZE/8;
+          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz1*2 +sizeof( envelope)+PRIORITY_SIZE/8+24;
           int compress_start = sizeof(PmeTransMsg)+sizeof(envelope);
           int compress_size = sizeof(float)*hd*nx*ny*nz1*2;
           trans_handle[isend] = CmiCreateCompressPersistentSize(peer, size, compress_start, compress_size, CMI_FLOATING);
@@ -3537,7 +3537,7 @@ private:
           int ny1 = block2;
           if ( (jb+1)*block2 > K2 ) ny1 = K2 - jb*block2;
           int peer = xPencil_local->homePe(CkArrayIndex3D(0, jb, thisIndex.z));
-          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny1*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8;
+          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny1*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8+24;
           int compress_start = sizeof(PmeTransMsg)+sizeof( envelope);
           int compress_size = sizeof(float)*hd*nx*ny1*nz*2; 
           trans_handle[isend] = CmiCreateCompressPersistentSize(peer, size, compress_start, compress_size, CMI_FLOATING);
@@ -3551,7 +3551,7 @@ private:
           int ny1 = block2;
           if ( (jb+1)*block2 > K2 ) ny1 = K2 - jb*block2;
           int peer = zPencil_local->homePe(CkArrayIndex3D(thisIndex.x, jb, 0));
-          int size= sizeof(PmeUntransMsg) + sizeof(float)*nx*ny1*nz*2 + sizeof(PmeReduction)*send_evir +sizeof( envelope) + PRIORITY_SIZE/8;
+          int size= sizeof(PmeUntransMsg) + sizeof(float)*nx*ny1*nz*2 + sizeof(PmeReduction)*send_evir +sizeof( envelope) + PRIORITY_SIZE/8+24;
           int compress_start = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof( envelope); 
           int compress_size = sizeof(float)*nx*ny1*nz*2;
           untrans_handle[isend] = CmiCreateCompressPersistentSize(peer, size,  compress_start, compress_size, CMI_FLOATING);
@@ -3610,7 +3610,7 @@ public:
           if ( (ib+1)*block1 > K1 ) nx1 = K1 - ib*block1;
           int peer = yPencil_local->procNum(CkArrayIndex3D(ib, 0, thisIndex.z));
           int size = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir +       
-              sizeof(float)*nx1*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8; 
+              sizeof(float)*nx1*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8+24; 
           int compress_start = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof( envelope); 
           int compress_size = sizeof(float)*nx1*ny*nz*2;
           untrans_handle[isend] = CmiCreateCompressPersistentSize(peer, size, compress_start, compress_size, CMI_FLOATING);
