@@ -313,7 +313,7 @@ class ProxyTree {       // keep track of the spanning trees
     }
 };
 
-class ProxyMgr : public BOCclass
+class ProxyMgr : public CBase_ProxyMgr
 {
 public:
   ProxyMgr();

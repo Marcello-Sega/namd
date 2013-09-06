@@ -146,7 +146,7 @@ public:
 typedef ResizeArray<ClusterCoorMsg *> ClusterCoorMsgBuffer;
 ///////End of data struct declarations related to parallel output////////
 
-class ParallelIOMgr : public BOCclass
+class ParallelIOMgr : public CBase_ParallelIOMgr
 {
 #ifdef MEM_OPT_VERSION
     friend class CollectionMgr;

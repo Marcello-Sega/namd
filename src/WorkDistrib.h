@@ -33,7 +33,7 @@ class PatchMapMsg;
 class ComputeMapMsg;
 class ComputeMapChangeMsg;
 
-class WorkDistrib : public BOCclass
+class WorkDistrib : public CBase_WorkDistrib
 {
 public:
   WorkDistrib();

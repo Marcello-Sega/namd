@@ -50,9 +50,6 @@ public:
   CkGroupID dataExchanger;
 };
 
-class BOCclass : public Group {
-};
-
 #endif /* BOCGROUP_H */
 
 

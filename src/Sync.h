@@ -22,7 +22,7 @@
 
 typedef ResizeArrayPrimIter<Compute*> ComputePtrListIter;
 
-class Sync : public BOCclass
+class Sync : public CBase_Sync
 {
 private:
     struct _clist {

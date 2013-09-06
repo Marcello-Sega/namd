@@ -358,7 +358,7 @@ struct WorkIndex {
 //  one chare object per PE
 //
 
-class ComputeMsmMgr : public BOCclass {
+class ComputeMsmMgr : public CBase_ComputeMsmMgr {
   friend struct msm::PatchData;
   friend class MsmBlock;
   //friend class MsmGridCutoff;

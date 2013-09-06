@@ -23,7 +23,7 @@ public:
   CkChareID master;
 };
 
-class CollectionMgr : public BOCclass
+class CollectionMgr : public CBase_CollectionMgr
 {
 public:
 

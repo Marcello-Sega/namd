@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.h,v $
  * $Author: jim $
- * $Date: 2013/02/22 18:22:18 $
- * $Revision: 1.1029 $
+ * $Date: 2013/09/06 19:11:38 $
+ * $Revision: 1.1030 $
  *****************************************************************************/
 
 #ifndef PATCHMGR_H
@@ -92,7 +92,7 @@ struct MovePatch
 typedef SortedArray<MovePatch> MovePatchList;
 typedef ResizeArrayIter<MovePatch> MovePatchListIter;
 
-class PatchMgr : public BOCclass
+class PatchMgr : public CBase_PatchMgr
 {
 
 public:

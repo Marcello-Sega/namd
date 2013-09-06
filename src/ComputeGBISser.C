@@ -155,7 +155,7 @@ public:
   ExtForce *slowForce;
 };
 
-class ComputeGBISserMgr : public BOCclass {
+class ComputeGBISserMgr : public CBase_ComputeGBISserMgr {
 public:
   ComputeGBISserMgr();
   ~ComputeGBISserMgr();

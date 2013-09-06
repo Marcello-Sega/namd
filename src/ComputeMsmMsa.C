@@ -92,7 +92,7 @@ public:
   ComputeMsmMsaAtom *coord;
 };
 
-class ComputeMsmMsaMgr : public BOCclass {
+class ComputeMsmMsaMgr : public CBase_ComputeMsmMsaMgr {
 public:
   ComputeMsmMsaMgr();                    // entry
   ~ComputeMsmMsaMgr();

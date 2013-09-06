@@ -51,7 +51,7 @@ public:
   MsmSerialForce *force;
 };
 
-class ComputeMsmSerialMgr : public BOCclass {
+class ComputeMsmSerialMgr : public CBase_ComputeMsmSerialMgr {
 public:
   ComputeMsmSerialMgr();
   ~ComputeMsmSerialMgr();

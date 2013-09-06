@@ -216,7 +216,8 @@ public:
 };
 
 // Top level class
-class ReductionMgr : public BOCclass
+// don't derive from CBase_ReductionMgr to avoid .decl.h file
+class ReductionMgr : public Group
 {
 private:
   friend class SubmitReduction;

@@ -79,7 +79,7 @@ void MoaData::print()
 #endif
 }
 
-class ComputeMoaMgr : public BOCclass {
+class ComputeMoaMgr : public CBase_ComputeMoaMgr {
 public:
   ComputeMoaMgr();                    // entry
   ~ComputeMoaMgr();

@@ -70,7 +70,7 @@ public:
   char value[MAX_SCRIPT_PARAM_SIZE];
 };
 
-class Node : public BOCclass
+class Node : public CBase_Node
 {
 public:
 

@@ -51,7 +51,7 @@ public:
   ExtForce *force;
 };
 
-class ComputeExtMgr : public BOCclass {
+class ComputeExtMgr : public CBase_ComputeExtMgr {
 public:
   ComputeExtMgr();
   ~ComputeExtMgr();

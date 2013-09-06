@@ -45,7 +45,7 @@ class NonbondedMICSlaveMsg;
 
 class ComputeNonbondedWorkArrays;
 
-class ComputeMgr : public BOCclass
+class ComputeMgr : public CBase_ComputeMgr
 {
 public:
 

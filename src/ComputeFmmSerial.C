@@ -74,7 +74,7 @@ public:
   FmmSerialForce *force;
 };
 
-class ComputeFmmSerialMgr : public BOCclass {
+class ComputeFmmSerialMgr : public CBase_ComputeFmmSerialMgr {
 public:
   ComputeFmmSerialMgr();
   ~ComputeFmmSerialMgr();

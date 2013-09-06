@@ -84,7 +84,7 @@ public:
   UniqueSet<TaggedMsg> *taggedMsg;
 };
 
-class BroadcastMgr : public BOCclass
+class BroadcastMgr : public CBase_BroadcastMgr
 {
 public:
   BroadcastMgr() { 

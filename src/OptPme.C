@@ -53,7 +53,7 @@ extern char *pencilPMEProcessors;
 //Very large integer
 int many_to_many_start = 0x7fffffff;
 
-class OptPmeMgr : public BOCclass {
+class OptPmeMgr : public CBase_OptPmeMgr {
 public:
   friend class OptPmeCompute;
   OptPmeMgr();

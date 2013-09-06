@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.h,v $
  * $Author: jim $
- * $Date: 2013/08/30 21:43:01 $
- * $Revision: 1.46 $
+ * $Date: 2013/09/06 19:11:37 $
+ * $Revision: 1.47 $
  *****************************************************************************/
 
 #ifndef LDBCOORDINATOR_H
@@ -39,7 +39,7 @@ enum {PROCESSORMAX = 512};
 
 void LdbCoordinator_initproc();
 
-class LdbCoordinator : public BOCclass
+class LdbCoordinator : public CBase_LdbCoordinator
 {
 public:
   LdbCoordinator();

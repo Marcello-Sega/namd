@@ -273,7 +273,7 @@ struct ijpair_sortop_bit_reversed {
   }
 };
 
-class ComputePmeMgr : public BOCclass {
+class ComputePmeMgr : public CBase_ComputePmeMgr {
 public:
   friend class ComputePme;
   friend class NodePmeMgr;
