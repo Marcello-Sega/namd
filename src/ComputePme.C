@@ -315,7 +315,7 @@ public:
   void ungridCalc(void);
   void submitReductions();
 
-#if USE_PERSISTENT
+#if 0 && USE_PERSISTENT
   void setup_recvgrid_persistent();
 #endif
 
@@ -326,7 +326,7 @@ public:
 
 private:
 
-#if USE_PERSISTENT
+#if 0 && USE_PERSISTENT
   PersistentHandle   *recvGrid_handle;
 #endif
 
@@ -2269,7 +2269,7 @@ void ComputePmeMgr::initialize_computes() {
     }
   }
 
-#if USE_PERSISTENT
+#if 0 && USE_PERSISTENT
   recvGrid_handle = NULL;
 #endif
 }
@@ -2279,7 +2279,7 @@ ComputePme::~ComputePme()
     for ( int g=0; g<numGrids; ++g ) delete myRealSpace[g];
 }
 
-#if USE_PERSISTENT 
+#if 0 && USE_PERSISTENT 
 void ComputePmeMgr::setup_recvgrid_persistent() 
 {
     int K1 = myGrid.K1;
@@ -2568,7 +2568,7 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
 
-#if  USE_PERSISTENT
+#if 0 && USE_PERSISTENT
     if (recvGrid_handle== NULL) setup_recvgrid_persistent();
 #endif
   int K1 = myGrid.K1;
