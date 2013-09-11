@@ -80,12 +80,10 @@ extern "C" void CApplicationInit();
 #include "ckBIconfig.h"
 #endif
 
-#ifdef MEM_OPT_VERSION
 #include "CollectionMgr.h"
 #include "CollectionMaster.h"
 #include "CollectionMgr.decl.h"
 #include "CollectionMaster.decl.h"
-#endif
 
 #if USE_HPM
 extern "C" void HPM_Init(int);

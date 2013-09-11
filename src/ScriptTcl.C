@@ -44,8 +44,8 @@
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
-#include <molfile_plugin.h>
-#include <libmolfile_plugin.h>
+#include "molfile_plugin.h"
+#include "libmolfile_plugin.h"
 
 static molfile_plugin_t *dcdplugin;
 static int register_cb(void *v, vmdplugin_t *p) {

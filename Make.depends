@@ -5119,6 +5119,11 @@ obj/Node.o: \
 	inc/ParallelIOMgr.decl.h \
 	src/Random.h \
 	src/DumpBench.h \
+	src/CollectionMgr.h \
+	src/CollectionMaster.h \
+	inc/CollectionMaster.decl.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Node.o $(COPTC) src/Node.C
 obj/Output.o: \
@@ -5794,7 +5799,6 @@ obj/ScriptTcl.o: \
 	inc/DataExchanger.decl.h \
 	src/Pointer.h \
 	src/Debug.h \
-	plugins/include/molfile_plugin.h \
 	plugins/include/libmolfile_plugin.h \
 	src/ComputeConsForceMsgs.h \
 	inc/ComputeMgr.decl.h
