@@ -195,7 +195,7 @@ public:
 
 class assert_ProxyResultVarsizeMsg {
   char assert_sizeof_envelope_is_multiple_of_ptr[(sizeof(envelope)%sizeof(void*))?-1:1];
-  char assert_sizeof_ProxyResultVarsizeMsg_is_multiple_of_8[((sizeof(envelope)+sizeof(ProxyDataMsg))%8)?-1:1];
+  char assert_sizeof_ProxyResultVarsizeMsg_is_multiple_of_8[((sizeof(envelope)+sizeof(ProxyResultVarsizeMsg))%8)?-1:1];
 };
 
 class ProxyNodeAwareSpanningTreeMsg: public CMessage_ProxyNodeAwareSpanningTreeMsg{
