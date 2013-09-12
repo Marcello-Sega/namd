@@ -1,10 +1,5 @@
 #ifdef NAMD_MIC
 
-// DMK - DEBUG : Just a loop that should never executed, but will get
-//   vectorized. Using as a marker in the vec-report output and assembly.
-#pragma loop_count(0)
-for (int _i = 0; _i < i_upper - 4096; _i++) { params.numAtoms[_i]++; }
-
 { // Start a block so variables can be declared outsude the force loop
 
   // Validate the control macros for this file, by ensuring that certain invalid
@@ -131,9 +126,9 @@ for (int _i = 0; _i < i_upper - 4096; _i++) { params.numAtoms[_i]++; }
         __m512d p_ij_y_vec = _mm512_sub_pd(p_i_y_vec, p_j_y_vec);
         __m512d p_ij_z_vec = _mm512_sub_pd(p_i_z_vec, p_j_z_vec);
 
-        __m512d r2_vec = _mm512_add_pd(_mm512_mul_pd(p_ij_x_vec, p_ij_x_vec), _mm512_set_1to8_pd(r2_delta)); // TODO : Lookup madd intrinsic and use here
-        r2_vec = _mm512_add_pd(_mm512_mul_pd(p_ij_y_vec, p_ij_y_vec), r2_vec); // TODO : Lookup madd intrinsic and use here
-        r2_vec = _mm512_add_pd(_mm512_mul_pd(p_ij_z_vec, p_ij_z_vec), r2_vec); // TODO : Lookup madd intrinsic and use here
+        __m512d r2_vec = _mm512_add_pd(_mm512_mul_pd(p_ij_x_vec, p_ij_x_vec), _mm512_set_1to8_pd(r2_delta));
+        r2_vec = _mm512_add_pd(_mm512_mul_pd(p_ij_y_vec, p_ij_y_vec), r2_vec);
+        r2_vec = _mm512_add_pd(_mm512_mul_pd(p_ij_z_vec, p_ij_z_vec), r2_vec);
 
         __mmask16 cutoff_mask = _mm512_mask_cmplt_pd_mask(active_mask, r2_vec, _mm512_set_1to8_pd(cutoff2_delta));
 
@@ -208,48 +203,11 @@ for (int _i = 0; _i < i_upper - 4096; _i++) { params.numAtoms[_i]++; }
   __ASSERT(plSize >= 0);
   __ASSUME_ALIGNED(plArray);
 
-  // DMK - DEBUG
-  #if MIC_STATS_LOOP_COUNTS != 0
-    int cutoffClearCount = 0;
-    int iTestCount = 0;
-  #endif
-
-  //// DMK - DEBUG
-  //if (params.p1 == 0 || params.p2 == 0) {
-  //  int plOffset = 0;
-  //  for (int i = 0; i < plSize; i++) {
-  //    if (plArray[i] != -1) {
-  //      printf("pl " PAIR("P") SELF("S") NORMAL("N") MODIFIED("M") EXCLUDED("E") "[%d] : i:%d, j:%d\n",
-  //             plOffset++, (plArray[i] >> 16) & 0xFFFF, plArray[i] & 0xFFFF
-  //            );
-  //    }
-  //  }
-  //}
-
   // Include code for the force computation loop itself
-  #if MIC_HANDCODE_FORCE != 0
-    #if MIC_HANDCODE_FORCE_SINGLE != 0
-      #include "ComputeNonbondedMICKernelBase2_handcode_single.h"
-    #else
-      #include "ComputeNonbondedMICKernelBase2_handcode.h"
-    #endif
+  #if (MIC_HANDCODE_FORCE != 0) && (MIC_HANDCODE_FORCE_SINGLE != 0)
+    #include "ComputeNonbondedMICKernelBase2_handcode_single.h"
   #else
     #include "ComputeNonbondedMICKernelBase2_scalar.h"
-  #endif
-
-  // DMK - DEBUG
-  #if MIC_STATS_LOOP_COUNTS != 0
-    #define ADD_TO_STATS_BIN(list, value) \
-    { \
-      int bin_i = (value) / MIC_STATS_LOOP_COUNTS_BIN_SIZE; \
-      if (bin_i > MIC_STATS_LOOP_COUNTS_NUM_BINS - 1) { bin_i = MIC_STATS_LOOP_COUNTS_NUM_BINS - 1; } \
-      bin_i = 6 * bin_i + SELF(0) PAIR(3) + NORMAL(0) MODIFIED(1) EXCLUDED(2); \
-      (list)[bin_i]++; \
-    }
-    ADD_TO_STATS_BIN(device__loop_counts, plSize);
-    ADD_TO_STATS_BIN(device__cutoff_clear_counts, cutoffClearCount);
-    ADD_TO_STATS_BIN(device__iTest_counts, iTestCount);
-    #undef ADD_TO_STATS_BIN
   #endif
 
 } // End block
@@ -257,7 +215,6 @@ for (int _i = 0; _i < i_upper - 4096; _i++) { params.numAtoms[_i]++; }
 #else
 
 #include "ComputeNonbondedMICKernelBase2_handcode_single.h"
-// #include "ComputeNonbondedMICKernelBase2_handcode.h"
 #include "ComputeNonbondedMICKernelBase2_scalar.h"
 
 #endif  // NAMD_MIC

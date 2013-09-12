@@ -118,9 +118,8 @@ class Patch
      Lattice &lattice;
      Flags flags;
 
-     // DMK
-    // NOTE : Just placing the variables in public for now so only one location, move to protected if this actually helps performance
-     #if defined(NAMD_MIC)
+     // DMK - NOTE : Just placing the variables in public for now so only one location, move to protected if this actually helps performance
+     #if defined(NAMD_MIC) // NOTE: Used for submit atoms on arrival
        pthread_mutex_t mic_atomData_mutex;
        void* mic_atomData;
        void* mic_atomData_prev[MIC_MAX_DEVICES_PER_NODE];

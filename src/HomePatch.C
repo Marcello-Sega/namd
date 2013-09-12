@@ -948,7 +948,6 @@ void HomePatch::positionsReady(int doMigration)
     }
   }
 
-// DMK
 #if defined(NAMD_CUDA) || defined(NAMD_MIC)
   if ( doMigration ) {
     int n = numAtoms;
@@ -997,7 +996,6 @@ void HomePatch::positionsReady(int doMigration)
       n_16 = (n + 15) & (~15);
       cudaAtomList.resize(n_16);
       CudaAtom *ac = cudaAtomPtr = cudaAtomList.begin();
-      //memset(ac, 0, sizeof(atom) * n_16); // DMK - DEBUG
       mic_position_t *atom_x = ((mic_position_t*)ac) + (0 * n_16);
       mic_position_t *atom_y = ((mic_position_t*)ac) + (1 * n_16);
       mic_position_t *atom_z = ((mic_position_t*)ac) + (2 * n_16);
@@ -1005,7 +1003,6 @@ void HomePatch::positionsReady(int doMigration)
     #else
     cudaAtomList.resize(n);
     CudaAtom *ac = cudaAtomPtr = cudaAtomList.begin();
-      //memset(ac, 0, sizeof(atom) * n); // DMK - DEBUG
     #endif
     const FullAtom *a = atom.begin();
     for ( int k=0; k<n; ++k ) {
@@ -1023,20 +1020,6 @@ void HomePatch::positionsReady(int doMigration)
       ac[k].q = charge_scaling * a[j].charge;
       #endif
     }
-
-    // DMK - DEBUG
-    #if defined(NAMD_MIC) && 0
-      for (int k = 0; k < n; k++) {
-        printf("<< atom[%3d,%3d] = { x:%f, y:%f, z:%f, q:%f }\n", patchID, k,
-               #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-	         ac[k].x, ac[k].y, ac[k].z, ac[k].charge
-               #else
-	         atom_x[k], atom_y[k], atom_z[k], atom_q[k]
-               #endif
-              );
-      }
-    #endif
-
   }
 #endif
 

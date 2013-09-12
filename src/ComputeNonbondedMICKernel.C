@@ -7,71 +7,27 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <offload.h>
-#include <string.h>
-#include <stdint.h>
-
-#ifndef __MIC__
-  #include "charm++.h"
-#endif
-
 #include "ComputeNonbondedMICKernel.h"
-
-#if defined(__MIC__) || defined(__MIC2__)
-  #include <immintrin.h>
-#endif
-
-#if 0 && MIC_HANDCODE_FORCE != 0
-  #include "vec_debug.h"
-#endif
-
 #include <assert.h>
 #include <math.h>
-#if MIC_LOCK_MEMORY
-  #include <sys/mman.h>
-  #include <errno.h>
-#endif
-
-#if USE_DMK_COMMON != 0
-  #pragma offload_attribute (push, target(mic))
-  #include "dmk_common.C"
-  #pragma offload_attribute (pop)
-#endif
-
-#if (VTUNE_INFO != 0) && (VTUNE_TASKS != 0)
-  #include "ittnotify.h"
-  __itt_domain *vtune_domain = __itt_domain_create("NAMD");
-  __itt_string_handle *vtune_frame = __itt_string_handle_create("frame.timestep");
-  __itt_string_handle *vtune_offload_task = __itt_string_handle_create("non-bonded.offload.task");
-  __thread int vtune_frameStartedFlag = 0;
-  //void endOffloadTask() { __itt_task_end(vtune_domain); }
-  void endOffloadTask() { __itt_frame_end_v3(vtune_domain, NULL); }
-#endif
 
 
 // Setup __ASSUME_ALIGNED macro to take the appropriate action based on macro flags
-#if USE_ASSUME_ALIGNED && CHECK_ASSUME_ALIGNED
+#if (CHECK_ASSUME_ALIGNED != 0)
   #define __ASSUME_ALIGNED(v) assert(((unsigned long long int)(v)) % 64 == 0); __assume_aligned((v), MIC_ALIGN);
-#elif USE_ASSUME_ALIGNED
-  #define __ASSUME_ALIGNED(v) __assume_aligned((v), MIC_ALIGN);
 #else
-  #define __ASSUME_ALIGNED(v)
+  #define __ASSUME_ALIGNED(v) __assume_aligned((v), MIC_ALIGN);
 #endif
 
 // Setup __ASSUME macro to take the appropriate action based on macro flags
-#if USE_ASSUME && CHECK_ASSUME
+#if (CHECK_ASSUME != 0)
   #define __ASSUME(s) assert(s); __assume(s);
-#elif USE_ASSUME
-  #define __ASSUME(s) __assume(s);
 #else
-  #define __ASSUME(s)
+  #define __ASSUME(s) __assume(s);
 #endif
 
-// Setup RESTRICT macro to take the appropriate action based on macro flags
-#if USE_RESTRICT
-  #define RESTRICT __restrict
-#else
-  #define RESTRICT
-#endif
+// Setup RESTRICT macro
+#define RESTRICT __restrict
 
 #ifdef WIN32
   #define __thread __declspec(thread)
@@ -83,66 +39,83 @@
 //   during startup but essentially read-only and constant throughout the
 //   steady-state simulation.
 
-__thread __attribute__((target(mic))) double *device__table_four = NULL;
-__thread __attribute__((target(mic))) float *device__table_four_float = NULL;
-__thread __attribute__((target(mic))) int device__table_four_n_16 = 0;
+__attribute__((target(mic))) double * device__table_four = NULL;
+__attribute__((target(mic))) float * device__table_four_float = NULL;
+__attribute__((target(mic))) int device__table_four_n_16 = 0;
 
-__thread __attribute__((target(mic))) char *device__lj_table = NULL;
-__thread __attribute__((target(mic))) float *device__lj_table_float = NULL;
-__thread __attribute__((target(mic))) int device__lj_table_dim = 0;
-__thread __attribute__((target(mic))) int device__lj_table_size = 0;
+__attribute__((target(mic))) double * device__lj_table = NULL;
+__attribute__((target(mic))) float * device__lj_table_float = NULL;
+__attribute__((target(mic))) int device__lj_table_dim = 0;
+__attribute__((target(mic))) int device__lj_table_size = 0;
 
-__thread __attribute__((target(mic))) unsigned int *device__exclusion_bits = NULL;
-__thread __attribute__((target(mic))) long int device__exclusion_bits_size = 0;
+__attribute__((target(mic))) unsigned int * device__exclusion_bits = NULL;
+__attribute__((target(mic))) long int device__exclusion_bits_size = 0;
 
-__thread __attribute__((target(mic))) mic_constants *device__constants = NULL;
+__attribute__((target(mic))) mic_constants * device__constants = NULL;
+
+__attribute__((target(mic))) double * device__table_four_copy = NULL;
+__attribute__((target(mic))) float * device__table_four_float_copy = NULL;
+__attribute__((target(mic))) double * device__lj_table_copy = NULL;
+__attribute__((target(mic))) float * device__lj_table_float_copy = NULL;
+__attribute__((target(mic))) unsigned int * device__exclusion_bits_copy = NULL;
+__attribute__((target(mic))) mic_constants * device__constants_copy = NULL;
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Device variables which exist both on the host and the MIC device and/or are
 //   used to manage moving data betwen the host and the MIC device.
 
-__thread __attribute__((target(mic))) int device__myPE = -1;
-__thread __attribute__((target(mic))) int device__myNode = -1;
+// DMK - DEBUG - PE and node info for printing debug output
+__thread int host__pe = -1;
+__thread int host__node = -1;
+__attribute__((target(mic))) int device__pe = -1;
+__attribute__((target(mic))) int device__node = -1;
 
-__thread __attribute__((target(mic))) const patch_pair *device__patch_pairs;
-__thread __attribute__((target(mic))) int device__patch_pairs_size;
-__thread __attribute__((target(mic))) int device__patch_pairs_alloc_size;
+__thread patch_pair * host__patch_pairs = NULL;
+__thread int host__patch_pairs_size = 0;
+__thread int host__patch_pairs_bufSize = 0;
+__attribute__((target(mic))) const patch_pair * device__patch_pairs = NULL;
+__attribute__((target(mic))) int device__patch_pairs_size = 0;
 
-__thread __attribute__((target(mic))) unsigned long long int device__pairlists;  // NOTE: Don't use a global in case the device is shared between multiple threads, so each thread's patch pair lists has its own pairlist pointer
-__thread __attribute__((target(mic))) int device__pairlists_alloc_size;
+__thread force_list * host__force_lists = NULL;
+__thread int host__force_lists_size = 0;
+__thread int host__force_lists_bufSize = 0;
+__attribute__((target(mic))) force_list * device__force_lists = NULL;
+__attribute__((target(mic))) int device__force_lists_size = 0;
 
-__thread __attribute__((target(mic))) int** device__pl_array;
-__thread __attribute__((target(mic))) int* device__pl_size;
-__thread __attribute__((target(mic))) double** device__r2_array;
+__attribute__((target(mic))) uintptr_t device__pairlists = 0;  // NOTE: Don't use a global in case the device is shared between multiple threads, so each thread's patch pair lists has its own pairlist pointer
+__attribute__((target(mic))) int device__pairlists_alloc_size = 0;
 
-__thread __attribute__((target(mic))) force_list *device__force_lists;
-__thread __attribute__((target(mic))) int device__force_lists_size;
-__thread __attribute__((target(mic))) int device__force_lists_alloc_size;
+__attribute__((target(mic))) int** device__pl_array = NULL;
+__attribute__((target(mic))) int* device__pl_size = NULL;
+__attribute__((target(mic))) double** device__r2_array = NULL;
 
-__thread __attribute__((target(mic))) atom *device__atoms;
-__thread __attribute__((target(mic))) atom_param *device__atom_params;
-__thread __attribute__((target(mic))) double4 *device__forces;
-__thread __attribute__((target(mic))) double4 *device__slow_forces;
-__thread __attribute__((target(mic))) int device__atoms_size;
-__thread __attribute__((target(mic))) int device__atoms_alloc_size;
+__thread atom * host__atoms = NULL;
+__thread atom_param * host__atom_params = NULL;
+__thread double4 * host__forces = NULL;
+__thread double4 * host__slow_forces = NULL;
+__thread int host__atoms_size = 0;
+__thread int host__atoms_bufSize = 0;
+__attribute__((target(mic))) atom * device__atoms = NULL;
+__attribute__((target(mic))) atom_param * device__atom_params = NULL;
+__attribute__((target(mic))) double4 * device__forces = NULL;
+__attribute__((target(mic))) double4 * device__slow_forces = NULL;
+__attribute__((target(mic))) int device__atoms_size = 0;
 
-__thread __attribute__((target(mic))) double4 *device__force_buffers;
-__thread __attribute__((target(mic))) double4 *device__slow_force_buffers;
-__thread __attribute__((target(mic))) int device__force_buffers_req_size;
-__thread __attribute__((target(mic))) int device__force_buffers_alloc_size;
+__thread int host__force_buffers_req_size = 0;
+__attribute__((target(mic))) int device__force_buffers_req_size = 0;
+__attribute__((target(mic))) int device__force_buffers_alloc_size = 0;
+__attribute__((target(mic))) double4 * device__force_buffers = NULL;
+__attribute__((target(mic))) double4 * device__slow_force_buffers = NULL;
 
-// DMK - TODO | FIXME - See if these variables can be moved to mic_constants
-__thread __attribute__((target(mic))) mic_position3_t device__lata;
-__thread __attribute__((target(mic))) mic_position3_t device__latb;
-__thread __attribute__((target(mic))) mic_position3_t device__latc;
+__attribute__((target(mic))) mic_position3_t device__lata;
+__attribute__((target(mic))) mic_position3_t device__latb;
+__attribute__((target(mic))) mic_position3_t device__latc;
 
-__thread __attribute__((target(mic))) mic_kernel_data *device__remote_kernel_data;
-__thread __attribute__((target(mic))) mic_kernel_data *device__local_kernel_data;
+__thread mic_kernel_data * host__remote_kernel_data;
+__thread mic_kernel_data * host__local_kernel_data;
 
-__thread __attribute__((target(mic))) double *device__virial_energy;
-
-__thread __attribute__((target(mic))) int device__numOMPThreads;
+__attribute__((target(mic))) int device__numOMPThreads = -1;
 
 __thread int tag_atom_params;
 __thread int tag_remote_kernel;
@@ -154,12 +127,9 @@ __thread int atom_params_copySize;
 
 
 // DMK - DEBUG - Based on the number of kernels invoked, track the timestep number.
-__thread __attribute__((target(mic))) int device__timestep;
+__thread int host__timestep = 0;
+__attribute__((target(mic))) int device__timestep = 0;
 
-// DMK - DEBUG - Counters for some statistics when they are collected.
-__thread __attribute__((target(mic))) int* device__loop_counts;
-__thread __attribute__((target(mic))) int* device__cutoff_clear_counts;
-__thread __attribute__((target(mic))) int* device__iTest_counts;
 
 // DMK - TRACING / TIMING
 #include <sys/time.h>
@@ -173,51 +143,13 @@ double getCurrentTime() {
 // DMK - TRACING
 #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
   #if MIC_DEVICE_TRACING_DETAILED != 0
-    __thread __attribute__((target(mic))) double* device__device_times_computes; // Two values per "entry" (start, stop)
-    __thread __attribute__((target(mic))) double* device__device_times_patches;
+    __thread double * host__device_times_computes = NULL;
+    __thread double * host__device_times_patches = NULL;
+    __attribute__((target(mic))) double * device__device_times_computes = NULL;
+    __attribute__((target(mic))) double * device__device_times_patches = NULL;
   #endif
-  __thread __attribute__((target(mic))) double* device__device_times_start;
-#endif
-
-// DMK - DEBUG
-#if MIC_PRAGMA_TIMING_STATS
-
-  __thread double pragma_timing_start = -1.0;
-  __thread double pragma_timing_issued = -1.0;
-  __thread double pragma_issue_time_total = 0.0;
-  __thread double pragma_wait_time_total = 0.0;
-  __thread __attribute__((target(mic))) double pragma_deviceExec_time[1] = { 0.0 };
-  __thread double pragma_deviceExec_time_total = 0.0;
-  __thread int pragma_num_samples = 0;
-
-  #define MIC_PRAGMA_TIMING_DEVICE_CLAUSE   out(pragma_deviceExec_time[0:1] : alloc_if(0) free_if(0))
-
-  void pragma_timing_submitFinish(double finishTime, int pe, int rank) {
-
-    //// DMK - DEBUG
-    //printf("submitFinish :: &pragma_deviceExec_time = %p\n", &pragma_deviceExec_time);
-    printf("submitFinish :: pragma_deviceExec_time = %le\n", pragma_deviceExec_time[0]);
-
-    pragma_issue_time_total += (pragma_timing_issued - pragma_timing_start);
-    pragma_wait_time_total += (finishTime - pragma_timing_issued);
-    pragma_deviceExec_time_total += pragma_deviceExec_time[0];
-    pragma_num_samples++;
-    if (pragma_num_samples >= 200) {
-      printf("[MIC-TIMING] :: PE:%d, RANK:%d :: issue: %.3lf ms, wait: %.3lf ms, deviceExec:%.3lf\n",
-             pe, rank,
-             (pragma_issue_time_total / pragma_num_samples) * 1.0e3,
-             (pragma_wait_time_total / pragma_num_samples) * 1.0e3,
-             (pragma_deviceExec_time_total / pragma_num_samples) * 1.0e3
-            );
-      pragma_issue_time_total = 0.0;
-      pragma_wait_time_total = 0.0;
-      pragma_deviceExec_time_total = 0.0;
-      pragma_num_samples = 0;
-    }
-  }
-
-#else
-  #define MIC_PRAGMA_TIMING_DEVICE_CLAUSE
+  __thread double * host__device_times_start = NULL;
+  __attribute__((target(mic))) double * device__device_times_start = NULL;
 #endif
 
 
@@ -253,17 +185,12 @@ void mic_print_config() {
     printf("device :: MULTIPLE_THREADS  (%d)\n", MULTIPLE_THREADS);
     printf("device :: # OpenMP Threads : %d\n", device__numOMPThreads);
 
-    printf("device :: USE_ASSUME          (%d)\n", USE_ASSUME);
-    printf("device :: USE_ASSUME_ALIGNED  (%d)\n", USE_ASSUME_ALIGNED);
-    printf("device :: USE_RESTRICT        (%d)\n", USE_RESTRICT);
-
     printf("device :: MIC_HANDCODE_FORCE                     (%d)\n", MIC_HANDCODE_FORCE);
     printf("device ::   MIC_HANDCODE_FORCE_PFDIST            (%d)\n", MIC_HANDCODE_FORCE_PFDIST);
     printf("device ::   MIC_HANDCODE_FORCE_USEGATHER_NBTBL   (%d)\n", MIC_HANDCODE_FORCE_USEGATHER_NBTBL);
     printf("device ::   MIC_HANDCODE_FORCE_USEGATHER         (%d)\n", MIC_HANDCODE_FORCE_USEGATHER);
     printf("device ::   MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT  (%d)\n", MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT);
     printf("device ::   MIC_HANDCODE_FORCE_COMBINE_FORCES    (%d)\n", MIC_HANDCODE_FORCE_COMBINE_FORCES);
-    printf("device ::   MIC_HANDCODE_FORCE_TRANS_AS_MADD     (%d)\n", MIC_HANDCODE_FORCE_TRANS_AS_MADD);
 
     printf("device :: MIC_HANDCODE_FORCE_SINGLE            (%d)\n", MIC_HANDCODE_FORCE_SINGLE);
     printf("device :: MIC_HANDCODE_FORCE_CALCR2TABLE       (%d)\n", MIC_HANDCODE_FORCE_CALCR2TABLE);
@@ -279,8 +206,6 @@ void mic_print_config() {
     printf("device :: MIC_CONDITION_NORMAL  (%d)\n", MIC_CONDITION_NORMAL);
     printf("device :: MIC_PAD_PLGEN         (%d)\n", MIC_PAD_PLGEN);
 
-    printf("device :: MULTIPLE_THREADS  (%d)\n", MULTIPLE_THREADS);
-
     printf("device :: MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING  (%d)\n", MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING);
     printf("device ::   MIC_SPECIFIC_COMPUTE_PARTITIONING__SELF_P1  (%d)\n", MIC_SPECIFIC_COMPUTE_PARTITIONING__SELF_P1);
     printf("device ::   MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P1  (%d)\n", MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P1);
@@ -290,7 +215,7 @@ void mic_print_config() {
 
     printf("device :: MIC_SORT_COMPUTES  (%d)\n", MIC_SORT_COMPUTES);
 
-    printf("device :: MIC_VIRIAL_ENERGY_ALT  (%d)\n", MIC_VIRIAL_ENERGY_ALT);
+    printf("device :: MIC_SYNC_INPUT  (%d)\n", MIC_SYNC_INPUT);
 
     printf("device :: REFINE_PAIRLISTS            (%d)\n", REFINE_PAIRLISTS);
     printf("device ::   REFINE_PAIRLIST_HANDCODE  (%d)\n", REFINE_PAIRLIST_HANDCODE);
@@ -314,95 +239,51 @@ void mic_print_config() {
 //  - deviceNum : the device number to be initialized
 void mic_init_device(const int pe, const int node, const int deviceNum) {
 
-  // Record the PE associated with the device
-  device__myPE = pe;
-  device__myNode = node;
+  // Record the PE and node info associated with the given device
+  host__pe = pe;
+  host__node = node;
 
-  // Initialize the various device variables
-  device__patch_pairs = NULL;
-  device__patch_pairs_size = 0;
-  device__patch_pairs_alloc_size = 0;
-  device__pairlists = 0; // NULL / Unset
-  device__pairlists_alloc_size = 0;
-  device__force_lists = NULL;
-  device__force_lists_size = 0;
-  device__force_lists_alloc_size = 0;
-  device__atoms = NULL;
-  device__atom_params = NULL;
-  device__forces = NULL;
-  device__slow_forces = NULL;
-  device__atoms_alloc_size = 0;
-  device__force_buffers = NULL;
-  device__slow_force_buffers = NULL;
-  device__force_buffers_req_size = 0;
-  device__force_buffers_alloc_size = 0;
-
-  device__remote_kernel_data = new mic_kernel_data[1];
-  device__local_kernel_data = new mic_kernel_data[1];
-
-  // DMK - DEBUG - Device timestep counter (only used on device, so initialize to invalid value on host)
-  device__timestep = 0;
-
-  // DMK - NOTE: These values are only used on the device, so are just
-  //   set to NULL on the host
-  device__pl_array = NULL;
-  device__pl_size = NULL;
-  device__r2_array = NULL;
+  // Initialize various variables
+  host__remote_kernel_data = new mic_kernel_data[1];
+  host__local_kernel_data = new mic_kernel_data[1];
+  __ASSERT(host__remote_kernel_data != NULL && host__local_kernel_data != NULL);
+  mic_kernel_data * remote_kernel_data = host__remote_kernel_data;
+  mic_kernel_data * local_kernel_data = host__local_kernel_data;
 
   // Initialize flags for offload buffers that are not copied every timestep
   patch_pairs_copySize = 0;
   force_lists_copySize = 0;
   atom_params_copySize = 0;
 
-  // DMK - DEBUG
-  device__loop_counts = NULL;
-  device__cutoff_clear_counts = NULL;
-  device__iTest_counts = NULL;
-
-  device__virial_energy = NULL;
-
-  device__numOMPThreads = 0;
-
-  // DMK - TIMING
+  // Allocate data for the host__device_times_start buffer (constant size throughout simulation)
   #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
-    #if MIC_DEVICE_TRACING_DETAILED != 0
-      device__device_times_computes = NULL;
-      device__device_times_patches = NULL;
-    #endif
-    device__device_times_start = NULL;
+    host__device_times_start = (double*)_MM_MALLOC_WRAPPER(10 * sizeof(double), 64, "host__device_times_start");
+    __ASSERT(host__device_times_start != NULL);
+    double * device_times_start = host__device_times_start;
+    #define DEVICE_TIMES_CLAUSE  nocopy(device_times_start[0:10] : alloc_if(1) free_if(0) align(64)) \
+                                 nocopy(device__device_times_start)
+  #else
+    #define DEVICE_TIMES_CLAUSE
   #endif
 
   // Initialize the device itself via an offload pragma section
   #pragma offload target(mic:deviceNum) \
-    in(device__myNode) in(device__myPE) in(deviceNum) \
-    in(device__remote_kernel_data[0:1] : alloc_if(1) free_if(0)) \
-    in(device__local_kernel_data[0:1] : alloc_if(1) free_if(0)) \
-    nocopy(device__pairlists) nocopy(device__pairlists_alloc_size) \
+    in(pe) in(node) nocopy(device__pe) nocopy(device__node) \
+    in(remote_kernel_data[0:1] : alloc_if(1) free_if(0) align(16)) \
+    in(local_kernel_data[0:1] : alloc_if(1) free_if(0) align(16)) \
     nocopy(device__pl_array) nocopy(device__pl_size) nocopy(device__r2_array) \
-    nocopy(device__timestep) \
-    nocopy(device__loop_counts) nocopy(device__cutoff_clear_counts) nocopy(device__iTest_counts) \
-    nocopy(device__force_buffers_req_size) nocopy(device__force_buffers_alloc_size) \
-    nocopy(device__virial_energy) \
-    nocopy(device__force_buffers) nocopy(device__slow_force_buffers) 
+    nocopy(device__numOMPThreads) \
+    DEVICE_TIMES_CLAUSE
   {
-    #if !defined(__MIC__)
-      mic_dev_die("mic_init_device :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-    #endif
+    __MUST_BE_MIC;
+    __FULL_CHECK(__ASSERT(node >= 0 && pe >= 0));
 
-    // Initialize the force buffer arrays and sizes
-    device__force_buffers_alloc_size = 0;
-    device__force_buffers_req_size = 0;
-    device__force_buffers = NULL;
-    device__slow_force_buffers = NULL;
-
-    // Initialize the pairlist pointer array (an array of pointers, one entry per pairlist)
-    device__pairlists = NULL;
-    device__pairlists_alloc_size = 0;
+    device__pe = pe;
+    device__node = node;
 
     // Get the number of threads available to the code
-    const int numThreads = omp_get_max_threads();
     #if MULTIPLE_THREADS != 0
-      device__numOMPThreads = numThreads;
+      device__numOMPThreads = omp_get_max_threads();
     #else
       device__numOMPThreads = 1;
     #endif
@@ -410,59 +291,32 @@ void mic_init_device(const int pe, const int node, const int deviceNum) {
     // Initialize the r2 arrays (scratch buffers used by computes to refine pairlists
     //   each timestep, when pairlist refinement is enabled)
     #if REFINE_PAIRLISTS != 0
-      device__pl_array = new int*[numThreads];     __ASSERT(device__pl_array != NULL);
-      device__pl_size = new int[numThreads];       __ASSERT(device__pl_size != NULL);
-      device__r2_array = new double*[numThreads];  __ASSERT(device__r2_array != NULL);
-      for (int i = 0; i < numThreads; i++) {
+      device__pl_array = new int*[device__numOMPThreads];     __ASSERT(device__pl_array != NULL);
+      device__pl_size = new int[device__numOMPThreads];       __ASSERT(device__pl_size != NULL);
+      device__r2_array = new double*[device__numOMPThreads];  __ASSERT(device__r2_array != NULL);
+      for (int i = 0; i < device__numOMPThreads; i++) {
         device__pl_array[i] = NULL;
         device__pl_size[i] = 0;
         device__r2_array[i] = NULL;
       }
-    #else
-      device__pl_array = NULL;
-      device__pl_size = 0;
-      device__r2_array = NULL;
     #endif
 
-    // DMK - DEBUG - Initialize a counter to track timestep count (for debug output reference)
-    device__timestep = 0;
-
-    // DMK - DEBUG
-    #if MIC_STATS_LOOP_COUNTS != 0
-      int lc_size = 6 * MIC_STATS_LOOP_COUNTS_NUM_BINS;
-      device__loop_counts = new int[lc_size];  __ASSERT(device__loop_counts != NULL);
-      device__cutoff_clear_counts = new int[lc_size];  __ASSERT(device__cutoff_clear_counts != NULL);
-      device__iTest_counts = new int[lc_size];  __ASSERT(device__iTest_counts != NULL);
-      memset(device__loop_counts, 0, sizeof(int) * lc_size);
-      memset(device__cutoff_clear_counts, 0, sizeof(int) * lc_size);
-      memset(device__iTest_counts, 0, sizeof(int) * lc_size);
-    #else
-      device__loop_counts = NULL;
-      device__cutoff_clear_counts = NULL;
-      device__iTest_counts = NULL;
+    // Copy the pointer to the device_times_start buffer
+    #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
+      device__device_times_start = device_times_start;
     #endif
-
-    #if MIC_VIRIAL_ENERGY_ALT != 0
-      device__virial_energy = NULL;
-    #endif
-
+    
     // DMK : NOTE | TODO | FIXME - This will print the configuration of the MICs, but the condition
     //   assumes that there will be at least one MIC on the first node (node 0).  Further, it assumes
-    //   that all MICs will be the same.  If there are cases where these assumptions do not hold, we
-    //   need to expand this code to cover those cases.  For now, leaving it this way because it
-    //   reduces the amount of output during the run (espeically when scaling to multiple nodes and/or
-    //   multiple MICs per node).
+    //   that all MICs will be the same (i.e. only prints on one device).  If there are cases where
+    //   these assumptions do not hold, we need to expand this code to cover those cases.  For now,
+    //   leaving it this way because it reduces the amount of output during the run (espeically when
+    //   scaling to multiple nodes and/or multiple MICs per node) and is likely the case (for now).
     if (node == 0 && deviceNum == 0) { mic_print_config(); }
 
   } // end pragma offload
 
-  #if MIC_PRAGMA_TIMING_STATS != 0
-    #pragma offload target(mic:deviceNum) \
-      inout(pragma_deviceExec_time[0:1] : alloc_if(1) free_if(0) align(64))
-    {
-      pragma_deviceExec_time[0] = 0.0;
-    }
-  #endif
+  #undef DEVICE_TIMES_CLAUSE
 }
 
 
@@ -487,9 +341,9 @@ __attribute__((target(mic))) int mic_check_internal() {
 //  - dev : The device number (0+) to check
 // Output:
 //  - 1 if device is available (will call mic_dev_die if not available to prevent further application progress)
-int mic_check(int dev) {
+int mic_check(int deviceNum) {
   int dev_ok = 0;
-  #pragma offload target(mic: dev) inout(dev_ok)
+  #pragma offload target(mic:deviceNum) inout(dev_ok)
   {
     #if !defined(__MIC__)
       mic_dev_die("mic_check :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
@@ -498,6 +352,302 @@ int mic_check(int dev) {
   }
   return dev_ok;
 }
+
+
+// DMK - NOTE : The following is debug code used for verifying data structures.  Should not be used in
+//   production runs.
+#if MIC_DATA_STRUCT_VERIFY != 0
+
+__declspec(target(mic))
+int _verify_pairlist(const int pe, const int timestep, const int isRemote, const int phase,
+                     const int i_upper, const int j_upper,
+                     const int * const pairlist_base,
+                     const int ppI, const char * const plStr,
+                     const patch_pair &pp, const int plTypeIndex
+                    ) {
+
+  const atom_param * const pExt_0 = device__atom_params + pp.patch1_atom_start;
+  const atom_param * const pExt_1 = device__atom_params + pp.patch2_atom_start;
+
+  if (pairlist_base == NULL) {
+    if (timestep > 0) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: pairlist_base == NULL !!!\n", pe, timestep, isRemote, phase); return 1; }
+  } else if (i_upper <= 0) {
+    printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: i_upper <= 0 !!!\n", pe, timestep, isRemote, phase); return 1;
+  } else if (j_upper <= 0) {
+    printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: j_upper <= 0 !!!\n", pe, timestep, isRemote, phase); return 1;
+  } else {
+
+    int currentI = 0;
+    int inPadding = 0;
+    int pairlist_size = pairlist_base[1] - 2;
+    int pairlist_allocSize = pairlist_base[0];
+    const int * const pairlist = pairlist_base + 2;
+
+    if (pairlist_size + 2 > pairlist_allocSize) {
+      printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: pairlist_size + 2 > pairlist_allocSize !!!\n", pe, timestep, isRemote, phase); return 1;
+    }
+
+    for (int k = 0; k < pairlist_size; k++) {
+
+      int somethingWrong = 0;
+      int i = (pairlist[k] >> 16) & 0xFFFF;
+      int j =  pairlist[k]        & 0xFFFF;
+
+      // Verify the interaction is in the correct list
+      if (j != 0xFFFF) { // If this is a valid entry, not padding
+        const int maxDiff = pExt_1[j].excl_maxdiff;
+        const int indexDiff = pExt_0[i].index - pExt_1[j].index;
+        if (indexDiff < -1 * maxDiff || indexDiff > maxDiff) { // Not in patten, so must be NORM
+          if (plTypeIndex != PL_NORM_INDEX) {
+            printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: interaction outside maxDiff range in non-NORM pairlist !!!"
+                   " - ppI:%d, i:%d, j:%d, indexDiff:%d, maxDiff:%d, plTypeIndex:%d\n",
+                   pe, timestep, isRemote, phase,
+                   ppI, i, j, indexDiff, maxDiff, plTypeIndex
+                  );
+            somethingWrong = 1;
+	  }
+        } else { // In pattern, so verify against bits
+          const int offset = (2 * indexDiff) + pExt_1[j].excl_index;
+          const int offset_major = offset / (sizeof(unsigned int) * 8);
+          const int offset_minor = offset % (sizeof(unsigned int) * 8);
+          const int exclFlags = ((device__exclusion_bits[offset_major]) >> offset_minor) & 0x03;
+          if (exclFlags == 0x3) { 
+            printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: invalid exclusion bit pattern detected !!!"
+                   " - ppI:%d, i:%d, j:%d, indexDiff:%d, maxDiff:%d, plTypeIndex:%d\n",
+                   pe, timestep, isRemote, phase,
+                   ppI, i, j, indexDiff, maxDiff, plTypeIndex
+                  );
+            somethingWrong = 1;
+	  } else if (exclFlags != plTypeIndex) { 
+            printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: plTypeIndex/exclution_bits mismatch !!!"
+                   " - i:%d, j:%d, indexDiff:%d, maxDiff:%d, plTypeIndex:%d, exclFlags:%d\n",
+                   pe, timestep, isRemote, phase,
+                   i, j, indexDiff, maxDiff, plTypeIndex, exclFlags
+                  );
+            somethingWrong = 1;
+	  }
+        }
+      }
+
+      // Check for a new "i" value
+      if (i != currentI) {
+        if (i < currentI) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: i < currentI !!!\n", pe, timestep, isRemote, phase); somethingWrong = 1; }
+        if (k % 16 != 0) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: i changed when k % 16 != 0 !!!\n", pe, timestep, isRemote, phase); somethingWrong = 1; }
+        currentI = i;
+        inPadding = 0;  // New i means we are transitioning into a non-padding region
+      }
+
+      // If we are in a padding region...
+      if (inPadding) {
+        if (i < 0 || i >= i_upper) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: invalid i value detected in padded region!!!\n", pe, timestep, isRemote, phase); somethingWrong = 1; }
+        if (j != 0xFFFF) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: invalid j value detected in padded region !!!\n", pe, timestep, isRemote, phase); somethingWrong = 1; }
+
+      // Otherwise, we are in a non-padding region...
+      } else {
+        if (i < 0 || i >= i_upper) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: invalid i value detected !!!\n", pe, timestep, isRemote, phase); somethingWrong = 1; }
+        if (j == 0xFFFF) {  // Detect transition into a padded region
+          inPadding = 1;
+	} else {
+          if (j < 0 || j >= j_upper) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: invalid j value detected !!!\n", pe, timestep, isRemote, phase); somethingWrong = 1; }
+	}
+      }
+
+      if (somethingWrong) {
+        char buf[2048];
+        int lo = k - 3; if (lo < 0) { lo = 0; }
+        int hi = k + 3; if (hi >= pairlist_size) { hi = pairlist_size; }
+        char *str = buf;
+        str += sprintf(str, "[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d ::   pl.%s[%d:%d->%d,%d:%d] = { ... ", pe, timestep, isRemote, phase, plStr, ppI, lo, hi, k, pairlist_size);
+        for (int _k = lo; _k < hi; _k++) { str += sprintf(str, "%s0x%08x%s ", ((_k==k)?("<<"):("")), pairlist[_k], ((_k==k)?(">>"):(""))); }
+        str += sprintf(str, "}, i_upper:%d, j_upper:%d\n", i_upper, j_upper);
+        printf(buf);
+        //return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+
+
+__declspec(target(mic))
+int _verify_forces(const int pe, const int timestep, const int isRemote, const int phase,
+                   const int index, const double4 * const forceBuffers, const double4 * const forces,
+                   const char * const typeStr
+                  ) {
+
+  force_list &fl = device__force_lists[index];
+
+  // Verify the indexes / sizes
+  if (fl.force_list_start < 0 || fl.force_list_start >= device__force_buffers_req_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists[%d].force_list_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, index, fl.force_list_start, device__force_buffers_req_size); return 1; }
+  if (fl.force_output_start < 0 || fl.force_output_start >= device__atoms_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists[%d].force_output_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, index, fl.force_output_start, device__atoms_size); return 1; }
+  if (fl.patch_stride < 0) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists[%d].patch_stride(%d) < 0 !!!\n", pe, timestep, isRemote, phase, index, fl.patch_stride); return 1; }
+  if (fl.force_list_size < 0) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists[%d].force_list_size(%d) < 0 !!!\n", pe, timestep, isRemote, phase, index, fl.force_list_size); return 1; }
+  if (fl.force_list_start + (4 * fl.patch_stride * fl.force_list_size) > device__force_buffers_req_size) {
+    printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: fl[%d].force_list_start(%d) + (4 * fl.patch_stride(%d) * fl.force_list_size(%d)) > device__force_buffers_req_size(%d) !!!\n",
+           pe, timestep, isRemote, phase, index, fl.force_list_start, fl.patch_stride, fl.force_list_size, device__force_buffers_req_size);
+    return 1;
+  }
+
+  // Check sub-lists for large forces
+  double* f = (double*)(forceBuffers + fl.force_list_start);
+  for (int i = 0; i < 4 * fl.patch_stride * fl.force_list_size; i++) {
+    if (fabsf(f[i]) > 2.2e2) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: Large %sforce detected (1) !!! f[%d]:%le\n", pe, timestep, isRemote, phase, typeStr, i, f[i]); } // NOTE: Want to print them all, so don't return here
+  }
+  //for (int i = 0; i < fl.force_list_size; i++) {
+  //  double *ff = f + (4 * i * fl.patch_stride);
+  //  int nonZeroFound = 0;
+  //  for (int j = 0; j < 4 * fl.patch_stride; j++) {
+  //    if (ff[j] != 0.0) { nonZeroFound = 1; break; }
+  //  }
+  //  if (!nonZeroFound) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: Compute contributed no %sforces (index:%d, i:%d)\n", pe, timestep, isRemote, phase, typeStr, index, i); } // NOTE: Want to print them all, so don't return here
+  //}
+
+  // Check final list for large forces
+  f = (double*)(forces + fl.force_output_start);
+  for (int i = 0; i < 4 * fl.patch_stride; i++) {
+    if (fabsf(f[i]) > 2.2e2) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: Large %sforce detected (2) !!! f[%d]:%le\n", pe, timestep, isRemote, phase, typeStr, i, f[i]); } // NOTE: Want to print them all, so don't return here
+  }
+
+  return 0;
+}
+
+__declspec(target(mic))
+int _verify_buffers_match(const int pe, const int timestep, const int isRemote, const int phase,
+                          const char * const buf, const char * const golden, const unsigned int bufSize,
+                          const char * const str
+                         ) {
+  if (buf == NULL) {
+    printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: buf == NULL (%s) !!!\n", pe, timestep, isRemote, phase, str); return 1;
+  } else if (golden == NULL) {
+    printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: golden == NULL (%s) !!!\n", pe, timestep, isRemote, phase, str); return 1;
+  } else if (bufSize < 0) {
+    printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: bufSize <= 0 (%s) !!!\n", pe, timestep, isRemote, phase, str); return 1;
+  } else {
+    int mismatchFound = 0;
+    int start = -1;
+    for (int i = 0; i < bufSize; i++) {
+      if (start < 0) {
+        if (buf[i] != golden[i]) {
+          printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: buf[%d/%d]:0x%02x != golden[%d]:0x%02x (%s) !!!\n",
+                 pe, timestep, isRemote, phase, i, bufSize, buf[i], i, golden[i], str
+                );
+          start = i;
+          mismatchFound = 1;
+	}
+      } else {
+        if (buf[i] == golden[i] || i == bufSize - 1) {
+          if (i < bufSize - 1 && buf[i+1] != golden[i+1]) { // NOTE: Ignore single byte matches found within consecutive mismatches
+            printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: buf[%d/%d]:0x%02x != golden[%d]:0x%02x (%s) !!!\n",
+                   pe, timestep, isRemote, phase, i, bufSize, buf[i], i, golden[i], str
+                  );
+	  } else {
+            printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: buf mismatch range %d -> %d (%s) !!!\n",
+                   pe, timestep, isRemote, phase, start, ((buf[i] != golden[i] && i == bufSize - 1) ? (i+1) : (i)), str
+                  );
+            start = -1;
+	  }
+	} else if (buf[i] != golden[i] && i - start < 16) {
+          printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: buf[%d/%d]:0x%02x != golden[%d]:0x%02x (%s) !!!\n",
+                 pe, timestep, isRemote, phase, i, bufSize, buf[i], i, golden[i], str
+                );
+	}
+      }
+    }
+    if (mismatchFound) { return 1; }
+  }
+  return 0;
+}
+
+__declspec(target(mic))
+void _verify_tables(const int pe, const int timestep, const int isRemote, const int phase) {
+
+  // Verify that certain tables/buffers haven't been modified
+  if (_verify_buffers_match(pe, timestep, isRemote, phase, (char*)(device__exclusion_bits), (char*)(device__exclusion_bits_copy), device__exclusion_bits_size * sizeof(unsigned int), "exclusion_bits")) { return; }
+  if (_verify_buffers_match(pe, timestep, isRemote, phase, (char*)(device__constants), (char*)(device__constants_copy), sizeof(mic_constants), "constants")) { return; }
+  #if MIC_HANDCODE_FORCE_SINGLE != 0
+    if (_verify_buffers_match(pe, timestep, isRemote, phase, (char*)(device__table_four_float), (char*)(device__table_four_float_copy), 61 * device__table_four_n_16 * sizeof(float), "table_four(float)")) { return; }
+    if (_verify_buffers_match(pe, timestep, isRemote, phase, (char*)(device__lj_table_float), (char*)(device__lj_table_float_copy), device__lj_table_size / sizeof(double) * sizeof(float), "lj_table(float)")) { return; }
+  #else
+    if (_verify_buffers_match(pe, timestep, isRemote, phase, (char*)(device__table_four), (char*)(device__table_four_copy), 61 * device__table_four_n_16 * sizeof(double), "table_four(double)")) { return; }
+    if (_verify_buffers_match(pe, timestep, isRemote, phase, (char*)(device__lj_table), (char*)(device__lj_table_copy), device__lj_table_size * sizeof(double), "lj_table(double)")) { return; }
+  #endif
+
+  // Check to see if the constants struct has been placed inside the exclusion_bits buffer
+  char *p1 = (char*)(device__constants);
+  char *p2 = (char*)(device__exclusion_bits);
+  int pDiff = p1 - p2;
+  if (p1 >= p2 && p1 < p2 + (device__exclusion_bits_size * sizeof(unsigned int))) {
+    printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: !!!! OVERLAP OF EXCLUSIONS AND CONSTANTS DETECTED !!!! - constants:%p(%ld), exclusions:%p(%ld)\n",
+           pe, timestep, isRemote, phase, device__constants, sizeof(device__constants), device__exclusion_bits, device__exclusion_bits_size * sizeof(unsigned int)
+          );
+  }
+
+  fflush(NULL);
+}
+
+
+
+__declspec(target(mic))
+void _verify_data_structures(const int pe, const int timestep, const int isRemote, const int phase,
+                             const int check_lo, const int check_hi, const int doSlow
+                            ) {
+
+  // Verify that the basic arrays are allocated
+  if (device__atoms == NULL) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__atoms == NULL !!!\n", pe, timestep, isRemote, phase); return; }
+  if (device__atom_params == NULL) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__atom_params == NULL !!!\n", pe, timestep, isRemote, phase); return; }
+  if (device__forces == NULL) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__forces == NULL !!!\n", pe, timestep, isRemote, phase); return; }
+  if (device__slow_forces == NULL) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__slow_forces == NULL !!!\n", pe, timestep, isRemote, phase); return; }
+  if (device__patch_pairs == NULL) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs == NULL !!!\n", pe, timestep, isRemote, phase); return; }
+  if (device__force_lists == NULL) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists == NULL !!!\n", pe, timestep, isRemote, phase); return; }
+  if (device__pairlists == NULL) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__pairlists == NULL !!!\n", pe, timestep, isRemote, phase); return; }
+
+  // Verify sizes (as much as possible)
+  if (device__patch_pairs_size <= 0) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs_size <= 0 !!!\n", pe, timestep, isRemote, phase); return; }
+  if (device__force_lists_size <= 0) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists_size <= 0 !!!\n", pe, timestep, isRemote, phase); return; }
+
+  // Verify the tables
+  _verify_tables(pe, timestep, isRemote, phase);
+
+  // For each patch pair
+  #if MULTIPLE_THREADS != 0
+    #pragma omp parallel for
+  #endif
+  for (int k = check_lo; k < check_hi; k++) {
+
+    const patch_pair &pp = device__patch_pairs[k];
+
+    // Check indexing
+    if (pp.patch1_atom_start < 0 || pp.patch1_atom_start >= device__atoms_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch1_atom_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, k, pp.patch1_atom_start, device__atoms_size); }
+    if (pp.patch2_atom_start < 0 || pp.patch2_atom_start >= device__atoms_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch2_atom_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, k, pp.patch2_atom_start, device__atoms_size); }
+    if (pp.patch1_force_start < 0 || pp.patch1_force_start >= device__force_buffers_req_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch1_force_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, k, pp.patch1_force_start, device__force_buffers_req_size); }
+    if (pp.patch2_force_start < 0 || pp.patch2_force_start >= device__force_buffers_req_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch2_force_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, k, pp.patch2_force_start, device__force_buffers_req_size); }
+
+    // Verify the pairlists
+    int i_upper = pp.patch1_size;
+    int j_upper = pp.patch2_size;
+    const int ** const pairlists = (const int ** const)device__pairlists;
+    _verify_pairlist(pe, timestep, isRemote, phase, i_upper, j_upper, pairlists[NUM_PAIRLIST_TYPES * k + PL_NORM_INDEX], k, "NORM", pp, PL_NORM_INDEX);
+    _verify_pairlist(pe, timestep, isRemote, phase, i_upper, j_upper, pairlists[NUM_PAIRLIST_TYPES * k + PL_EXCL_INDEX], k, "EXCL", pp, PL_EXCL_INDEX);
+    _verify_pairlist(pe, timestep, isRemote, phase, i_upper, j_upper, pairlists[NUM_PAIRLIST_TYPES * k +  PL_MOD_INDEX], k,  "MOD", pp,  PL_MOD_INDEX);
+  }
+
+  // Verify forces if this is the local kernel (end of timestep)
+  if (isRemote == 0) {
+    #if MULTIPLE_THREADS != 0
+      #pragma omp parallel for
+    #endif
+    for (int k = 0; k < device__force_lists_size; k++) {
+      _verify_forces(pe, timestep, isRemote, phase, k, device__force_buffers, device__forces, "");
+      if (doSlow) { _verify_forces(pe, timestep, isRemote, phase, k, device__slow_force_buffers, device__slow_forces, "slow "); }
+    }
+  }
+
+  fflush(NULL);
+}
+
+#endif // MIC_DATA_STRUCT_VERIFY
+
 
 
 // Function called during startup to push the table_four data (lookup table used
@@ -515,44 +665,68 @@ void mic_bind_table_four(const int deviceNum,
                          const int table_four_n_16
                         ) {
 
-  // NOTE: This function should only be called once per device at startup,
-  //   so check for multiple calls
-  if (device__table_four != NULL) {
-    printf("[PE:%d,DEV:%d] :: ERROR :: !!! Attempt to write device__table_four multiple times !!!\n", device__myPE, deviceNum);
-    fflush(NULL);
-    return;
-  }
+  // Verify parameters
+  __FULL_CHECK(__ASSERT(deviceNum >= 0));
+  __FULL_CHECK(__ASSERT(table_four != NULL));
+  __FULL_CHECK(__ASSERT(table_four_n > 0));
+  __FULL_CHECK(__ASSERT(table_four_n_16 > 0 && table_four_n_16 >= table_four_n));
+  __FULL_CHECK(__ASSERT(table_four_n_16 % 16 == 0));
 
   // Copy the table pointer and dimension information into the device variables.
   //   Note that there are actually several sub-tables within the table_four
   //   table, each a multiple of table_four_n elements in length.
-  device__table_four = (double*)table_four;
-  device__table_four_float = NULL;
-  device__table_four_n_16 = table_four_n_16;
   int numTableFourElems = 61 * table_four_n_16;  // WARNING !!! Must match ComputeNonbondedUtil.C (const 61) !!!
 
   // Transfer the table_four data and dimension data to the given device
   #pragma offload target(mic:deviceNum) \
-    in(device__table_four_n_16) \
-    in(device__table_four[0:numTableFourElems] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
-    nocopy(device__table_four_float) in(numTableFourElems)
+    in(table_four_n_16) nocopy(device__table_four_n_16) \
+    in(numTableFourElems) \
+    in(table_four[0:numTableFourElems] : alloc_if(1) free_if(1)) \
+    nocopy(device__table_four) nocopy(device__table_four_float) \
+    nocopy(device__table_four_copy) nocopy(device__table_four_float_copy)
   {
-    #if !defined(__MIC__)
-      mic_dev_die("mic_bind_table_four :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-    #endif
+    __MUST_BE_MIC;
 
-    //#if (MIC_HANDCODE_FORCE != 0) && (MIC_HANDCODE_FORCE_SINGLE != 0)
+    // Copy and verify the table_four_n_16 value
+    device__table_four_n_16 = table_four_n_16;
+    __FULL_CHECK(__ASSERT(device__table_four_n_16 > 0));
+
+    // Allocate memory on the device for the table_four table.  Depending on the precision being used
+    //   for the table, either create a 64-bit or 32-bit copy of the data on the device.
+    __FULL_CHECK(__ASSERT(device__table_four == NULL && device__table_four_float == NULL));  // Check for double allocation
     #if MIC_HANDCODE_FORCE_SINGLE != 0
-      //device__table_four_float = (float*)(_mm_malloc(sizeof(float) * numTableFourElems, 64));
+
+      // Allocate and copy data into a 32-bit version of the table
       device__table_four_float = (float*)(_MM_MALLOC_WRAPPER(sizeof(float) * numTableFourElems, 64, "device__table_four_float"));
-      assert(device__table_four_float != NULL);
+      __ASSERT(device__table_four_float != NULL);
       for (int i = 0; i < numTableFourElems; i++) {
-        device__table_four_float[i] = (float)(device__table_four[i]);
+        device__table_four_float[i] = (float)(table_four[i]);
       }
-    #else
-      device__table_four_float = NULL;
-    #endif
-  }
+
+      // Create a second copy for verification purposes
+      #if MIC_DATA_STRUCT_VERIFY != 0
+        device__table_four_float_copy = (float*)(_MM_MALLOC_WRAPPER(sizeof(float) * numTableFourElems, 64, "device__table_four_float_copy"));
+        __ASSERT(device__table_four_float_copy != NULL);
+        memcpy(device__table_four_float_copy, device__table_four_float, numTableFourElems * sizeof(float));
+      #endif
+
+    #else // MIC_HANDCODE_FORCE_SINGLE != 0
+
+      // Allocate and copy data into a 64-bit version of the table
+      device__table_four = (double*)(_MM_MALLOC_WRAPPER(sizeof(double) * numTableFourElems, 64, "device__table_four"));
+      __ASSERT(device__table_four != NULL);
+      for (int i = 0; i < numTableFourElems; i++) {
+        device__table_four[i] = table_four[i];
+      }
+      #if MIC_DATA_STRUCT_VERIFY != 0
+        device__table_four_copy = (double*)(_MM_MALLOC_WRAPPER(sizeof(double) * numTableFourElems, 64, "device__table_four_copy"));
+        __ASSERT(device__table_four_copy != NULL);
+        memcpy(device__table_four_copy, device__table_four, numTableFourElems * sizeof(double));
+      #endif
+
+    #endif // MIC_HANDCODE_FORCE_SINGLE != 0
+
+  } // end pragma offload
 }
 
 
@@ -561,57 +735,77 @@ void mic_bind_table_four(const int deviceNum,
 //   given device.
 // Input:
 //   - deviceNum : the device to push the data to (number within node)
-//   - lj_table : pointer to the table data itself
+//   - lj_table : pointer to the table data itself (64-bit version on the host)
 //   - lj_table_dim : dimension of the lj_table (used for indexing)
 //   - lj_table_size : size of the lj_table
 // Output: N/A
 void mic_bind_lj_table(const int deviceNum,
-                       const char *lj_table,
+                       const char * lj_table,
                        const int lj_table_dim,
                        const int lj_table_size
                       ) {
 
-  // NOTE: This function should only be called once per device at startup,
-  //   so check for multiple calls
-  if (device__lj_table != NULL) {
-    printf("[PE:%d,DEV:%d] :: ERROR :: !!! Attempt to write device__lj_table multiple times !!!\n", device__myPE, deviceNum);
-    fflush(NULL);
-    return;
-  }
-
-  // Copy the table pointer, dimension, and size information into the device variables.
-  device__lj_table = (char*)lj_table;
-  device__lj_table_float = NULL;
-  device__lj_table_dim = lj_table_dim;
-  device__lj_table_size = lj_table_size;
+  // Verify Parameters
+  __FULL_CHECK(__ASSERT(deviceNum >= 0));
+  __FULL_CHECK(__ASSERT(lj_table != NULL));
+  __FULL_CHECK(__ASSERT(lj_table_dim > 0));
+  __FULL_CHECK(__ASSERT(lj_table_size > 0));
 
   // Transfer the table data, dimension, and size information to the given device.
   #pragma offload target(mic:deviceNum) \
-    in(device__lj_table_dim) \
-    in(device__lj_table_size) \
-    in(device__lj_table[0:lj_table_size] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
-    nocopy(device__lj_table_float)
+    in(lj_table_dim) nocopy(device__lj_table_dim) \
+    in(lj_table_size) nocopy(device__lj_table_size) \
+    in(lj_table[0:lj_table_size] : alloc_if(1) free_if(1)) \
+    nocopy(device__lj_table) nocopy(device__lj_table_float) \
+    nocopy(device__lj_table_copy) nocopy(device__lj_table_float_copy) \
+    nocopy(device__pe)
   {
-    #if !defined(__MIC__)
-      mic_dev_die("mic_bind_lj_table :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-    #endif
+    __MUST_BE_MIC;
 
-    // If single precision is being used, the convert the entries of the table
-    //   from double to single
-    //#if (MIC_HANDCODE_FORCE != 0) && (MIC_HANDCODE_FORCE_SINGLE != 0)
+    // Copy and verify the LJ table size and dimension info
+    device__lj_table_dim = lj_table_dim;
+    device__lj_table_size = lj_table_size;
+    __FULL_CHECK(__ASSERT(device__lj_table_dim > 0 && device__lj_table_size > 0));
+
+    // Allocate memory on the device for the LJ table.  Depending on the precision being used
+    //   for the table, either create a 64-bit or 32-bit copy of the data on the device.
+    __FULL_CHECK(__ASSERT(device__lj_table == NULL && device__lj_table_float == NULL));  // Check for double allocation
+    int numElements = device__lj_table_size * sizeof(char) / sizeof(double);
     #if MIC_HANDCODE_FORCE_SINGLE != 0
-      int numElements = device__lj_table_size * sizeof(char) / sizeof(double);
-      //device__lj_table_float = (float*)(_mm_malloc(sizeof(float) * numElements, 64));
+
+      // Allocate and copy the data into a 32-bit version of the table
       device__lj_table_float = (float*)(_MM_MALLOC_WRAPPER(sizeof(float) * numElements, 64, "device__lj_table_float"));
-      assert(device__lj_table_float != NULL);
-      double *srcPtr = (double*)(device__lj_table);
+      __ASSERT(device__lj_table_float != NULL);
       for (int i = 0; i < numElements; i++) {
-        device__lj_table_float[i] = (float)(srcPtr[i]);
+        device__lj_table_float[i] = (float)(((double*)lj_table)[i]);
       }
-    #else
-      device__lj_table_float = NULL;
-    #endif
-  }
+
+      // Create a copy of the table for verification purposes later
+      #if MIC_DATA_STRUCT_VERIFY != 0
+        device__lj_table_float_copy = (float*)(_MM_MALLOC_WRAPPER(sizeof(float) * numElements, 64, "device__lj_table_float_copy"));
+        __ASSERT(device__lj_table_float_copy != NULL);
+        memcpy(device__lj_table_float_copy, device__lj_table_float, sizeof(float) * numElements);
+      #endif
+
+    #else // MIC_HANDCODE_FORCE_SINGLE != 0
+
+      // Allocate and copy the data into a 64-bit version of the table
+      device__lj_table = (double*)(_MM_MALLOC_WRAPPER(sizeof(double) * numElements, 64, "device__lj_table"));
+      __ASSERT(device__lj_table_float != NULL);
+      for (int i = 0; i < numElements; i++) {
+        device__lj_table[i] = ((double*)lj_table)[i];
+      }
+
+      // Create a copy of the table for verificiation purposes later
+      #if MIC_DATA_STRUCT_VERIFY != 0
+        device__lj_table_copy = (double*)(_MM_MALLOC_WRAPPER(sizeof(double) * numElements, 64, "device__lj_table_copy"));
+        __ASSERT(device__lj_table_copy != NULL);
+        memcpy(device__lj_table_copy, device__lj_table, sizeof(double) * numElements);
+      #endif
+
+    #endif // MIC_HANDCODE_FORCE_SINGLE != 0
+
+  } // end pragma offload
 }
 
 
@@ -628,27 +822,39 @@ void mic_bind_exclusions(const int deviceNum,
                          const long int exclusion_bits_size
                         ) {
 
-  // NOTE: This function should only be called once per device at startup,
-  //   so check for multiple calls
-  if (device__exclusion_bits != NULL) {
-    printf("[PE:%d,DEV:%d] :: ERROR :: !!! Attempt to write device__exclusion_bits multiple times !!!\n", device__myPE, deviceNum);
-    fflush(NULL);
-    return;
-  }
-
-  // Copy the exclusion pointer and size information in to the device variables.
-  device__exclusion_bits = exclusion_bits;
-  device__exclusion_bits_size = exclusion_bits_size;
+  // Verify Parameters
+  __FULL_CHECK(__ASSERT(deviceNum >= 0));
+  __FULL_CHECK(__ASSERT(exclusion_bits != NULL));
+  __FULL_CHECK(__ASSERT(exclusion_bits_size > 0));
 
   // Transfer the exclusion data and size information down to the given device.
   #pragma offload target(mic:deviceNum) \
-    in(device__exclusion_bits_size) \
-    in(device__exclusion_bits[0:exclusion_bits_size] : alloc_if(1) free_if(0) align(MIC_ALIGN))
+    in(exclusion_bits_size) nocopy(device__exclusion_bits_size) \
+    in(exclusion_bits[0:exclusion_bits_size] : alloc_if(1) free_if(1)) \
+    nocopy(device__exclusion_bits) nocopy(device__exclusion_bits_copy)
   {
-    #if !defined(__MIC__)
-      mic_dev_die("mic_bind_exclusions :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
+    __MUST_BE_MIC;
+
+    // Copy and verify the table size info
+    device__exclusion_bits_size = exclusion_bits_size;
+    __FULL_CHECK(__ASSERT(device__exclusion_bits_size > 0));
+
+    // Create a copy of the exclusion bits buffer on the device
+    __ASSERT(device__exclusion_bits == NULL);  // Check for double allocate
+    device__exclusion_bits = (unsigned int *)_MM_MALLOC_WRAPPER(sizeof(unsigned int) * device__exclusion_bits_size, 64, "device__exclusion_bits");
+    __ASSERT(device__exclusion_bits != NULL);
+    memcpy(device__exclusion_bits, exclusion_bits, sizeof(unsigned int) * device__exclusion_bits_size);
+
+    // Create a copy of the table for verification purposes later
+    #if MIC_DATA_STRUCT_VERIFY != 0
+      device__exclusion_bits_copy = new unsigned int[device__exclusion_bits_size];
+      __ASSERT(device__exclusion_bits_copy != NULL);
+      memcpy(device__exclusion_bits_copy, device__exclusion_bits, sizeof(unsigned int) * device__exclusion_bits_size);
+    #else
+      device__exclusion_bits_copy = NULL;
     #endif
-  }
+
+  } // end pragma offload
 }
 
 
@@ -668,42 +874,54 @@ void mic_bind_constants(const int deviceNum,
                         const int commOnly
                        ) {
   
-  // NOTE: This function should only be called once per device at startup,
-  //   so check for multiple calls
-  if (device__constants != NULL) {
-    printf("[PE:%d,DEV:%d] :: ERROR :: !!! Attempt to write device__constants multiple times !!!\n", device__myPE, deviceNum);
-    fflush(NULL);
-    return;
-  }
+  // Verify Parameters
+  __FULL_CHECK(__ASSERT(deviceNum >= 0));
 
   // Create a mic_constants data structure and copy (or calculate) the
   //   various constants that are to be pushed to the device in to this
   //   data structure.
-  device__constants = new mic_constants[1];
-  device__constants->cutoff2 = cutoff2;
-  device__constants->dielectric_1 = dielectric_1;
-  device__constants->scaling = scaling;
-  device__constants->scale14 = scale14;
-  device__constants->modf_mod = 1.0 - scale14;
-  device__constants->r2_delta = r2_delta;
-  device__constants->r2_delta_exp = r2_delta_exp;
-  device__constants->r2_delta_expc = 64 * (r2_delta_exp - 1023);
-  device__constants->commOnly = commOnly;
+  mic_constants constants;
+  constants.cutoff2 = cutoff2;
+  constants.dielectric_1 = dielectric_1;
+  constants.scaling = scaling;
+  constants.scale14 = scale14;
+  constants.modf_mod = 1.0 - scale14;
+  constants.r2_delta = r2_delta;
+  constants.r2_delta_exp = r2_delta_exp;
+  constants.r2_delta_expc = 64 * (r2_delta_exp - 1023);
+  constants.commOnly = commOnly;
 
-  // Transfer the constants to the given device.
+  // Transfer the constants to the given device
   #pragma offload target(mic:deviceNum) \
-    in(device__constants[0:1] : alloc_if(1) free_if(0) align(MIC_ALIGN))
+    in(constants) nocopy(device__constants) \
+    nocopy(device__pe) nocopy(device__exclusion_bits) \
+    nocopy(device__exclusion_bits_copy) nocopy(device__exclusion_bits_size) \
+    nocopy(device__table_four_copy) nocopy(device__table_four_float_copy) \
+    nocopy(device__lj_table_copy) nocopy(device__lj_table_float_copy) \
+    nocopy(device__constants_copy)
   {
-    #if !defined(__MIC__)
-      mic_dev_die("mic_bind_constants :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-    #endif
+    __MUST_BE_MIC;
 
-    // Correct r2_delta_expc for use with single precision if using single precision on the device
-    //#if (MIC_HANDCODE_FORCE != 0) && (MIC_HANDCODE_FORCE_SINGLE != 0)
+    // Create a copy of the constant info on the device
+    __ASSERT(device__constants == NULL);  // Check for double allocation
+    device__constants = (mic_constants*)_MM_MALLOC_WRAPPER(sizeof(mic_constants), 64, "device__constants");
+    __ASSERT(device__constants != NULL);
+    memcpy(device__constants, &constants, sizeof(mic_constants));
+
+    // Correct r2_delta_expc for use with single precision if using mixed precision is
+    //   being used on the device
     #if MIC_HANDCODE_FORCE_SINGLE != 0
       device__constants->r2_delta_expc = 64 * (device__constants->r2_delta_exp - 127);
     #endif
-  }
+
+    // Copy the data for verification purposes later
+    #if MIC_DATA_STRUCT_VERIFY != 0
+      device__constants_copy = (mic_constants*)_MM_MALLOC_WRAPPER(sizeof(mic_constants), 64, "device__constants_copy");
+      __ASSERT(device__constants_copy != NULL);
+      memcpy(device__constants_copy, device__constants, sizeof(mic_constants));
+    #endif
+
+  } // end pragma offload
 }
 
 
@@ -721,48 +939,66 @@ void mic_bind_patch_pairs_only(const int deviceNum,
                                const int patch_pairs_bufSize
 			      ) {
 
-  //// DMK - DEBUG
-  //printf("DEBUG 0.0 - mic_bind_patch_pairs_only() called...\n");
-  //fflush(NULL);
+  // NOTE: This function does not actually transfer the patch pairs, it only (re)allocates
+  //   the device buffer(s) associated with them.  See mic_nonbonded_compute() for transfer.
 
-  // Validate the parameters
-  #if MIC_FULL_CHECK != 0
-    assert(patch_pairs_bufSize >= patch_pairs_size);
-  #endif
+  // Verify parameters
+  __FULL_CHECK(__ASSERT(deviceNum >= 0));
+  __FULL_CHECK(__ASSERT(patch_pairs != NULL));
+  __FULL_CHECK(__ASSERT(patch_pairs_size > 0));
+  __FULL_CHECK(__ASSERT(patch_pairs_bufSize > 0));
+  __FULL_CHECK(__ASSERT(patch_pairs_bufSize >= patch_pairs_size));
 
   // Check if the buffer currently allocated on the device is too small.  If so,
   //   reallocate the buffer to be larger.
-  if (patch_pairs_bufSize > device__patch_pairs_alloc_size) {  // If buffer is too small, reallocate
+  if (patch_pairs_bufSize > host__patch_pairs_bufSize) {  // If buffer is too small, reallocate
 
-    // Free the old buffer
-    if (device__patch_pairs != NULL) {
+    // Setup clause required to free device_times_computes buffer on the device
+    #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
+      double * device_times_computes = host__device_times_computes;
+      #define TIMES_COMPUTES_FREE_CLAUSE  nocopy(device_times_computes : alloc_if(0) free_if(1))
+    #else
+      #define TIMES_COMPUTES_FREE_CLAUSE
+    #endif
+
+    // Free old buffers
+    if (host__patch_pairs != NULL) {
+      const patch_pair * _patch_pairs = host__patch_pairs;
       #pragma offload target(mic:deviceNum) \
-        in(device__patch_pairs[0:0] : alloc_if(0) free_if(1))
-      {
-        #if !defined(__MIC__)
-          mic_dev_die("mic_bind_patch_pairs (0) :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-        #endif
-      }
+        nocopy(_patch_pairs : alloc_if(0) free_if(1)) \
+        TIMES_COMPUTES_FREE_CLAUSE
+      { __MUST_BE_MIC; }
     }
 
-    // Record the new info
-    device__patch_pairs = patch_pairs;
-    device__patch_pairs_size = patch_pairs_size;
-    device__patch_pairs_alloc_size = patch_pairs_bufSize;
+    // (Re)allocate memory for device_times_computes buffer on the host, and setup clause for device allocation
+    #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
+      if (host__device_times_computes != NULL) { _MM_FREE_WRAPPER(host__device_times_computes); }
+      host__device_times_computes = (double*)_MM_MALLOC_WRAPPER(2 * patch_pairs_bufSize * sizeof(double), 64, "host__device_times_computes");
+      __ASSERT(host__device_times_computes != NULL);
+      device_times_computes = host__device_times_computes;
+      #define TIMES_COMPUTES_ALLOC_CLAUSE  nocopy(device_times_computes[0:2*patch_pairs_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN))
+    #else
+      #define TIMES_COMPUTES_ALLOC_CLAUSE
+    #endif
 
-    // Allocate the new memory
-    // NOTE: This will allocate an amount of memory equal to the amount allocated
-    //   on the host (i.e. if the host over allocates expecting future growth, then
-    //   the device will match that over allocation).
+    // Record the new host-side pointer and buffer size
+    host__patch_pairs = (patch_pair*)patch_pairs;
+    host__patch_pairs_bufSize = patch_pairs_bufSize;
+
+    // Allocate new memory
     #pragma offload target(mic:deviceNum) \
-      in(device__patch_pairs_size) \
-      in(device__patch_pairs_alloc_size) \
-      in(device__patch_pairs[0:patch_pairs_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
-      nocopy(device__virial_energy)
+      in(patch_pairs_size) nocopy(device__patch_pairs_size) \
+      in(patch_pairs_bufSize) \
+      nocopy(patch_pairs[0:patch_pairs_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
+      nocopy(device__pairlists) nocopy(device__pairlists_alloc_size) \
+      nocopy(device__numOMPThreads) nocopy(device__pe) \
+      TIMES_COMPUTES_ALLOC_CLAUSE
     {
-      #if !defined(__MIC__)
-        mic_dev_die("mic_bind_patch_pairs (1) :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-      #endif
+      __MUST_BE_MIC;
+
+      // Copy and verify the number of patch pairs
+      device__patch_pairs_size = patch_pairs_size;
+      __ASSERT(device__patch_pairs_size > 0);
 
       // Make sure there are enough pairlists pointers (one per pairlist type per patch_pair)
       const int numPairlists = NUM_PAIRLIST_TYPES * device__patch_pairs_size;
@@ -776,65 +1012,24 @@ void mic_bind_patch_pairs_only(const int deviceNum,
           initStart = device__pairlists_alloc_size;
         }
         for (int i = initStart; i < numPairlists; i++) { new_pairlists[i] = NULL; }
-        device__pairlists = (unsigned long long int)new_pairlists;
+        device__pairlists = (uintptr_t)new_pairlists;
         device__pairlists_alloc_size = numPairlists;
       }
 
-      // Grow the virial/energy buffer, if need be
-      #if MIC_VIRIAL_ENERGY_ALT != 0
-        if (device__virial_energy != NULL) { _mm_free(device__virial_energy); }
-        int virialEnergySize = 16 * (device__numOMPThreads + device__patch_pairs_alloc_size);
-        //device__virial_energy = (double*)(_mm_malloc(virialEnergySize * sizeof(double), 64));
-        device__virial_energy = (double*)(_MM_MALLOC_WRAPPER(virialEnergySize * sizeof(double), 64, "device__virial_energy"));
-      #endif
-    }
+    } // end pragma offload
 
-    // DMK - TIMING
-    #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
-
-      // Free old buffers if need be
-      if (device__device_times_start != NULL) {
-        #if MIC_DEVICE_TRACING_DETAILED != 0
-          #pragma offload target(mic:deviceNum) \
-            out(device__device_times_computes[0:0] : alloc_if(0) free_if(1)) \
-            out(device__device_times_start[0:0] : alloc_if(0) free_if(1))
-          { }
-        #else
-          #pragma offload target(mic:deviceNum) \
-            out(device__device_times_start[0:0] : alloc_if(0) free_if(1))
-          { }
-        #endif
-      }
-
-      //device__device_times_computes = (double*)_mm_malloc(patch_pairs_bufSize * 2 * sizeof(double), 64);
-      //device__device_times_start = (double*)_mm_malloc(2 * 2 * sizeof(double), 64);
-      #if MIC_DEVICE_TRACING_DETAILED != 0
-        device__device_times_computes = (double*)_MM_MALLOC_WRAPPER(patch_pairs_bufSize * 2 * sizeof(double), 64, "device__device_times_computes");
-      #endif
-      device__device_times_start = (double*)_MM_MALLOC_WRAPPER(10 * 2 * sizeof(double), 64, "device__device_times_start");
-
-      // Allocate new buffers
-      #if MIC_DEVICE_TRACING_DETAILED != 0
-        #pragma offload target(mic:deviceNum) \
-          in(device__device_times_computes[0:2*patch_pairs_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
-          in(device__device_times_start[0:10] : alloc_if(1) free_if(0) align(MIC_ALIGN))
-        { }
-      #else
-        #pragma offload target(mic:deviceNum) \
-          in(device__device_times_start[0:10] : alloc_if(1) free_if(0) align(MIC_ALIGN))
-        { }
-      #endif
-
-    #endif
+    #undef TIMES_COMPUTES_FREE_CLAUSE
+    #undef TIMES_COMPUTES_ALLOC_CLAUSE
   }
 
   // Record the current 'used' length of the array and flag the array for data transfer
-  device__patch_pairs_size = patch_pairs_size;
+  host__patch_pairs_size = patch_pairs_size;
   patch_pairs_copySize = patch_pairs_size;
 }
 
+
 // Function called after force lists have been modified on the host to push those
-//   modifications to the MIC device
+//   modifications to the MIC device.
 // Input:
 //   - deviceNum : the device to push the data to (number within node)
 //   - force_lists : array containing individual force_list records (data to copy)
@@ -847,69 +1042,74 @@ void mic_bind_force_lists_only(const int deviceNum,
                                const int force_lists_bufSize
                               ) {
 
-  // Validate the parameters
-  #if MIC_FULL_CHECK != 0
-    assert(force_lists_bufSize >= force_lists_size);
-  #endif
+  // NOTE: This function does not actually transfer the force lists, it only (re)allocates
+  //   the device buffer(s) associated with them.  See mic_nonbonded_compute() for transfer.
 
-  // Check if the buffer currently allocated on the device is too small.  If so,
-  //   reallocate the buffer to be larger.
-  if (force_lists_bufSize > device__force_lists_alloc_size) {
+  // Verify parameters
+  __FULL_CHECK(__ASSERT(deviceNum >= 0));
+  __FULL_CHECK(__ASSERT(force_lists != NULL));
+  __FULL_CHECK(__ASSERT(force_lists_size > 0));
+  __FULL_CHECK(__ASSERT(force_lists_bufSize > 0));
+  __FULL_CHECK(__ASSERT(force_lists_bufSize >= force_lists_size));
+
+  // Check if the buffer currently allocated on the device is too small.  If so, reallocate the buffer.
+  if (force_lists_bufSize > host__force_lists_bufSize) {
+
+    // Setup clause needed to free the device_times_patches buffer on the device
+    #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
+      double * device_times_patches = host__device_times_patches;
+      #define TIMES_PATCHES_FREE_CLAUSE  nocopy(device_times_patches : alloc_if(0) free_if(1))
+    #else
+      #define TIMES_PATCHES_FREE_CLAUSE
+    #endif
 
     // Free the old buffer
-    if (device__force_lists != NULL) {
-      #pragma offload target(mic:deviceNum) in(device__force_lists[0:0] : alloc_if(0) free_if(1))
-      {
-        #if !defined(__MIC__)
-          mic_dev_die("mic_bind_patch_pairs (2) :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-        #endif
-      }
+    if (host__force_lists != NULL) {
+      const force_list * _force_lists = host__force_lists;
+      #pragma offload target(mic:deviceNum) \
+        nocopy(_force_lists : alloc_if(0) free_if(1)) \
+        TIMES_PATCHES_FREE_CLAUSE
+      { __MUST_BE_MIC; }
     }
 
-    // Record the new info
-    device__force_lists = force_lists;
-    device__force_lists_size = force_lists_size;
-    device__force_lists_alloc_size = force_lists_bufSize; //(int)(1.2 * force_lists_size);
+    // (Re)allocate the device_times_patches buffer on the host and setup the clause required to allocate on the device
+    #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
+      if (host__device_times_patches != NULL) { _MM_FREE_WRAPPER(host__device_times_patches); }
+      host__device_times_patches = (double*)_MM_MALLOC_WRAPPER(2 * force_lists_bufSize * sizeof(double), 64, "host__device_times_patches");
+      __ASSERT(host__device_times_patches != NULL);
+      device_times_patches = host__device_times_patches;
+      #define TIMES_PATCHES_ALLOC_CLAUSE  nocopy(device_times_patches[0:2*force_lists_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN))
+    #else
+      #define TIMES_PATCHES_ALLOC_CLAUSE
+    #endif
+
+    // Record teh new host-side pointer and buffer size
+    host__force_lists = force_lists;
+    host__force_lists_bufSize = force_lists_bufSize;
 
     // Allocate the new memory
-    // NOTE: This will allocate an amount of memory equal to the amount allocated
-    //   on the host (i.e. if the host over allocates expecting future growth, then
-    //   the device will match that over allocation).
     #pragma offload target(mic:deviceNum) \
-      in(device__force_lists_size) \
-      in(device__force_lists_alloc_size) \
-      in(device__force_lists[0:force_lists_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN))
+      in(force_lists_size) nocopy(device__force_lists_size) \
+      nocopy(force_lists[0:force_lists_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
+      TIMES_PATCHES_ALLOC_CLAUSE
     {
-      #if !defined(__MIC__)
-        mic_dev_die("mic_bind_patch_pairs (3) :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-      #endif
+      __MUST_BE_MIC;
+
+      // Copy and verify the number of force lists
+      device__force_lists_size = force_lists_size;
+      __ASSERT(device__force_lists_size > 0);
     }
 
-    // DMK - TIMING
-    #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
+    #undef TIMES_PATCHES_FREE_CLAUSE
+    #undef TIMES_PATCHES_ALLOC_CLAUSE
 
-      // Free old buffers if need be
-      if (device__device_times_patches != NULL) {
-        #pragma offload target(mic:deviceNum) \
-          out(device__device_times_patches[0:0] : alloc_if(0) free_if(1))
-        { }
-      }
-
-      //device__device_times_patches = (double*)_mm_malloc(force_lists_bufSize * 2 * sizeof(double), 64);
-      device__device_times_patches = (double*)_MM_MALLOC_WRAPPER(force_lists_bufSize * 2 * sizeof(double), 64, "device__device_times_patches");
-
-      // Allocate new buffers
-      #pragma offload target(mic:deviceNum) \
-        in(device__device_times_patches[0:2*force_lists_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN))
-      { }
-
-    #endif
-  }
+  } // end pragma offload
 
   // Record the current 'used' length of the array and flag the array for data transfer
-  device__force_lists_size = force_lists_size;
+  host__force_lists_size = force_lists_size;
   force_lists_copySize = force_lists_size;
 }
+
 
 // Function called after the atom list has been modified on the host to push those
 //   modifications to the MIC device.
@@ -931,80 +1131,59 @@ void mic_bind_atoms_only(const int deviceNum,
                          const int atoms_bufSize
 			) {
 
-  // Validate the parameters
-  #if MIC_FULL_CHECK != 0
-    assert(atoms_bufSize >= atoms_size);
-  #endif
+  // NOTE: This function does not actually transfer the atom/force data, it only (re)allocates
+  //   the device buffer(s) associated with them.  See mic_nonbonded_compute() for transfer.
 
-  // Check if the buffers currently allocated on the device are too small.  If so,
-  //   reallocate the buffers to be larger.
-  if (atoms_bufSize > device__atoms_alloc_size) {
+  // Verify parameters
+  __FULL_CHECK(__ASSERT(deviceNum >= 0));
+  __FULL_CHECK(__ASSERT(atoms != NULL));
+  __FULL_CHECK(__ASSERT(atom_params != NULL));
+  __FULL_CHECK(__ASSERT(forces != NULL));
+  __FULL_CHECK(__ASSERT(slow_forces != NULL));
+  __FULL_CHECK(__ASSERT(atoms_size > 0));
+  __FULL_CHECK(__ASSERT(atoms_bufSize > 0));
+  __FULL_CHECK(__ASSERT(atoms_bufSize >= atoms_size));
 
-    // Unlock the old buffers
-    #if MIC_LOCK_MEMORY
-      if (device__atoms != NULL) {
-        if (0 != munlock(device__atoms, device__atoms_alloc_size * sizeof(atom))) { printf("[MIC-WARNING] :: failed to munlock device__atoms\n"); }
-        if (0 != munlock(device__atom_params, device__atoms_alloc_size * sizeof(atom_param))) { printf("[MIC-WARNING] :: failed to munlock device__atom_params\n"); }
-        if (0 != munlock(device__forces, device__atoms_alloc_size * sizeof(double4))) { printf("[MIC-WARNING] :: failed to munlock device__forces\n"); }
-        if (0 != munlock(device__slow_forces, device__atoms_alloc_size * sizeof(double4))) { printf("[MIC-WARNING] :: failed to munlock device__slow_forces\n"); }
-      }
-    #endif
+  // Check if the buffers are large enough (reallocate if not)
+  if (atoms_bufSize > host__atoms_bufSize) {
 
     // Free the old buffers
-    if (device__atoms != NULL) {
+    if (host__atoms != NULL) {
+      const atom * _atoms = host__atoms;
+      const atom_param * _atom_params = host__atom_params;
+      const double4 * _forces = host__forces;
+      const double4 * _slow_forces = host__slow_forces;
       #pragma offload target(mic:deviceNum) \
-        in(device__atoms[0:0] : alloc_if(0) free_if(1)) \
-        in(device__atom_params[0:0] : alloc_if(0) free_if(1)) \
-        in(device__forces[0:0] : alloc_if(0) free_if(1)) \
-        in(device__slow_forces[0:0] : alloc_if(0) free_if(1))
-      {
-        #if !defined(__MIC__)
-          mic_dev_die("mic_bind_patch_pairs (4) :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-        #endif
-      }
+        nocopy(_atoms : alloc_if(0) free_if(1)) \
+        nocopy(_atom_params : alloc_if(0) free_if(1)) \
+        nocopy(_forces : alloc_if(0) free_if(1)) \
+        nocopy(_slow_forces : alloc_if(0) free_if(1))
+      { __MUST_BE_MIC; }
     }
 
-    // Record the new info
-    device__atoms = atoms;
-    device__atom_params = atom_params;
-    device__forces = forces;
-    device__slow_forces = slow_forces;
-    device__atoms_size = atoms_size;
-    device__atoms_alloc_size = atoms_bufSize;
+    // Copy the new buffer and size info
+    host__atoms = atoms;
+    host__atom_params = atom_params;
+    host__forces = forces;
+    host__slow_forces = slow_forces;
+    host__atoms_size = atoms_size;
+    host__atoms_bufSize = atoms_bufSize;
 
-    // Lock the new buffers
-    #if MIC_LOCK_MEMORY
-      if (0 != mlock(device__atoms, device__atoms_alloc_size * sizeof(atom))) { perror("[MIC-WARNING] :: failed to mlock device__atoms - "); }
-      if (0 != mlock(device__atom_params, device__atoms_alloc_size * sizeof(atom_param))) { printf("[MIC-WARNING] :: failed to mlock device__atom_params\n"); }
-      if (0 != mlock(device__forces, device__atoms_alloc_size * sizeof(double4))) { printf("[MIC-WARNING] :: failed to mlock device__forces\n"); }
-      if (0 != mlock(device__slow_forces, device__atoms_alloc_size * sizeof(double4))) { printf("[MIC-WARNING] :: failed to mlock device__slow_forces\n"); }
-    #endif
-
-    // Allocate the new memory on the device
-    // NOTE: This will allocate an amount of memory for each buffer equal to the ammount
-    //   allocated on the host (i.e. if the host over allocates expecting future growth,
-    //   then the device will match that over allocation).
+    // Allocate the new buffers
     #pragma offload target(mic:deviceNum) \
-      in(device__atoms_size) \
-      in(device__atoms_alloc_size) \
-      in(device__atoms[0:atoms_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
-      in(device__atom_params[0:atoms_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
-      in(device__forces[0:atoms_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
-      in(device__slow_forces[0:atoms_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN))
-    {
-      #if !defined(__MIC__)
-        mic_dev_die("mic_bind_patch_pairs (5) :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-      #endif
-    }
+      in(atoms_size : into(device__atoms_size)) \
+      nocopy(atoms[0:atoms_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
+      nocopy(atom_params[0:atoms_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
+      nocopy(forces[0:atoms_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
+      nocopy(slow_forces[0:atoms_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN))
+    { __MUST_BE_MIC; }
   }
 
-  // Record the current 'used' length of the arrays and flag those arrays for data transfer
-  // NOTE: The 'atoms', 'forces', and 'slow_forces' arrays will be copied every timestep, as
-  //   the data within them changes every timestep.  The 'atom_params' array is only copied
-  //   periodically (when atoms migrate).  As such, only flag the transfer of atom_params here.
-  device__atoms_size = atoms_size;
+  // Signal the copy
+  host__atoms_size = atoms_size;
   atom_params_copySize = atoms_size;
 }
+
 
 // Function called to allocate memory on the MIC device related to the individual and private
 //   force buffers for each of the compute objects.  Note that this function simply allocates
@@ -1016,51 +1195,12 @@ void mic_bind_force_buffers_only(const int deviceNum,
                                  const int force_buffers_size
                                 ) {
 
-  if (device__force_buffers_req_size < force_buffers_size) {
-    device__force_buffers_req_size = (int)(force_buffers_size * 1.2f);
-    device__force_buffers_req_size = (device__force_buffers_req_size + 4095) & (~4095);  // Round up to 4K
-
-    //// DMK - DEBUG
-    //printf("[MIC-HOST] :: adjusting device__force_buffers_req_size (%d)\n", device__force_buffers_req_size);
+  // Check if the requested size is larger than the already allocated size.  If so, flag the buffer
+  //   as needing to be reallocated by increasing the request size passed to the device (occurs later).
+  if (host__force_buffers_req_size < force_buffers_size) {
+    host__force_buffers_req_size = (int)(force_buffers_size * 1.2f);
+    host__force_buffers_req_size = (host__force_buffers_req_size + 4095) & (~4095);  // Round up to 4K
   }
-
-  /*
-  // Check if the buffers currently allocated on the device are too small.  If so,
-  //   reallocate the buffers to be larger.
-  if (force_buffers_size > device__force_buffers_alloc_size) {
-
-    // Free the old buffers
-    if (device__force_buffers != NULL) {
-      #pragma offload target(mic:deviceNum) \
-        in(device__force_buffers[0:0] : alloc_if(0) free_if(1)) \
-        in(device__slow_force_buffers[0:0] : alloc_if(0) free_if(1))
-      {
-        #if !defined(__MIC__)
-          mic_dev_die("mic_bind_patch_pairs (6) :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-        #endif
-      }
-      delete [] device__force_buffers;
-      delete [] device__slow_force_buffers;
-    }
-
-    // Recod the new info
-    int force_buffers_bufSize = (int)(force_buffers_size * 1.1);
-    device__force_buffers = new double4[force_buffers_bufSize];
-    device__slow_force_buffers = new double4[force_buffers_bufSize];
-    device__force_buffers_alloc_size = force_buffers_bufSize;
-
-    // Allocate the new memory
-    #pragma offload target(mic:deviceNum) \
-      in(device__force_buffers_alloc_size) \
-      in(device__force_buffers[0:force_buffers_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
-      in(device__slow_force_buffers[0:force_buffers_bufSize] : alloc_if(1) free_if(0) align(MIC_ALIGN))
-    {
-      #if !defined(__MIC__)
-        mic_dev_die("mic_bind_patch_pairs (7) :: Attempt to execute offload on host (not supported yet)... exiting."); fflush(NULL);
-      #endif
-    }
-  }
-  */
 }
 
 
@@ -1072,13 +1212,9 @@ void mic_submit_patch_data(const int deviceNum,
                            const int transferBytes,
                            const int allocBytes_host,
                            int &allocBytes_device,
-                           uint64_t &devicePtr
+                           uint64_t &devicePtr,
+                           void* &signal
                           ) {
-
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: mic_submit_patch_data(dN:%d, hP:%p, hPp:%p, tB:%d, aBh:%d, aBd:%d, dP:%ld) - Called...\n",
-  //       deviceNum, hostPtr, hostPtr_prev, transferBytes, allocBytes_host, allocBytes_device, devicePtr
-  //      );
 
   // NOTE: This function is called once per patch per timestep by one of the host threads
   // TODO : Since signals are thread specific, cannot use them here since the master does
@@ -1106,163 +1242,35 @@ void mic_submit_patch_data(const int deviceNum,
 
   // Transfer the data (allocating if needed)
   char* __hostPtr = (char*)hostPtr;
-  uint64_t __devicePtr = 0;
-  int __length = transferBytes;
   if (allocFlag != 0) {
-    __length = allocBytes_host;
+
+    uint64_t __devicePtr = 0;
     allocBytes_device = allocBytes_host;
-  }
-  #pragma offload target(mic:deviceNum) \
-    in(__hostPtr[0:__length] : alloc_if(allocFlag) free_if(0) align(MIC_ALIGN)) \
-    out(__devicePtr)
-  { __devicePtr = (uint64_t)__hostPtr; }
 
-  devicePtr = __devicePtr;
-  hostPtr_prev = hostPtr;
+    #pragma offload target(mic:deviceNum) \
+      in(__hostPtr[0:allocBytes_host] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
+      out(__devicePtr)
+    { __devicePtr = (uint64_t)__hostPtr; }
 
+    // Record the pointer for use later
+    devicePtr = __devicePtr;
+    signal = NULL; // Synchronous, so no need for the host to wait
 
-  /*
-  // Verify the parameters
-  __ASSERT(deviceNum >= 0 && hostPtr != NULL && pid >= 0 && transferBytes > 0 && allocBytes > 0);
+  } else {
 
-  // Manage the device's array of pointers to patch data (device__atomData), growing it if it isn't large enough
-  if (pid > atomData_allocSize[deviceNum]) {
-    pthread_mutex_lock(&(atomData_locks[deviceNum]));
-    if (pid > atomData_allocSize[deviceNum]) { // Check again in case someone else had the lock and did it already
-
-      // Free the old device memory (pulling the data)
-      if (device__atomData != NULL) {
-        #pragma offload_transfer target(mic:deviceNum) \
-          out(device__atomData[0:atomData_allocSize[deviceNum]] : alloc_if(0) free_if(1))
-	{ }
-      }
-
-      // Place old pointers in temp variables
-      uint64_t *oldAtomData = device__atomData;
-      int *oldAtomDataLen = atomDataLen;
-      int oldAtomData_allocSize = atomData_allocSize[deviceNum];
-
-      // Calculate a new allocation size for the arrays
-      int newAllocSize = (int)(pid * 1.2f);
-      newAllocSize = ((newAllocSize + 127) & (~127)); // Round up to a multiple of 128 (minimizes mallocs if process starts with small pids)
-
-      // Allocate new host memory, copy in the old data, and free the old data
-      uint64_t *device__atomData = (uint64_t*)(_mm_malloc(newAllocSize * sizeof(uint64_t), MIC_ALIGN));
-      int *atomDataLen = (int*)(_mm_malloc(newAllocSize * sizeof(int), MIC_ALIGN));
-      __ASSERT(device__atomData != NULL && atomDataLen != NULL);
-
-      // Copy the old data and initialize new entries
-      memcpy(device__atomData, oldAtomData, oldAtomData_allocSize * sizeof(uint64_t));
-      for (int i = oldAtomData_allocSize; i < newAllocSize; i++) { device__atomData[i] = 0L; }
-      memcpy(atomDataLen, oldAtomDataLen, oldAtomData_allocSize * sizeof(int));
-      for (int i = oldAtomData_allocSize; i < newAllocSize; i++) { atomDataLen[i] = 0; }
-
-      // Free the old host memory
-      _mm_free(oldAtomData);
-      _mm_free(oldAtomDataLen);
-
-      // Record the new allocation size
-      atomData_allocSize[deviceNum] = newAllocSize;
-
-      // Allocate the new data on the device
-      #pragma offload_transfer target(mic:deviceNum) \
-        in(device__atomData[0:newAllocSize] : alloc_if(1) free_if(0) align(MIC_ALIGN))
-      { }
-    }
-    pthread_mutex_unlock(&(atomData_locks[deviceNum]));
-  }
-
-  // DMK - Continue here... this approach won't work because hostPtr, etc. aren't declared
-  //   with (and cannot be declared with) __declspec(target(mic)).  So... try creating a
-  //   global array of pointers on the host, one per atom buffer on the device, and using
-  //   each individual pointer in an offload in clause... for example...
-  //       in( (device_patchBuffers[patchIndex])[0:numAtoms] : alloc_if(?) free_if(?) ... )
-
-  // Determin if free/alloc needs to occur on the device
-  int allocFlag = ((device__atomData[pid] == 0L) || (transferBytes > 
-  */
-
-
-
-  /*
-  // Determine if free/alloc needs to occur on device
-  int allocFlag = ((devicePtr == 0L) || (transferBytes > allocBytes) || (hostPtr != hostPtr_prev));
-  int freeFlag = ((devicePtr != 0L) && (allocFlag));  // NOTE: need to reallocate and existing device data
-
-  // If reallocation needs to occur, start by deallocating the old data
-  // NOTE: This should be an increasinly rare event as the buffer only grows in size
-  //   and the length is a function of the number of atoms per patch
-  if (freeFlag) {
     #pragma offload_transfer target(mic:deviceNum) \
-      out(hostPtr_prev[0:0] : alloc_if(0) free_if(1))
+      in(__hostPtr[0:transferBytes] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
+      signal(hostPtr)
     { }
+
+    signal = hostPtr;  // Asynchronous, so force the host to wait on the signal later
   }
 
-  // Transfer the specified data to the device
-  int hostPtrBytes = transferBytes;
-  if (allocFlag) { hostPtrBytes = allocBytes; }
-  #pragma offload target(mic:deviceNum) \
-    in(hostPtr[0:hostPtrBytes] : alloc_if(allocFlag) free_if(0) align(MIC_ALIGN)) \
-    inout(devicePtr) \
-    signal(hostPtr)
-  { devicePtr = (uint64_t)hostPtr; }
-
-  // Update the "previous" hostPtr to point to the new buffer now that the device's
-  //   memory has been reallocated
+  // Take not of the host buffer that was transfered
   hostPtr_prev = hostPtr;
-  */
 }
+
 #endif  // MIC_SUBMIT_ATOMS_ON_ARRIVAL
-
-
-// DMK - DEBUG - Branching and lane utilization stats
-#if MIC_ACTIVE_CUTOFF_STATS != 0
-  __declspec(target(mic)) int activeCount = 0;
-  __declspec(target(mic)) int activePossibleCount = 0;
-  __declspec(target(mic)) int cutoffCount = 0;
-  __declspec(target(mic)) int cutoffPossibleCount = 0;
-#endif
-
-// DMK - DEBUG - Unique cacheline access for gather/scatter stats
-#if MIC_GATHER_SCATTER_STATS != 0
-
-  __declspec(target(mic)) int gather_single[17] = { 0 };
-  __declspec(target(mic)) int gather_double[17] = { 0 };
-  __declspec(target(mic)) int scatter_single[17] = { 0 };
-  __declspec(target(mic)) int scatter_double[17] = { 0 };
-
-  // NOTE: This can be slow, just collects stats, not used in production
-  #define __SUBMIT_GATHER_SCATTER_STATS(type, index_vec, mask_mask, scale_shift, numEntries, str) \
-  { \
-    int numUnique = 0; \
-    int index[16] __attribute__((aligned(64))); \
-    _mm512_store_epi32(index, _mm512_srli_epi32(index_vec, 6 - scale_shift)); \
-    int mask = _mm512_mask2int(mask_mask); \
-    for (int i = 0; i < numEntries; i++) { \
-      if (((mask >> i) & 0x1) == 0) { continue; } \
-      int isUnique = 1; \
-      for (int j = i + 1; j < numEntries; j++) { \
-        if (((mask >> j) & 0x1) == 0) { continue; } \
-        if (index[i] == index[j]) { isUnique = 0; break; } \
-      } \
-      numUnique += isUnique; \
-    } \
-    type[numUnique]++; \
-  }
-
-  #define SUBMIT_GATHER_SINGLE_STATS(index_vec, mask_mask) __SUBMIT_GATHER_SCATTER_STATS(gather_single, index_vec, mask_mask, 2, 16, "GS")
-  #define SUBMIT_GATHER_DOUBLE_STATS(index_vec, mask_mask) __SUBMIT_GATHER_SCATTER_STATS(gather_double, index_vec, mask_mask, 3, 8, "GD")
-  #define SUBMIT_SCATTER_SINGLE_STATS(index_vec, mask_mask) __SUBMIT_SCATTER_SCATTER_STATS(scatter_single, index_vec, mask_mask, 2, 16, "SS")
-  #define SUBMIT_SCATTER_DOUBLE_STATS(index_vec, mask_mask) __SUBMIT_SCATTER_SCATTER_STATS(scatter_double, index_vec, mask_mask, 3, 8, "SD")
-
-#else
-
-  #define SUBMIT_GATHER_SINGLE_STATS(index_vec, mask_mask)
-  #define SUBMIT_GATHER_DOUBLE_STATS(index_vec, mask_mask)
-  #define SUBMIT_SCATTER_SINGLE_STATS(index_vec, mask_mask)
-  #define SUBMIT_SCATTER_DOUBLE_STATS(index_vec, mask_mask)
-
-#endif
 
 
 // Kernel bodies : Include CopmuteNonbondedMICKernelBase.h to declare each
@@ -1333,90 +1341,46 @@ void mic_nonbonded_forces(const int deviceNum,
                           const int atomsChanged
                          ) {
 
-  //// DMK - DEBUG
-  //printf("[DEBUG:NBF-%d] :: mic_nonbonded_forces() - Called...\n", isRemote);
-  //printf("[DEBUG:NBF-%d] ::   isRemote:%d\n", isRemote, isRemote);
-  //printf("[DEBUG:NBF-%d] ::   numLocalAtoms:%d\n", isRemote, numLocalAtoms);
-  //printf("[DEBUG:NBF-%d] ::   numLocalComputes:%d\n", isRemote, numLocalComputes);
-  //printf("[DEBUG:NBF-%d] ::   numLocalPatches:%d\n", isRemote, numLocalPatches);
-  //fflush(NULL);
-
-  // DMK - NOTE : At the moment, information regarding which patch pairs
-  //   are local vs remote is not being passed into this function (just
-  //   if it should to local or remote patch pairs).  Add that support
-  //   as the kernel is written.
-
-  const int numAtoms = device__atoms_size;
-  const int numPatchPairs = device__patch_pairs_size;
-  const int numForceLists = device__force_lists_size;
-
-  // Setup the lattice information
-  // DMK - TODO | FIXME : See if these variables can be shifted to mic_constants
-  device__lata = lata;  
-  device__latb = latb;
-  device__latc = latc;
+  const int numAtoms = host__atoms_size;
+  const int numPatchPairs = host__patch_pairs_size;
+  const int numForceLists = host__force_lists_size;
 
   // Get and set the tag to use
   int *tag_kernel = ((isRemote) ? (&tag_remote_kernel) : (&tag_local_kernel));
   *tag_kernel = 1;
 
   // Setup the kernel data structures
-  // NOTE: The remote kernel will be called first, so set them both up at the same time during remote issue
-  mic_kernel_data *kernel_data = ((isRemote) ? (device__remote_kernel_data) : (device__local_kernel_data));
-  kernel_data->isRemote = isRemote;
-  kernel_data->numLocalAtoms = numLocalAtoms;
-  kernel_data->numLocalComputes = numLocalComputes;
-  kernel_data->numLocalPatches = numLocalPatches;
-  kernel_data->doSlow = doSlow;
-  kernel_data->doEnergy = doEnergy;
-  kernel_data->usePairlists = usePairlists;
-  kernel_data->savePairlists = savePairlists;
-  kernel_data->virial_xx = 0.0;
-  kernel_data->virial_xy = 0.0;
-  kernel_data->virial_xz = 0.0;
-  kernel_data->virial_yy = 0.0;
-  kernel_data->virial_yz = 0.0;
-  kernel_data->virial_zz = 0.0;
-  kernel_data->fullElectVirial_xx = 0.0;
-  kernel_data->fullElectVirial_xy = 0.0;
-  kernel_data->fullElectVirial_xz = 0.0;
-  kernel_data->fullElectVirial_yy = 0.0;
-  kernel_data->fullElectVirial_yz = 0.0;
-  kernel_data->fullElectVirial_zz = 0.0;
-  kernel_data->vdwEnergy = 0.0;
-  kernel_data->electEnergy = 0.0;
-  kernel_data->fullElectEnergy = 0.0;
-  int remoteKernelDataLen = (isRemote) ? (1) : (0);
-  int localKernelDataLen = (isRemote) ? (0) : (1);
-
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: kernel_data:%p (r:%p, l:%p)\n", kernel_data, device__remote_kernel_data, device__local_kernel_data);
-  //printf("[DEBUG] :: kernelDataLen - r:%d, l:%d\n", remoteKernelDataLen, localKernelDataLen);
-  //fflush(NULL);
-
-  //// Select the kernel data struct and initialize member variables for this timestep
-  ///mic_kernel_data *kernel_data = ((isRemote) ? (device__remote_kernel_data) : (device__local_kernel_data));
-  //device__local_kernel_data->patchPairStart = 0; // DMK - NOTE : 0 for now, must change when/if local vs remote support added
-  //device__local_kernel_data->patchPairEnd = 0;   // DMK - NOTE : 0 for now, must change when/if local vs remote support added
-  //device__local_kernel_data->doSlow = doSlow;
-  //device__local_kernel_data->doEnergy = doEnergy;
-  //device__local_kernel_data->usePairlists = usePairlists;
-  //device__local_kernel_data->savePairlists = savePairlists;
-  //device__local_kernel_data->virial_xx = 0.0;
-  //device__local_kernel_data->virial_xy = 0.0;
-  //device__local_kernel_data->virial_xz = 0.0;
-  //device__local_kernel_data->virial_yy = 0.0;
-  //device__local_kernel_data->virial_yz = 0.0;
-  //device__local_kernel_data->virial_zz = 0.0;
-  //device__local_kernel_data->fullElectVirial_xx = 0.0;
-  //device__local_kernel_data->fullElectVirial_xy = 0.0;
-  //device__local_kernel_data->fullElectVirial_xz = 0.0;
-  //device__local_kernel_data->fullElectVirial_yy = 0.0;
-  //device__local_kernel_data->fullElectVirial_yz = 0.0;
-  //device__local_kernel_data->fullElectVirial_zz = 0.0;
-  //device__local_kernel_data->vdwEnergy = 0.0;
-  //device__local_kernel_data->electEnergy = 0.0;
-  //device__local_kernel_data->fullElectEnergy = 0.0;
+  mic_kernel_data * remote_kernel_data = host__remote_kernel_data;
+  mic_kernel_data * local_kernel_data = host__local_kernel_data;
+  mic_kernel_data * kernel_data = ((isRemote) ? (remote_kernel_data) : (local_kernel_data));
+  #if MIC_SYNC_INPUT != 0
+    // NOTE: With MIC_SYNC_INPUT, all input is pushed before either of the "local" or "remote" kernels
+    //   are executed, so setup both kernel_data structs as the "remote" kernel is being issued
+    #if MIC_MULTIPLE_KERNELS != 0
+      if (isRemote) {
+    #endif
+      remote_kernel_data->isRemote = 1;
+      local_kernel_data->isRemote = 0;
+      remote_kernel_data->numLocalAtoms = local_kernel_data->numLocalAtoms = numLocalAtoms;
+      remote_kernel_data->numLocalComputes = local_kernel_data->numLocalComputes = numLocalComputes;
+      remote_kernel_data->numLocalPatches = local_kernel_data->numLocalPatches = numLocalPatches;
+      remote_kernel_data->doSlow = local_kernel_data->doSlow = doSlow;
+      remote_kernel_data->doEnergy = local_kernel_data->doEnergy = doEnergy;
+      remote_kernel_data->usePairlists = local_kernel_data->usePairlists = usePairlists;
+      remote_kernel_data->savePairlists = local_kernel_data->savePairlists = savePairlists;
+    #if MIC_MULTIPLE_KERNELS != 0
+      }
+    #endif
+  #else
+    kernel_data->isRemote = isRemote;
+    kernel_data->numLocalAtoms = numLocalAtoms;
+    kernel_data->numLocalComputes = numLocalComputes;
+    kernel_data->numLocalPatches = numLocalPatches;
+    kernel_data->doSlow = doSlow;
+    kernel_data->doEnergy = doEnergy;
+    kernel_data->usePairlists = usePairlists;
+    kernel_data->savePairlists = savePairlists;
+  #endif
 
   // For buffers that are only periodically copied/updated, get the
   //   flags that indicate whether or not those buffers should be
@@ -1429,8 +1393,8 @@ void mic_nonbonded_forces(const int deviceNum,
   force_lists_copySize = 0;
   atom_params_copySize = 0;
 
-  // NOTE: A compute is "remote" if either patch that it depends on is "remote," so some of the "remote"
-  //   computes will require "local" patch data (i.e. copy all patch data at start of the "remote" kernel).
+  // Calculate the start/size of any data buffers that need to be copied to the device this timestep
+  // NOTE: Some "remote" computes still need "local patch" data, so copy all patch data before/during "remote."
   #if MIC_MULTIPLE_KERNELS != 0
     int toCopySize_atoms = (isRemote) ? (numAtoms) : (0);  // The remote kernel will copy in all atoms
     int toCopySize_atom_params = (isRemote) ? (_atom_params_copySize) : (0);  // If there are atom_params to copy, the remote kernel will copy in all atom_params
@@ -1451,226 +1415,260 @@ void mic_nonbonded_forces(const int deviceNum,
     int toCopySize_slow_forces = slowForcesNumAtoms;
   #endif
 
+  // If tracing data is to be recorded, setup local variables to the host buffers that will
+  //   receive the data and setup the clauses that will be used to transfer the data
   #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
     #if MIC_DEVICE_TRACING_DETAILED != 0
-      int toCopySize__device_times_computes = ((isRemote) ? (0) : (2 * device__patch_pairs_size));
-      int toCopySize__device_times_patches = ((isRemote) ? (0) : (2 * device__force_lists_size));
+      double * device_times_computes = host__device_times_computes;
+      double * device_times_patches = host__device_times_patches;
+      int toCopySize_device_times_computes = ((isRemote) ? (0) : (2 * numPatchPairs));
+      int toCopySize_device_times_patches = ((isRemote) ? (0) : (2 * numForceLists));
     #endif
-    int toCopySize__device_times_start = ((isRemote) ? (0) : (10));
+    double * device_times_start = host__device_times_start;
+    int toCopySize_device_times_start = ((isRemote) ? (0) : (10));
     #if MIC_DEVICE_TRACING_DETAILED != 0
       #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE \
-        out(device__device_times_computes[0:toCopySize__device_times_computes] : alloc_if(0) free_if(0)) \
-        out(device__device_times_patches[0:toCopySize__device_times_patches] : alloc_if(0) free_if(0)) \
-        out(device__device_times_start[0:toCopySize__device_times_start] : alloc_if(0) free_if(0))
+        out(device_times_computes[0:toCopySize_device_times_computes] : alloc_if(0) free_if(0)) \
+        out(device_times_patches[0:toCopySize_device_times_patches] : alloc_if(0) free_if(0)) \
+        out(device_times_start[0:toCopySize_device_times_start] : alloc_if(0) free_if(0)) \
+        nocopy(device__device_times_start) nocopy(device__device_times_computes) nocopy(device__device_times_patches)
     #else
       #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE \
-        out(device__device_times_start[0:toCopySize__device_times_start] : alloc_if(0) free_if(0))
+        out(device_times_start[0:toCopySize_device_times_start] : alloc_if(0) free_if(0)) \
+        nocopy(device__device_times_start)
     #endif
   #else
     #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE
   #endif
 
-  //// DMK - DEBUG
-  //printf("[DEBUG:NBF-%d] ::   atoms[0:%d]\n", isRemote, toCopySize_atoms);
-  //printf("[DEBUG:NBF-%d] ::   atom_params[0:%d]\n", isRemote, toCopySize_atom_params);
-  //printf("[DEBUG:NBF-%d] ::   patch_pairs[0:%d]\n", isRemote, toCopySize_patch_pairs);
-  //printf("[DEBUG:NBF-%d] ::   force_lists[0:%d]\n", isRemote, toCopySize_force_lists);
-  //printf("[DEBUG:NBF-%d] ::   forces[%d:%d]\n", isRemote, toCopyStart_forces, toCopySize_forces);
-  //printf("[DEBUG:NBF-%d] ::   slow_forces[%d:%d]\n", isRemote, toCopyStart_slow_forces, toCopySize_slow_forces);
-
-  #if (VTUNE_INFO != 0) && (VTUNE_TASKS != 0)
-    __itt_frame_begin_v3(vtune_domain, NULL);
-    //__itt_task_begin(vtune_domain, __itt_null, __itt_null, vtune_offload_task);
+  // Setup local pointers and offload clauses for transfering atom input data
+  atom * atoms = host__atoms;
+  atom_param * atom_params = host__atom_params;
+  double4 * forces = host__forces;
+  double4 * slow_forces = host__slow_forces;
+  #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
+    #define MIC_DEVICE_ATOMS_CLAUSE
+  #else
+    #define MIC_DEVICE_ATOMS_CLAUSE \
+      in(atoms[0:toCopySize_atoms] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
+      in(atom_params[0:toCopySize_atom_params] : alloc_if(0) free_if(0) align(MIC_ALIGN))
   #endif
 
-  #if MIC_TRACING != 0
-    double pragma_start = CmiWallTimer();
-  #endif
-
-  #if MIC_PRAGMA_TIMING_STATS != 0
-    #if MIC_TRACING != 0
-      pragma_timing_start = pragma_start;
-    #else
-      pragma_timing_start = CmiWallTimer();
-    #endif
-  #endif
-
+  // If kernel data transfer stats are being collected, calculate and print the amount of data
+  //   being transfered, separated by type : in, out, or inout.
+  // NOTE: Only include data required for production runs (e.g. not tracing data).
   #if MIC_KERNEL_DATA_TRANSFER_STATS != 0
     int transfer_in = sizeof(isRemote)
-      + (3 * sizeof(device__lata))
-      + sizeof(int) // device__force_buffers_req_size
+      + (3 * sizeof(lata)) // for lata, latb, and latc
+      + sizeof(int) // for device__force_buffers_req_size
       + (sizeof(atom) * toCopySize_atoms)
       + (sizeof(atom_param) * toCopySize_atom_params)
       + (sizeof(patch_pair) * toCopySize_patch_pairs)
       + (sizeof(force_list) * toCopySize_force_lists);
     int transfer_inout = sizeof(mic_kernel_data);
     int transfer_out = sizeof(double4) * (toCopySize_forces + toCopySize_slow_forces)
-      + sizeof(int); // device__timestep (debug output, not actually required)
-    printf("[MIC-DEBUG] :: PE %04d-%05d-%1d :: transfering %d bytes (in:%d, inout:%d, out:%d)\n",
-           device__myPE, device__timestep, isRemote,
-           transfer_in + transfer_inout + transfer_out, transfer_in, transfer_inout, transfer_out
-          );
+      + sizeof(int); // for device__timestep
+    #if MIC_DEBUG > 0
+      MICP("timestep:%06d - transfering %d bytes (isRemote:%d, in:%d, inout:%d, out:%d)\n", \
+           host__timestep, transfer_in + transfer_inout + transfer_out, \
+           isRemote, transfer_in, transfer_inout, transfer_out \
+          ); MICPF;
+    #else
+      printf("[MIC-DEBUG] :: PE %04d-%05d-%1d :: transfering %d bytes (in:%d, inout:%d, out:%d)\n",
+             host__pe, host__timestep, isRemote,
+             transfer_in + transfer_inout + transfer_out, transfer_in, transfer_inout, transfer_out
+            );
+    #endif
   #endif
 
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: << issuing %s kernel >>\n", (isRemote) ? ("remote") : ("local")); fflush(NULL);
+  // Setup input clauses required for this kernel.
+  // NOTE: If MIC_SYNC_INPUT is being used, use an offload pragma to first transfer the data to
+  //   the device and use nocopy clauses for the actual kernel offload pragmas.
+  patch_pair * patch_pairs = host__patch_pairs;
+  force_list * force_lists = host__force_lists;
+  const int force_buffers_req_size = host__force_buffers_req_size;
+  #if MIC_SYNC_INPUT != 0
 
-  // Trigger computation on the MIC device (asynchronous)
-  //  in(device__atoms[0:numAtoms] : alloc_if(0) free_if(0) align(MIC_ALIGN))
-  //  in(device__atom_params[0:_atom_params_copySize] : alloc_if(0) free_if(0) align(MIC_ALIGN))
-  //  in(device__patch_pairs[0:_patch_pairs_copySize] : alloc_if(0) free_if(0) align(MIC_ALIGN))
-  //  in(device__force_lists[0:_force_lists_copySize] : alloc_if(0) free_if(0) align(MIC_ALIGN))
-  //  out(device__forces[0:numAtoms] : alloc_if(0) free_if(0) align(MIC_ALIGN))
-  //  out(device__slow_forces[0:slowForcesNumAtoms] : alloc_if(0) free_if(0) align(MIC_ALIGN))
-  #pragma offload target(mic:deviceNum) \
-    in(isRemote) \
-    in(device__lata) in(device__latb) in(device__latc) \
-    in(device__force_buffers_req_size) \
-    in(device__atoms[0:toCopySize_atoms] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
-    in(device__atom_params[0:toCopySize_atom_params] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
-    in(device__patch_pairs[0:toCopySize_patch_pairs] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
-    in(device__force_lists[0:toCopySize_force_lists] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
-    inout(device__local_kernel_data[0:localKernelDataLen] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
-    inout(device__remote_kernel_data[0:remoteKernelDataLen] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
-    out(device__forces[toCopyStart_forces:toCopySize_forces] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
-    out(device__slow_forces[toCopyStart_slow_forces:toCopySize_slow_forces] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
-    MIC_PRAGMA_TIMING_DEVICE_CLAUSE \
-    MIC_DEVICE_TIMING_PRAGMA_CLAUSE \
-    nocopy(device__force_buffers_alloc_size) \
-    nocopy(device__force_buffers[0:0] : alloc_if(0) free_if(0)) \
-    nocopy(device__slow_force_buffers[0:0] : alloc_if(0) free_if(0)) \
-    nocopy(device__patch_pairs_size) \
-    nocopy(device__force_lists_size) \
-    nocopy(device__atoms_size) \
-    nocopy(device__pairlists) nocopy(device__pairlists_alloc_size) \
-    nocopy(device__table_four[0:0] : alloc_if(0) free_if(0)) \
-    nocopy(device__table_four_n_16) \
-    nocopy(device__lj_table_dim) \
-    nocopy(device__lj_table[0:0] : alloc_if(0) free_if(0)) \
-    nocopy(device__exclusion_bits[0:0] : alloc_if(0) free_if(0)) \
-    nocopy(device__constants[0:0] : alloc_if(0) free_if(0)) \
-    nocopy(device__pl_array) nocopy(device__pl_size) nocopy(device__r2_array) \
-    out(device__timestep) \
-    nocopy(device__loop_counts) nocopy(device__cutoff_clear_counts) nocopy(device__iTest_counts) \
-    nocopy(device__table_four_float) nocopy(device__lj_table_float) \
-    nocopy(device__virial_energy) \
-    signal(tag_kernel)
-  {
-
-    // DMK - DEBUG
-    #if (MIC_PRAGMA_TIMING_STATS != 0)
-      double __device_start = getCurrentTime();
+    // Push the data to the device
+    #if MIC_MULTIPLE_KERNELS != 0
+      if (isRemote != 0) {
     #endif
-
-    // DMK - TRACING
-    #if (MIC_TRACING != 0 && MIC_DEVICE_TRACING != 0)
-      device__device_times_start[((isRemote)?(0):(1))] = getCurrentTime();
-    #endif
-
-    //// DMK - DEBUG
-    //printf("[DEBUG:MIC] :: Starting %s kernel for timestep %d...\n",
-    //       (isRemote) ? ("remote") : ("local"),
-    //       device__timestep
-    //      ); fflush(NULL);
-
-    #if !defined(__MIC__)
-      mic_dev_die("mic_nonbonded_forces :: Attempt to execute MIC kernels on host (not supported yet)... exiting."); fflush(NULL);
-    #endif
-
-    // DMK - DEBUG
-    #if MIC_ACTIVE_CUTOFF_STATS != 0
-      activeCount = 0; activePossibleCount = 0;
-      cutoffCount = 0; cutoffPossibleCount = 0;
-    #endif
-
-    // DMK - DEBUG
-    #if MIC_GATHER_SCATTER_STATS != 0
-      for (int i = 0; i < 17; i++) {
-        gather_single[i] = gather_double[i] = scatter_single[i] = scatter_double[i] = 0;
+      MICP("<< pushing input data >>\n"); MICPF;
+      #if MIC_TRACING != 0
+        double input_start = CmiWallTimer();
+      #endif
+      #pragma offload_transfer target(mic:deviceNum) \
+        in(lata : into(device__lata)) \
+        in(latb : into(device__latb)) \
+        in(latc : into(device__latc)) \
+        in(force_buffers_req_size : into(device__force_buffers_req_size))  \
+        in(patch_pairs[0:toCopySize_patch_pairs] : alloc_if(0) free_if(0)) \
+        in(force_lists[0:toCopySize_force_lists] : alloc_if(0) free_if(0)) \
+        in(remote_kernel_data[0:1] : alloc_if(0) free_if(0)) \
+        in(local_kernel_data[0:1] : alloc_if(0) free_if(0)) \
+        in(numAtoms : into(device__atoms_size)) \
+        in(numPatchPairs : into(device__patch_pairs_size)) \
+        in(numForceLists : into(device__force_lists_size)) \
+        nocopy(device__pe) \
+        MIC_DEVICE_ATOMS_CLAUSE
+      { }
+      #if MIC_TRACING != 0
+        double input_end = CmiWallTimer();
+        MIC_TRACING_RECORD(MIC_EVENT_SYNC_INPUT_PRAGMA, input_start, input_end);
+      #endif
+    #if MIC_MULTIPLE_KERNELS != 0
       }
     #endif
 
-    // DMK - NOTE | TODO | FIXME : All of the kernel calls will be "local" for now, so just use
-    //   that kernel data.  However, a mechanism for having two kernel data structs and knowing which
-    //   one is in use needs to be created.  Perhaps creating a function instead of a code block and
-    //   making it a parameter(?).
-    #if MIC_MULTIPLE_KERNELS != 0
-      mic_kernel_data *kernel_data = (isRemote) ? (device__remote_kernel_data) : (device__local_kernel_data);
+    // Setup the clauses for the actual kernel offload pragma (so that data is not transfered)
+    #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
+      #define TMP_SYNC_ATOMS_CLAUSE
     #else
-      mic_kernel_data *kernel_data = device__local_kernel_data;
+      #define TMP_SYNC_ATOMS_CLAUSE  in(atoms[0:0] : alloc_if(0) free_if(0)) in(atom_params[0:0] : alloc_if(0) free_if(0))
+    #endif
+    #define MIC_DEVICE_SYNC_INPUT_CLAUSE \
+      nocopy(device__lata) nocopy(device__latb) nocopy(device__latc) \
+      nocopy(device__force_buffers_req_size) \
+      nocopy(device__atoms_size) \
+      in(patch_pairs[0:0] : alloc_if(0) free_if(0)) nocopy(device__patch_pairs_size) \
+      in(force_lists[0:0] : alloc_if(0) free_if(0)) nocopy(device__force_lists_size)	      \
+      out(kernel_data[0:1] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
+      TMP_SYNC_ATOMS_CLAUSE
+
+  #else
+
+    // Setup the clauses for the actual kernel offload pragma (so that data is transfered)
+    #define MIC_DEVICE_SYNC_INPUT_CLAUSE \
+      in(lata : into(device__lata)) \
+      in(latb : into(device__latb)) \
+      in(latc : into(device__latc)) \
+      in(force_buffers_req_size : into(device__force_buffers_req_size)) \
+      in(patch_pairs[0:toCopySize_patch_pairs] : alloc_if(0) free_if(0)) \
+      in(force_lists[0:toCopySize_force_lists] : alloc_if(0) free_if(0)) \
+      in(numAtoms : into(device__atoms_size)) \
+      in(numPatchPairs : into(device__patch_pairs_size)) \
+      in(numForceLists : into(device__force_lists_size)) \
+      inout(kernel_data[0:1] : alloc_if(0) free_if(0)) \
+      MIC_DEVICE_ATOMS_CLAUSE
+
+  #endif
+
+  MICP("<< issuing %s kernel >>\n", (isRemote) ? ("remote") : ("local")); MICPF;
+
+  #if MIC_TRACING != 0
+    double pragma_start = CmiWallTimer();
+  #endif
+
+  // Trigger computation on the MIC device (asynchronous offload pragma that does the kernel work)
+  #pragma offload target(mic:deviceNum) \
+    in(isRemote) \
+    MIC_DEVICE_SYNC_INPUT_CLAUSE \
+    MIC_DEVICE_TIMING_PRAGMA_CLAUSE \
+    out(forces[toCopyStart_forces:toCopySize_forces] : alloc_if(0) free_if(0)) \
+    out(slow_forces[toCopyStart_slow_forces:toCopySize_slow_forces] : alloc_if(0) free_if(0)) \
+    out(device__timestep : into(host__timestep)) \
+    nocopy(device__force_buffers) nocopy(device__slow_force_buffers) nocopy(device__force_buffers_alloc_size) \
+    nocopy(device__pairlists) nocopy(device__pairlists_alloc_size) \
+    nocopy(device__table_four) nocopy(device__table_four_float) nocopy(device__table_four_n_16) \
+    nocopy(device__lj_table) nocopy(device__lj_table_float) nocopy(device__lj_table_dim) \
+    nocopy(device__exclusion_bits) \
+    nocopy(device__constants) \
+    nocopy(device__pl_array) nocopy(device__pl_size) nocopy(device__r2_array) \
+    nocopy(device__pe) \
+    nocopy(device__atoms) nocopy(device__atom_params) \
+    nocopy(device__forces) nocopy(device__slow_forces) \
+    nocopy(device__patch_pairs) nocopy(device__force_lists) \
+    nocopy(device__numOMPThreads) \
+    nocopy(device__exclusion_bits_copy) nocopy(device__constants_copy) \
+    nocopy(device__table_four_copy) nocopy(device__table_four_float_copy) \
+    nocopy(device__lj_table_copy) nocopy(device__lj_table_float_copy) \
+    signal(tag_kernel)
+  {
+    __MUST_BE_MIC;
+    __FULL_CHECK(__ASSERT(kernel_data != NULL));
+    __FULL_CHECK(__ASSERT(device__numOMPThreads > 0));
+
+    // DMK - TODO | FIXME - For now, copy values over into device__xxx variables
+    //   so the older version of the code will still work (remove them eventually)
+    device__patch_pairs = patch_pairs;
+    device__force_lists = force_lists;
+    device__atoms = atoms;
+    device__atom_params = atom_params;
+    device__forces = forces;
+    device__slow_forces = slow_forces;
+    __ASSERT(device__patch_pairs != NULL);
+    __ASSERT(device__force_lists != NULL);
+    __ASSERT(device__atoms != NULL);
+    __ASSERT(device__atom_params != NULL);
+    __ASSERT(device__forces != NULL);
+    __ASSERT(device__slow_forces != NULL);
+    #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
+      device__device_times_start = device_times_start;
+      __ASSERT(device__device_times_start);
+      #if MIC_DEVICE_TRACING_DETAILED != 0
+        device__device_times_computes = device_times_computes;
+        device__device_times_patches = device_times_patches;
+        __ASSERT(device__device_times_computes);
+        __ASSERT(device__device_times_patches);
+      #endif
     #endif
 
-    //// DMK - DEBUG
-    //printf("[DEBUG:MIC-%d-%d] ::   kernel_data...\n", device__timestep, isRemote);
-    //printf("[DEBUG:MIC-%d-%d] ::     isRemote:%d(%d)\n", device__timestep, isRemote, kernel_data->isRemote, isRemote);
-    //printf("[DEBUG:MIC-%d-%d] ::     numLocalAtoms:%d\n", device__timestep, isRemote, kernel_data->numLocalAtoms);
-    //printf("[DEBUG:MIC-%d-%d] ::     numLocalComputes:%d\n", device__timestep, isRemote, kernel_data->numLocalComputes);
-    //printf("[DEBUG:MIC-%d-%d] ::     numLocalPatches:%d\n", device__timestep, isRemote, kernel_data->numLocalPatches);
-    //fflush(NULL);
-
-    // Make sure there is enough memory allocated for the force buffers
-    #if MIC_FULL_CHECK != 0
-      assert(device__force_buffers_req_size > 0);
+    // TRACING - Record the start time of the kernel
+    #if (MIC_TRACING != 0 && MIC_DEVICE_TRACING != 0)
+      __ASSERT(device__device_times_start != NULL);
+      device__device_times_start[((isRemote)?(0):(1))] = getCurrentTime();
     #endif
+
+    // If data structure verification is being performed, create copies of the buffers that can
+    //   change throughout the simulation at the start of the timestep on the device, and verify
+    //   the lookup tables before any work is performed.
+    #if MIC_DATA_STRUCT_VERIFY != 0
+      _verify_tables(device__pe, device__timestep, isRemote, -1);
+      patch_pair * device__patch_pairs_copy = (patch_pair*)_MM_MALLOC_WRAPPER(sizeof(patch_pair) * device__patch_pairs_size, 64, "device__patch_pairs_copy");
+      force_list * device__force_lists_copy = (force_list*)_MM_MALLOC_WRAPPER(sizeof(force_list) * device__force_lists_size, 64, "device__force_lists_copy");
+      atom * device__atoms_copy = (atom*)_MM_MALLOC_WRAPPER(sizeof(atom) * device__atoms_size, 64, "device__atoms_copy");
+      atom_param * device__atom_params_copy = (atom_param*)_MM_MALLOC_WRAPPER(sizeof(atom_param) * device__atoms_size, 64, "device__atom_params_copy");
+      __ASSERT(device__patch_pairs_copy != NULL && device__force_lists_copy != NULL);
+      __ASSERT(device__atoms_copy != NULL && device__atom_params_copy != NULL);
+      memcpy(device__patch_pairs_copy, device__patch_pairs, sizeof(patch_pair) * device__patch_pairs_size);
+      memcpy(device__force_lists_copy, device__force_lists, sizeof(force_list) * device__force_lists_size);
+      memcpy(device__atoms_copy, device__atoms, sizeof(atom) * device__atoms_size);
+      memcpy(device__atom_params_copy, device__atom_params, sizeof(atom_param) * device__atoms_size);
+    #endif
+
+    // Make sure there is enough memory allocated for the force buffers (reallocate if not)
+    __FULL_CHECK(__ASSERT(device__force_buffers_req_size > 0));
     if (device__force_buffers_req_size > device__force_buffers_alloc_size) {
-
-      //// DMK - DEBUG
-      //printf("[MIC] :: reallocating force buffers (%d->%d)\n",
-      //       device__force_buffers_alloc_size, device__force_buffers_req_size
-      //      );
-
       if (device__force_buffers != NULL) { _mm_free(device__force_buffers); }
       if (device__slow_force_buffers != NULL) { _mm_free(device__slow_force_buffers); }
       device__force_buffers_alloc_size = device__force_buffers_req_size;
-      //device__force_buffers = (double4*)(_mm_malloc(sizeof(double) * 4 * device__force_buffers_alloc_size, 64));
-      //device__slow_force_buffers = (double4*)(_mm_malloc(sizeof(double) * 4 * device__force_buffers_alloc_size, 64));
       device__force_buffers = (double4*)(_MM_MALLOC_WRAPPER(sizeof(double) * 4 * device__force_buffers_alloc_size, 64, "device__force_buffers"));
       device__slow_force_buffers = (double4*)(_MM_MALLOC_WRAPPER(sizeof(double) * 4 * device__force_buffers_alloc_size, 64, "device__slow_force_buffers"));
-      #if MIC_FULL_CHECK != 0
-        assert(device__force_buffers != NULL && device__slow_force_buffers != NULL);
-      #endif
+      __ASSERT(device__force_buffers != NULL && device__slow_force_buffers != NULL);
     }
 
-    //// Make sure there are enough pairlists pointers (several per patch_pair)
-    //const int numPairlists = NUM_PAIRLIST_TYPES * device__patch_pairs_size;
-    //if (numPairlists > device__pairlists_alloc_size) {
-    //  int **new_pairlists = new int*[numPairlists];
-    //  int initStart = 0;
-    //  if (device__pairlists != 0) {
-    //    int **old_pairlists = (int**)(device__pairlists);
-    //    memcpy((void*)new_pairlists, (void*)old_pairlists, sizeof(int*) * device__pairlists_alloc_size);
-    //    delete [] old_pairlists;
-    //    initStart = device__pairlists_alloc_size;
-    //  }
-    //  for (int i = initStart; i < numPairlists; i++) { new_pairlists[i] = NULL; }
-    //  device__pairlists = (unsigned long long int)new_pairlists;
-    //  device__pairlists_alloc_size = numPairlists;
-    //}
-
-    // Initialize the overall virial summation/accumulation variables that will
+    // Declare and initialize the overall virial summation/accumulation variables that will
     //   eventually be passed back to the host
-    #if MIC_VIRIAL_ENERGY_ALT == 0
-      double virial_xx = 0.0;
-      double virial_xy = 0.0;
-      double virial_xz = 0.0;
-      double virial_yy = 0.0;
-      double virial_yz = 0.0;
-      double virial_zz = 0.0;
-      double fullElectVirial_xx = 0.0;
-      double fullElectVirial_xy = 0.0;
-      double fullElectVirial_xz = 0.0;
-      double fullElectVirial_yy = 0.0;
-      double fullElectVirial_yz = 0.0;
-      double fullElectVirial_zz = 0.0;
-      double vdwEnergy = 0.0;
-      double electEnergy = 0.0;
-      double fullElectEnergy = 0.0;
+    double virial_xx = 0.0;
+    double virial_xy = 0.0;
+    double virial_xz = 0.0;
+    double virial_yy = 0.0;
+    double virial_yz = 0.0;
+    double virial_zz = 0.0;
+    double fullElectVirial_xx = 0.0;
+    double fullElectVirial_xy = 0.0;
+    double fullElectVirial_xz = 0.0;
+    double fullElectVirial_yy = 0.0;
+    double fullElectVirial_yz = 0.0;
+    double fullElectVirial_zz = 0.0;
+    double vdwEnergy = 0.0;
+    double electEnergy = 0.0;
+    double fullElectEnergy = 0.0;
+    #if MIC_EXCL_CHECKSUM_FULL != 0
+      int exclusionSum = 0;
     #endif
 
-    //// DMK - DEBUG
-    //printf("[MIC-DEBUG] :: Starting computes on device (timestep: %d)...\n", device__timestep);
-    //fflush(NULL);
-
+    // Calculate the lower and upper bounds for the patch pairs that will be computed within this kernel
     #if MIC_MULTIPLE_KERNELS != 0
       const int ppI_start = (isRemote) ? (kernel_data->numLocalComputes) : (0);
       const int ppI_end = (isRemote) ? (device__patch_pairs_size) : (kernel_data->numLocalComputes);
@@ -1678,44 +1676,44 @@ void mic_nonbonded_forces(const int deviceNum,
       const int ppI_start = 0;
       const int ppI_end = device__patch_pairs_size;
     #endif
+    __FULL_CHECK(__ASSERT(ppI_start >= 0 && ppI_start <= device__patch_pairs_size));
+    __FULL_CHECK(__ASSERT(ppI_end >= 0 && ppI_end <= device__patch_pairs_size));
+    __FULL_CHECK(__ASSERT(ppI_start <= ppI_end));
 
-    //// DMK - DEBUG
-    //printf("[DEBUG:MIC-%d-%d] ::   processing computes[%d->%d] - device__patch_pairs_size:%d\n",
-    //       device__timestep, isRemote,
-    //       ppI_start, ppI_end, device__patch_pairs_size
-    //      ); fflush(NULL);
-
-    // DMK - TRACING
+    // TRACING - Record the start time for the patch pairs (computes) parallel region
     #if (MIC_TRACING != 0 && MIC_DEVICE_TRACING != 0)
       device__device_times_start[((isRemote)?(2):(3))] = getCurrentTime();
     #endif
 
-    // Compute each compute (patch pair) in parallel with one another
+    // Process each patch pair (compute)
     #pragma novector
     #if MULTIPLE_THREADS != 0
-      #if MIC_VIRIAL_ENERGY_ALT != 0
-        #pragma omp parallel for schedule(dynamic, 1)
+      #if MIC_EXCL_CHECKSUM_FULL != 0
+        #define EXCL_CHECKSUM_CLAUSE  reduction(+ : exclusionSum)
       #else
-        #pragma omp parallel for schedule(dynamic, 1) \
-          reduction(+ : vdwEnergy, electEnergy, fullElectEnergy) \
-          reduction(+ : virial_xx, virial_xy, virial_xz, virial_yy, virial_yz, virial_zz) \
-          reduction(+ : fullElectVirial_xx, fullElectVirial_xy, fullElectVirial_xz, fullElectVirial_yy, fullElectVirial_yz, fullElectVirial_zz )
+        #define EXCL_CHECKSUM_CLAUSE
       #endif
+      #pragma omp parallel for schedule(dynamic, 1) \
+        reduction(+ : vdwEnergy, electEnergy, fullElectEnergy) \
+        reduction(+ : virial_xx, virial_xy, virial_xz, virial_yy, virial_yz, virial_zz) \
+        reduction(+ : fullElectVirial_xx, fullElectVirial_xy, fullElectVirial_xz, fullElectVirial_yy, fullElectVirial_yz, fullElectVirial_zz ) \
+        EXCL_CHECKSUM_CLAUSE
+      #undef EXCL_CHECKSUM_CLAUSE
     #endif
     for (int ppI = ppI_start; ppI < ppI_end; ppI++) {
 
+      // TRACING - Record the start of each patch pair (compute)
       #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
+        __FULL_CHECK(__ASSERT(device__device_times_computes != NULL));
         device__device_times_computes[ppI * 2] = getCurrentTime();
       #endif
 
-      // DMK - DEBUG
-      //printf("[MIC-DEBUG] ::   ppI: %d\n", ppI); fflush(NULL);
-
-      // Create and populate the mic_params data structure to be passed into the kernel function
+      // Create and populate the mic_params data structure (passed into the kernel function)
       mic_params params;
 
       // Initialize the pointer to the patch_pairs structure for this compute
       params.pp = (patch_pair*)(device__patch_pairs + ppI);
+      __FULL_CHECK(__ASSERT(params.pp != NULL));
 
       #if MIC_SORT_LISTS != 0
         const int abSwapFlag = ((params.pp->patch1_size < params.pp->patch2_size) ? (1) : (0));
@@ -1724,19 +1722,21 @@ void mic_nonbonded_forces(const int deviceNum,
         #define ABSWAP(t, f)  (f)
       #endif
 
-      // DMK - DEBUG - A few values used for debugging
+      // DMK - DEBUG - Set a few values used for debugging
       params.ppI = ppI;
       params.p1 = ABSWAP(params.pp->p2, params.pp->p1);
       params.p2 = ABSWAP(params.pp->p1, params.pp->p2);
+      params.pe = device__pe;
+      params.timestep = device__timestep;
 
+      // If pairlist refinement is enabled, initialize the related scratch buffer pointers
       // In some cases, buffers used by the compute kernel functions (calc_self, etc.) only
       //   require scratch buffers (i.e. not used for input or output).  As such, we can
       //   allocate these buffers on a one-per-thread basis rather than a one-per-compute
       //   basis to save some memory (and get memory location reuse for any given thread).
       //   These fields relate to the pointer and sizes for those buffers.
-      const int threadIndex = omp_get_thread_num();
-      // If pairlist refinement is enabled, initialize the related scratch buffer pointers
       #if REFINE_PAIRLISTS != 0
+        const int threadIndex = omp_get_thread_num();
         params.plArray_ptr = device__pl_array + threadIndex;
         params.plSize_ptr = device__pl_size + threadIndex;
         params.r2Array_ptr = device__r2_array + threadIndex;
@@ -1744,7 +1744,6 @@ void mic_nonbonded_forces(const int deviceNum,
 
       // Initialize pointers to the various lookup tables, constants, etc. that are used
       //   from within the compute functions
-      //#if (MIC_HANDCODE_FORCE != 0) && (MIC_HANDCODE_FORCE_SINGLE != 0)
       #if MIC_HANDCODE_FORCE_SINGLE != 0
         params.table_four_base_ptr = (void*)device__table_four_float;
         params.lj_table_base_ptr = (void*)device__lj_table_float;
@@ -1756,12 +1755,19 @@ void mic_nonbonded_forces(const int deviceNum,
       params.lj_table_dim = device__lj_table_dim;
       params.exclusion_bits = device__exclusion_bits;
       params.constants = device__constants;
+      __FULL_CHECK(__ASSERT(params.table_four_base_ptr != NULL));
+      __FULL_CHECK(__ASSERT(params.lj_table_base_ptr != NULL));
+      __FULL_CHECK(__ASSERT(params.table_four_n_16 % 16 == 0));
+      __FULL_CHECK(__ASSERT(params.exclusion_bits != NULL));
+      __FULL_CHECK(__ASSERT(params.constants != NULL));
 
       // Setup pairlist flags and pairlist buffer (an array of pointers, one for each pairlist,
       //   for each compute)
-      params.usePairlists = kernel_data->usePairlists; //device__usePairlists;
-      params.savePairlists = kernel_data->savePairlists; //device__savePairlists;
+      params.usePairlists = kernel_data->usePairlists;
+      params.savePairlists = kernel_data->savePairlists;
       params.pairlists_ptr = &(((int**)device__pairlists)[NUM_PAIRLIST_TYPES * ppI]);
+      __FULL_CHECK(__ASSERT(device__pairlists != NULL));
+      __FULL_CHECK(__ASSERT(params.pairlists_ptr != NULL));
 
       // Setup the sizes of the atom lists and force lists
       int n0 = ABSWAP(params.pp->patch2_size, params.pp->patch1_size);
@@ -1772,6 +1778,8 @@ void mic_nonbonded_forces(const int deviceNum,
       params.numAtoms[1] = n1;
       params.numAtoms_16[0] = n0_16;
       params.numAtoms_16[1] = n1_16;
+      __FULL_CHECK(__ASSERT(params.numAtoms[0] >= 0));
+      __FULL_CHECK(__ASSERT(params.numAtoms[1] >= 0));
 
       // Setup the pointers to the input particle data for this compute
       // NOTE: All of the particle data is sent in two chunks (atoms and atom_params, where
@@ -1779,10 +1787,25 @@ void mic_nonbonded_forces(const int deviceNum,
       //   of these buffers contains several sub-arrays (one for each field) in an
       //   structure-of-arrays (SOA) format.  This code, along with the force code
       //   below it, is simply creating the array pointers for each "field's array."
-      mic_position_t *pBase0 = (mic_position_t*)(device__atoms + ABSWAP(params.pp->patch2_atom_start, params.pp->patch1_atom_start));
-      mic_position_t *pBase1 = (mic_position_t*)(device__atoms + ABSWAP(params.pp->patch1_atom_start, params.pp->patch2_atom_start));
-      int *pExtBase0 = (int*)(device__atom_params + ABSWAP(params.pp->patch2_atom_start, params.pp->patch1_atom_start));
-      int *pExtBase1 = (int*)(device__atom_params + ABSWAP(params.pp->patch1_atom_start, params.pp->patch2_atom_start));
+      #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
+        mic_position_t* pBase0 = (mic_position_t*)(params.pp->patch1_atomDataPtr);
+        mic_position_t* pBase1 = (mic_position_t*)(params.pp->patch2_atomDataPtr);
+        int *pExtBase0 = (int*)(pBase0 + n0_16);
+        int *pExtBase1 = (int*)(pBase1 + n1_16);
+      #else
+        __FULL_CHECK(__ASSERT(device__atoms != NULL));
+        __FULL_CHECK(__ASSERT(device__atom_params != NULL));
+        __FULL_CHECK(__ASSERT(params.pp->patch1_atom_start >= 0 && params.pp->patch1_atom_start < device__atoms_size));
+        __FULL_CHECK(__ASSERT(params.pp->patch2_atom_start >= 0 && params.pp->patch2_atom_start < device__atoms_size));
+        mic_position_t* pBase0 = (mic_position_t*)(device__atoms + ABSWAP(params.pp->patch2_atom_start, params.pp->patch1_atom_start));
+        mic_position_t* pBase1 = (mic_position_t*)(device__atoms + ABSWAP(params.pp->patch1_atom_start, params.pp->patch2_atom_start));
+        int* pExtBase0 = (int*)(device__atom_params + ABSWAP(params.pp->patch2_atom_start, params.pp->patch1_atom_start));
+        int* pExtBase1 = (int*)(device__atom_params + ABSWAP(params.pp->patch1_atom_start, params.pp->patch2_atom_start));
+      #endif
+      __FULL_CHECK(__ASSERT(pBase0 != NULL));
+      __FULL_CHECK(__ASSERT(pBase1 != NULL));
+      __FULL_CHECK(__ASSERT(pExtBase0 != NULL));
+      __FULL_CHECK(__ASSERT(pExtBase1 != NULL));
       #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
         params.p[0] = (atom*)pBase0;
         params.p[1] = (atom*)pBase1;
@@ -1806,6 +1829,13 @@ void mic_nonbonded_forces(const int deviceNum,
       // Setup the pointers to the output force data for this compute
       // NOTE: Forces are output every timestep, but slow forces (fullf) are output only
       //   during some timesteps.
+      __FULL_CHECK(__ASSERT(device__force_lists != NULL));
+      __FULL_CHECK(__ASSERT(device__force_buffers != NULL));
+      __FULL_CHECK(__ASSERT(device__slow_force_buffers != NULL));
+      __FULL_CHECK(__ASSERT(params.pp->patch1_force_list_index < device__force_lists_size));
+      __FULL_CHECK(__ASSERT(params.pp->patch2_force_list_index < device__force_lists_size));
+      __FULL_CHECK(__ASSERT(params.pp->patch1_force_start < device__force_buffers_req_size));
+      __FULL_CHECK(__ASSERT(params.pp->patch2_force_start < device__force_buffers_req_size));
       params.doSlow = kernel_data->doSlow;  // Flag indicating if slow forces should be calculate this timestep or not
       params.fl[0] = (force_list*)(device__force_lists + ABSWAP(params.pp->patch2_force_list_index, params.pp->patch1_force_list_index));
       params.fl[1] = (force_list*)(device__force_lists + ABSWAP(params.pp->patch1_force_list_index, params.pp->patch2_force_list_index));
@@ -1818,6 +1848,10 @@ void mic_nonbonded_forces(const int deviceNum,
         params.ff[1] = (double4*)ffBase1;
         params.fullf[0] = (double4*)fullfBase0;
         params.fullf[1] = (double4*)fullfBase1;
+        __ASSERT(params.ff[0] != NULL);
+        __ASSERT(params.ff[1] != NULL);
+        __ASSERT(params.fullf[0] != NULL);
+        __ASSERT(params.fullf[1] != NULL);
       #else
         params.ff_x[0] = ffBase0 + (0 * n0_16); params.ff_x[1] = ffBase1 + (0 * n1_16);
         params.ff_y[0] = ffBase0 + (1 * n0_16); params.ff_y[1] = ffBase1 + (1 * n1_16);
@@ -1827,6 +1861,14 @@ void mic_nonbonded_forces(const int deviceNum,
         params.fullf_y[0] = fullfBase0 + (1 * n0_16); params.fullf_y[1] = fullfBase1 + (1 * n1_16);
         params.fullf_z[0] = fullfBase0 + (2 * n0_16); params.fullf_z[1] = fullfBase1 + (2 * n1_16);
         params.fullf_w[0] = fullfBase0 + (3 * n0_16); params.fullf_w[1] = fullfBase1 + (3 * n1_16);
+        __ASSERT(params.ff_x[0] != NULL); __ASSERT(params.ff_x[1] != NULL);
+        __ASSERT(params.ff_y[0] != NULL); __ASSERT(params.ff_y[1] != NULL);
+        __ASSERT(params.ff_z[0] != NULL); __ASSERT(params.ff_z[1] != NULL);
+        __ASSERT(params.ff_w[0] != NULL); __ASSERT(params.ff_w[1] != NULL);
+        __ASSERT(params.fullf_x[0] != NULL); __ASSERT(params.fullf_x[1] != NULL);
+        __ASSERT(params.fullf_y[0] != NULL); __ASSERT(params.fullf_y[1] != NULL);
+        __ASSERT(params.fullf_z[0] != NULL); __ASSERT(params.fullf_z[1] != NULL);
+        __ASSERT(params.fullf_w[0] != NULL); __ASSERT(params.fullf_w[1] != NULL);
       #endif
 
       // Create the offsets for the first list of particles.
@@ -1874,7 +1916,7 @@ void mic_nonbonded_forces(const int deviceNum,
       params.patch1_center_z = ABSWAP(patch2_center_z, patch1_center_z);
       params.patch2_center_z = ABSWAP(patch1_center_z, patch2_center_z);
 
-      // Initialize the virial accumulators for this compute
+      // Initialize the virial accumulators for this compute (zero them out)
       params.virial_xx = 0;
       params.virial_xy = 0;
       params.virial_xz = 0;
@@ -1890,6 +1932,9 @@ void mic_nonbonded_forces(const int deviceNum,
       params.vdwEnergy = 0.0;
       params.electEnergy = 0.0;
       params.fullElectEnergy = 0.0;
+      #if MIC_EXCL_CHECKSUM_FULL != 0
+        params.exclusionSum = 0;
+      #endif
 
       // Select the version of the kernel to call based on the timestep's requirements
       //   and what type of compute this compute is
@@ -1916,192 +1961,82 @@ void mic_nonbonded_forces(const int deviceNum,
       //   that will be passed back to the host
       #if MIC_SORT_LISTS != 0
         if (abSwapFlag) {
-          #if MIC_VIRIAL_ENERGY_ALT != 0
-            int veI = device__numOMPThreads + ppI;
-            device__virial_energy[veI +  0] = -1 * params.virial_xx;
-            device__virial_energy[veI +  1] = -1 * params.virial_xy;
-            device__virial_energy[veI +  2] = -1 * params.virial_xz;
-            device__virial_energy[veI +  3] = -1 * params.virial_yy;
-            device__virial_energy[veI +  4] = -1 * params.virial_yz;
-            device__virial_energy[veI +  5] = -1 * params.virial_zz;
-            device__virial_energy[veI +  6] = -1 * params.fullElectVirial_xx;
-            device__virial_energy[veI +  7] = -1 * params.fullElectVirial_xy;
-            device__virial_energy[veI +  8] = -1 * params.fullElectVirial_xz;
-            device__virial_energy[veI +  9] = -1 * params.fullElectVirial_yy;
-            device__virial_energy[veI + 10] = -1 * params.fullElectVirial_yz;
-            device__virial_energy[veI + 11] = -1 * params.fullElectVirial_zz;
-            device__virial_energy[veI + 12] = -1 * params.vdwEnergy;
-            device__virial_energy[veI + 13] = -1 * params.electEnergy;
-            device__virial_energy[veI + 14] = -1 * params.fullElectEnergy;
-          #else
-            virial_xx -= params.virial_xx;
-            virial_xy -= params.virial_xy;
-            virial_xz -= params.virial_xz;
-            virial_yy -= params.virial_yy;
-            virial_yz -= params.virial_yz;
-            virial_zz -= params.virial_zz;
-            fullElectVirial_xx -= params.fullElectVirial_xx;
-            fullElectVirial_xy -= params.fullElectVirial_xy;
-            fullElectVirial_xz -= params.fullElectVirial_xz;
-            fullElectVirial_yy -= params.fullElectVirial_yy;
-            fullElectVirial_yz -= params.fullElectVirial_yz;
-            fullElectVirial_zz -= params.fullElectVirial_zz;
-            vdwEnergy -= params.vdwEnergy;
-            electEnergy -= params.electEnergy;
-            fullElectEnergy -= params.fullElectEnergy;
-          #endif
+          virial_xx -= params.virial_xx;
+          virial_xy -= params.virial_xy;
+          virial_xz -= params.virial_xz;
+          virial_yy -= params.virial_yy;
+          virial_yz -= params.virial_yz;
+          virial_zz -= params.virial_zz;
+          fullElectVirial_xx -= params.fullElectVirial_xx;
+          fullElectVirial_xy -= params.fullElectVirial_xy;
+          fullElectVirial_xz -= params.fullElectVirial_xz;
+          fullElectVirial_yy -= params.fullElectVirial_yy;
+          fullElectVirial_yz -= params.fullElectVirial_yz;
+          fullElectVirial_zz -= params.fullElectVirial_zz;
+          vdwEnergy -= params.vdwEnergy;
+          electEnergy -= params.electEnergy;
+          fullElectEnergy -= params.fullElectEnergy;
         } else {
       #endif
-          #if MIC_VIRIAL_ENERGY_ALT != 0
-            int veI = device__numOMPThreads + ppI;
-            device__virial_energy[veI +  0] = params.virial_xx;
-            device__virial_energy[veI +  1] = params.virial_xy;
-            device__virial_energy[veI +  2] = params.virial_xz;
-            device__virial_energy[veI +  3] = params.virial_yy;
-            device__virial_energy[veI +  4] = params.virial_yz;
-            device__virial_energy[veI +  5] = params.virial_zz;
-            device__virial_energy[veI +  6] = params.fullElectVirial_xx;
-            device__virial_energy[veI +  7] = params.fullElectVirial_xy;
-            device__virial_energy[veI +  8] = params.fullElectVirial_xz;
-            device__virial_energy[veI +  9] = params.fullElectVirial_yy;
-            device__virial_energy[veI + 10] = params.fullElectVirial_yz;
-            device__virial_energy[veI + 11] = params.fullElectVirial_zz;
-            device__virial_energy[veI + 12] = params.vdwEnergy;
-            device__virial_energy[veI + 13] = params.electEnergy;
-            device__virial_energy[veI + 14] = params.fullElectEnergy;
-          #else
-            virial_xx += params.virial_xx;
-            virial_xy += params.virial_xy;
-            virial_xz += params.virial_xz;
-            virial_yy += params.virial_yy;
-            virial_yz += params.virial_yz;
-            virial_zz += params.virial_zz;
-            fullElectVirial_xx += params.fullElectVirial_xx;
-            fullElectVirial_xy += params.fullElectVirial_xy;
-            fullElectVirial_xz += params.fullElectVirial_xz;
-            fullElectVirial_yy += params.fullElectVirial_yy;
-            fullElectVirial_yz += params.fullElectVirial_yz;
-            fullElectVirial_zz += params.fullElectVirial_zz;
-            vdwEnergy += params.vdwEnergy;
-            electEnergy += params.electEnergy;
-            fullElectEnergy += params.fullElectEnergy;
-          #endif
+          virial_xx += params.virial_xx;
+          virial_xy += params.virial_xy;
+          virial_xz += params.virial_xz;
+          virial_yy += params.virial_yy;
+          virial_yz += params.virial_yz;
+          virial_zz += params.virial_zz;
+          fullElectVirial_xx += params.fullElectVirial_xx;
+          fullElectVirial_xy += params.fullElectVirial_xy;
+          fullElectVirial_xz += params.fullElectVirial_xz;
+          fullElectVirial_yy += params.fullElectVirial_yy;
+          fullElectVirial_yz += params.fullElectVirial_yz;
+          fullElectVirial_zz += params.fullElectVirial_zz;
+          vdwEnergy += params.vdwEnergy;
+          electEnergy += params.electEnergy;
+          fullElectEnergy += params.fullElectEnergy;
       #if MIC_SORT_LISTS != 0
 	}
       #endif
 
+      #if MIC_EXCL_CHECKSUM_FULL != 0
+        exclusionSum += params.exclusionSum;
+      #endif
+
       #undef ABSWAP
 
-      // DMK - TRACING
+      // TRACING - Record the end time for the compute
       #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
         device__device_times_computes[ppI * 2 + 1] = getCurrentTime();
-
-        //// DMK - DEBUG
-        //if (device__timestep == 3) {
-        //  printf("[DEV-TIME] pp[%04d] %.6lf -> %.6lf (%.6lf)\n",
-        //         ppI,
-        //         device__device_times_computes[ppI * 2], device__device_times_computes[ppI * 2 + 1],
-        //         device__device_times_computes[ppI * 2 + 1] - device__device_times_computes[ppI * 2]
-	//        );
-	//}
-
       #endif
 
     } // end parallel for (ppI < device__patch_pairs_size)
 
-    // DMK - TRACING
+    // TRACING - Record the end time for all the computes
     #if (MIC_TRACING != 0 && MIC_DEVICE_TRACING != 0)
       device__device_times_start[((isRemote)?(4):(5))] = getCurrentTime();
-
-      //// DMK - DEBUG
-      //if (device__timestep == 3) {
-      //  printf("[DEV-TIME] computes %0.6lf -> %.6lf (%.6lf)\n",
-      //         device__device_times_start[((isRemote)?(2):(3))], device__device_times_start[((isRemote)?(4):(5))],
-      //         device__device_times_start[((isRemote)?(4):(5))] - device__device_times_start[((isRemote)?(2):(3))]
-      //        );
-      //}
-
-    #endif
-
-    // DMK - DEBUG
-    #if MIC_ACTIVE_CUTOFF_STATS != 0
-      printf("Mask Stats: active: %d / %d , cutoff: %d / %d\n", activeCount, activePossibleCount, cutoffCount, cutoffPossibleCount);
-    #endif
-
-    // DMK - DEBUG
-    #if MIC_GATHER_SCATTER_STATS != 0
-      printf("Gather Double Stats: (0) %d _ %d %d %d %d _ %d %d %d %d (8)\n",
-             gather_double[0], gather_double[1], gather_double[2], gather_double[3],
-             gather_double[4], gather_double[5], gather_double[6], gather_double[7],
-             gather_double[8]
-            );
-      printf("Gather Single Stats: (0) %d _ %d %d %d %d _ %d %d %d %d _ %d %d %d %d _ %d %d %d %d (16)\n",
-             gather_single[ 0], gather_single[ 1], gather_single[ 2], gather_single[ 3],
-             gather_single[ 4], gather_single[ 5], gather_single[ 6], gather_single[ 7],
-             gather_single[ 8], gather_single[ 9], gather_single[10], gather_single[11],
-             gather_single[12], gather_single[13], gather_single[14], gather_single[15],
-             gather_single[16]
-            );
-      printf("Scatter Double Stats: (0) %d _ %d %d %d %d _ %d %d %d %d (8)\n",
-             scatter_double[0], scatter_double[1], scatter_double[2], scatter_double[3],
-             scatter_double[4], scatter_double[5], scatter_double[6], scatter_double[7],
-             scatter_double[8]
-            );
-      printf("Scatter Single Stats: (0) %d _ %d %d %d %d _ %d %d %d %d _ %d %d %d %d _ %d %d %d %d (16)\n",
-             scatter_single[ 0], scatter_single[ 1], scatter_single[ 2], scatter_single[ 3],
-             scatter_single[ 4], scatter_single[ 5], scatter_single[ 6], scatter_single[ 7],
-             scatter_single[ 8], scatter_single[ 9], scatter_single[10], scatter_single[11],
-             scatter_single[12], scatter_single[13], scatter_single[14], scatter_single[15],
-             scatter_single[16]
-            );
     #endif
 
     // Store the reduced virial values into the kernel_data structure to be passed
     //   back to the host core
-    #if MIC_VIRIAL_ENERGY_ALT != 0
-      if (isRemote == 0) {
-        __ASSUME_ALIGNED(device__virial_energy);
-        for (int ppI = 0; ppI < device__patch_pairs_size; ppI++) {
-          int veI = device__numOMPThreads + ppI;
-          kernel_data->virial_xx += device__virial_energy[veI + 0];
-          kernel_data->virial_xy += device__virial_energy[veI + 1];
-          kernel_data->virial_xz += device__virial_energy[veI + 2];
-          kernel_data->virial_yy += device__virial_energy[veI + 3];
-          kernel_data->virial_yz += device__virial_energy[veI + 4];
-          kernel_data->virial_zz += device__virial_energy[veI + 5];
-          kernel_data->fullElectVirial_xx += device__virial_energy[veI + 6];
-          kernel_data->fullElectVirial_xy += device__virial_energy[veI + 7];
-          kernel_data->fullElectVirial_xz += device__virial_energy[veI + 8];
-          kernel_data->fullElectVirial_yy += device__virial_energy[veI + 9];
-          kernel_data->fullElectVirial_yz += device__virial_energy[veI + 10];
-          kernel_data->fullElectVirial_zz += device__virial_energy[veI + 11];
-          kernel_data->vdwEnergy = device__virial_energy[veI + 12];
-          kernel_data->electEnergy = device__virial_energy[veI + 13];
-          kernel_data->fullElectEnergy = device__virial_energy[veI + 14];
-        }
-      }
-    #else
-      kernel_data->virial_xx = virial_xx;
-      kernel_data->virial_xy = virial_xy;
-      kernel_data->virial_xz = virial_xz;
-      kernel_data->virial_yy = virial_yy;
-      kernel_data->virial_yz = virial_yz;
-      kernel_data->virial_zz = virial_zz;
-      kernel_data->fullElectVirial_xx = fullElectVirial_xx;
-      kernel_data->fullElectVirial_xy = fullElectVirial_xy;
-      kernel_data->fullElectVirial_xz = fullElectVirial_xz;
-      kernel_data->fullElectVirial_yy = fullElectVirial_yy;
-      kernel_data->fullElectVirial_yz = fullElectVirial_yz;
-      kernel_data->fullElectVirial_zz = fullElectVirial_zz;
-      kernel_data->vdwEnergy = vdwEnergy;
-      kernel_data->electEnergy = electEnergy;
-      kernel_data->fullElectEnergy = fullElectEnergy;
+    kernel_data->virial_xx = virial_xx;
+    kernel_data->virial_xy = virial_xy;
+    kernel_data->virial_xz = virial_xz;
+    kernel_data->virial_yy = virial_yy;
+    kernel_data->virial_yz = virial_yz;
+    kernel_data->virial_zz = virial_zz;
+    kernel_data->fullElectVirial_xx = fullElectVirial_xx;
+    kernel_data->fullElectVirial_xy = fullElectVirial_xy;
+    kernel_data->fullElectVirial_xz = fullElectVirial_xz;
+    kernel_data->fullElectVirial_yy = fullElectVirial_yy;
+    kernel_data->fullElectVirial_yz = fullElectVirial_yz;
+    kernel_data->fullElectVirial_zz = fullElectVirial_zz;
+    kernel_data->vdwEnergy = vdwEnergy;
+    kernel_data->electEnergy = electEnergy;
+    kernel_data->fullElectEnergy = fullElectEnergy;
+    #if MIC_EXCL_CHECKSUM_FULL != 0
+      kernel_data->exclusionSum = exclusionSum;
     #endif
 
-    //// DMK - DEBUG
-    //printf("[MIC-DEBUG] :: Starting force reductions (timestep: %d)...\n", device__timestep);
-    //fflush(NULL);
-
+    // Calculate the upper and lower bounds for the force lists to be processed by this kernel
     #if MIC_MULTIPLE_KERNELS != 0
       int flI_start = (isRemote) ? (kernel_data->numLocalPatches) : (0);
       int flI_end = (isRemote) ? (device__force_lists_size) : (kernel_data->numLocalPatches);
@@ -2109,15 +2044,12 @@ void mic_nonbonded_forces(const int deviceNum,
       int flI_start = 0;
       int flI_end = device__force_lists_size;
     #endif
+    __FULL_CHECK(__ASSERT(flI_start >= 0 && flI_start <= device__force_lists_size));
+    __FULL_CHECK(__ASSERT(flI_end >= 0 && flI_start <= device__force_lists_size));
+    __FULL_CHECK(__ASSERT(flI_start <= flI_end));
 
-    //// DMK - DEBUG
-    //printf("[DEBUG:MIC-%d-%d] ::   processing patches[%d->%d] - device__force_lists_size:%d\n",
-    //       device__timestep, isRemote,
-    //       flI_start, flI_end, device__force_lists_size
-    //      ); fflush(NULL);
-
-    // Once all of the computes (patch pairs) are complete, reduce the forces for
-    //   each patch (force list)
+    // Because there are fewer patches than computes, create more parallelism by sub-dividing the
+    //   the force lists (patches), causing each patch to be processed by multiple threads
     const int numThreads = device__numOMPThreads; //omp_get_max_threads();
     const int numForceLoopIters = flI_end - flI_start;
     int numForceLoopSplits = 1;
@@ -2129,23 +2061,40 @@ void mic_nonbonded_forces(const int deviceNum,
     flI_start *= numForceLoopSplits;
     flI_end *= numForceLoopSplits;
 
-    // DMK - TRACING
+    // TRACING - Record the start time for the processing of all force lists (patches)
     #if (MIC_TRACING != 0 && MIC_DEVICE_TRACING != 0)
       device__device_times_start[((isRemote)?(6):(7))] = getCurrentTime();
     #endif
 
+    // Process each of the force lists (patches)
     #pragma novector
     #if MULTIPLE_THREADS != 0
       #pragma omp parallel for schedule(dynamic)
     #endif
     for (int _flI = flI_start; _flI < flI_end; _flI++) {
 
-      // Calculate this "task's" portion of the patch object's work (flIPartILo -> flIPartIHi)
+      // From _flI, calculate the flI (patch index) and flIPart (thread per patch) values
       int flI = _flI / numForceLoopSplits;
+      __FULL_CHECK(__ASSERT(flI >= 0 && flI < device__force_lists_size));
       int flIPart = _flI % numForceLoopSplits;
+      
+      // TRACING - Record the start of each force reduction
+      // DMK - FIXME | NOTE : THIS ONLY RECORDS ONE TASK/ITERATION OF EACH SPLIT SET, SO
+      //   PROJECTIONS WILL ONLY SHOW SOME OF THE FORCE "TASKS" !!! (the problem is
+      //   numForceLoopSplits can differ between the "remote" and "local" kernels).
+      #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
+        // DMK - NOTE : Don't select the same part each time (e.g. only flIPart == 0)
+        if (flIPart == flI % numForceLoopSplits) {
+          device__device_times_patches[flI * 2] = getCurrentTime();
+	}
+      #endif
+
+      // Get the output force list pointer and force array length
       const force_list &fl = device__force_lists[flI];
       const int f_len = fl.patch_stride * 4; // NOTE : number of individual doubles
       __ASSUME(f_len % 16 == 0);
+
+      // Calculate this "task's" portion of the patch object's work (flIPartILo -> flIPartIHi)
       int flIPartJLo = (int)(((float)(f_len)) * (((float)(flIPart    )) / ((float)(numForceLoopSplits))));
       int flIPartJHi = (int)(((float)(f_len)) * (((float)(flIPart + 1)) / ((float)(numForceLoopSplits))));
       // NOTE: Force flIPartJLo and flIPartJHi to cacheline boundaries to avoid false sharing
@@ -2155,24 +2104,21 @@ void mic_nonbonded_forces(const int deviceNum,
       __ASSUME(flIPartJLo % 8 == 0);
       __ASSUME(flIPartJHi % 8 == 0);  // NOTE: true after capping at f_len since f_len % 16 == 0
 
-      // DMK - TRACING - NOTE: ONLY RECORDING ONE PART OF EACH SPLIT SET, SO PROJECTIONS WILL ONLY
-      //   SOME OF THE FORCE "TASKS" !!!!!!!!!!!! (for now, find a solution - problem is numForceLoopSplits
-      //   differs when multiple kernels are being used).
-      #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
-        if (flIPart == flI % numForceLoopSplits) {  // NOTE: Don't select the same part each time (e.g. only flIPart == 0)
-          device__device_times_patches[flI * 2] = getCurrentTime();
-	}
-      #endif
-
-      // Sum the output for each contributing compute
+      // Sum the force output for each compute contributing to this force list (patch)
       {
         // Setup the pointer to the final force array that will be passed back up to the host
+        __FULL_CHECK(__ASSERT(device__forces != NULL));
+        __FULL_CHECK(__ASSERT(fl.force_output_start >= 0 && fl.force_output_start < device__atoms_size));
         double * RESTRICT fDst = (double*)(device__forces + fl.force_output_start);
+        __FULL_CHECK(__ASSERT(fDst != NULL));
         __ASSUME_ALIGNED(fDst);
 
         // Setup the pointer to the list of arrays, each with output from one of
         //   the compute objects that contributed to this patch's force data
+        __FULL_CHECK(__ASSERT(device__force_buffers != NULL));
+        __FULL_CHECK(__ASSERT(fl.force_list_start >= 0 && fl.force_list_start < device__force_buffers_req_size));
         double *fSrcBase = (double*)(device__force_buffers + fl.force_list_start);
+        __FULL_CHECK(__ASSERT(fSrcBase != NULL));
         __ASSUME_ALIGNED(fSrcBase);
 
         // Accumulate the forces from the various computes contributing to this patch
@@ -2189,12 +2135,16 @@ void mic_nonbonded_forces(const int deviceNum,
       if (kernel_data->doSlow) {
 
         // Setup the pointer to the final force array that will be passed back up to the host
+        __FULL_CHECK(__ASSERT(device__slow_forces != NULL));
         double * RESTRICT fDst = (double*)(device__slow_forces + fl.force_output_start);
+        __FULL_CHECK(__ASSERT(fDst != NULL));
         __ASSUME_ALIGNED(fDst);
 
         // Setup the pointer to the list of arrays, each with output from one of
         //   the compute objects that contributed to this patch's force data
+        __FULL_CHECK(__ASSERT(device__slow_force_buffers != NULL));
         double *fSrcBase = (double*)(device__slow_force_buffers + fl.force_list_start);
+        __FULL_CHECK(__ASSERT(fSrcBase != NULL));
         __ASSUME_ALIGNED(fSrcBase);
 
         // Accumulate the forces from the various computes contributing to this patch
@@ -2207,57 +2157,33 @@ void mic_nonbonded_forces(const int deviceNum,
         }
       }
      
-      // DMK - TRACING
+      // TRACING - Record the end time for each force list (patch)
       #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0) && (MIC_DEVICE_TRACING_DETAILED != 0)
         device__device_times_patches[flI * 2 + 1] = getCurrentTime();
       #endif
 
     } // end parallel for (flI < device__force_lists_size)
 
-    // DMK - TRACING
+    // TRACING - Record the end time for all the force lists (patches)
     #if (MIC_TRACING != 0 && MIC_DEVICE_TRACING != 0)
       device__device_times_start[((isRemote)?(8):(9))] = getCurrentTime();
     #endif
 
     // DMK - DEBUG
-    #if 0
-      for (int flI = 0; flI < device__force_lists_size; flI++) {
-        printf(":: Force_List %d...\n", flI);
-        const force_list *fl = device__force_lists + flI;
-        #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-          const double4 *f = device__forces + fl->force_output_start;
-          for (int i = 0; i < fl->patch_stride /*&& i < 5*/; i++) {
-            printf("::   force[%3d,%3d] = { x:%+.3le, y:%+.3le, z:%+.3le, w:%+.3le }\n", flI, i, f[i].x, f[i].y, f[i].z, f[i].w);
-	  }
-        #else
-          const double *f_x = (double*)(device__forces + fl->force_output_start);
-          const double *f_y = f_x + fl->patch_stride;
-          const double *f_z = f_y + fl->patch_stride;
-          const double *f_w = f_z + fl->patch_stride;
-          for (int i = 0; i < fl->patch_stride /*&& i < 5*/; i++) {
-            printf("::   force[%3d,%3d] = { x:%+.3le, y:%+.3le, z:%+.3le, w:%+.3le }\n", flI, i, f_x[i], f_y[i], f_z[i], f_w[i]);
-	  }
-        #endif
-      }
-
+    #if MIC_DATA_STRUCT_VERIFY != 0
+      _verify_data_structures(device__pe, device__timestep, isRemote, 2, ppI_start, ppI_end, kernel_data->doSlow);
+      _verify_buffers_match(device__pe, device__timestep, isRemote, 2, (char*)device__patch_pairs, (char*)device__patch_pairs_copy, sizeof(patch_pairs) * device__patch_pairs_size, "device__patch_pairs_copy");
+      _verify_buffers_match(device__pe, device__timestep, isRemote, 2, (char*)device__force_lists, (char*)device__force_lists_copy, sizeof(force_lists) * device__force_lists_size, "device__force_lists_copy");
+      _verify_buffers_match(device__pe, device__timestep, isRemote, 2, (char*)device__atoms, (char*)device__atoms_copy, sizeof(atom) * device__atoms_size, "device__atoms_copy");
+      _verify_buffers_match(device__pe, device__timestep, isRemote, 2, (char*)device__atom_params, (char*)device__atom_params_copy, sizeof(atom_param) * device__atoms_size, "device__atom_params_copy");
+      _MM_FREE_WRAPPER(device__patch_pairs_copy);
+      _MM_FREE_WRAPPER(device__force_lists_copy);
+      _MM_FREE_WRAPPER(device__atoms_copy);
+      _MM_FREE_WRAPPER(device__atom_params_copy);
     #endif
 
-    //// DMK - DEBUG
-    //printf("[DEBUG:MIC] :: Finishing %s kernel for timestep %d...\n",
-    //       (isRemote) ? ("remote") : ("local"),
-    //       device__timestep
-    //      ); fflush(NULL);
-
-    // DMK - DEBUG
+    // DMK - DEBUG - Increment the timestep counter on the device
     if (kernel_data->isRemote == 0) { device__timestep++; }
-
-    #if MIC_PRAGMA_TIMING_STATS != 0
-      pragma_deviceExec_time[0] = getCurrentTime() - __device_start;
-
-      //// DMK - DEBUG
-      //printf("pragma_deviceExec_time = %.3lf ms\n", pragma_deviceExec_time * 1.0e3);
-
-    #endif
 
   } // end pragma offload
 
@@ -2266,21 +2192,14 @@ void mic_nonbonded_forces(const int deviceNum,
     MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_PRAGMA, pragma_start, pragma_end);
   #endif
 
-  #if MIC_PRAGMA_TIMING_STATS != 0
-    #if MIC_TRACING != 0
-      pragma_timing_issued = pragma_end;
-    #else
-      pragma_timing_issued = CmiWallTimer();
-    #endif
+  #if MIC_SYNC_INPUT != 0
+    #undef TMP_SYNC_ATOMS_CLAUSE
   #endif
+  #undef MIC_DEVICE_SYNC_INPUT_CLAUSE
 
   #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
     #undef MIC_DEVICE_TIMING_PRAGMA_CLAUSE
   #endif
-
-  //// DMK - DEBUG
-  //printf("mic_nonbonded :: &pragma_deviceExec_time = %p\n", &pragma_deviceExec_time);
-
 }
 
 int mic_check_remote_kernel_complete(const int deviceNum) {
@@ -2305,98 +2224,27 @@ int mic_check_local_kernel_complete(const int deviceNum) {
   return 0;
 }
 
-void _mic_print_stats(const int deviceNum) {
-
-  // DMK - DEBUG
-  #if MIC_STATS_LOOP_COUNTS != 0
-    #pragma offload target(mic:deviceNum) \
-      nocopy(device__loop_counts) nocopy(device__cutoff_clear_counts) nocopy(device__iTest_counts)
-    {
-      int totals[6] = { 0 };
-
-      // Loop Counts
-      memset(totals, 0, 6 * sizeof(int));
-      printf("[MIC-LOOP-COUNTS] :: Start\n");
-      printf("[MIC-LOOP-COUNTS], bin-min, self-normal, self-modified, self-excluded, pair-normal, pair-modified, pair-excluded\n");
-      for (int i = 0; i < MIC_STATS_LOOP_COUNTS_NUM_BINS; i++) {
-        int baseI = 6 * i;
-        printf("[MIC-LOOP-COUNTS], %7d, %11d, %13d, %13d, %11d, %13d, %13d\n",
-               i * MIC_STATS_LOOP_COUNTS_BIN_SIZE,
-               device__loop_counts[baseI  ], device__loop_counts[baseI+1], device__loop_counts[baseI+2],
-               device__loop_counts[baseI+3], device__loop_counts[baseI+4], device__loop_counts[baseI+5]
-              );
-        for (int j = 0; j < 6; j++) { totals[j] += device__loop_counts[baseI+j]; }
-      }
-      printf("[MIC-LOOP-COUNTS],  totals, %11d, %13d, %13d, %11d, %13d, %13d\n",
-             totals[0], totals[1], totals[2], totals[3], totals[4], totals[5]
-            );
-      printf("[MIC-LOOP-COUNTS] :: End\n");
-
-      // Cutoff Clear Counts
-      memset(totals, 0, 6 * sizeof(int));
-      printf("[MIC-CUTOFF-CLEAR-COUNTS] :: Start\n");
-      printf("[MIC-CUTOFF-CLEAR-COUNTS], bin-min, self-normal, self-modified, self-excluded, pair-normal, pair-modified, pair-excluded\n");
-      for (int i = 0; i < MIC_STATS_LOOP_COUNTS_NUM_BINS; i++) {
-        int baseI = 6 * i;
-        printf("[MIC-CUTOFF-CLEAR-COUNTS], %7d, %11d, %13d, %13d, %11d, %13d, %13d\n",
-               i * MIC_STATS_LOOP_COUNTS_BIN_SIZE,
-               device__cutoff_clear_counts[baseI  ], device__cutoff_clear_counts[baseI+1], device__cutoff_clear_counts[baseI+2],
-               device__cutoff_clear_counts[baseI+3], device__cutoff_clear_counts[baseI+4], device__cutoff_clear_counts[baseI+5]
-              );
-        for (int j = 0; j < 6; j++) { totals[j] += device__cutoff_clear_counts[baseI+j]; }
-      }
-      printf("[MIC-CUTOFF-CLEAR-COUNTS],  totals, %11d, %13d, %13d, %11d, %13d, %13d\n",
-             totals[0], totals[1], totals[2], totals[3], totals[4], totals[5]
-            );
-      printf("[MIC-CUTOFF-CLEAR-COUNTS] :: End\n");
-
-      // iTest counts
-      memset(totals, 0, 6 * sizeof(int));
-      printf("[MIC-ITEST-COUNTS] :: Start\n");
-      printf("[MIC-ITEST-COUNTS], bin-min, self-normal, self-modified, self-excluded, pair-normal, pair-modified, pair-excluded\n");
-      for (int i = 0; i < MIC_STATS_LOOP_COUNTS_NUM_BINS; i++) {
-        int baseI = 6 * i;
-        printf("[MIC-ITEST-COUNTS], %7d, %11d, %13d, %13d, %11d, %13d, %13d\n",
-               i * MIC_STATS_LOOP_COUNTS_BIN_SIZE,
-               device__iTest_counts[baseI  ], device__iTest_counts[baseI+1], device__iTest_counts[baseI+2],
-               device__iTest_counts[baseI+3], device__iTest_counts[baseI+4], device__iTest_counts[baseI+5]
-              );
-        for (int j = 0; j < 6; j++) { totals[j] += device__iTest_counts[baseI+j]; }
-      }
-      printf("[MIC-ITEST-COUNTS],  totals, %11d, %13d, %13d, %11d, %13d, %13d\n",
-             totals[0], totals[1], totals[2], totals[3], totals[4], totals[5]
-            );
-      printf("[MIC-ITEST-COUNTS] :: End\n");
-    }
-  #endif
-}
 
 void mic_free_device(const int deviceNum) {
 
+  mic_kernel_data * remote_kernel_data = host__remote_kernel_data;
+  mic_kernel_data * local_kernel_data = host__local_kernel_data;
+
   // Cleanup kernel data (for buffers allocated via offload pragmas, use "free_if(1)")
   #pragma offload target(mic:deviceNum) \
-    in(device__remote_kernel_data[0:0] : alloc_if(0) free_if(1)) \
-    in(device__local_kernel_data[0:0] : alloc_if(0) free_if(1)) \
-    in(device__table_four[0:0] : alloc_if(0) free_if(1)) \
-    in(device__lj_table[0:0] : alloc_if(0) free_if(1)) \
-    in(device__exclusion_bits[0:0] : alloc_if(0) free_if(1)) \
-    in(device__constants[0:0] : alloc_if(0) free_if(1)) \
-    in(device__patch_pairs[0:0] : alloc_if(0) free_if(1)) \
-    in(device__force_lists[0:0] : alloc_if(0) free_if(1)) \
-    in(device__atoms[0:0] : alloc_if(0) free_if(1)) \
-    in(device__atom_params[0:0] : alloc_if(0) free_if(1)) \
-    in(device__forces[0:0] : alloc_if(0) free_if(1)) \
-    in(device__slow_forces[0:0] : alloc_if(0) free_if(1)) \
-    in(device__force_buffers[0:0] : alloc_if(0) free_if(1)) \
-    in(device__slow_force_buffers[0:0] : alloc_if(0) free_if(1)) \
+    nocopy(remote_kernel_data : alloc_if(0) free_if(1)) \
+    nocopy(local_kernel_data : alloc_if(0) free_if(1)) \
+    nocopy(device__table_four) nocopy(device__table_four_float) \
+    nocopy(device__lj_table) nocopy(device__lj_table_float) \
+    nocopy(device__exclusion_bits) nocopy(device__exclusion_bits_copy) \
+    nocopy(device__constants) \
+    nocopy(device__force_buffers) nocopy(device__slow_force_buffers) \
     nocopy(device__pairlists) nocopy(device__pairlists_alloc_size) \
     nocopy(device__pl_array) nocopy(device__pl_size) nocopy(device__r2_array) \
-    nocopy(device__loop_counts) nocopy(device__cutoff_clear_counts) nocopy(device__iTest_counts) \
-    nocopy(device__table_four_float) nocopy(device__lj_table_float) \
-    nocopy(device__virial_energy)
+    nocopy(device__patch_pairs : alloc_if(0) free_if(1)) \
+    nocopy(device__force_lists : alloc_if(0) free_if(1)) \
+    nocopy(device__numOMPThreads)
   {
-    const int numThreads = omp_get_max_threads();
-
     // Cleanup pairlist memory
     if (device__pairlists != NULL) {
       int **pairlists = (int**)(device__pairlists);
@@ -2410,7 +2258,7 @@ void mic_free_device(const int deviceNum) {
 
     // Cleanup refined pairlist memory
     #if REFINE_PAIRLISTS != 0
-      for (int i = 0; i < numThreads; i++) {
+      for (int i = 0; i < device__numOMPThreads; i++) {
         if (device__pl_array[i] != NULL) { delete [] device__pl_array[i]; }
         if (device__r2_array[i] != NULL) { delete [] device__r2_array[i]; }
       }
@@ -2419,26 +2267,24 @@ void mic_free_device(const int deviceNum) {
       delete [] device__pl_size; device__pl_size = NULL;
     #endif
 
-    //#if (MIC_HANDCODE_FORCE != 0) && (MIC_HANDCODE_FORCE_SINGLE != 0)
+    // Clean up tables
     #if MIC_HANDCODE_FORCE_SINGLE != 0
-      if (device__table_four_float != NULL) { _mm_free(device__table_four_float); device__table_four_float = NULL; }
-      if (device__lj_table_float != NULL) { _mm_free(device__lj_table_float); device__lj_table_float = NULL; }
+      if (device__table_four != NULL) { _MM_FREE_WRAPPER(device__table_four); device__table_four = NULL; }
+      if (device__table_four_float != NULL) { _MM_FREE_WRAPPER(device__table_four_float); device__table_four_float = NULL; }
+      if (device__lj_table != NULL) { _MM_FREE_WRAPPER(device__lj_table); device__lj_table = NULL; }
+      if (device__lj_table_float != NULL) { _MM_FREE_WRAPPER(device__lj_table_float); device__lj_table_float = NULL; }
     #endif
+    if (device__exclusion_bits != NULL) { _MM_FREE_WRAPPER(device__exclusion_bits); device__exclusion_bits = NULL; }
+    if (device__exclusion_bits_copy != NULL) { _MM_FREE_WRAPPER(device__exclusion_bits_copy); device__exclusion_bits_copy = NULL; }
+    if (device__constants != NULL) { _MM_FREE_WRAPPER(device__constants); device__constants = NULL; }
 
-    // DMK - DEBUG
-    #if MIC_STATS_LOOP_COUNTS != 0
-      if (device__loop_counts != NULL) { delete [] device__loop_counts; device__loop_counts = NULL; }
-      if (device__cutoff_clear_counts != NULL) { delete [] device__cutoff_clear_counts; device__cutoff_clear_counts = NULL; }
-      if (device__iTest_counts != NULL) { delete [] device__iTest_counts; device__iTest_counts = NULL; }
-    #endif
-
-    #if MIC_VIRIAL_ENERGY_ALT != 0
-      if (device__virial_energy != NULL) { _mm_free(device__virial_energy); device__virial_energy = NULL; }
-    #endif
+    // Clean up intermediate force buffers
+    if (device__force_buffers != NULL) { _MM_FREE_WRAPPER(device__force_buffers); device__force_buffers = NULL; }
+    if (device__slow_force_buffers != NULL) { _MM_FREE_WRAPPER(device__slow_force_buffers); device__slow_force_buffers = NULL; }
   }
 
-  if (device__remote_kernel_data != NULL) { delete [] device__remote_kernel_data; device__remote_kernel_data = NULL; }
-  if (device__local_kernel_data != NULL) { delete [] device__local_kernel_data; device__local_kernel_data = NULL; }
+  if (host__remote_kernel_data != NULL) { delete [] host__remote_kernel_data; host__remote_kernel_data = NULL; }
+  if (host__local_kernel_data != NULL) { delete [] host__local_kernel_data; host__local_kernel_data = NULL; }
 }
 
 #else  // NAMD_MIC

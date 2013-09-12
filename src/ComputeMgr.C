@@ -357,10 +357,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         register_cuda_compute_self(i,map->computeData[i].pids[0].pid);
 #elif defined(NAMD_MIC)
         #if MIC_SPLIT_WITH_HOST != 0
-          // DMK - NOTE | TODO | FIXME : For now, just use the define to hard-code
-          //   a "split amount".  If it ends up being helpful, create a more general
-          //   solution that can move work back and forth.
-	  if (map->directToDevice(i) == 0) { //map->computeData[i].pids[0].pid < simParams->mic_hostSplit/*MIC_SPLIT_WITH_HOST*/) {
+	  if (map->directToDevice(i) == 0) {
             c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
                                          computeNonbondedWorkArrays,
                                          map->partition(i),map->partition(i)+1,
@@ -404,10 +401,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         register_cuda_compute_pair(i,pid2,trans2);
 #elif defined(NAMD_MIC)
         #if MIC_SPLIT_WITH_HOST != 0
-          // DMK - NOTE | TODO | FIXME : For now, just use the define to hard-code
-          //   a "split amount".  If it ends up being helpful, create a more general
-          //   solution that can move work back and forth.
-	  if (map->directToDevice(i) == 0) { //pid2[0] < simParams->mic_hostSplit/*MIC_SPLIT_WITH_HOST*/ || pid2[1] < simParams->mic_hostSplit/*MIC_SPLIT_WITH_HOST*/) {
+	  if (map->directToDevice(i) == 0) {
             c = new ComputeNonbondedPair(i,pid2,trans2,
                                          computeNonbondedWorkArrays,
                                          map->partition(i),map->partition(i)+1,
@@ -440,10 +434,6 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     case computeNonbondedMICType:
 	c = computeNonbondedMICObject = new ComputeNonbondedMIC(i,this); // unknown delete
 	map->registerCompute(i,c);
-
-        //// DMK - DEBUG
-        //printf("[%d] :: registering MIC compute with map...\n", CkMyPe()); fflush(NULL);
-
 	c->initialize();
 	break;
 #endif

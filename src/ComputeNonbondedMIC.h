@@ -1,6 +1,7 @@
 #include "ComputeNonbondedUtil.h"
 #include "ComputeHomeTuples.h"
 #include "ComputeNonbondedMICKernel.h"
+#include <set>
 
 class ComputeMgr;
 
@@ -123,8 +124,22 @@ class ComputeNonbondedMIC : public Compute, private ComputeNonbondedUtil {
     #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
       int micDevice;
       int2 *exclusionsByAtom_ptr;
+      std::set<void*> *atomSubmitSignals;
       virtual void patchReady(PatchID patchID, int doneMigration, int seq);
     #endif
+
+    // DMK - NOTE : Moved some variables from global scope in ComputeNonbondedMIC to here
+    // DMK - NOTE : For the following members, non-MIC builds will not have the types defined, but
+    //   this class should also go unused.  So leave these members out of non-MIC builds.  May
+    //   need to move them back to "__thread" variables or find a cleaner solution.
+    #if defined(NAMD_MIC)
+      ResizeArray<patch_pair> patch_pairs;
+      ResizeArray<force_list> force_lists;
+      atom * atoms;
+      atom_param * atom_params;
+    #endif
+
+    int exclContrib;
 
     // DMK - DEBUG
     int timestep;

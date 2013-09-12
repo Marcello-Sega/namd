@@ -239,12 +239,6 @@ void BackEnd::init(int argc, char **argv) {
   master_init(argc, argv);
 }
 
-
-// DMK - DEBUG
-#ifdef NAMD_MIC
-  extern void mic_print_stats();
-#endif
-
 // called on proc 0 by front end
 void BackEnd::exit(void) {
   float cpuTime = CmiCpuTimer() - cpuTime_start;
@@ -252,12 +246,6 @@ void BackEnd::exit(void) {
   CmiPrintf("====================================================\n\n"
 	    "WallClock: %f  CPUTime: %f  Memory: %f MB\n",
 	    wallTime, cpuTime, memusage_MB());
-
-  // DMK - DEBUG
-  #ifdef NAMD_MIC
-    mic_print_stats();
-  #endif
-
   int i;
   for(i=1; i < CmiNumPes(); i++)
     ExitSchedOn(i);

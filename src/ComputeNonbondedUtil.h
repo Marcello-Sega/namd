@@ -207,11 +207,6 @@ struct nonbonded {
   #if NAMD_ComputeNonbonded_SortAtoms != 0
     Vector projLineVec;
   #endif
-
-  // DMK - DEBUG
-  // int p1;
-  // int p2;
-  // int abSwapFlag;
 };
 
 class ComputeNonbondedUtil {

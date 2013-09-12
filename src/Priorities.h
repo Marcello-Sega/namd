@@ -64,7 +64,7 @@
 #define GB3_PROXY_DATA_PRIORITY (11<<8)
 
 
-// DMK - DEBUG
+// MIC Computes
 #define COMPUTE_MIC_PRIORITY (4<<8)
 
 

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2013/07/10 17:20:47 $
- * $Revision: 1.1222 $
+ * $Date: 2013/09/12 22:31:18 $
+ * $Revision: 1.1223 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -859,8 +859,13 @@ public:
         Bool storeComputeMap;
         Bool loadComputeMap;
 
-        // MIC host/device split
+        // MIC-specific parameters
         int mic_hostSplit;
+        int mic_numParts_self_p1;
+        int mic_numParts_pair_p1;
+        int mic_numParts_pair_p2;
+        int mic_unloadMICPEs;
+        int mic_deviceThreshold;
 
 public:
 

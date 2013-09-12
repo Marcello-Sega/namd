@@ -211,9 +211,9 @@
         #endif
 
         #define APPLY_FORCES_PS2PD \
-          /*{*/ \
+          { \
           /* Set 'w' values (exclusion checksum) to -1.0f when counting so 'sub' operation for x,y,z,w actually adds 1.0f */ \
-          FAST(SHORT( __m512     tmp_w_vec = _mm512_mask_mov_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_set_1to16_ps(0.0f MODIFIED(- 0.0f) EXCLUDED(- 0.0f))); )) \
+          FAST(SHORT( __m512     tmp_w_vec = _mm512_mask_mov_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_set_1to16_ps(0.0f MODIFIED(- 1.0f) EXCLUDED(- 1.0f))); )) \
           FULL(       __m512 fulltmp_w_vec = _mm512_setzero_ps();  ) \
           /* Transpose the values so that each set of 4 lanes has x,y,z,w values for a given interaction. */ \
           /*   NOTE: This rearranges the values via a 4x4 transpose.                                      */ \
@@ -309,11 +309,7 @@
           SEP_EXCL(                    _mm512_mask_i32loscatter_pd((double*)f_1, cutoff_lo, jw_lo_vec, w_lo_vec, _MM_SCALE_8); ) \
           SEP_EXCL(                    _mm512_mask_i32loscatter_pd((double*)f_1, cutoff_hi, jw_hi_vec, w_hi_vec, _MM_SCALE_8); ) \
           SEP_EXCL( f_0[iTest_i].w += (double)(_mm512_reduce_add_ps(_mm512_mask_mov_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_set_1to16_ps(1.0f)))); ) \
-        /*}*/
-
-        //  FAST(SHORT(MODIFIED( f_0[iTest_i].w -= 2.0 * (double)_mm512_reduce_add_ps(tmp_w_vec); ))) /* NOTE: '-=' because 'w' values are negative */
-        //  FAST(SHORT(EXCLUDED( f_0[iTest_i].w -= 2.0 * (double)_mm512_reduce_add_ps(tmp_w_vec); ))) /* NOTE: '-=' because 'w' values are negative */
-
+          }
 
       #else // if MIC_HANDCODE_FORC_SOA_VS_AOS != 0
 
@@ -689,6 +685,10 @@
   __m512i ij_store_perm_pattern = _mm512_set_16to16_epi32( 9,  7,  9,  6,  9,  5,  9,  4,
                                                            9,  3,  9,  2,  9,  1,  9,  0  );
 
+  #if (MIC_EXCL_CHECKSUM_FULL != 0) && (0 EXCLUDED(+1) MODIFIED(+1))
+    __m512i exclusionSum_vec = _mm512_setzero_epi32();
+  #endif
+
   #if (0 NORMAL(+1))
     #if (0 PAIR(+1))
       #pragma loop count (500)
@@ -706,66 +706,35 @@
   #pragma novector
   for (int plI = 0; plI < plSize_16; plI += 16) {
 
-    //// DMK - DEBUG
-    //printf("::       Force iter: %8d...\n", plI); fflush(NULL);
-
     // Create the active_mask
     __mmask16 active_mask = _mm512_cmplt_epi32_mask(plI_vec, _mm512_set_1to16_epi32(plSize));
 
     #if MIC_HANDCODE_FORCE_PFDIST != 0
       __m512i future_ij_vec = _mm512_load_epi32(plArray + plI + (16 * MIC_HANDCODE_FORCE_PFDIST));
       __mmask16 future_ij_mask = _mm512_cmpneq_epi32_mask(future_ij_vec, _mm512_set_1to16_epi32(-1));
-      //future_ij_vec = _mm512_mask_mov_ps(_mm512_setzero_ps(), future_ij_mask, future_ij_vec);  // Zero and padding values
-      //__m512i future_i_vec = _mm512_and_epi32(_mm512_srli_epi32(future_ij_vec, 16), ij_mask_vec);
       __m512i future_j_vec = _mm512_and_epi32(future_ij_vec, ij_mask_vec);
       _mm512_mask_prefetch_i32gather_ps(future_j_vec, future_ij_mask, p_1_x, _MM_SCALE_4, _MM_HINT_T0);
       _mm512_mask_prefetch_i32gather_ps(future_j_vec, future_ij_mask, p_1_y, _MM_SCALE_4, _MM_HINT_T0);
       _mm512_mask_prefetch_i32gather_ps(future_j_vec, future_ij_mask, p_1_z, _MM_SCALE_4, _MM_HINT_T0);
     #endif
 
-    // Load the i and j values from the pairlist array
-    // NOTE: The "hi" part of this "unaligned load" should never be required since plArray is actually
-    //   aligned (unaligned load being used because of 32-bit indexes vs 64-bit forces).
-    //__m512i ij_vec = _mm512_mask_loadunpacklo_epi32(_mm512_setzero_epi32(), active_mask, plArray + plI     );
-    //        ij_vec = _mm512_mask_loadunpackhi_epi32(                ij_vec, active_mask, plArray + plI + 16);
+    // Load the i and j values from the pairlist array and modify the active_mask accordingly
     __m512i ij_vec = _mm512_mask_load_epi32(_mm512_setzero_epi32(), active_mask, plArray + plI);
-    //#if MIC_PAD_PLGEN != 0
     #if __MIC_PAD_PLGEN_CTRL != 0
-      //active_mask = _mm512_mask_cmpneq_epi32_mask(active_mask, ij_vec, _mm512_set_1to16_epi32(-1));
       __m512i ij_mask_vec = _mm512_set_1to16_epi32(0xFFFF);
       __m512i ij_lo_vec = _mm512_and_epi32(ij_vec, ij_mask_vec);
       active_mask = _mm512_mask_cmpneq_epi32_mask(active_mask, ij_lo_vec, ij_mask_vec);
     #endif
     __m512i i_vec = _mm512_and_epi32(_mm512_mask_srli_epi32(_mm512_setzero_epi32(), active_mask, ij_vec, 16), ij_mask_vec);
     __m512i j_vec = _mm512_mask_and_epi32(_mm512_setzero_epi32(), active_mask, ij_vec, ij_mask_vec);
-    #if 1
-      uintptr_t tmpI32[16] __attribute__((aligned(64)));
-      uintptr_t tmpJ32[16] __attribute__((aligned(64)));
-      _mm512_store_epi64(tmpI32    , _mm512_mask_permutevar_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x5555), ij_store_perm_pattern,                           i_vec                ));
-      _mm512_store_epi64(tmpI32 + 8, _mm512_mask_permutevar_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x5555), ij_store_perm_pattern, _mm512_permute4f128_epi32(i_vec, _MM_PERM_BADC)));
-      _mm512_store_epi64(tmpJ32    , _mm512_mask_permutevar_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x5555), ij_store_perm_pattern,                           j_vec                ));
-      _mm512_store_epi64(tmpJ32 + 8, _mm512_mask_permutevar_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x5555), ij_store_perm_pattern, _mm512_permute4f128_epi32(j_vec, _MM_PERM_BADC)));
-    #else
-      unsigned int tmpI32[16] __attribute__((aligned(64)));
-      unsigned int tmpJ32[16] __attribute__((aligned(64)));
-      _mm512_store_epi32(tmpI32, i_vec);
-      _mm512_store_epi32(tmpJ32, j_vec);
-    #endif
 
-    // DMK - DEBUG
-    #if MIC_ACTIVE_CUTOFF_STATS != 0
-      activeCount += _mm512_mask_reduce_add_ps(active_mask, _mm512_set_1to16_ps(1.0f));
-      activePossibleCount += 16;
-    #endif
-
-    //// DMK - DEBUG
-    //printf("::         Debug 1.0...\n");
-    //PRINT_VEC_EPI32("::           ij_vec", ij_vec);
-    //PRINT_VEC_EPI32("::           i_vec", i_vec);
-    //PRINT_VEC_EPI32("::           j_vec", j_vec);
-    //PRINT_MASK("::           active_mask", active_mask);
-    //printf("::           tmpI32[] = { %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d }\n", tmpI32[15], tmpI32[14], tmpI32[13], tmpI32[12], tmpI32[11], tmpI32[10], tmpI32[9], tmpI32[8], tmpI32[7], tmpI32[6], tmpI32[5], tmpI32[4], tmpI32[3], tmpI32[2], tmpI32[1], tmpI32[0]);
-    //printf("::           tmpJ32[] = { %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d }\n", tmpJ32[15], tmpJ32[14], tmpJ32[13], tmpJ32[12], tmpJ32[11], tmpJ32[10], tmpJ32[9], tmpJ32[8], tmpJ32[7], tmpJ32[6], tmpJ32[5], tmpJ32[4], tmpJ32[3], tmpJ32[2], tmpJ32[1], tmpJ32[0]);
+    // Store the index out to an array of scalar values so they can be individually accessed by lane
+    uintptr_t tmpI32[16] __attribute__((aligned(64)));
+    uintptr_t tmpJ32[16] __attribute__((aligned(64)));
+    _mm512_store_epi64(tmpI32    , _mm512_mask_permutevar_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x5555), ij_store_perm_pattern,                           i_vec                ));
+    _mm512_store_epi64(tmpI32 + 8, _mm512_mask_permutevar_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x5555), ij_store_perm_pattern, _mm512_permute4f128_epi32(i_vec, _MM_PERM_BADC)));
+    _mm512_store_epi64(tmpJ32    , _mm512_mask_permutevar_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x5555), ij_store_perm_pattern,                           j_vec                ));
+    _mm512_store_epi64(tmpJ32 + 8, _mm512_mask_permutevar_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x5555), ij_store_perm_pattern, _mm512_permute4f128_epi32(j_vec, _MM_PERM_BADC)));
 
     // Increment the vectorized loop counter
     plI_vec = _mm512_add_epi32(plI_vec, _mm512_set_1to16_epi32(16));
@@ -777,22 +746,15 @@
     #endif
     {
       __m512 zero_vec = _mm512_setzero_ps();
-      //p_i_x_vec = p_i_y_vec = p_i_z_vec = p_i_q_vec = zero_vec;
-      //p_j_x_vec = p_j_y_vec = p_j_z_vec = p_j_q_vec = zero_vec;
-      //pExt_i_vdwType_vec = pExt_j_vdwType_vec = _mm512_setzero_epi32();
 
       int iTest_index = _mm_tzcnt_32(_mm512_mask2int(active_mask)); // Index of lease significant 1 bit in active mask (NOTE: active_mask should be not all zeros)
       unsigned int iTest_i = tmpI32[iTest_index];  // NOTE: iTest_i = a valid "i" value
-      //#if MIC_PAD_PLGEN != 0
       #if __MIC_PAD_PLGEN_CTRL != 0
       #else
       __mmask16 iTest_mask = _mm512_mask_cmpeq_epi32_mask(active_mask, _mm512_set_1to16_epi32(iTest_i), i_vec);
       iTest_mask =_mm512_kxor(iTest_mask, active_mask);
       if (_mm512_kortestz(iTest_mask, iTest_mask)) {
       #endif
-        #if MIC_STATS_LOOP_COUNTS != 0
-          iTestCount++;
-        #endif
         #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
           p_i_x_vec = _mm512_set_1to16_ps(p_0[iTest_i].x);
           p_i_y_vec = _mm512_set_1to16_ps(p_0[iTest_i].y);
@@ -858,7 +820,6 @@
             #endif
           #endif
         #endif // MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-      //#if MIC_PAD_PLGEN != 0
       #if __MIC_PAD_PLGEN_CTRL != 0
       #else
       } else {
@@ -885,7 +846,7 @@
           #if MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT != 0
             GATHER_EPI32_I32(pExt_i_vdwType_vec, pExt_0_vdwType, tmpI32);
           #endif
-          GATHER_PS_I32(p_j_x_vec, p_1_x, tmpJ32);
+         GATHER_PS_I32(p_j_x_vec, p_1_x, tmpJ32);
           GATHER_PS_I32(p_j_y_vec, p_1_y, tmpJ32);
           GATHER_PS_I32(p_j_z_vec, p_1_z, tmpJ32);
           GATHER_PS_I32(p_j_q_vec, p_1_q, tmpJ32);
@@ -908,48 +869,18 @@
     r2_vec = _mm512_add_ps(_mm512_mul_ps(p_ij_y_vec, p_ij_y_vec), r2_vec);
     r2_vec = _mm512_add_ps(_mm512_mul_ps(p_ij_z_vec, p_ij_z_vec), r2_vec);
 
-    //// DMK - DEBUG
-    //printf("::         Debug 2.0...\n"); fflush(NULL);
-
-    // DMK - DEBUG
-    SUBMIT_GATHER_SINGLE_STATS(j_vec, active_mask);
-
     // Do the 'within cutoff' check
     // DMK - NOTE - When intrinsics are used, the compiler generates extra instructions to clear all but the least significant
     //   8 bits of the mask register storing the result of the comparison.
     __mmask16 cutoff_mask = _mm512_mask_cmplt_ps_mask(active_mask, r2_vec, _mm512_set_1to16_ps(cutoff2_delta));
     if (_mm512_kortestz(cutoff_mask, cutoff_mask)) { continue; }  // If the mask is completely unset, move on to the next vector
 
-    // DMK - DEBUG
-    {
-      __mmask16 cutoff_lo = _mm512_kand(cutoff_mask, _mm512_int2mask(0xFF));
-      __mmask16 cutoff_hi = _mm512_kmerge2l1h(cutoff_mask, _mm512_kxor(cutoff_mask, cutoff_mask));
-      __m512i j_lo = _mm512_mask_mov_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0xFF), j_vec);
-      __m512i j_hi = _mm512_mask_mov_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0xFF), _mm512_permute4f128_epi32(j_vec, _MM_PERM_BADC));
-      //PRINT_VEC_EPI32("j_lo", j_lo);
-      //PRINT_VEC_EPI32("j_hi", j_hi);
-      //PRINT_MASK("cutoff_lo", cutoff_lo);
-      //PRINT_MASK("cutoff_hi", cutoff_hi);
-      SUBMIT_GATHER_DOUBLE_STATS(j_lo, cutoff_lo);
-      SUBMIT_GATHER_DOUBLE_STATS(j_hi, cutoff_hi);
-    }
-
-    // DMK - DEBUG
-    #if MIC_ACTIVE_CUTOFF_STATS != 0
-      cutoffCount += _mm512_mask_reduce_add_ps(cutoff_mask, _mm512_set_1to16_ps(1.0f));
-      cutoffPossibleCount += 16;
-    #endif
-
-    // DMK - DEBUG
-    #if MIC_STATS_LOOP_COUNTS != 0
-      cutoffClearCount++;
+    #if (MIC_EXCL_CHECKSUM_FULL != 0) && (0 EXCLUDED(+1) MODIFIED(+1))
+      exclusionSum_vec = _mm512_mask_add_epi32(exclusionSum_vec, cutoff_mask, exclusionSum_vec, _mm512_set_1to16_epi32(1));
     #endif
 
     // Calculate kqq = p_0_q[i] * p_1_q[j]
     __m512 kqq_vec = _mm512_mask_mul_ps(_mm512_setzero_ps(), cutoff_mask, p_i_q_vec, p_j_q_vec);
-
-    //// DMK - DEBUG
-    //PRINT_MASK("::           cutoff_mask", cutoff_mask);
 
     // Count these interactions as part of the exclChecksum (if need be)
     // NOTE : When using AOS, exclusion counting is built in to APPLY_FORCES_PS2PD
@@ -963,15 +894,6 @@
     __m512i r2i_vec = _mm512_castps_si512(r2_vec);
     __m512i table_i_vec = _mm512_srli_epi32(r2i_vec, 17);
     table_i_vec = _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_i_vec, _mm512_set_1to16_epi32(r2_delta_expc));
-
-    //// DMK - DEBUG
-    //table_i_vec = _mm512_mask_mov_epi32(table_i_vec, cutoff_mask, _mm512_set_1to16_epi32(600));
-
-    //table_i_vec = _mm512_or_epi32(table_i_vec, _mm512_and_epi32(_mm512_srli_epi32(r2i_vec, 17), _mm512_set_1to16_epi32(0x3F)));
-    //NOTE: table_i_vec contains 16 32-bit values, unlike the double version of the code
-
-    //// DMK - DEBUG
-    //printf("::         Debug 3.0...\n"); fflush(NULL);
 
     // Calculate diffa = r2 - r2_table[table_i]
     __m512 r2_table_vec;
@@ -990,37 +912,19 @@
       __m512i t1_vec = _mm512_and_epi32(table_i_vec, _mm512_set_1to16_epi32(0x3F)); // NOTE: (i%64)
       __m512 t2_vec = _mm512_cvtfxpnt_round_adjustepi32_ps(t1_vec, _MM_FROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE); // NOTE: (float)(i%64)
       r2_table_vec = _mm512_add_ps(_mm512_mul_ps(r2_del_vec, t2_vec), r2_base_vec);
-
-      //// DMK - DEBUG
-      //printf("\n");
-      //PRINT_VEC_PS("r2_delta_vec", r2_delta_vec);
-      //PRINT_VEC_PS("r2_base_vec", r2_base_vec);
-      //PRINT_VEC_PS("r2_del_vec", r2_del_vec);
-      //PRINT_VEC_PS("r2_table_vec", r2_table_vec);
-      //PRINT_VEC_PS("(1<<(i/64))", t0_vec);
-      //PRINT_VEC_EPI32("(i%64)", t1_vec);
-      //PRINT_VEC_PS("(float)(i%64)", t2_vec);
-      //float test = 1.0f;
-      //int *testIntPtr = (int*)(&test);
-      //printf("1.0f = %f (0x%08x)\n", test, *testIntPtr);
-      //printf("\n");
-      //printf("\n");
-
     }
     __m512 diffa_vec = _mm512_sub_ps(r2_vec, r2_table_vec);
 
-    //// DMK - DEBUG
-    //printf("::         Debug 3.0...\n"); fflush(NULL);
-
     // Load LJ A and B values
     #if (0 FAST(+1))
+
       // Load lj_pars from the table and multiply by scaling
       __m512 A_vec, B_vec;
-      {
-        //// Load VDW types for the "i" and "j" atoms
-        #if MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT == 0
-          __m512i pExt_i_vdwType_vec;
+          __m512i pExt_i_vdwType_vec;  // NOTE : Moved outside block so could be printed in large force detection code below
           __m512i pExt_j_vdwType_vec;
+      {
+        // Load VDW types for the "i" and "j" atoms
+        #if MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT == 0
           #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
             // DMK - NOTE : This code assumes that vdw_type is the first of four members of atom_param
             pExt_i_vdwType_vec = _mm512_mask_i32gather_epi32(_mm512_setzero_epi32(), cutoff_mask, _mm512_slli_epi32(i_vec, 2), pExt_0, _MM_SCALE_4);
@@ -1059,9 +963,6 @@
         B_vec = _mm512_mask_mul_ps(_mm512_setzero_ps(), cutoff_mask, B_vec, scaling_vec);
       }
     #endif // FAST
-
-    //// DMK - DEBUG
-    //printf("::         Debug 4.0...\n"); fflush(NULL);
 
     // Load the table_four values
     // NOTE : In this loop, each vector lane is calculating an interaction between two particles, i and j.
@@ -1103,96 +1004,6 @@
       _mm512_store_epi32(table_four_i_offsets, _mm512_slli_epi32(table_i_vec, 4)); // NOTE: table_i * 16 (16 elements per table entry)
 
       // Load and transpose 256 values (16 x 16 matrix)
-      #if MIC_HANDCODE_FORCE_TRANS_AS_MADD != 0
-      float tmpB_0Mul_raw[16] __attribute__((aligned(64))) = { 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f };
-      float tmpB_1Mul_raw[16] __attribute__((aligned(64))) = { 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f };
-      __m512 tmpB_0Mul = _mm512_load_ps(tmpB_0Mul_raw); //_mm512_set_16to16_ps(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-      __m512 tmpB_1Mul = _mm512_load_ps(tmpB_1Mul_raw); //_mm512_set_16to16_ps(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
-      __m512 tmpB_00 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 0]]))                    , tmpB_0Mul, _mm512_setzero_ps());
-             tmpB_00 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 1]])), _MM_SWIZ_REG_CDAB), tmpB_1Mul,             tmpB_00);
-      __m512 tmpB_01 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 1]]))                    , tmpB_1Mul, _mm512_setzero_ps());
-             tmpB_01 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 0]])), _MM_SWIZ_REG_CDAB), tmpB_0Mul,             tmpB_01);
-      __m512 tmpB_02 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 2]]))                    , tmpB_0Mul, _mm512_setzero_ps());
-             tmpB_02 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 3]])), _MM_SWIZ_REG_CDAB), tmpB_1Mul,             tmpB_02);
-      __m512 tmpB_03 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 3]]))                    , tmpB_1Mul, _mm512_setzero_ps());
-             tmpB_03 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 2]])), _MM_SWIZ_REG_CDAB), tmpB_0Mul,             tmpB_03);
-      __m512 tmpB_04 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 4]]))                    , tmpB_0Mul, _mm512_setzero_ps());
-             tmpB_04 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 5]])), _MM_SWIZ_REG_CDAB), tmpB_1Mul,             tmpB_04);
-      __m512 tmpB_05 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 5]]))                    , tmpB_1Mul, _mm512_setzero_ps());
-             tmpB_05 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 4]])), _MM_SWIZ_REG_CDAB), tmpB_0Mul,             tmpB_05);
-      __m512 tmpB_06 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 6]]))                    , tmpB_0Mul, _mm512_setzero_ps());
-             tmpB_06 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 7]])), _MM_SWIZ_REG_CDAB), tmpB_1Mul,             tmpB_06);
-      __m512 tmpB_07 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 7]]))                    , tmpB_1Mul, _mm512_setzero_ps());
-             tmpB_07 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 6]])), _MM_SWIZ_REG_CDAB), tmpB_0Mul,             tmpB_07);
-      __m512 tmpB_08 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 8]]))                    , tmpB_0Mul, _mm512_setzero_ps());
-             tmpB_08 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 9]])), _MM_SWIZ_REG_CDAB), tmpB_1Mul,             tmpB_08);
-      __m512 tmpB_09 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[ 9]]))                    , tmpB_1Mul, _mm512_setzero_ps());
-             tmpB_09 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 8]])), _MM_SWIZ_REG_CDAB), tmpB_0Mul,             tmpB_09);
-      __m512 tmpB_10 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[10]]))                    , tmpB_0Mul, _mm512_setzero_ps());
-             tmpB_10 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[11]])), _MM_SWIZ_REG_CDAB), tmpB_1Mul,             tmpB_10);
-      __m512 tmpB_11 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[11]]))                    , tmpB_1Mul, _mm512_setzero_ps());
-             tmpB_11 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[10]])), _MM_SWIZ_REG_CDAB), tmpB_0Mul,             tmpB_11);
-      __m512 tmpB_12 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[12]]))                    , tmpB_0Mul, _mm512_setzero_ps());
-             tmpB_12 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[13]])), _MM_SWIZ_REG_CDAB), tmpB_1Mul,             tmpB_12);
-      __m512 tmpB_13 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[13]]))                    , tmpB_1Mul, _mm512_setzero_ps());
-             tmpB_13 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[12]])), _MM_SWIZ_REG_CDAB), tmpB_0Mul,             tmpB_13);
-      __m512 tmpB_14 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[14]]))                    , tmpB_0Mul, _mm512_setzero_ps());
-             tmpB_14 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[15]])), _MM_SWIZ_REG_CDAB), tmpB_1Mul,             tmpB_14);
-      __m512 tmpB_15 = _mm512_fmadd_ps(                  _mm512_load_ps(&(table_four_base[table_four_i_offsets[15]]))                    , tmpB_1Mul, _mm512_setzero_ps());
-             tmpB_15 = _mm512_fmadd_ps(_mm512_swizzle_ps(_mm512_load_ps(&(table_four_base[table_four_i_offsets[14]])), _MM_SWIZ_REG_CDAB), tmpB_0Mul,             tmpB_15);
-      float tmpC_0Mul_raw[16] __attribute__((aligned(64))) = { 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f };
-      float tmpC_1Mul_raw[16] __attribute__((aligned(64))) = { 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f };
-      __m512 tmpC_0Mul = _mm512_load_ps(tmpC_0Mul_raw); //_mm512_set_16to16_ps(0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-      __m512 tmpC_1Mul = _mm512_load_ps(tmpC_1Mul_raw); //_mm512_set_16to16_ps(1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
-      __m512 tmpC_00_ps = _mm512_fmadd_ps(                  tmpB_00,                     tmpC_0Mul, _mm512_setzero_ps());
-             tmpC_00_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_02, _MM_SWIZ_REG_BADC), tmpC_1Mul,          tmpC_00_ps);
-      __m512 tmpC_01_ps = _mm512_fmadd_ps(                  tmpB_01,                     tmpC_0Mul, _mm512_setzero_ps());
-             tmpC_01_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_03, _MM_SWIZ_REG_BADC), tmpC_1Mul,          tmpC_01_ps);
-      __m512 tmpC_02_ps = _mm512_fmadd_ps(                  tmpB_02,                     tmpC_1Mul, _mm512_setzero_ps());
-             tmpC_02_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_00, _MM_SWIZ_REG_BADC), tmpC_0Mul,          tmpC_02_ps);
-      __m512 tmpC_03_ps = _mm512_fmadd_ps(                  tmpB_03,                     tmpC_1Mul, _mm512_setzero_ps());
-             tmpC_03_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_01, _MM_SWIZ_REG_BADC), tmpC_0Mul,          tmpC_03_ps);
-      __m512 tmpC_04_ps = _mm512_fmadd_ps(                  tmpB_04,                     tmpC_0Mul, _mm512_setzero_ps());
-             tmpC_04_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_06, _MM_SWIZ_REG_BADC), tmpC_1Mul,          tmpC_04_ps);
-      __m512 tmpC_05_ps = _mm512_fmadd_ps(                  tmpB_05,                     tmpC_0Mul, _mm512_setzero_ps());
-             tmpC_05_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_07, _MM_SWIZ_REG_BADC), tmpC_1Mul,          tmpC_05_ps);
-      __m512 tmpC_06_ps = _mm512_fmadd_ps(                  tmpB_06,                     tmpC_1Mul, _mm512_setzero_ps());
-             tmpC_06_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_04, _MM_SWIZ_REG_BADC), tmpC_0Mul,          tmpC_06_ps);
-      __m512 tmpC_07_ps = _mm512_fmadd_ps(                  tmpB_07,                     tmpC_1Mul, _mm512_setzero_ps());
-             tmpC_07_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_05, _MM_SWIZ_REG_BADC), tmpC_0Mul,          tmpC_07_ps);
-      __m512 tmpC_08_ps = _mm512_fmadd_ps(                  tmpB_08,                     tmpC_0Mul, _mm512_setzero_ps());
-             tmpC_08_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_10, _MM_SWIZ_REG_BADC), tmpC_1Mul,          tmpC_08_ps);
-      __m512 tmpC_09_ps = _mm512_fmadd_ps(                  tmpB_09,                     tmpC_0Mul, _mm512_setzero_ps());
-             tmpC_09_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_11, _MM_SWIZ_REG_BADC), tmpC_1Mul,          tmpC_09_ps);
-      __m512 tmpC_10_ps = _mm512_fmadd_ps(                  tmpB_10,                     tmpC_1Mul, _mm512_setzero_ps());
-             tmpC_10_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_08, _MM_SWIZ_REG_BADC), tmpC_0Mul,          tmpC_10_ps);
-      __m512 tmpC_11_ps = _mm512_fmadd_ps(                  tmpB_11,                     tmpC_1Mul, _mm512_setzero_ps());
-             tmpC_11_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_09, _MM_SWIZ_REG_BADC), tmpC_0Mul,          tmpC_11_ps);
-      __m512 tmpC_12_ps = _mm512_fmadd_ps(                  tmpB_12,                     tmpC_0Mul, _mm512_setzero_ps());
-             tmpC_12_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_14, _MM_SWIZ_REG_BADC), tmpC_1Mul,          tmpC_12_ps);
-      __m512 tmpC_13_ps = _mm512_fmadd_ps(                  tmpB_13,                     tmpC_0Mul, _mm512_setzero_ps());
-             tmpC_13_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_15, _MM_SWIZ_REG_BADC), tmpC_1Mul,          tmpC_13_ps);
-      __m512 tmpC_14_ps = _mm512_fmadd_ps(                  tmpB_14,                     tmpC_1Mul, _mm512_setzero_ps());
-             tmpC_14_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_12, _MM_SWIZ_REG_BADC), tmpC_0Mul,          tmpC_14_ps);
-      __m512 tmpC_15_ps = _mm512_fmadd_ps(                  tmpB_15,                     tmpC_1Mul, _mm512_setzero_ps());
-             tmpC_15_ps = _mm512_fmadd_ps(_mm512_swizzle_ps(tmpB_13, _MM_SWIZ_REG_BADC), tmpC_0Mul,          tmpC_15_ps);
-      __m512i tmpC_00 = _mm512_castps_si512(tmpC_00_ps);
-      __m512i tmpC_01 = _mm512_castps_si512(tmpC_01_ps);
-      __m512i tmpC_02 = _mm512_castps_si512(tmpC_02_ps);
-      __m512i tmpC_03 = _mm512_castps_si512(tmpC_03_ps);
-      __m512i tmpC_04 = _mm512_castps_si512(tmpC_04_ps);
-      __m512i tmpC_05 = _mm512_castps_si512(tmpC_05_ps);
-      __m512i tmpC_06 = _mm512_castps_si512(tmpC_06_ps);
-      __m512i tmpC_07 = _mm512_castps_si512(tmpC_07_ps);
-      __m512i tmpC_08 = _mm512_castps_si512(tmpC_08_ps);
-      __m512i tmpC_09 = _mm512_castps_si512(tmpC_09_ps);
-      __m512i tmpC_10 = _mm512_castps_si512(tmpC_10_ps);
-      __m512i tmpC_11 = _mm512_castps_si512(tmpC_11_ps);
-      __m512i tmpC_12 = _mm512_castps_si512(tmpC_12_ps);
-      __m512i tmpC_13 = _mm512_castps_si512(tmpC_13_ps);
-      __m512i tmpC_14 = _mm512_castps_si512(tmpC_14_ps);
-      __m512i tmpC_15 = _mm512_castps_si512(tmpC_15_ps);
-      #else
       __m512i tmpA_00 = _mm512_castps_si512(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 0]])));
       __m512i tmpA_01 = _mm512_castps_si512(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 1]])));
       __m512i tmpA_02 = _mm512_castps_si512(_mm512_load_ps(&(table_four_base[table_four_i_offsets[ 2]])));
@@ -1245,7 +1056,6 @@
       __m512i tmpC_13 = _mm512_mask_swizzle_epi32(tmpB_13, k_4x4_0, tmpB_15, _MM_SWIZ_REG_BADC);
       __m512i tmpC_14 = _mm512_mask_swizzle_epi32(tmpB_14, k_4x4_1, tmpB_12, _MM_SWIZ_REG_BADC);
       __m512i tmpC_15 = _mm512_mask_swizzle_epi32(tmpB_15, k_4x4_1, tmpB_13, _MM_SWIZ_REG_BADC);
-      #endif
       __mmask16 k_8x8_0 = _mm512_int2mask(0xF0F0);
       __mmask16 k_8x8_1 = _mm512_int2mask(0x0F0F);
       __m512i tmpD_00 = _mm512_mask_permute4f128_epi32(tmpC_00, k_8x8_0, tmpC_04, _MM_PERM_CDAB);
@@ -1285,9 +1095,6 @@
 
       #endif
     }
-
-    //// DMK - DEBUG
-    //printf("::         Debug 5.0...\n"); fflush(NULL);
 
     #if (0 FAST(+1))
 
@@ -1355,79 +1162,6 @@
         const __m512 tmp_z_vec = _mm512_mask_mul_ps(_mm512_setzero_ps(), cutoff_mask, force_r_vec, p_ij_z_vec);
         PAIR( CONTRIB_ADD_PS2PD(virial_zz_vec, _mm512_mul_ps(tmp_z_vec, p_ij_z_vec)); )
 
-        // DMK - DEBUG
-        //{
-        //  __mmask16 kx = _mm512_mask_cmple_ps_mask(cutoff_mask, _mm512_set_1to16_ps(12000.0f), tmp_x_vec);
-        //  __mmask16 ky = _mm512_mask_cmple_ps_mask(cutoff_mask, _mm512_set_1to16_ps(12000.0f), tmp_y_vec);
-        //  __mmask16 kz = _mm512_mask_cmple_ps_mask(cutoff_mask, _mm512_set_1to16_ps(12000.0f), tmp_z_vec);
-        //  if (!_mm512_kortestz(_mm512_kor(kx, ky), kz)) {
-        //    printf("LARGE FAST-SHORT FORCE DETECTED ON DEVICE!\n");
-
-	    //PRINT_VEC_EPI32("  i_vec", i_vec);
-            //PRINT_VEC_EPI32("  j_vec", j_vec);
-            //PRINT_MASK("  active_mask", active_mask);
-            //PRINT_MASK("  cutoff_mask", cutoff_mask);
-            //printf("\n");
-
-            //PRINT_VEC_PS("  r2_vec", r2_vec);
-            //PRINT_VEC_PS("  r2_table_vec", r2_table_vec);
-            //PRINT_VEC_EPI32("  table_i_vec", table_i_vec);
-            //printf("\n");
-
-            //PRINT_VEC_PS("  force_r_vec", force_r_vec);
-            //printf("\n");
-
-            //PRINT_VEC_PS("  diffa_vec", force_r_vec);
-            //printf("\n");
-
-            //PRINT_VEC_PS("  tmp_x_vec", tmp_x_vec);
-            //PRINT_VEC_PS("  tmp_y_vec", tmp_y_vec);
-            //PRINT_VEC_PS("  tmp_z_vec", tmp_z_vec);
-            //printf("\n");
-
-            //PRINT_VEC_PS("  p_ij_x_vec", p_ij_x_vec);
-            //PRINT_VEC_PS("  p_ij_y_vec", p_ij_y_vec);
-            //PRINT_VEC_PS("  p_ij_z_vec", p_ij_z_vec);
-            //printf("\n");
-
-            //PRINT_VEC_PS("  A_vec", A_vec);
-            //PRINT_VEC_PS("  B_vec", B_vec);
-	    //printf("\n");
-
-            //PRINT_VEC_PS("  fast_d_vec", fast_d_vec);
-            //PRINT_VEC_PS("  fast_c_vec", fast_c_vec);
-            //PRINT_VEC_PS("  fast_b_vec", fast_b_vec);
-            //PRINT_VEC_PS("  fast_a_vec", fast_a_vec);
-            //printf("\n");
-
-            //PRINT_VEC_PS("  vdw_d_vec", vdw_d_vec);
-            //PRINT_VEC_PS("  vdw_c_vec", vdw_c_vec);
-            //PRINT_VEC_PS("  vdw_b_vec", vdw_b_vec);
-            //PRINT_VEC_PS("  vdw_a_vec", vdw_a_vec);
-            //printf("\n");
-
-            //PRINT_VEC_PS("  table_four_i_0_vec", table_four_i_0_vec);
-            //PRINT_VEC_PS("  table_four_i_1_vec", table_four_i_1_vec);
-            //PRINT_VEC_PS("  table_four_i_2_vec", table_four_i_2_vec);
-            //PRINT_VEC_PS("  table_four_i_3_vec", table_four_i_3_vec);
-            //PRINT_VEC_PS("  table_four_i_4_vec", table_four_i_4_vec);
-            //PRINT_VEC_PS("  table_four_i_5_vec", table_four_i_5_vec);
-            //PRINT_VEC_PS("  table_four_i_6_vec", table_four_i_6_vec);
-            //PRINT_VEC_PS("  table_four_i_7_vec", table_four_i_7_vec);
-            //PRINT_VEC_PS("  table_four_i_8_vec", table_four_i_8_vec);
-	    //PRINT_VEC_PS("  table_four_i_9_vec", table_four_i_9_vec);
-            //PRINT_VEC_PS("  table_four_i_10_vec", table_four_i_10_vec);
-            //PRINT_VEC_PS("  table_four_i_11_vec", table_four_i_11_vec);
-            //PRINT_VEC_PS("  table_four_i_12_vec", table_four_i_12_vec);
-            //PRINT_VEC_PS("  table_four_i_13_vec", table_four_i_13_vec);
-            //PRINT_VEC_PS("  table_four_i_14_vec", table_four_i_14_vec);
-            //PRINT_VEC_PS("  table_four_i_15_vec", table_four_i_15_vec);
-            //printf("\n");
-
-	  //  assert(0);
-	  //}
-	//}
-
         #if MIC_HANDCODE_FORCE_COMBINE_FORCES == 0
           APPLY_FORCES_PS2PD(tmp_x_vec, tmp_y_vec, tmp_z_vec, f_0_x, f_0_y, f_0_z, f_1_x, f_1_y, f_1_z, tmpI32, tmpJ32);
         #endif
@@ -1435,28 +1169,22 @@
       #endif // SHORT
     #endif // FAST
 
-    //// DMK - DEBUG
-    //printf("::         Debug 6.0...\n"); fflush(NULL);
-
     #if (0 FULL(+1))
 
       // Load the slow_table values, if need be
       #if (0 SHORT( EXCLUDED(+1) MODIFIED(+1) ))
 
         __m512 slow_i_0_vec, slow_i_1_vec, slow_i_2_vec, slow_i_3_vec;
-	//{
+	{
           // Create the indexes
           unsigned int slow_i_offsets[16] __attribute__((aligned(64)));
           _mm512_store_epi32(slow_i_offsets, _mm512_slli_epi32(table_i_vec, 2)); // table_i * 4
 
           // Load the values (64 values, 16x4 matrix, so we only care about elements 0-3)
-          //#define __LOAD_SLOW(dstA, offset)				\
-          //  __m512i (dstA) = _mm512_mask_loadunpacklo_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x000F), slow_table + (offset)     ); \
-          //          (dstA) = _mm512_mask_loadunpackhi_epi32(                (dstA), _mm512_int2mask(0x000F), slow_table + (offset) + 16); // NOTE : This instruction may not actually be required (if slow_table is aligned, it will never do anything usefull)
           // DMK - NOTE : Since the slow table is aligned, all four elements being loaded by the loadunpacklo
           //   will be grouped on a single cacheline, so no need to also include a loadunpackhi instruction
           #define __LOAD_SLOW(dstA, offset) \
-            __m512i (dstA) = _mm512_mask_loadunpacklo_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x000F), slow_table + (offset)     );
+            __m512i (dstA) = _mm512_mask_loadunpacklo_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0x000F), slow_table + (offset));
           __LOAD_SLOW(slow_i_tmp00_vec, slow_i_offsets[ 0]);
           __LOAD_SLOW(slow_i_tmp01_vec, slow_i_offsets[ 1]);
           __LOAD_SLOW(slow_i_tmp02_vec, slow_i_offsets[ 2]);
@@ -1511,7 +1239,7 @@
           slow_i_1_vec = _mm512_castsi512_ps(_mm512_mask_permute4f128_epi32(slow_4x8_tmp01_vec, _mm512_int2mask(0xFF00), slow_4x8_tmp05_vec, _MM_PERM_BADC));
           slow_i_2_vec = _mm512_castsi512_ps(_mm512_mask_permute4f128_epi32(slow_4x8_tmp02_vec, _mm512_int2mask(0xFF00), slow_4x8_tmp06_vec, _MM_PERM_BADC));
           slow_i_3_vec = _mm512_castsi512_ps(_mm512_mask_permute4f128_epi32(slow_4x8_tmp03_vec, _mm512_int2mask(0xFF00), slow_4x8_tmp07_vec, _MM_PERM_BADC));
-	//}
+	}
 
       #endif // SHORT && (EXCLUDED || MODIFIED)
 
@@ -1597,115 +1325,232 @@
       APPLY_FORCES_PS2PD;
     #endif
 
-    // DMK - DEBUG
-    #if 0 && (defined(__MIC__) || defined(__MIC2__))
-      if (params.p1 == 0 && params.p2 == 1) {
-        printf(":: --------------------------------\n");
-        PRINT_VEC_EPI32("::   i_vec", i_vec);
-        PRINT_VEC_EPI32("::   j_vec", j_vec);
-        PRINT_MASK("::   cutoff", cutoff_mask);
-        FAST(SHORT( PRINT_VEC_PS("::   tmp_x_vec", tmp_x_vec); ))
-        FAST(SHORT( PRINT_VEC_PS("::   tmp_y_vec", tmp_y_vec); ))
-        FAST(SHORT( PRINT_VEC_PS("::   tmp_z_vec", tmp_z_vec); ))
-        FAST(SHORT( PRINT_VEC_PS("::   tmp_w_vec", tmp_w_vec); ))
-        FAST(SHORT( PRINT_VEC_PS("::   tmp_0_vec", tmp_0_vec); ))
-        FAST(SHORT( PRINT_VEC_PS("::   tmp_1_vec", tmp_1_vec); ))
-        FAST(SHORT( PRINT_VEC_PS("::   tmp_2_vec", tmp_2_vec); ))
-        FAST(SHORT( PRINT_VEC_PS("::   tmp_3_vec", tmp_3_vec); ))
-	FAST(SHORT( PRINT_VEC_PD("::   v_0_lo", v_0_lo); ))
-	FAST(SHORT( PRINT_VEC_PD("::   v_0_hi", v_0_hi); ))
-	FAST(SHORT( PRINT_VEC_PD("::   v_1_lo", v_1_lo); ))
-	FAST(SHORT( PRINT_VEC_PD("::   v_1_hi", v_1_hi); ))
-	FAST(SHORT( PRINT_VEC_PD("::   v_2_lo", v_2_lo); ))
-	FAST(SHORT( PRINT_VEC_PD("::   v_2_hi", v_2_hi); ))
-	FAST(SHORT( PRINT_VEC_PD("::   v_3_lo", v_3_lo); ))
-	FAST(SHORT( PRINT_VEC_PD("::   v_3_hi", v_3_hi); ))
-      }
-    #endif
-
-    // DMK - DEBUG
-    #if 0
-    if (params.p1 <= 2 || params.p2 <= 2) {
-      float tmp_force[16] __attribute__((aligned(64)));
-      float tmp_fullforce[16] __attribute__((aligned(64)));
-      float tmp_ijx[16] __attribute__((aligned(64)));
-      float tmp_ijy[16] __attribute__((aligned(64)));
-      float tmp_ijz[16] __attribute__((aligned(64)));
-      float tmp_x[16] __attribute__((aligned(64)));
-      float tmp_y[16] __attribute__((aligned(64)));
-      float tmp_z[16] __attribute__((aligned(64)));
-      float fulltmp_x[16] __attribute__((aligned(64)));
-      float fulltmp_y[16] __attribute__((aligned(64)));
-      float fulltmp_z[16] __attribute__((aligned(64)));
+    // DMK - DEBUG - LARGE FORCE DETECTION
+    #if (MIC_DATA_STRUCT_VERIFY != 0) && (MIC_DATA_STRUCT_VERIFY_KERNELS != 0)
+      const float lfd_const = 3.2e2f; // Set to 5.0e1 to print a few per timestep for ApoA1
+      __mmask16 lfd_mask = _mm512_int2mask(0x0000);
+      #define LFD_CHECK(v)  _mm512_mask_cmplt_ps_mask(cutoff_mask, _mm512_set_1to16_ps(lfd_const), _mm512_mask_mul_ps(v, _mm512_cmplt_ps_mask(v, _mm512_setzero_ps()), v, _mm512_set_1to16_ps(-1.0f)))
       #if (0 FAST(SHORT(+1)))
-        _mm512_store_ps(tmp_force, force_r_vec);
-        _mm512_store_ps(tmp_x, tmp_x_vec);
-        _mm512_store_ps(tmp_y, tmp_y_vec);
-        _mm512_store_ps(tmp_z, tmp_z_vec);
-      #else
-        _mm512_store_ps(tmp_force, _mm512_setzero_ps());
-        _mm512_store_ps(tmp_x, _mm512_setzero_ps());
-        _mm512_store_ps(tmp_y, _mm512_setzero_ps());
-        _mm512_store_ps(tmp_z, _mm512_setzero_ps());
+        lfd_mask = _mm512_kor(lfd_mask, LFD_CHECK(tmp_x_vec));
+        lfd_mask = _mm512_kor(lfd_mask, LFD_CHECK(tmp_y_vec));
+        lfd_mask = _mm512_kor(lfd_mask, LFD_CHECK(tmp_z_vec));
       #endif
       #if (0 FULL(+1))
-        _mm512_store_ps(tmp_fullforce, fullforce_r_vec);
-        _mm512_store_ps(fulltmp_x, fulltmp_x_vec);
-        _mm512_store_ps(fulltmp_y, fulltmp_y_vec);
-        _mm512_store_ps(fulltmp_z, fulltmp_z_vec);
-      #else
-        _mm512_store_ps(tmp_fullforce, _mm512_setzero_ps());
-        _mm512_store_ps(fulltmp_x, _mm512_setzero_ps());
-        _mm512_store_ps(fulltmp_y, _mm512_setzero_ps());
-        _mm512_store_ps(fulltmp_z, _mm512_setzero_ps());
+        lfd_mask = _mm512_kor(lfd_mask, LFD_CHECK(fulltmp_x_vec));
+        lfd_mask = _mm512_kor(lfd_mask, LFD_CHECK(fulltmp_y_vec));
+        lfd_mask = _mm512_kor(lfd_mask, LFD_CHECK(fulltmp_z_vec));
       #endif
-      _mm512_store_ps(tmp_ijx, p_ij_x_vec);
-      _mm512_store_ps(tmp_ijy, p_ij_y_vec);
-      _mm512_store_ps(tmp_ijz, p_ij_z_vec);
-      #define PRNT(idx) \
-        if (_mm512_mask2int(cutoff_mask) & (1 << (idx))) { \
-          printf("_fo :: %06d, %3d, %3d, %3d, %3d  :  %+.3e, %+.3e  :  %+.3e, %+.3e, %+.3e\n", \
-                 params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
-                 tmp_force[idx], tmp_fullforce[idx], \
-                 tmp_ijx[idx], tmp_ijy[idx], tmp_ijz[idx] \
-		); \
-        } else { \
-          if (tmp_x[idx] != 0.0f) { printf("XXXX :: x :: idx:%d", idx); } \
-          if (tmp_y[idx] != 0.0f) { printf("XXXX :: y :: idx:%d", idx); } \
-          if (tmp_z[idx] != 0.0f) { printf("XXXX :: z :: idx:%d", idx); } \
-          FULL( if (fulltmp_x[idx] != 0.0f) { printf("XXXX :: fx :: idx:%d", idx); } ) \
-          FULL( if (fulltmp_y[idx] != 0.0f) { printf("XXXX :: fy :: idx:%d", idx); } ) \
-          FULL( if (fulltmp_z[idx] != 0.0f) { printf("XXXX :: fz :: idx:%d", idx); } ) \
-        }
-      //PRNT( 0); PRNT( 1); PRNT( 2); PRNT( 3); PRNT( 4); PRNT( 5); PRNT( 6); PRNT( 7);
-      //PRNT( 8); PRNT( 9); PRNT(10); PRNT(11); PRNT(12); PRNT(13); PRNT(14); PRNT(15);
-      #undef PRNT
-      printf("_fa :: %06d, %3d, %3d  :  ", params.ppI, params.p1, params.p2); PRINT_MASK("cutoff_mask", cutoff_mask);
-      FAST(SHORT( printf("_fa :: %06d, %3d, %3d  :  ", params.ppI, params.p1, params.p2); PRINT_VEC_PS("tmp_x_vec", tmp_x_vec); ))
-      for (int _i = 0; _i < 16; _i++) {
-        if (_mm512_mask2int(cutoff_mask) & (1 << (_i))) {
-          //printf("_fa :: %06d, %3d, %3d, %3d, %3d  :  f[i]{ %+.3le %+.3le %+.3le %+.3le }  :  f[j]{ %+.3le %+.3le %+.3le %+.3le }\n",
-          //       params.ppI, params.p1, params.p2, (int)(tmpI32[_i]), (int)(tmpJ32[_i]),
-          //       #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-	  //        f_0[tmpI32[_i]].x, f_0[tmpI32[_i]].y, f_0[tmpI32[_i]].z, f_0[tmpI32[_i]].w,
-          //         f_1[tmpJ32[_i]].x, f_1[tmpJ32[_i]].y, f_1[tmpJ32[_i]].z, f_1[tmpJ32[_i]].w
-          //       #else
-          //         f_0_x[tmpI32[_i]], f_0_y[tmpI32[_i]], f_0_z[tmpI32[_i]], f_0_w[tmpI32[_i]],
-          //         f_1_x[tmpJ32[_i]], f_1_y[tmpJ32[_i]], f_1_z[tmpJ32[_i]], f_1_w[tmpJ32[_i]]
-          //       #endif
-          //      );
-          printf("_fa :: %06d, %3d, %3d, %3d, %3d  :  f[j]{ %+.3le %+.3le %+.3le %+.3le }\n",
-                 params.ppI, params.p1, params.p2, (int)(tmpI32[_i]), (int)(tmpJ32[_i]),
-                 #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-                   f_1[tmpJ32[_i]].x, f_1[tmpJ32[_i]].y, f_1[tmpJ32[_i]].z, f_1[tmpJ32[_i]].w
-                 #else
-                   f_1_x[tmpJ32[_i]], f_1_y[tmpJ32[_i]], f_1_z[tmpJ32[_i]], f_1_w[tmpJ32[_i]]
-                 #endif
-                );
-	}
+      #undef LFD_CHECK
+      #pragma unroll(16)
+      for (int _k = 0; _k < 16; _k++) {
+        lfd_mask = _mm512_kor(lfd_mask, _mm512_int2mask(((pExt_0[tmpI32[_k]].index == 53839 && pExt_1[tmpJ32[_k]].index == 53827) ? (0x1) : (0x0)) << _k));
       }
-    }
-    #endif
+      if (_mm512_mask2int(lfd_mask) != 0) {
+
+        float tmp_force[16] __attribute__((aligned(64)));
+        float tmp_fullforce[16] __attribute__((aligned(64)));
+        float tmp_ijx[16] __attribute__((aligned(64)));
+        float tmp_ijy[16] __attribute__((aligned(64)));
+        float tmp_ijz[16] __attribute__((aligned(64)));
+        float tmp_x[16] __attribute__((aligned(64)));
+        float tmp_y[16] __attribute__((aligned(64)));
+        float tmp_z[16] __attribute__((aligned(64)));
+        float fulltmp_x[16] __attribute__((aligned(64)));
+        float fulltmp_y[16] __attribute__((aligned(64)));
+        float fulltmp_z[16] __attribute__((aligned(64)));
+        float pi_x[16] __attribute__((aligned(64)));
+        float pi_y[16] __attribute__((aligned(64)));
+        float pi_z[16] __attribute__((aligned(64)));
+        float pi_q[16] __attribute__((aligned(64)));
+        float pj_x[16] __attribute__((aligned(64)));
+        float pj_y[16] __attribute__((aligned(64)));
+        float pj_z[16] __attribute__((aligned(64)));
+        float pj_q[16] __attribute__((aligned(64)));
+        float r2[16] __attribute__((aligned(64)));
+        int table_i[16] __attribute__((aligned(64)));
+        float kqq[16] __attribute__((aligned(64)));
+        float diffa[16] __attribute__((aligned(64)));
+        float vdw_a[16] __attribute__((aligned(64)));
+        float vdw_b[16] __attribute__((aligned(64)));
+        float vdw_c[16] __attribute__((aligned(64)));
+        float vdw_d[16] __attribute__((aligned(64)));
+        float fast_a[16] __attribute__((aligned(64)));
+        float fast_b[16] __attribute__((aligned(64)));
+        float fast_c[16] __attribute__((aligned(64)));
+        float fast_d[16] __attribute__((aligned(64)));
+        float A[16] __attribute__((aligned(64)));
+        float B[16] __attribute__((aligned(64)));
+        float table_four_i_0[16] __attribute__((aligned(64)));
+        float table_four_i_1[16] __attribute__((aligned(64)));
+        float table_four_i_2[16] __attribute__((aligned(64)));
+        float table_four_i_3[16] __attribute__((aligned(64)));
+        float table_four_i_4[16] __attribute__((aligned(64)));
+        float table_four_i_5[16] __attribute__((aligned(64)));
+        float table_four_i_6[16] __attribute__((aligned(64)));
+        float table_four_i_7[16] __attribute__((aligned(64)));
+        int i_vdwType[16] __attribute__((aligned(64)));
+        int j_vdwType[16] __attribute__((aligned(64)));
+
+        _mm512_store_ps(pi_x, p_i_x_vec);
+        _mm512_store_ps(pi_y, p_i_y_vec);
+        _mm512_store_ps(pi_z, p_i_z_vec);
+        _mm512_store_ps(pi_q, p_i_q_vec);
+        _mm512_store_ps(pj_x, p_j_x_vec);
+        _mm512_store_ps(pj_y, p_j_y_vec);
+        _mm512_store_ps(pj_z, p_j_z_vec);
+        _mm512_store_ps(pj_q, p_j_q_vec);
+        _mm512_store_ps(r2, r2_vec);
+        _mm512_store_epi32(table_i, table_i_vec);
+        _mm512_store_ps(kqq, kqq_vec);
+        _mm512_store_ps(diffa, diffa_vec);
+        _mm512_store_ps(table_four_i_0, table_four_i_0_vec);
+        _mm512_store_ps(table_four_i_1, table_four_i_1_vec);
+        _mm512_store_ps(table_four_i_2, table_four_i_2_vec);
+        _mm512_store_ps(table_four_i_3, table_four_i_3_vec);
+        _mm512_store_ps(table_four_i_4, table_four_i_4_vec);
+        _mm512_store_ps(table_four_i_5, table_four_i_5_vec);
+        _mm512_store_ps(table_four_i_6, table_four_i_6_vec);
+        _mm512_store_ps(table_four_i_7, table_four_i_7_vec);
+        #if (0 FAST(+1))
+          _mm512_store_ps(vdw_a, vdw_a_vec);
+          _mm512_store_ps(vdw_b, vdw_b_vec);
+          _mm512_store_ps(vdw_c, vdw_c_vec);
+          _mm512_store_ps(vdw_d, vdw_d_vec);
+          _mm512_store_ps(A, A_vec);
+          _mm512_store_ps(B, B_vec);
+          _mm512_store_epi64(i_vdwType, pExt_i_vdwType_vec);
+          _mm512_store_epi64(j_vdwType, pExt_j_vdwType_vec);
+        #else
+          _mm512_store_ps(vdw_a, _mm512_setzero_ps());
+          _mm512_store_ps(vdw_b, _mm512_setzero_ps());
+          _mm512_store_ps(vdw_c, _mm512_setzero_ps());
+          _mm512_store_ps(vdw_d, _mm512_setzero_ps());
+          _mm512_store_ps(A, _mm512_setzero_ps());
+          _mm512_store_ps(B, _mm512_setzero_ps());
+          _mm512_store_epi64(i_vdwType, _mm512_setzero_epi32());
+          _mm512_store_epi64(j_vdwType, _mm512_setzero_epi32());
+        #endif
+        #if (0 FAST(SHORT(+1)))
+          _mm512_store_ps(tmp_force, force_r_vec);
+          _mm512_store_ps(tmp_x, tmp_x_vec);
+          _mm512_store_ps(tmp_y, tmp_y_vec);
+          _mm512_store_ps(tmp_z, tmp_z_vec);
+          _mm512_store_ps(fast_a, fast_a_vec);
+          _mm512_store_ps(fast_b, fast_b_vec);
+          _mm512_store_ps(fast_c, fast_c_vec);
+          _mm512_store_ps(fast_d, fast_d_vec);
+        #else
+          _mm512_store_ps(tmp_force, _mm512_setzero_ps());
+          _mm512_store_ps(tmp_x, _mm512_setzero_ps());
+          _mm512_store_ps(tmp_y, _mm512_setzero_ps());
+          _mm512_store_ps(tmp_z, _mm512_setzero_ps());
+          _mm512_store_ps(fast_a, _mm512_setzero_ps());
+          _mm512_store_ps(fast_b, _mm512_setzero_ps());
+          _mm512_store_ps(fast_c, _mm512_setzero_ps());
+          _mm512_store_ps(fast_d, _mm512_setzero_ps());
+        #endif
+        #if (0 FULL(+1))
+          _mm512_store_ps(tmp_fullforce, fullforce_r_vec);
+          _mm512_store_ps(fulltmp_x, fulltmp_x_vec);
+          _mm512_store_ps(fulltmp_y, fulltmp_y_vec);
+          _mm512_store_ps(fulltmp_z, fulltmp_z_vec);
+        #else
+          _mm512_store_ps(tmp_fullforce, _mm512_setzero_ps());
+          _mm512_store_ps(fulltmp_x, _mm512_setzero_ps());
+          _mm512_store_ps(fulltmp_y, _mm512_setzero_ps());
+          _mm512_store_ps(fulltmp_z, _mm512_setzero_ps());
+        #endif
+        _mm512_store_ps(tmp_ijx, p_ij_x_vec);
+        _mm512_store_ps(tmp_ijy, p_ij_y_vec);
+        _mm512_store_ps(tmp_ijz, p_ij_z_vec);
+
+        #define PRNT(idx) \
+          if (_mm512_mask2int(lfd_mask) & (1 << (idx))) { \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :  tmp x:%+.3e, y:%+.3e, z:%+.3e  :  fulltmp x:%+.3e, y:%+.3e, z:%+.3e\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   tmp_x[idx], tmp_y[idx], tmp_z[idx], \
+                   fulltmp_x[idx], fulltmp_y[idx], fulltmp_z[idx] \
+		  ); \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    calc_" SELF("self") PAIR("pair") FULL("_fullelect") ENERGY("_energy") "." NORMAL("NORM") MODIFIED("MOD") EXCLUDED("EXCL") "\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]) \
+	          ); \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    i:%ld, j:%ld, i_index:%d, j_index:%d\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   tmpI32[idx], tmpJ32[idx], pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index \
+                  ); \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    p_i x:%+.3e, y:%+.3e, z:%+.3e, q:%+.3e  :  p_j x:%+.3e, y:%+.3e, z:%+.3e, q:%+.3e  :  r2 %+.3e\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   pi_x[idx], pi_y[idx], pi_z[idx], pi_q[idx], \
+                   pj_x[idx], pj_y[idx], pj_z[idx], pj_q[idx], \
+                   r2[idx] \
+                  ); \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    offset x:%+.3e, y:%+.3e, z:%+.3e\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   offset_x, offset_y, offset_z \
+                  ); \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    forces f&s:%+.3e, full:%+.3e  :  p_ij x:%+.3e, y:%+.3e, z:%+.3e\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   tmp_force[idx], tmp_fullforce[idx], \
+                   tmp_ijx[idx], tmp_ijy[idx], tmp_ijz[idx] \
+                  ); \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    table_i:%d, kqq::%+.3e, diffa:%+.3e\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   table_i[idx], kqq[idx], diffa[idx] \
+                  ); \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    vdw a:%+.3e, b:%+.3e, c:%+.3e, d:%+.3e  :  fast a:%+.3e, b:%+.3e, c:%+.3e, d:%+.3e, \n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   vdw_a[idx], vdw_b[idx], vdw_c[idx], vdw_d[idx], \
+                   fast_a[idx], fast_b[idx], fast_c[idx], fast_d[idx] \
+                  ); \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    A:%+.3e, B:%+.3e  :  vdwType i:%d, j:%d\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   A[idx], B[idx], i_vdwType[idx], j_vdwType[idx] \
+                  ); \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    table_four_i 0:%+.3e, 1:%+.3e, 2:%+.3e, 3:%+.3e, 4:%+.3e, 5:%+.3e, 6:%+.3e, 7:%+.3e\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   table_four_i_0[idx], table_four_i_1[idx], table_four_i_2[idx], table_four_i_3[idx], table_four_i_4[idx], table_four_i_5[idx], table_four_i_6[idx], table_four_i_7[idx] \
+                  ); \
+            int indexDiff = pExt_0[tmpI32[idx]].index - pExt_1[tmpJ32[idx]].index; \
+            int maxDiff = pExt_1[tmpJ32[idx]].excl_maxdiff; \
+            int offset = -1, offset_major = -1, offset_minor = -1, flags = 0; \
+            if (indexDiff >= -1 * maxDiff && indexDiff <= maxDiff) { \
+              offset = (2 * indexDiff) + pExt_1[tmpJ32[idx]].excl_index; \
+              offset_major = offset / (sizeof(unsigned int) * 8); \
+              offset_minor = offset % (sizeof(unsigned int) * 8); \
+              flags = ((params.exclusion_bits[offset_major]) >> offset_minor) & 0x03; \
+            } \
+            printf("_lfd :: %05d %06d : %8d, %8d : %06d, %3d, %3d, %3d, %3d  :    excl: exclIndex:%d, indexDiff:%d, maxDiff:%d, offset:%d, flags:%d\n", \
+                   params.pe, params.timestep, \
+                   pExt_0[tmpI32[idx]].index, pExt_1[tmpJ32[idx]].index, \
+                   params.ppI, params.p1, params.p2, (int)(tmpI32[idx]), (int)(tmpJ32[idx]), \
+                   pExt_1[tmpJ32[idx]].excl_index, indexDiff, maxDiff, offset, flags \ 
+                  ); \
+          }
+        PRNT( 0); PRNT( 1); PRNT( 2); PRNT( 3); PRNT( 4); PRNT( 5); PRNT( 6); PRNT( 7);
+        PRNT( 8); PRNT( 9); PRNT(10); PRNT(11); PRNT(12); PRNT(13); PRNT(14); PRNT(15);
+        #undef PRNT
+      } // end if (_mm512_mask2int(lfd_mask) != 0)
+    #endif  // (MIC_DATA_STRUCT_VERIFY != 0) && (MIC_DATA_STRUCT_VERIFY_KERNELS != 0)
   }
 
   FAST(ENERGY( vdwEnergy += _mm512_reduce_add_pd(vdwEnergy_vec); ))
@@ -1726,6 +1571,10 @@
     fullElectVirial_yy += _mm512_reduce_add_pd(fullElectVirial_yy_vec);
     fullElectVirial_yz += _mm512_reduce_add_pd(fullElectVirial_yz_vec);
     fullElectVirial_zz += _mm512_reduce_add_pd(fullElectVirial_zz_vec);
+  #endif
+
+  #if (MIC_EXCL_CHECKSUM_FULL != 0) && (0 EXCLUDED(+1) MODIFIED(+1))
+    params.exclusionSum += _mm512_reduce_add_epi32(exclusionSum_vec);
   #endif
 
   #undef GATHER_PS_I32_OFFSET

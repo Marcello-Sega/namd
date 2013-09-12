@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/07/17 22:09:57 $
- * $Revision: 1.1419 $
+ * $Date: 2013/09/12 22:31:18 $
+ * $Revision: 1.1420 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1992,9 +1992,18 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      "maximum number of exclusion flags per atom", &maxExclusionFlags, 256);
    opts.range("maxExclusionFlags",POSITIVE);
 
-   // MIC host/device split - default: all on device
-   opts.optional("main", "mic_hostsplit", "DMK - TODO - Fill me in once established", &mic_hostSplit, 0);
+   // MIC specific parameters
+   opts.optional("main", "mic_hostsplit", "DMK - reserved", &mic_hostSplit, 0);
    opts.range("mic_hostsplit", NOT_NEGATIVE);
+   opts.optional("main", "mic_numParts_self_p1", "MIC-Specific NumParts SELF Parameter 1", &mic_numParts_self_p1, 8);
+   opts.range("mic_numParts_self_p1", POSITIVE);
+   opts.optional("main", "mic_numParts_pair_p1", "MIC-Specific NumParts PAIR Parameter 1", &mic_numParts_pair_p1, 8);
+   opts.range("mic_numParts_pair_p1", POSITIVE);
+   opts.optional("main", "mic_numParts_pair_p2", "MIC-Specific NumParts PAIR Parameter 2", &mic_numParts_pair_p2, 2);
+   opts.range("mic_numParts_pair_p2", NOT_NEGATIVE);
+   opts.optional("main", "mic_unloadMICPEs", "Indicates whether or not the load balancer should unload PEs driving Xeon Phi cards", &mic_unloadMICPEs, 1);
+   opts.range("mic_unloadMICPEs", NOT_NEGATIVE);
+   opts.optional("main", "mic_deviceThreshold", "Threshold to use for directing computes to Xeon Phi devices", &mic_deviceThreshold, -1);
 
 }
 

@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2013/08/22 15:17:18 $
- * $Revision: 1.122 $
+ * $Date: 2013/09/12 22:31:17 $
+ * $Revision: 1.123 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -579,16 +579,12 @@ int NamdCentLB::buildData(LDStats* stats)
   }
 #endif
 
-  // Unload PEs driving MIC devices
-  // DMK - TODO | NOTE - Make a config file option to enable/disable this (including
-  //   the allocation of the memory for the flag array in ComputeMgr or not)
+  // Unload PEs driving MIC devices, if need be
   #if defined(NAMD_MIC)
-    for (i = 0; i < n_pes; i++) {
-      if (isMICProcessor(i) != 0) { processorArray[i].available = CmiFalse; }
-
-      //// DMK - DEBUG
-      //printf("[DEBUG] peData[%d]:%d\n", i, isMICProcessor(i));
-
+    if (simParams->mic_unloadMICPEs != 0) {
+      for (i = 0; i < n_pes; i++) {
+        if (isMICProcessor(i) != 0) { processorArray[i].available = CmiFalse; }
+      }
     }
   #endif
 

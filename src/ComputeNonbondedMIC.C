@@ -28,23 +28,26 @@
 #endif
 
 
-// Declare the structures that will be used for holding kernel-specific data since
+// Declare (extern) the structures that will be used for holding kernel-specific data since
 //   virial data is located within that data structure (read below).
-extern __thread __attribute__((target(mic))) mic_kernel_data *device__remote_kernel_data;
-extern __thread __attribute__((target(mic))) mic_kernel_data *device__local_kernel_data;
+extern __thread mic_kernel_data *host__remote_kernel_data;
+extern __thread mic_kernel_data *host__local_kernel_data;
 
+// TRACING - Declare (extern) the buffers that hold the timing data passed back from the device
 #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
-  extern __thread __attribute__((target(mic))) patch_pair* device__patch_pairs;
-  extern __thread __attribute__((target(mic))) int device__patch_pairs_size;
-  extern __thread __attribute__((target(mic))) int device__force_lists_size;
+  __thread double mic_first_kernel_submit_time;
+  extern __thread patch_pair* host__patch_pairs;
+  extern __thread int host__patch_pairs_size;
+  extern __thread int host__force_lists_size;
   #if MIC_DEVICE_TRACING_DETAILED != 0
-    extern __thread __attribute__((target(mic))) double* device__device_times_computes;
-    extern __thread __attribute__((target(mic))) double* device__device_times_patches;
+    extern __thread double* host__device_times_computes;
+    extern __thread double* host__device_times_patches;
   #endif
-  extern __thread __attribute__((target(mic))) double* device__device_times_start;
+  extern __thread double* host__device_times_start;
 #endif
 
 
+// Function used to get the number of devices
 int mic_device_count = 0;
 int mic_get_device_count() { return mic_device_count; }
 
@@ -52,6 +55,7 @@ int mic_get_device_count() { return mic_device_count; }
 void mic_errcheck(const char *msg) {
   // DMK - TODO : Add mechanism to detect errors here
 }
+
 
 void mic_die(const char *msg) {
   char host[128];
@@ -63,10 +67,10 @@ void mic_die(const char *msg) {
   char devstr[128] = "";
   int devnum = mic_device_pe();
   if (devnum == CkMyPe()) {
-   sprintf(devstr, " device %d", devnum);
+    sprintf(devstr, " device %d", devnum);
   }
   char errmsg[1024];
-  sprintf(errmsg,"MIC error on Pe %d (%s%s): %s", CkMyPe(), host, devstr, msg);
+  sprintf(errmsg, "MIC error on Pe %d (%s%s): %s", CkMyPe(), host, devstr, msg);
   NAMD_die(errmsg);
 }
 
@@ -75,26 +79,26 @@ void mic_die(const char *msg) {
 //   global variables to told the content (or flag value) of the parameters.
 char *devicelist;
 static __thread int usedevicelist;
-static __thread int ignoresharing;
-static __thread int mergegrids;
+//static __thread int ignoresharing;
+//static __thread int mergegrids;
 void mic_getargs(char **argv) {
   devicelist = 0;
   usedevicelist = CmiGetArgStringDesc(argv, "+devices", &devicelist,
 	"comma-delimited list of MIC device numbers such as 0,2,1,2");
-  ignoresharing = CmiGetArgFlag(argv, "+ignoresharing");
-  mergegrids = CmiGetArgFlag(argv, "+mergegrids");
+  //ignoresharing = CmiGetArgFlag(argv, "+ignoresharing");
+  //mergegrids = CmiGetArgFlag(argv, "+mergegrids");
 }
 
 
 // Variables for tracking which MIC-device is associated with which host PE.
-static __thread int shared_gpu;
-static __thread int first_pe_sharing_gpu;
-static __thread int next_pe_sharing_gpu;
+static __thread int shared_mic;
+static __thread int first_pe_sharing_mic;
+static __thread int next_pe_sharing_mic;
 static __thread int devicePe;
 static __thread int numPesSharingDevice;
 static __thread int *pesSharingDevice;
 
-static __thread int gpu_is_mine;
+static __thread int mic_is_mine;
 static __thread int myDevice;
 
 int mic_device_pe() { return devicePe; }
@@ -114,15 +118,6 @@ static inline bool sortop_bitreverse(int a, int b) {
   return 0;
 }
 
-// Projections support
-#define MIC_EVENT_ID_BASE 100
-#define MIC_TRACE_REMOTE(START,END) \
-  do { int dev; micGetDevice(&dev); traceUserBracketEvent( \
-       MIC_EVENT_ID_BASE + 2 * dev, START, END); } while (0)
-#define MIC_TRACE_LOCAL(START,END) \
-  do { int dev; micGetDevice(&dev); traceUserBracketEvent( \
-       MIC_EVENT_ID_BASE + 2 * dev + 1, START, END); } while (0)
-
 
 void mic_initialize() {
 
@@ -130,6 +125,10 @@ void mic_initialize() {
   if ( 0 == CkMyPe() ) {
     MIC_TRACING_REGISTER_EVENTS
   }
+
+  #if MIC_DEBUG > 0
+    debugInit(NULL);
+  #endif
 
   // Get the host name for this node
   char host[128];
@@ -215,21 +214,21 @@ void mic_initialize() {
     mic_die("No usable MIC devices found.");
   }
 
-  shared_gpu = 0;
-  gpu_is_mine = 1;
-  first_pe_sharing_gpu = CkMyPe();
-  next_pe_sharing_gpu = CkMyPe();
+  shared_mic = 0;
+  mic_is_mine = 1;
+  first_pe_sharing_mic = CkMyPe();
+  next_pe_sharing_mic = CkMyPe();
 
   int dev;
   if ( numPesOnPhysicalNode > 1 ) {
     int myDeviceRank = myRankInPhysicalNode * ndevices / numPesOnPhysicalNode;
     dev = devices[myDeviceRank];
     devicePe = CkMyPe();
-    if ( ignoresharing ) {
-      pesSharingDevice = new int[1];
-      pesSharingDevice[0] = CkMyPe();
-      numPesSharingDevice = 1;
-    } else {
+    //if ( ignoresharing ) {
+    //  pesSharingDevice = new int[1];
+    //  pesSharingDevice[0] = CkMyPe();
+    //  numPesSharingDevice = 1;
+    //} else {
       pesSharingDevice = new int[numPesOnPhysicalNode];
       devicePe = -1;
       numPesSharingDevice = 0;
@@ -242,10 +241,10 @@ void mic_initialize() {
         }
       }
       for ( int j = 0; j < ndevices; ++j ) {
-        if ( devices[j] == dev && j != myDeviceRank ) shared_gpu = 1;
+        if ( devices[j] == dev && j != myDeviceRank ) shared_mic = 1;
       }
-    }
-    if ( shared_gpu && devicePe == CkMyPe() ) {
+    //}
+    if ( shared_mic && devicePe == CkMyPe() ) {
       CkPrintf("Pe %d sharing MIC device %d\n", CkMyPe(), dev);
     }
   } else {  // in case phys node code is lying
@@ -264,11 +263,11 @@ void mic_initialize() {
   }
 
   // disable token-passing but don't submit local until remote finished
-  // if shared_gpu is true, otherwise submit all work immediately
-  first_pe_sharing_gpu = CkMyPe();
-  next_pe_sharing_gpu = CkMyPe();
+  // if shared_mic is true, otherwise submit all work immediately
+  first_pe_sharing_mic = CkMyPe();
+  next_pe_sharing_mic = CkMyPe();
 
-  gpu_is_mine = ( first_pe_sharing_gpu == CkMyPe() ); 
+  mic_is_mine = ( first_pe_sharing_mic == CkMyPe() ); 
 
   if ( dev >= deviceCount ) {
     char buf[256];
@@ -358,11 +357,11 @@ void ComputeNonbondedMIC::bind_exclusions(int deviceNum) {
   //   Each atom as a globally unique index in the molecule object.  For any
   //   given atom, the exclusion list in the molecule object contains a list of
   //   the other atoms (referenced by index) that are "excluded" for the the
-  //   given atom.  Since these exclusion lists tend to follow a set of patterns
-  //   (i.e. water molecules "look" the same).  For this reason, we will store
+  //   given atom.  These exclusion lists tend to follow a set of patterns
+  //   (i.e. all water molecules "look" the same).  For this reason, we will store
   //   patterns rather than lists, and associate each atom with the appropriate
   //   pattern (e.g. 'all oxygen atoms within water molecules will exclude the
-  //   hydrogen atoms next to them in the global list of atoms,' rather than
+  //   hydrogen atoms attached to them in the global list of atoms,' rather than
   //   both '[water_oxygen_1 excludes water_hydrogen_1 and water_hydrogen_2] and
   //   [water_oxygen_2 excludes water_hydrogen_3 and water_hydrogen_4]'). The code
   //   below creates those patterns and associates atoms with the appropriate
@@ -371,14 +370,14 @@ void ComputeNonbondedMIC::bind_exclusions(int deviceNum) {
   //   that exclude one another, rather than absolute indexes of those same atoms.
   //   A pattern is an array of bits (2-bits per entry), that ranges from negative
   //   offsets to positive offsets.  For example, for a water molecule made up of
-  //   one oxygen (O1 w/ index i) and two hydrogen (H1 w/ index i+1 and H2 w/
+  //   one oxygen (O1 w/ index i) and two hydrogen (H1 with index i+1 and H2 with
   //   index i+2) atoms, the pattern for the oxygen atom (O1) would have 5 entries
   //   (10 bits total) and would range from offset -2 to 2 (always -X to +X).  The
   //   pattern for the first hydrogen (H1) would have 3 entries (6 bits total)
   //   and would range from offset -1 (O1) to 1 (H1).  The value of each 2-bit
   //   entry indicate the type of interaction (NORMAL, MODIFIED, or EXCLUDED).
 
-  // Grab the molecule object, which contains information about the
+  // Grab a pointer to the molecule object, which contains information about the
   //   particle system being simulated.
   Molecule *mol = Node::Object()->molecule;
 
@@ -643,17 +642,18 @@ void register_mic_compute_self(ComputeID c, PatchID pid, int part, int numParts)
 
   if ( ! micCompute ) NAMD_bug("register_self called early");
 
-  //// DMK - DEBUG
-  //printf("register_mic_compute_self(c:%d, pid:%d, part:%d, numParts:%d)...\n",
-  //       c, pid, part, numParts
-  //      );
+  // DMK - DEBUG
+  MICP("register_mic_compute_self(c:%d, pid:%d, part:%d, numParts:%d) - Called...\n", c, pid, part, numParts); MICPF;
 
   // Indicate that the mic compute requires the patch information
   //   associated with the given self compute
   micCompute->requirePatch(pid);
 
   #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
-    numParts = MIC_SPECIFIC_COMPUTE_PARTITIONING__SELF_P1;
+    //numParts = MIC_SPECIFIC_COMPUTE_PARTITIONING__SELF_P1;
+    SimParameters *params = Node::Object()->simParameters;
+    numParts = params->mic_numParts_self_p1;
+    if (numParts < 1) { numParts = 1; }
     for (int part = 0; part < numParts; part++) {
   #endif
 
@@ -683,25 +683,14 @@ void register_mic_compute_self(ComputeID c, PatchID pid, int part, int numParts)
   #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
     }
   #endif
-
-  //// DMK - NOTE - We are only issuing one offload (local) at the moment, so
-  ////   make sure all computes are "local"
-  //if (1) {
-  ////if ( micCompute->patchRecords[pid].isLocal ) {
-  //  micCompute->localComputeRecords.add(cr);
-  //} else {
-  //  micCompute->remoteComputeRecords.add(cr);
-  //}
 }
 
 void register_mic_compute_pair(ComputeID c, PatchID pid[], int t[], int part, int numParts) {
 
   if ( ! micCompute ) NAMD_bug("register_pair called early");
 
-  //// DMK - DEBUG
-  //printf("register_mic_compute_self(c:%d, pid:{%d,%d}, part:%d, numParts:%d, ...)...\n",
-  //       c, pid[0], pid[1], part, numParts
-  //      );
+  // DMK - DEBUG
+  MICP("register_mic_compute_pair(c:%d, pid:{%d,%d}, t:--, part:%d, numParts:%d) - Called...\n", c, pid[0], pid[1], part, numParts); MICPF;
 
   // Indicate that the mic compute requires the patch information
   //   associated with the given pair compute
@@ -741,72 +730,54 @@ void register_mic_compute_pair(ComputeID c, PatchID pid[], int t[], int part, in
     int manDist = da + db + dc;
 
     // Create each part
-    //numParts = 8 >> manDist;
-    numParts = MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P1 - (MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P2 * manDist);
-    if (numParts <= 0) { numParts = 1; }
+    //numParts = MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P1 - (MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P2 * manDist);
+    SimParameters *params = Node::Object()->simParameters;
+    numParts = params->mic_numParts_pair_p1 - (params->mic_numParts_pair_p2 * manDist);
+    if (numParts < 1) { numParts = 1; }
     for (int part = 0; part < numParts; part++) {
 
-  #endif
+  #endif // MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
 
-    //// DMK - DEBUG
-    //printf("[DEBUG] creating pair compute %d,%d\n", c, part);
+      // Create a compute record within the mic compute that represents
+      //   the given pair compute
+      ComputeNonbondedMIC::compute_record cr;
+      cr.c = c;
+      cr.pid[0] = pid[0];  cr.pid[1] = pid[1];
+      cr.offset = offset;
 
-    // Create a compute record within the mic compute that represents
-    //   the given pair compute
-    // DMK : NOTE - We are going to use equal and opposite on MIC, so
-    //   modify this code to only create a single compute record
-    ComputeNonbondedMIC::compute_record cr;
-    cr.c = c;
-    cr.pid[0] = pid[0];  cr.pid[1] = pid[1];
+      // If partitioning the pair computes, include the 'part' indexing info
+      #if (MIC_ENABLE_COMPUTE_PARTITIONING != 0) || (MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0)
+        cr.part = part;
+        cr.numParts = numParts;
+      #endif
 
-    cr.offset = offset;
+      // Mark as 'not a self compute' (i.e. is a pair)
+      cr.isSelf = 0;
 
-    #if (MIC_ENABLE_COMPUTE_PARTITIONING != 0) || (MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0)
-      cr.part = part;
-      cr.numParts = numParts;
-    #endif
-
-    cr.isSelf = 0;
-
-    #if MIC_MULTIPLE_KERNELS != 0
-      if (micCompute->patchRecords[pid[0]].isLocal &&
-          micCompute->patchRecords[pid[1]].isLocal
-         ) {
-    #endif
-        micCompute->localComputeRecords.add(cr);
-    #if MIC_MULTIPLE_KERNELS != 0
-      } else {
-        micCompute->remoteComputeRecords.add(cr);
-      }
-    #endif
+      // If splitting the kernels up into "local" and "remote" kernels, place the pair compute in
+      //   the "remote" kernel if either of the patches is "remote"... otherwise, mark as "local"
+      #if MIC_MULTIPLE_KERNELS != 0
+        if (micCompute->patchRecords[pid[0]].isLocal &&
+            micCompute->patchRecords[pid[1]].isLocal
+           ) {
+      #endif
+          micCompute->localComputeRecords.add(cr);
+      #if MIC_MULTIPLE_KERNELS != 0
+        } else {
+          micCompute->remoteComputeRecords.add(cr);
+        }
+      #endif
 
   #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
-    }
+    }  // end for (part < numParts)
   #endif
-
-  //// DMK - NOTE : Changing the logic here a bit.  Since we are using
-  ////   equal and opposite, the concept of a compute record being only
-  ////   local or remote is more restricted (i.e. a much higher fraction
-  ////   of pairs will be remote, since it would be remote if either
-  ////   patch is remote and since we are contributing to both patches
-  ////   instead of just one of them).  So, for MIC, call local only
-  ////   if both patches are local.  Note that this will probably tend
-  ////   to make the remote group larger.
-  //// NOTE | TODO | FIXME : We are only issuing one kernel for now
-  ////   so mark all as "local"
-  //if (1) {
-  //  //  micCompute->patchRecords[pid[0]].isLocal &&
-  //  //  micCompute->patchRecords[pid[1]].isLocal
-  //  //) {
-  //  micCompute->localComputeRecords.add(cr);
-  //} else {
-  //  micCompute->remoteComputeRecords.add(cr);
-  //}
 }
+
 
 void unregister_mic_compute(ComputeID c) {  // static
   NAMD_bug("unregister_compute unimplemented");
 }
+
 
 static __thread int atomsChanged = 0;
 static __thread int computesChanged = 0;
@@ -817,24 +788,35 @@ static __thread int usePairlists = 0;
 static __thread int savePairlists = 0;
 static __thread float plcutoff2 = 0;
 
-static __thread ResizeArray<patch_pair> *patch_pairs_ptr;
-static __thread ResizeArray<force_list> *force_lists_ptr;
 
-#define PATCH_PAIRS_REF ResizeArray<patch_pair> &patch_pairs(*patch_pairs_ptr);
-#define FORCE_LISTS_REF ResizeArray<force_list> &force_lists(*force_lists_ptr);
+// DMK - DEBUG - A function that periodically prints a "heartbeat" output
+void mic_heartbeat(void *arg, double t) {
+  #if MIC_DEBUG != 0
+    MICP("[DEBUG:%d] :: heartbeat (t:%lf)...\n", CkMyPe(), t); MICPF;
+  #else
+    printf("[DEBUG:%d] :: heartbeat (t:%lf)...\n", CkMyPe(), t); fflush(NULL);
+  #endif
+  CcdCallFnAfter(mic_heartbeat, NULL, 1000.0);
+}
+
 
 ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
                                          ComputeMgr *mgr,
-                                         ComputeNonbondedMIC *m, int idx
+                                         ComputeNonbondedMIC *m,
+                                         int idx
                                         ) : Compute(c), slaveIndex(idx) {
 
   #ifdef PRINT_GBIS
     CkPrintf("C.N.MIC[%d]::constructor cid=%d\n", CkMyPe(), c);
   #endif
 
-  //// DMK - DEBUG
-  //printf("[%d] ComputeNonbondedMIC::ComputeNonbondedMIC(cid:%d) - Called...\n", CkMyPe(), c);
-  //fflush(NULL);
+  // DMK - DEBUG
+  #if MIC_HEARTBEAT != 0
+    mic_heartbeat(NULL, CmiWallTimer());
+  #endif
+
+  // DMK - DEBUG
+  MICP("ComputeNonbondedMIC::ComputeNonbondedMIC(cid:%d) - Called...\n", c); MICPF;
 
   master = m ? m : this;
   micCompute = this;
@@ -854,6 +836,23 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
   basePriority = PROXY_DATA_PRIORITY;
   localWorkMsg2 = new (PRIORITY_SIZE) LocalWorkMsg;
 
+  // Master and slaves
+  #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
+    micDevice = -1;
+    exclusionsByAtom_ptr = NULL;
+    atomSubmitSignals = new std::set<void*>(); __ASSERT(atomSubmitSignals != NULL);
+  #endif
+
+  // Print some info for the user
+  //   NOTE: Do this before the master/slave check below (so PE 0 will reach here)
+  if (CkMyPe() == 0) {
+    // NOTE: For now mic_hostSplit is a internal-only/reserved option
+    printf("Info: MIC NUMPARTS SELF P1: %d\n", params->mic_numParts_self_p1);
+    printf("Info: MIC NUMPARTS PAIR P1: %d\n", params->mic_numParts_pair_p1);
+    printf("Info: MIC NUMPARTS PAIR P2: %d\n", params->mic_numParts_pair_p2);
+    printf("Info: MIC UNLOAD MIC PEs: %d\n", params->mic_unloadMICPEs);
+  }
+
   if ( master != this ) { // I am slave
     masterPe = master->masterPe;
     master->slaves[slaveIndex] = this;
@@ -871,20 +870,25 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
     bind_exclusions(myDevice);
   }
 
-  patch_pairs_ptr = new ResizeArray<patch_pair>;
-  force_lists_ptr = new ResizeArray<force_list>;
-
+  // Master only
   #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
-    micDevice = myDevice;
-    exclusionsByAtom_ptr = exclusionsByAtom;
+    micDevice = myDevice; __ASSERT(micDevice >= 0);
+    exclusionsByAtom_ptr = exclusionsByAtom; __ASSERT(exclusionsByAtom_ptr != NULL);
   #endif
+
+  // Initialize the exclusion contribution sum
+  exclContrib = 0;
 
   // DMK - DEBUG
   timestep = 0;
 }
 
 
-ComputeNonbondedMIC::~ComputeNonbondedMIC() { ; }
+ComputeNonbondedMIC::~ComputeNonbondedMIC() {
+  #if MIC_DEBUG > 0
+    debugClose();
+  #endif
+}
 
 void ComputeNonbondedMIC::requirePatch(int pid) {
 
@@ -898,7 +902,7 @@ void ComputeNonbondedMIC::requirePatch(int pid) {
     //} else {
     //  pr.isLocal = 1; //( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
     //}
-    pr.isLocal = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() ); // && ( pid > 30 );
+    pr.isLocal = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
 
     #if MIC_MULTIPLE_KERNELS != 0
       if ( pr.isLocal ) {
@@ -938,9 +942,7 @@ void ComputeNonbondedMIC::registerPatches() {
     int pid = pids[i];
     patch_record &pr = recs[pid];
     if ( pr.hostPe == myPE ) {
-      //if ( ! reduction ) {
-      //  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-      //}
+
       hostedPatches.add(pid);
 
       #if MIC_MULTIPLE_KERNELS != 0
@@ -956,6 +958,7 @@ void ComputeNonbondedMIC::registerPatches() {
       ProxyMgr::Object()->createProxy(pid);
       pr.p = patchMap->patch(pid);
       pr.positionBox = pr.p->registerPositionPickup(this);
+
       pr.forceBox = pr.p->registerForceDeposit(this);
       if (simParams->GBISOn) {
         pr.intRadBox      = pr.p->registerIntRadPickup(this);
@@ -968,10 +971,14 @@ void ComputeNonbondedMIC::registerPatches() {
   }
   if ( master == this ) setNumPatches(activePatches.size());
   else setNumPatches(hostedPatches.size());
+
   CkPrintf("Pe %d hosts %d local and %d remote patches for pe %d\n", CkMyPe(), localHostedPatches.size(), remoteHostedPatches.size(), masterPe);
 }
 
 void ComputeNonbondedMIC::assignPatches() {
+
+  // DMK - DEBUG
+  MICP("ComputeNonbondedMIC::assignPatches() - Called...\n"); MICPF;
 
   int *pesOnNodeSharingDevice = new int[CkMyNodeSize()];
   int numPesOnNodeSharingDevice = 0;
@@ -1121,15 +1128,6 @@ void ComputeNonbondedMIC::assignPatches() {
 }
 
 static __thread int num_atom_records_allocated;
-// static __thread int* atom_order;
-static __thread atom_param* atom_params;
-static __thread atom* atoms;
-// static __thread float4* forces;
-// static __thread float4* slow_forces;
-//static __thread int num_virials;
-//static __thread int num_virials_allocated;
-//static __thread float *virials;
-//static __thread float *slow_virials;
 static __thread float *energy_gbis;
 
 //GBIS host pointers
@@ -1150,6 +1148,8 @@ static __thread double local_submit_time;
 #if MIC_TRACING != 0
   __thread double mic_tracing_offload_start_remote = 0.0;
   __thread double mic_tracing_offload_start_local = 0.0;
+  __thread double mic_tracing_offload_end_remote = 0.0;
+  __thread double mic_tracing_offload_end_local = 0.0;
   static __thread double mic_tracing_polling_start = 0.0;
   static __thread int mic_tracing_polling_count = 0;
   #define MIC_TRACING_POLLING_SET_FREQ  ( 100 )
@@ -1164,7 +1164,9 @@ static __thread double local_submit_time;
 #endif
 
 
-#define count_limit 5000000  // DMK - NOTE : I have this set fairly high so that I can test single-thread executions on the MIC device, which can take quite some time if using printfs to display intermediate values.
+#define count_limit 5000000  // DMK - NOTE : I have this set fairly high so that I can test executions 
+                             //   that us a single thread on the MIC device, which can take quite some
+                             //   time if using printfs to display intermediate debug values.
 static __thread int check_remote_count;
 static __thread int check_local_count;
 
@@ -1175,15 +1177,16 @@ void mic_check_remote_progress(void *arg, double) {
 
     ((ComputeNonbondedMIC*)arg)->messageFinishWork();
     #if MIC_TRACING != 0
-      double _now = CmiWallTimer();
-      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_REMOTE, mic_tracing_offload_start_remote, _now);
-      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, _now);
+      double now = CmiWallTimer();
+      mic_tracing_offload_end_remote = now;
+      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_REMOTE, mic_tracing_offload_start_remote, now);
+      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, now);
       mic_tracing_polling_count = 0;
     #endif
     check_remote_count = 0;
 
-    //// DMK - DEBUG
-    //printf("[DEBUG:%d] :: << detected remote kernel completion >>\n", CkMyPe()); fflush(NULL);
+    // DMK - DEBUG
+    MICP("[DEBUG:%d] :: << detected remote kernel completion >>\n", CkMyPe()); MICPF;
 
   // Otherwise, check to see if it has been a long time (if so, timeout with error)
   } else if (++check_remote_count >= count_limit) {
@@ -1218,22 +1221,16 @@ void mic_check_local_progress(void *arg, double) {
 
     ((ComputeNonbondedMIC*)arg)->messageFinishWork();
     #if MIC_TRACING != 0
-      double _now = CmiWallTimer();
-      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_LOCAL, mic_tracing_offload_start_local, _now);
-      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, _now);
+      double now = CmiWallTimer();
+      mic_tracing_offload_end_local = now;
+      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_LOCAL, mic_tracing_offload_start_local, now);
+      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, now);
       mic_tracing_polling_count = 0;
-    #endif
-    #if MIC_PRAGMA_TIMING_STATS != 0
-      #if MIC_TRACING != 0
-      #else
-        double _now = CmiWallTimer();
-      #endif
-	pragma_timing_submitFinish(_now, CkMyPe(), CkMyRank());
     #endif
     check_local_count = 0;
 
-    //// DMK - DEBUG
-    //printf("[DEBUG:%d] :: << detected local kernel completion >>\n", CkMyPe()); fflush(NULL);
+    // DMK - DEBUG
+    MICP("[DEBUG:%d] :: << detected local kernel completion >>\n", CkMyPe()); MICPF;
 
   // Otherwise, check to see if it has been a long time (if so, timeout with error)
   } else if (++check_local_count >= count_limit) {
@@ -1252,15 +1249,6 @@ void mic_check_local_progress(void *arg, double) {
 
   // Otherwise, queue another poll attmpt in the future to try again later
   } else {
-
-    //#if MIC_TRACING != 0
-    //  if (++mic_tracing_polling_count > MIC_TRACING_POLLING_SET_FREQ) {
-    //    double now = CmiWallTimer();
-    //    MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, now);
-    //    mic_tracing_polling_start = now;
-    //    mic_tracing_polling_count = 0;
-    //  }
-    //#endif
     MIC_POLL(mic_check_local_progress, arg);
   }
 }
@@ -1283,20 +1271,9 @@ struct cr_sortop {
   }
 };
 
-//void ComputeNonbondedMIC::patchReady(PatchID patchID, int doneMigration, int seq) {
-//  printf("[DMK-DEBUG] :: PE %d :: ComputeNonbondedMIC::patchReady(pID:%d, dM:%d, s:%d) - Called...\n",
-//         CkMyPe(), patchID, doneMigration, seq
-//        );
-//  Compute::patchReady(patchID, doneMigration, seq);
-//}
 
 #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
 void ComputeNonbondedMIC::patchReady(PatchID patchID, int doneMigration, int seq) {
-
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE %d :: ComputeNonbondedMIC::patchReady(pID:%d, dM:%d, s:%d) - Called...\n", CkMyPe(), patchID, doneMigration, seq);
-  //printf("[DEBUG] :: PE %d ::   &patchID:%p\n", CkMyPe(), &patchID);
-  //fflush(NULL);
 
   // This function overrides the Compute::patchReady function so that some additional
   //   work can be done.  Compute::patchReady is called at the end of the function.
@@ -1310,141 +1287,158 @@ void ComputeNonbondedMIC::patchReady(PatchID patchID, int doneMigration, int seq
   //   is used to protect flags that track what portions of this work have been done
   //   as each of the host threads are notified that the patches are ready.  The flags
   //   are mic_atomData_seq for once per patch work and mic_atomData_deviceSeq[] for
-  //   once per patch per device work.
+  //   once per patch per device work (they use changes in the seq value to trigger work).
 
-  // Get the patch information
-  patch_record &pr = master->patchRecords[patchID];
+  // NOTE: The slave-ready mechanism makes use of patchReady to signal the master.  The master
+  //   and associated slaves are all on the same node (same host address space and same MIC), so
+  //   the slaves can push the data to the MIC device directly (here).  However, when the slaves
+  //   are finished, calls to patchReady with a patchID of -1 will be made (master waits for all
+  //   patches, slaves only wait for their assigned patches and 'pass on' patchReady notifications
+  //   to the master so the master gets them all).  As such, we need to check for a '-1' here to
+  //   detect that this is just the slave notifying the master (if so, nothing extra to do here).
+  if (patchID >= 0) {
 
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE %d :: pr:%p, master:%p, master->patchRecords:%p\n", CkMyPe(), &pr, master, &(master->patchRecords));
-  //fflush(NULL);
+    #if MIC_TRACING != 0
+      double atomSubmit_start = CmiWallTimer();
+    #endif
 
-  Patch *p = pr.p;
-  CudaAtom *ca = p->getCudaAtomList();
-  CompAtom *a = pr.positionBox->open(); pr.x = a;
-  CompAtomExt *aExt = p->getCompAtomExtInfo();
-  int2 *exclusionsByAtom = master->exclusionsByAtom_ptr;
-  int numAtoms = p->getNumAtoms();
-  int numAtoms_16 = ((numAtoms + 15) & (~15));
+    // Get the patch information
+    patch_record &pr = master->patchRecords[patchID];
+    Patch *p = pr.p;
+    CudaAtom *ca = p->getCudaAtomList();
+    CompAtom *a = pr.positionBox->open(); pr.x = a;
+    CompAtomExt *aExt = p->getCompAtomExtInfo();
+    int2 *exclusionsByAtom = master->exclusionsByAtom_ptr;
+    int numAtoms = p->getNumAtoms();
+    int numAtoms_16 = ((numAtoms + 15) & (~15));
 
-  // Create references to the atomData pointers on the host for this patch (host copy of data on device)
-  void* &atomData = p->mic_atomData;
-  int &allocSize = p->mic_atomData_allocSize_host;
-  // NOTE: Since we are using a mutex (per patch) to protect the following region,
-  //   only the first thread through will reallocate the memory and copy the patch
-  //   data in to the host's copy of the atomData buffer (seq number as check).
-  //   The remaining threads will check the size and see that everything is fine,
-  //   skipping this work.
+    // Create references to the atomData pointers on the host for this patch (host copy of data on device)
+    void* &atomData = p->mic_atomData;
+    int &allocSize = p->mic_atomData_allocSize_host;
+    // NOTE: Since we are using a mutex (per patch) to protect the following region,
+    //   only the first thread through will reallocate the memory and copy the patch
+    //   data in to the host's copy of the atomData buffer (seq number as check).
+    //   The remaining threads will check the size and see that everything is fine,
+    //   skipping this work.
 
-  // Note the MIC device that this call wants the device on (the device that the master object drives)
-  int micDevice = master->micDevice;
-  __ASSERT(micDevice < MIC_MAX_DEVICES_PER_NODE);
+    // Note the MIC device that this call wants the device on (the device that the master object drives)
+    int micDevice = master->micDevice;
+    __ASSERT(micDevice < MIC_MAX_DEVICES_PER_NODE);
+    int transferFlag = 0;
 
-  int transferFlag = 0;
+    // If either the 'once per patch' or 'once per patch per device' work needs to be done, then grab
+    //   the lock and dow the work
+    if (p->mic_atomData_seq != seq || p->mic_atomData_deviceSeq[micDevice] != seq) {
+      pthread_mutex_lock(&(p->mic_atomData_mutex));
 
-  // If either the 'once per patch' or 'once per patch per device' work needs to be done, then grab
-  //   the lock and dow the work
-  if (p->mic_atomData_seq != seq || p->mic_atomData_deviceSeq[micDevice] != seq) {
-    pthread_mutex_lock(&(p->mic_atomData_mutex));
+      // Clear the flags early so other threads are more likely to skip by the checks for the work that
+      //   will be done by this thread (and the lock).  If another thread does pass the check, the lock and
+      //   flag values will still avoid the work being done multiple times.  This is just an optimization.
+      int tmp_mic_atomData_seq = p->mic_atomData_seq;
+      int tmp_mic_atomData_deviceSeq = p->mic_atomData_deviceSeq[micDevice];
+      p->mic_atomData_seq = seq;
+      p->mic_atomData_deviceSeq[micDevice] = seq;
 
-    // Clear the flags early so other threads are more likely to skip by the checks for the work that
-    //   will be done by this thread (and the lock).  If another thread does pass the check, the lock and
-    //   flag values will still avoid the work being done multiple times.  This is just an optimization.
-    int tmp_mic_atomData_seq = p->mic_atomData_seq;
-    int tmp_mic_atomData_deviceSeq = p->mic_atomData_deviceSeq[micDevice];
-    p->mic_atomData_seq = seq;
-    p->mic_atomData_deviceSeq[micDevice] = seq;
+      // Once per patch per timestep work
+      if (tmp_mic_atomData_seq != seq) {  // Check again in case the first check passed while another thread was in the region
 
-    // Once per patch per timestep work
-    if (tmp_mic_atomData_seq != seq) {  // Check again in case the first check passed while another thread was in the region
+        // Allocate the memory as needed
+        int allocFlag = 0;
+        if (numAtoms_16 > allocSize || atomData == NULL) {
+          if (atomData != NULL) { _mm_free(atomData); }
+          int toAllocSize = (int)(numAtoms_16 * 1.1f);
+          toAllocSize = ((toAllocSize + 15) & (~15));
+          atomData = (char*)(_mm_malloc((sizeof(atom) + sizeof(atom_param)) * toAllocSize, MIC_ALIGN));
+          __ASSERT(atomData != NULL);
+          allocSize = toAllocSize;
+          allocFlag = 1;
+        }
 
-      // Allocate the memory as needed
-      int allocFlag = 0;
-      if (numAtoms_16 > allocSize || atomData == NULL) {
-        if (atomData != NULL) { _mm_free(atomData); }
-        int toAllocSize = (int)(numAtoms_16 * 1.1f);
-        toAllocSize = ((toAllocSize + 15) & (~15));
-        atomData = (char*)(_mm_malloc((sizeof(atom) + sizeof(atom_param)) * toAllocSize, MIC_ALIGN));
-        __ASSERT(atomData != NULL);
-        allocSize = toAllocSize;
-        allocFlag = 1;
-      }
+        // Copy the data to the buffer that will be passed to the device(s)
+        // NOTE: the number of atoms will only change when doneMigration is set
+        // WARNING | NOTE : The following memcopy assumes CudaAtom and atom data structures match !!!
+        atom* dev_a = (atom*)atomData;
+        atom_param* dev_aExt = (atom_param*)(dev_a + numAtoms_16);
+        memcpy(dev_a, ca, sizeof(atom) * numAtoms);  // atoms always
+        if (doneMigration || allocFlag) { // atom_params sometimes
+          #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
+            for (int k = 0; k < numAtoms; k++) {
+              int j = aExt[k].sortOrder;
+              dev_aExt[k].vdw_type = a[j].vdwType;
+              dev_aExt[k].index = aExt[j].id;
+              #ifdef MEM_OPT_VERSION
+                dev_aExt[k].excl_index = exclusionsByAtom[aExt[j].exclId].y;
+                dev_aExt[k].excl_maxdiff = exclusionsByAtom[aExt[j].exclId].x;
+              #else
+                dev_aExt[k].excl_index = exclusionsByAtom[aExt[j].id].y;
+                dev_aExt[k].excl_maxdiff = exclusionsByAtom[aExt[j].id].x;
+              #endif
+            }
+          #else
+            int *dev_aExt_vdwType     = ((int*)dev_aExt) + (0 * numAtoms_16);
+            int *dev_aExt_index       = ((int*)dev_aExt) + (1 * numAtoms_16);
+            int *dev_aExt_exclIndex   = ((int*)dev_aExt) + (2 * numAtoms_16);
+            int *dev_aExt_exclMaxDiff = ((int*)dev_aExt) + (3 * numAtoms_16);
+            for (int k = 0; k < numAtoms; k++) {
+              int j = aExt[k].sortOrder;
+              dev_aExt_vdwType[k] = a[j].vdwType;
+              dev_aExt_index[k] = aExt[j].id;
+              #ifdef MEM_OPT_VERSION
+                dev_aExt_exclIndex[k] = exclusionsByAtom[aExt[j].exclId].y;
+                dev_aExt_exclMaxDiff[k] = exclusionsByAtom[aExt[j].exclId].x;
+              #else
+                dev_aExt_exclIndex[k] = exclusionsByAtom[aExt[j].id].y;
+                dev_aExt_exclMaxDiff[k] = exclusionsByAtom[aExt[j].id].x;
+              #endif
+            }
+          #endif
+        }
+      } // end if (mic_atomData_seq != seq)
 
-      // Copy the data to the buffer that will be passed to the device(s)
-      // NOTE: the number of atoms will only change when doneMigration is set
-      // WARNING | NOTE : The following memcopy assumes CudaAtom and atom data structures match !!!
-      atom* dev_a = (atom*)atomData;
-      atom_param* dev_aExt = (atom_param*)(dev_a + numAtoms_16);
-      memcpy(dev_a, a, sizeof(atom) * numAtoms);  // atoms always
-      if (doneMigration || allocFlag) { // atom_params sometimes
-        #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-          for (int k = 0; k < numAtoms; k++) {
+      // Once per patch per timestep per device work
+      // NOTE : Within the protected region, simply flag that the transfer needs to take place
+      //   and move on.  This will allow transfers to multiple MIC cards to occur in parallel
+      //   without the per-patch-lock serializing them.
+      if (tmp_mic_atomData_deviceSeq != seq) { transferFlag = 1; }
 
-            int j = aExt[k].sortOrder;
-            dev_aExt[k].vdw_type = a[j].vdwType;
-            dev_aExt[k].index = aExt[j].id;
+      pthread_mutex_unlock(&(p->mic_atomData_mutex));
+    } // end if (mic_atomData_seq != seq || mic_atomData_deviceSeq[micDevice] != seq)
 
-            //printf("[DEBUG] :: j:%d, k:%d, dev_aExt:%p, a:%p, aExt:%p, exclusionsByAtom:%p\n", j, k, dev_aExt, a, aExt, exclusionsByAtom);
-            //fflush(NULL);
-            //printf("[DEBUG] :: aExt[j:%d].id:%d\n", j, aExt[j].id);
-            //fflush(NULL);
+    // Transfer the data to the given device
+    if (transferFlag != 0) {
+      int allocBytes = allocSize * (sizeof(atom) + sizeof(atom_param));
+      int transferBytes = numAtoms_16 * sizeof(atom);
+      if (doneMigration) { transferBytes += numAtoms_16 * sizeof(atom_param); }
+      void *signal = NULL;
 
-            #ifdef MEM_OPT_VERSION
-              dev_aExt[k].excl_index = exclusionsByAtom[aExt[j].exclId].y;
-              dev_aExt[k].excl_maxdiff = exclusionsByAtom[aExt[j].exclId].x;
-            #else
-              dev_aExt[k].excl_index = exclusionsByAtom[aExt[j].id].y;
-              dev_aExt[k].excl_maxdiff = exclusionsByAtom[aExt[j].id].x;
-            #endif
-          }
-        #else
-          int *dev_aExt_vdwType     = ((int*)dev_aExt) + (0 * numAtoms_16);
-          int *dev_aExt_index       = ((int*)dev_aExt) + (1 * numAtoms_16);
-          int *dev_aExt_exclIndex   = ((int*)dev_aExt) + (2 * numAtoms_16);
-          int *dev_aExt_exclMaxDiff = ((int*)dev_aExt) + (3 * numAtoms_16);
-          for (int k = 0; k < numAtoms; k++) {
-            int j = aExt[k].sortOrder;
-            dev_aExt_vdwType[k] = a[j].vdwType;
-            dev_aExt_index[k] = aExt[j].id;
-            #ifdef MEM_OPT_VERSION
-              dev_aExt_exclIndex[k] = exclusionsByAtom[aExt[j].exclId].y;
-              dev_aExt_exclMaxDiff[k] = exclusionsByAtom[aExt[j].exclId].x;
-            #else
-              dev_aExt_exclIndex[k] = exclusionsByAtom[aExt[j].id].y;
-              dev_aExt_exclMaxDiff[k] = exclusionsByAtom[aExt[j].id].x;
-            #endif
-          }
-        #endif
-      }
-    } // end if (mic_atomData_seq != seq)
+      #if MIC_TRACING != 0
+        double atomTransfer_start = CmiWallTimer();
+      #endif
 
-    // Once per patch per timestep per device work
-    // NOTE : Within the protected region, simply flag that the transfer needs to take place
-    //   and move on.  This will allow transfers to multiple MIC cards to occur in parallel
-    //   without the per-patch-lock serializing them.
-    if (tmp_mic_atomData_deviceSeq != seq) { transferFlag = 1; }
+      mic_submit_patch_data(micDevice,
+                            p->mic_atomData,
+                            p->mic_atomData_prev[micDevice],
+                            transferBytes,
+                            allocBytes,
+                            p->mic_atomData_allocSize_device[micDevice],
+                            p->mic_atomData_devicePtr[micDevice],
+                            signal
+                           );
 
-    pthread_mutex_unlock(&(p->mic_atomData_mutex));
-  } // end if (mic_atomData_seq != seq || mic_atomData_deviceSeq[micDevice] != seq)
+      #if MIC_TRACING != 0
+        double atomTransfer_finish = CmiWallTimer();
+        MIC_TRACING_RECORD(MIC_EVENT_ATOMS_TRANSFER, atomTransfer_start, atomTransfer_finish);
+      #endif
 
-  // Transfer the data to the given device
-  if (transferFlag != 0) {
-    int allocBytes = allocSize * (sizeof(atom) + sizeof(atom_param));
-    int transferBytes = numAtoms_16 * sizeof(atom);
-    if (doneMigration) { transferBytes += numAtoms_16 * sizeof(atom_params); }
-    mic_submit_patch_data(micDevice,
-                          p->mic_atomData,
-                          p->mic_atomData_prev[micDevice],
-                          transferBytes,
-                          allocBytes,
-                          p->mic_atomData_allocSize_device[micDevice],
-                          p->mic_atomData_devicePtr[micDevice]
-                         );
-  }
+      if (signal != NULL) { atomSubmitSignals->insert(signal); }
+    }
 
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE %d :: ComputeNonbondedMIC::patchReady(...) - Finished.\n", CkMyPe());
-  //fflush(NULL);
+    #if MIC_TRACING != 0
+      double atomSubmit_finish = CmiWallTimer();
+      MIC_TRACING_RECORD(MIC_EVENT_ATOMS_SUBMIT, atomSubmit_start, atomSubmit_finish);
+    #endif
+
+  } // end if (patchID >= 0)
 
   // Call parent class patchReady function to perform the usual work
   Compute::patchReady(patchID, doneMigration, seq);
@@ -1454,15 +1448,45 @@ void ComputeNonbondedMIC::patchReady(PatchID patchID, int doneMigration, int seq
 
 int ComputeNonbondedMIC::noWork() {
 
-  //// DMK - DEBUG
-  //printf("[DEBUG:%d] :: ComputeNonbondedMIC::noWork() - Called...\n", CkMyPe()); fflush(NULL);
-
   SimParameters *simParams = Node::Object()->simParameters;
   Flags &flags = master->patchRecords[hostedPatches[0]].p->flags;
   lattice = flags.lattice;
   doSlow = flags.doFullElectrostatics;
   doEnergy = flags.doEnergy;
   step = flags.step;
+
+  // Wait for pending input buffers here
+  // DMK - NOTE | TODO : For now this is blocking, but setup polling at some point.  May be possible to
+  //   have slaves start polling here with the callback sending the ready message.  For the master, perhaps
+  //   the polling could be started at the beginning of doWork() with the callback doing the same thing as
+  //   the offload completion callbacks (trigger another call to doWork() and check state variables to
+  //   figure out what to do).
+  #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
+  {
+    #if MIC_TRACING != 0
+      double atomSubmit_wait_start = CmiWallTimer();
+    #endif
+
+    int micDevice = master->micDevice;
+
+    std::set<void*>::iterator it;
+    for (it = atomSubmitSignals->begin(); it != atomSubmitSignals->end(); it++) {
+      void *sig = (*it);
+      #if 0  // Use blocking offload_wait pragma
+        #pragma offload_wait target(mic:micDevice) wait(sig)
+        { }
+      #else  // Use busy wait
+        while (!_Offload_signaled(master->micDevice, sig)) { }
+      #endif
+    }
+    atomSubmitSignals->clear();  // Remove all pending signals
+
+    #if MIC_TRACING != 0
+      double atomSubmit_wait_finished = CmiWallTimer();
+      MIC_TRACING_RECORD(MIC_EVENT_ATOMS_WAIT, atomSubmit_wait_start, atomSubmit_wait_finished);
+    #endif
+  }
+  #endif
 
   if ( ! flags.doNonbonded ) {
     GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
@@ -1523,8 +1547,6 @@ int ComputeNonbondedMIC::noWork() {
                                          sequence()
                                         );
 
-  //// DMK - NOTE : Skip the "remote" work for now
-  //workStarted = 2; //1;
   #if MIC_MULTIPLE_KERNELS != 0
     workStarted = 1;
   #else
@@ -1537,24 +1559,11 @@ int ComputeNonbondedMIC::noWork() {
 
 void ComputeNonbondedMIC::doWork() {
 
-  // DMK - Continue here... place the device pointer set in patchReady into the patch_pair records so that
-  //   the computes can find the atom data on the device
-
-  //// DMK - DEBUG
-  //printf("[DEBUG:%d] :: ComputeNonbondedMIC::doWork() - Called...  this:%p\n", CkMyPe(), this); fflush(NULL);
-
   GBISP("C.N.MIC[%d]::doWork: seq %d, phase %d, workStarted %d\n", \
         CkMyPe(), sequence(), gbisPhase, workStarted);
 
-  PATCH_PAIRS_REF;
-  FORCE_LISTS_REF;
-
   if ( workStarted ) { //if work already started, check if finished
     if ( finishWork() ) {  // finished
-
-      //// DMK - DEBUG
-      //printf("[DEBUG] :: doWork() :: kernels all finished...\n"); fflush(NULL);
-
       workStarted = 0;
       basePriority = PROXY_DATA_PRIORITY;  // higher to aid overlap
 
@@ -1562,9 +1571,6 @@ void ComputeNonbondedMIC::doWork() {
       timestep++;
 
     } else {  // need to call again
-
-      //// DMK - DEBUG
-      //printf("[DEBUG] :: doWork() :: remote kernel finished, starting check for local...\n"); fflush(NULL);
 
       workStarted = 2;
       //basePriority = PROXY_RESULTS_PRIORITY;  // lower for local
@@ -1584,8 +1590,6 @@ void ComputeNonbondedMIC::doWork() {
     double doWork_start = CmiWallTimer();
   #endif
 
-  //// DMK - NOTE : Skip the "remote" work for now
-  //workStarted = 2; //1;
   #if MIC_MULTIPLE_KERNELS != 0
     workStarted = 1;
   #else
@@ -1600,7 +1604,7 @@ void ComputeNonbondedMIC::doWork() {
   //execute only during GBIS phase 1, or if not using GBIS
   if (!simParams->GBISOn || gbisPhase == 1) {
 
-    // bind new patches to GPU
+    // bind new patches to device
     if ( atomsChanged || computesChanged ) {
 
       int npatches = activePatches.size();
@@ -1635,7 +1639,7 @@ void ComputeNonbondedMIC::doWork() {
         // Merge the sorted lists of local and remote computes into a single list of computes 
         num_local_compute_records = localComputeRecords.size();
         num_remote_compute_records = remoteComputeRecords.size();
-        computeRecords.resize(num_local_compute_records+num_remote_compute_records);
+        computeRecords.resize(num_local_compute_records + num_remote_compute_records);
         compute_record *cr = computeRecords.begin();
         for ( int i=0; i<num_local_compute_records; ++i ) {
           *(cr++) = localComputeRecords[i];
@@ -1671,6 +1675,12 @@ void ComputeNonbondedMIC::doWork() {
           pp.offset.x = cr.offset.x;
           pp.offset.y = cr.offset.y;
           pp.offset.z = cr.offset.z;
+
+          // Place in the patch object's atomData (device) pointer
+          #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
+	    pp.patch1_atomDataPtr = patchRecords[cr.pid[0]].p->mic_atomData_devicePtr[myDevice];
+	    pp.patch2_atomDataPtr = patchRecords[cr.pid[1]].p->mic_atomData_devicePtr[myDevice];
+          #endif
         }
 
         // Set the force list information for each patch pair
@@ -1700,9 +1710,6 @@ void ComputeNonbondedMIC::doWork() {
 
       }  // computesChanged
 
-      //// DMK - DEBUG
-      //printf("[DEBUG] :: 1.0 :: this:%p\n", this); fflush(NULL);
-
       // Count the number of atoms (and non-fixed atoms), recording the accumulated
       //   values as we go into the patch record and force list structures.
       int istart = 0;
@@ -1723,8 +1730,6 @@ void ComputeNonbondedMIC::doWork() {
         force_lists[i].force_list_start = flstart;
         force_lists[i].force_output_start = istart;
         force_lists[i].atom_start = istart;
-        //force_lists[i].virial_list_start = vlstart;
-        //force_lists[i].virial_output_start = 16*i;
 
         // Record the current offset as the patch record's starting offset.
         patch_record &pr = patchRecords[activePatches[i]];
@@ -1733,7 +1738,7 @@ void ComputeNonbondedMIC::doWork() {
         // Count number of atoms (and non-fixed atoms), recording the actual
         //   counts to the patch record and then rounding up for alignment
         int natoms = pr.p->getNumAtoms();
-        int nfreeatoms = natoms;
+        int nfreeatoms = natoms;  // MDK - TODO | FIXME : treat all as free for now (will save some work in not all free, smaller pairlists during pairlist generation)
         if ( fixedAtomsOn ) {
           const CompAtomExt *aExt = pr.xExt;
           for ( int j=0; j<natoms; ++j ) {
@@ -1746,8 +1751,6 @@ void ComputeNonbondedMIC::doWork() {
         force_lists[i].patch_size = natoms; // DMK - nfreeatoms;
         natoms = (natoms + 15) & (~15);
         nfreeatoms = (nfreeatoms + 15) & (~15);
-        //if ( natoms & 15 ) { natoms += 16 - (natoms & 15); }  // Round up 16 (DMK - NOTE)
-        //if ( nfreeatoms & 15 ) { nfreeatoms += 16 - (nfreeatoms & 15); }  // Round up 16 (DMK - NOTE)
         force_lists[i].patch_stride = natoms; // DMK - nfreeatoms;
 
         // Update the offsets by the atom counts for this patch record.
@@ -1761,9 +1764,6 @@ void ComputeNonbondedMIC::doWork() {
       if ( i == localActivePatches.size() ) {
         num_local_atom_records = istart;
       }
-
-      //// DMK - DEBUG
-      //printf("[DEBUG] :: 2.0 :: this:%p\n", this); fflush(NULL);
 
       // Record final offsets (i.e. lengths/counts).
       num_force_records = flstart;
@@ -1807,9 +1807,6 @@ void ComputeNonbondedMIC::doWork() {
           NAMD_die("Unable to allocate forces in ComputeNonbondedMIC::doWork");
         }
       }
-
-      //// DMK - DEBUG
-      //printf("[DEBUG] :: 3.0 :: this:%p\n", this); fflush(NULL);
 
       // DMK - NOTE - Continue filling in the patch pair records
       int bfstart = 0;
@@ -1871,16 +1868,10 @@ void ComputeNonbondedMIC::doWork() {
         pp.block_flags_start = bfstart;
         bfstart += ((pp.patch1_force_size + 127) >> 7) << 5;
 
-        //pp.virial_start = force_lists[lp1].virial_list_start +
-        //  16 * force_lists[lp1].force_list_size;
-
         force_lists[lp1].force_list_size++;
         if (!cr.isSelf) { force_lists[lp2].force_list_size++; }
 
       } // for ncomputes
-
-      //// DMK - DEBUG
-      //printf("[DEBUG] :: 4.0 :: this:%p\n", this); fflush(NULL);
 
       #if 0
         CkPrintf("Pe %d mic_bind_patch_pairs %d %d %d %d %d\n", CkMyPe(),
@@ -1915,9 +1906,6 @@ void ComputeNonbondedMIC::doWork() {
     float maxAtomMovement = 0.;
     float maxPatchTolerance = 0.;
 
-    //// DMK - DEBUG
-    //printf("[DEBUG] :: 5.0 :: this:%p\n", this); fflush(NULL);
-
     for ( int i=0; i<activePatches.size(); ++i ) {
 
       patch_record &pr = patchRecords[activePatches[i]];
@@ -1934,8 +1922,7 @@ void ComputeNonbondedMIC::doWork() {
       const CompAtom *a = pr.x;
       const CompAtomExt *aExt = pr.xExt;
 
-      //// DMK - DEBUG
-      //printf("[DEBUG] :: 5.1 :: this:%p, atom_params:%p\n", this, atom_params); fflush(NULL);
+      #if MIC_SUBMIT_ATOMS_ON_ARRIVAL == 0
 
       if ( atomsChanged ) {
 
@@ -1984,14 +1971,9 @@ void ComputeNonbondedMIC::doWork() {
           memcpy(ap, ac, sizeof(atom)*n_16);
         #endif
 
-	//// DMK - DEBUG
-        //for (int i = 0; i < n; i++) {
-        //  printf("[DEBUG:PID-%04d-ATOMS-%04d] :: ap[%06d] = { x:%.4le, y:%.4le, z:%.4le, q:%.4le }\n",
-        //         pr.patchID, timestep, i, ap[i].x, ap[i].y, ap[i].z, ap[i].charge
-        //        );
-        //}
-
       } // end block
+
+      #endif // MIC_SUBMIT_ATOMS_ON_ARRIVAL == 0
 
     } // end for (i < activePatches.size())
 
@@ -2073,12 +2055,12 @@ void ComputeNonbondedMIC::doWork() {
   #else
     kernel_launch_state = 2;
   #endif
-  if ( gpu_is_mine ) recvYieldDevice(-1);
+  if ( mic_is_mine ) recvYieldDevice(-1);
 }
 
 void mic_check_remote_calc(void *arg, double) {
   if (mic_check_remote_kernel_complete(myDevice)) {
-    computeMgr->sendYieldDevice(next_pe_sharing_gpu);
+    computeMgr->sendYieldDevice(next_pe_sharing_mic);
   } else {
     MIC_POLL(mic_check_remote_calc, arg);
   }
@@ -2086,16 +2068,13 @@ void mic_check_remote_calc(void *arg, double) {
 
 void mic_check_local_calc(void *arg, double) {
   if (mic_check_local_kernel_complete(myDevice)) {
-    computeMgr->sendYieldDevice(next_pe_sharing_gpu);
+    computeMgr->sendYieldDevice(next_pe_sharing_mic);
   } else {
     MIC_POLL(mic_check_local_calc, arg);
   }
 }
 
 void ComputeNonbondedMIC::recvYieldDevice(int pe) {
-
-  //// DMK - DEBUG
-  //printf("[DEBUG:%d] :: ComputeNonbondedMIC::recvYieldDevice() - Called...\n", CkMyPe()); fflush(NULL);
 
   GBISP("C.N.MIC[%d]::recvYieldDevice: seq %d, workStarted %d, \
         gbisPhase %d, kls %d, from pe %d\n", CkMyPe(), sequence(), \
@@ -2123,7 +2102,7 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
 
         GBISP("C.N.MIC[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
         ++kernel_launch_state;
-        gpu_is_mine = 0;
+        mic_is_mine = 0;
         remote_submit_time = CkWallTimer();
 
         if (!simParams->GBISOn || gbisPhase == 1) {
@@ -2133,9 +2112,6 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
           if (simParams->GBISOn) {
             NAMD_die("Unsupported feature (DMK33949330)");
           }
-
-          //// DMK - DEBUG
-          //printf("[DEBUG:%d] :: << issuing remote kernel >>\n", CkMyPe()); fflush(NULL);
 
           #if MIC_TRACING != 0
             mic_tracing_offload_start_remote = CmiWallTimer();
@@ -2151,6 +2127,9 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
                                usePairlists, savePairlists,
                                atomsChanged
                               );
+          #if (MIC_MULTIPLE_KERNELS != 0) && (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
+     	    mic_first_kernel_submit_time = CmiWallTimer();
+          #endif
 
           // Start the polling check for the completion of the remote kernel
           #if MIC_TRACING != 0
@@ -2158,32 +2137,6 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
             mic_tracing_polling_count = 0;
           #endif
           MIC_POLL(mic_check_remote_progress, this);
-
-          //// DMK - DEBUG - Only use one kernel for now
-          ////#if MIC_TRACING != 0
-          ////  mic_tracing_offload_start_remote = CmiWallTimer();
-          ////#endif
-          ////mic_nonbonded_forces(myDevice, 1,
-          ////                     lata, latb, latc,
-          ////                     doSlow, doEnergy,
-          ////                     usePairlists, savePairlists,
-          ////                     atomsChanged
-          ////                    );
-          ////MIC_POLL(mic_check_remote_progress, this);
-          ////if ( shared_gpu && ! mergegrids ) {
-          ////  MIC_POLL(mic_check_remote_calc, this);
-          ////  break;
-          ////}
-        }
-
-      #else // if MIC_MULTIPLE_KERNELS != 0
-
-        // DMK - DEBUG
-        { static int __reached_here_flag__ = 0;
-          if (!__reached_here_flag__) {
-            CkPrintf("[MIC] :: PE %d reached remote case with MIC_MULTIPLE_KERNELS disabled\n", CkMyPe());
-            __reached_here_flag__ = 1;
-	  }
         }
 
       #endif
@@ -2196,7 +2149,7 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
 
       GBISP("C.N.MIC[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
       ++kernel_launch_state;
-      gpu_is_mine = 0;
+      mic_is_mine = 0;
 
       if (!simParams->GBISOn || gbisPhase == 1) {
 
@@ -2214,9 +2167,6 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
           mic_tracing_offload_start_local = CmiWallTimer();
         #endif
 
-	//// DMK - DEBUG
-        //printf("[DEBUG:%d] :: << issuing local kernel >>\n", CkMyPe()); fflush(NULL);
-
         // Issue the local kernel
         mic_nonbonded_forces(myDevice, 0,
                              num_local_atom_records,
@@ -2228,6 +2178,10 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
                              atomsChanged
                             );
 
+        #if (MIC_MULTIPLE_KERNELS == 0) && (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
+          mic_first_kernel_submit_time = CmiWallTimer();
+        #endif
+
         if ( workStarted == 2 ) {
           // Start the polling check for the completion of the local kernel
           #if MIC_TRACING != 0
@@ -2237,7 +2191,7 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
           MIC_POLL(mic_check_local_progress, this);
         }
 
-        //if ( shared_gpu && ! mergegrids ) {
+        //if ( shared_mic && ! mergegrids ) {
         //  MIC_POLL(mic_check_local_calc, this);
         //}
 
@@ -2246,7 +2200,7 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
     default:
 
       GBISP("C.N.MIC[%d]::recvYieldDevice: case default\n", CkMyPe())
-      gpu_is_mine = 1;
+      mic_is_mine = 1;
       break;
 
   } // switch
@@ -2269,9 +2223,6 @@ void ComputeNonbondedMIC::messageFinishWork() {
 //dtanner
 int ComputeNonbondedMIC::finishWork() {
 
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: ComputeNonbondedMIC::finishWork() - Called...\n"); fflush(NULL);
-
   #if MIC_TRACING != 0
     double finishWork_start = CmiWallTimer();
   #endif
@@ -2284,16 +2235,11 @@ int ComputeNonbondedMIC::finishWork() {
 
   #if MIC_MULTIPLE_KERNELS != 0
     ResizeArray<int> &patches( workStarted == 1 ? remoteHostedPatches : localHostedPatches );
-    mic_kernel_data* &kernel_data = (workStarted == 1) ? (device__remote_kernel_data) : (device__local_kernel_data);
+    mic_kernel_data* &kernel_data = (workStarted == 1) ? (host__remote_kernel_data) : (host__local_kernel_data);
   #else
     ResizeArray<int> &patches( localHostedPatches );
-    mic_kernel_data* &kernel_data = device__local_kernel_data;
+    mic_kernel_data* &kernel_data = host__local_kernel_data;
   #endif
-
-  //// DMK - DEBUG
-  //printf("[DEBUG:%d] :: ComputeNonbondedMIC::finishWork() - p:%d (r:%d, l:%d)\n",
-  //       CkMyPe(), patches.size(), remoteHostedPatches.size(), localHostedPatches.size()
-  //      ); fflush(NULL);
 
   // DMK - NOTE : Open the force boxes for the patches so forces can be contributed
   if ( !simParams->GBISOn || gbisPhase == 1 ) {
@@ -2304,21 +2250,6 @@ int ComputeNonbondedMIC::finishWork() {
     }
   } // !GBISOn || gbisPhase==1
 
-  //// DMK - DEBUG
-  //#if MIC_MULTIPLE_KERNELS != 0
-  //  //if (workStarted == 2) { // NOTE: Only print after the local kernel has completed
-  //#endif
-  //    if (this == master) {
-  //      for (int i = 0; i < num_atom_records; i++) {
-  //        printf("[DEBUG:%d:FORCE-%d] :: force[%d] = { x:%.3lf, y:%.3lf, z:%.3lf }\n",
-  //               CkMyPe(), workStarted, i, forces[i].x, forces[i].y, forces[i].z
-  //              );
-  //      }
-  //    }
-  //#if MIC_MULTIPLE_KERNELS != 0
-  //  //}
-  //#endif
-
   // DMK - NOTE : For each patch...
   for ( int i=0; i<patches.size(); ++i ) {
 
@@ -2326,11 +2257,6 @@ int ComputeNonbondedMIC::finishWork() {
     patch_record &pr = master->patchRecords[patches[i]];
     int start = pr.localStart;
     const CompAtomExt *aExt = pr.xExt;
-
-    //// DMK - DEBUG
-    //printf("[DEBUG:PID-%04d(%04d)-%04d-%01d-PATCHCONTRIB] - Contributing forces\n",
-    //       patches[i], pr.patchID, timestep, workStarted
-    //      );
 
     // DMK - NOTE : If this is the end of the timestep for this compute
     if ( !simParams->GBISOn || gbisPhase == 3 ) {
@@ -2357,12 +2283,6 @@ int ComputeNonbondedMIC::finishWork() {
           f[j].x += af[k].x;
           f[j].y += af[k].y;
           f[j].z += af[k].z;
-
-          //// DMK - DEBUG
-          //printf("[DEBUG:PID-%04d-FORCES-%04d] :: af[%06d] = { x:%.4le, y:%.4le, z:%.4le }\n",
-          //       pr.patchID, timestep, k, af[k].x, af[k].y, af[k].z
-          //      );
-
 	}
         if (doSlow) {
           double4 *af_slow = master->slow_forces + start;
@@ -2401,41 +2321,25 @@ int ComputeNonbondedMIC::finishWork() {
 
       #endif
 
-      // DMK - DEBUG
-      #if 0
-        if (i <= 10) {
-          for (int k = 0; k < nAtoms; k++) {
-            printf("hfo :: i:%d, k:%d :: f = { %+.3le %+.3le %+.3le %+.3le }\n",
-                   #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-                     i, k, af[k].x, af[k].y, af[k].z, af[k].w
-                   #else
-                     i, k, af_x[k], af_y[k], af_z[k], af_w[k]
-                   #endif
-		  );
-	  }
-        }
-      #endif
-
       // Verify exclusion counts on 1 PE (reported as force's 'w' value)
       #if MIC_EXCL_CHECKSUM != 0
         if ( CkNumPes() == 1 ) {
           for (int k = 0; k < nAtoms; ++k) {
-	  //for ( int j = 0; j < nAtoms; j++) { //int k=0; k<nfree; ++k ) {
             int j = aExt[k].sortOrder;
             #ifdef MEM_OPT_VERSION
-	      int excl_expected = mol->exclSigPool[aExt[j].exclId].fullExclCnt; // DMK : Don't count self? + 1;
+              int excl_expected = mol->exclSigPool[aExt[j].exclId].fullExclCnt; // DMK : Don't count self? + 1;
               excl_expected += mol->exclSigPool[aExt[j].exclId].modExclCnt; // DMK : and count modified
             #else
-	      int excl_expected = mol->get_full_exclusions_for_atom(aExt[j].id)[0]; // DMK : Don't count self? + 1;
-	      excl_expected += mol->get_mod_exclusions_for_atom(aExt[j].id)[0]; // DMK : and count modified
+              int excl_expected = mol->get_full_exclusions_for_atom(aExt[j].id)[0]; // DMK : Don't count self? + 1;
+              excl_expected += mol->get_mod_exclusions_for_atom(aExt[j].id)[0]; // DMK : and count modified
             #endif
             #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
               int excl_actual = (int)(af[k].w);
             #else
               int excl_actual = (int)(af_w[k]);
             #endif
-	    if (excl_actual != excl_expected) {
-              static int __limit = 1000;
+            if (excl_actual != excl_expected) {
+              static int __limit = 20;
               static int __count = 0;
               if (++__count <= __limit) {
                 CkPrintf("%d:%d(%d) atom %d found %d exclusions but expected %d\n",
@@ -2444,8 +2348,8 @@ int ComputeNonbondedMIC::finishWork() {
               }
             } // end if excl check fail
           } // end for (j < nAtoms)
-        } // end if ( CkNumPes() == 1 )
-      #endif
+	} // end if ( CkNumPes() == 1 )
+      #endif  // MIC_EXCL_CHECKSUM != 0
 
     } // !GBISOn || gbisPhase == 3
 
@@ -2502,70 +2406,41 @@ int ComputeNonbondedMIC::finishWork() {
 
   }  // end for (i<patches.size())
 
-  #if 0
-    virial *= (-1./6.);
-    reduction->item(REDUCTION_VIRIAL_NBOND_XX) += virial;
-    reduction->item(REDUCTION_VIRIAL_NBOND_YY) += virial;
-    reduction->item(REDUCTION_VIRIAL_NBOND_ZZ) += virial;
-    if ( doSlow ) {
-      virial_slow *= (-1./6.);
-      reduction->item(REDUCTION_VIRIAL_SLOW_XX) += virial_slow;
-      reduction->item(REDUCTION_VIRIAL_SLOW_YY) += virial_slow;
-      reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += virial_slow;
-    }
-  #endif
-
   // DMK - NOTE : Contribute virial values
   if ( master == this && (!simParams->GBISOn || gbisPhase == 3) && workStarted == 2 ) {
 
-    double virial_xx = device__local_kernel_data->virial_xx;
-    double virial_xy = device__local_kernel_data->virial_xy;
-    double virial_xz = device__local_kernel_data->virial_xz;
-    double virial_yy = device__local_kernel_data->virial_yy;
-    double virial_yz = device__local_kernel_data->virial_yz;
-    double virial_zz = device__local_kernel_data->virial_zz;
-    double fullElectVirial_xx = device__local_kernel_data->fullElectVirial_xx;
-    double fullElectVirial_xy = device__local_kernel_data->fullElectVirial_xy;
-    double fullElectVirial_xz = device__local_kernel_data->fullElectVirial_xz;
-    double fullElectVirial_yy = device__local_kernel_data->fullElectVirial_yy;
-    double fullElectVirial_yz = device__local_kernel_data->fullElectVirial_yz;
-    double fullElectVirial_zz = device__local_kernel_data->fullElectVirial_zz;
-    double vdwEnergy = device__local_kernel_data->vdwEnergy;
-    double electEnergy = device__local_kernel_data->electEnergy;
-    double fullElectEnergy = device__local_kernel_data->fullElectEnergy;
+    double virial_xx = host__local_kernel_data->virial_xx;
+    double virial_xy = host__local_kernel_data->virial_xy;
+    double virial_xz = host__local_kernel_data->virial_xz;
+    double virial_yy = host__local_kernel_data->virial_yy;
+    double virial_yz = host__local_kernel_data->virial_yz;
+    double virial_zz = host__local_kernel_data->virial_zz;
+    double fullElectVirial_xx = host__local_kernel_data->fullElectVirial_xx;
+    double fullElectVirial_xy = host__local_kernel_data->fullElectVirial_xy;
+    double fullElectVirial_xz = host__local_kernel_data->fullElectVirial_xz;
+    double fullElectVirial_yy = host__local_kernel_data->fullElectVirial_yy;
+    double fullElectVirial_yz = host__local_kernel_data->fullElectVirial_yz;
+    double fullElectVirial_zz = host__local_kernel_data->fullElectVirial_zz;
+    double vdwEnergy = host__local_kernel_data->vdwEnergy;
+    double electEnergy = host__local_kernel_data->electEnergy;
+    double fullElectEnergy = host__local_kernel_data->fullElectEnergy;
     #if MIC_MULTIPLE_KERNELS != 0
-      virial_xx += device__remote_kernel_data->virial_xx;
-      virial_xy += device__remote_kernel_data->virial_xy;
-      virial_xz += device__remote_kernel_data->virial_xz;
-      virial_yy += device__remote_kernel_data->virial_yy;
-      virial_yz += device__remote_kernel_data->virial_yz;
-      virial_zz += device__remote_kernel_data->virial_zz;
-      fullElectVirial_xx += device__remote_kernel_data->fullElectVirial_xx;
-      fullElectVirial_xy += device__remote_kernel_data->fullElectVirial_xy;
-      fullElectVirial_xz += device__remote_kernel_data->fullElectVirial_xz;
-      fullElectVirial_yy += device__remote_kernel_data->fullElectVirial_yy;
-      fullElectVirial_yz += device__remote_kernel_data->fullElectVirial_yz;
-      fullElectVirial_zz += device__remote_kernel_data->fullElectVirial_zz;
-      vdwEnergy += device__remote_kernel_data->vdwEnergy;
-      electEnergy += device__remote_kernel_data->electEnergy;
-      fullElectEnergy += device__remote_kernel_data->fullElectEnergy;
+      virial_xx += host__remote_kernel_data->virial_xx;
+      virial_xy += host__remote_kernel_data->virial_xy;
+      virial_xz += host__remote_kernel_data->virial_xz;
+      virial_yy += host__remote_kernel_data->virial_yy;
+      virial_yz += host__remote_kernel_data->virial_yz;
+      virial_zz += host__remote_kernel_data->virial_zz;
+      fullElectVirial_xx += host__remote_kernel_data->fullElectVirial_xx;
+      fullElectVirial_xy += host__remote_kernel_data->fullElectVirial_xy;
+      fullElectVirial_xz += host__remote_kernel_data->fullElectVirial_xz;
+      fullElectVirial_yy += host__remote_kernel_data->fullElectVirial_yy;
+      fullElectVirial_yz += host__remote_kernel_data->fullElectVirial_yz;
+      fullElectVirial_zz += host__remote_kernel_data->fullElectVirial_zz;
+      vdwEnergy += host__remote_kernel_data->vdwEnergy;
+      electEnergy += host__remote_kernel_data->electEnergy;
+      fullElectEnergy += host__remote_kernel_data->fullElectEnergy;
     #endif
-
-    //// DMK - DEBUG
-    //#if MIC_MULTIPLE_KERNELS != 0
-    //  printf("[DEBUG:FWl-%04d-%d] :: virial = { %.3lf %.3lf %.3lf  %.3lf %.3lf  %.3lf }\n",
-    //         timestep, workStarted, device__local_kernel_data->virial_xx, device__local_kernel_data->virial_xy, device__local_kernel_data->virial_xz, device__local_kernel_data->virial_yy, device__local_kernel_data->virial_yz, device__local_kernel_data->virial_zz
-    //        );
-    //  printf("[DEBUG:FWr-%04d-%d] :: virial = { %.3lf %.3lf %.3lf  %.3lf %.3lf  %.3lf }\n",
-    //         timestep, workStarted, device__remote_kernel_data->virial_xx, device__remote_kernel_data->virial_xy, device__remote_kernel_data->virial_xz, device__remote_kernel_data->virial_yy, device__remote_kernel_data->virial_yz, device__remote_kernel_data->virial_zz
-    //        );
-    //#endif
-    //printf("[DEBUG:FW-%04d-%d] :: virial = { %.3lf %.3lf %.3lf  %.3lf %.3lf  %.3lf }\n",
-    //       timestep, workStarted, virial_xx, virial_xy, virial_xz, virial_yy, virial_yz, virial_zz
-    //      );
-    //printf("[DEBUG:FW-%04d-%d] :: energy = { vdw:%.3lf elect:%.3lf fullElect:%.3lf }\n",
-    //       timestep, workStarted, vdwEnergy, electEnergy, fullElectEnergy
-    //      );
 
     // DMK - NOTE : Contribute virial
     Tensor virial_tensor;
@@ -2578,22 +2453,11 @@ int ComputeNonbondedMIC::finishWork() {
     virial_tensor.zx = virial_xz;
     virial_tensor.zy = virial_yz;
     virial_tensor.zz = virial_zz;
-    //virial_tensor.xx = kernel_data->virial_xx;
-    //virial_tensor.xy = kernel_data->virial_xy;
-    //virial_tensor.xz = kernel_data->virial_xz;
-    //virial_tensor.yx = kernel_data->virial_xy;
-    //virial_tensor.yy = kernel_data->virial_yy;
-    //virial_tensor.yz = kernel_data->virial_yz;
-    //virial_tensor.zx = kernel_data->virial_xz;
-    //virial_tensor.zy = kernel_data->virial_yz;
-    //virial_tensor.zz = kernel_data->virial_zz;
     // DMK - TODO | FIXME : GBIS support needed eventually
     ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NBOND, virial_tensor);
     if (doEnergy) {
       reduction->item(REDUCTION_LJ_ENERGY) += vdwEnergy;
       reduction->item(REDUCTION_ELECT_ENERGY) += electEnergy;
-      //reduction->item(REDUCTION_LJ_ENERGY) += kernel_data->vdwEnergy;
-      //reduction->item(REDUCTION_ELECT_ENERGY) += kernel_data->electEnergy;
     }
     if (doSlow) {
       Tensor virial_slow_tensor;
@@ -2606,21 +2470,22 @@ int ComputeNonbondedMIC::finishWork() {
       virial_slow_tensor.zx = fullElectVirial_xz;
       virial_slow_tensor.zy = fullElectVirial_yz;
       virial_slow_tensor.zz = fullElectVirial_zz;
-      //virial_slow_tensor.xx = kernel_data->fullElectVirial_xx;
-      //virial_slow_tensor.xy = kernel_data->fullElectVirial_xy;
-      //virial_slow_tensor.xz = kernel_data->fullElectVirial_xz;
-      //virial_slow_tensor.yx = kernel_data->fullElectVirial_xy;
-      //virial_slow_tensor.yy = kernel_data->fullElectVirial_yy;
-      //virial_slow_tensor.yz = kernel_data->fullElectVirial_yz;
-      //virial_slow_tensor.zx = kernel_data->fullElectVirial_xz;
-      //virial_slow_tensor.zy = kernel_data->fullElectVirial_yz;
-      //virial_slow_tensor.zz = kernel_data->fullElectVirial_zz;
       ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_SLOW, virial_slow_tensor);
       if (doEnergy) { reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += fullElectEnergy; }
-      //if (doEnergy) { reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += kernel_data->fullElectEnergy; }
     }
 
-    // DMK - TRACING
+    // Contribute to the exclusion checksum
+    #if MIC_EXCL_CHECKSUM_FULL != 0
+      int exclusionSum = host__local_kernel_data->exclusionSum;
+      #if MIC_MULTIPLE_KERNELS != 0
+        exclusionSum += host__remote_kernel_data->exclusionSum;
+      #endif
+
+      reduction->item(REDUCTION_EXCLUSION_CHECKSUM) += exclusionSum;
+    #endif
+
+    // TRACING - Using the tracing output data generated by the device, submit user events to show
+    //   performance data from the MIC device in Projections output
     #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
     {
       #if MIC_DEVICE_TRACING_DETAILED != 0
@@ -2631,15 +2496,15 @@ int ComputeNonbondedMIC::finishWork() {
         int aSize = patchMap->gridsize_a();
         int bSize = patchMap->gridsize_b();
         int cSize = patchMap->gridsize_c();
-        for (int i = 0; i < device__patch_pairs_size; i++) {
+        for (int i = 0; i < host__patch_pairs_size; i++) {
 
           // Determine the distance between the patches
-          int pid0 = device__patch_pairs[i].p1;
-          int pid1 = device__patch_pairs[i].p2;
+          int pid0 = host__patch_pairs[i].p1;
+          int pid1 = host__patch_pairs[i].p2;
           int dist = 0;
           if (pid0 != pid1) { // Is a pair, not a self
-            int trans0 = computeMap->trans(device__patch_pairs[i].cid, 0);
-            int trans1 = computeMap->trans(device__patch_pairs[i].cid, 1);
+            int trans0 = computeMap->trans(host__patch_pairs[i].cid, 0);
+            int trans1 = computeMap->trans(host__patch_pairs[i].cid, 1);
             int index_a0 = patchMap->index_a(pid0) + aSize * Lattice::offset_a(trans0);
             int index_b0 = patchMap->index_b(pid0) + bSize * Lattice::offset_b(trans0);
             int index_c0 = patchMap->index_c(pid0) + cSize * Lattice::offset_c(trans0);
@@ -2653,77 +2518,68 @@ int ComputeNonbondedMIC::finishWork() {
 	  }
 
           // Retrieve the start and end times for the "compute's task"
-          double ueStart = device__device_times_computes[i * 2];
-          double ueEnd = device__device_times_computes[i * 2 + 1];
+          double ueStart = host__device_times_computes[i * 2];
+          double ueEnd = host__device_times_computes[i * 2 + 1];
           #if MIC_MULTIPLE_KERNELS != 0
-            ueStart += mic_tracing_offload_start_remote - device__device_times_start[0];
-            ueEnd += mic_tracing_offload_start_remote - device__device_times_start[0];
+            ueStart += mic_first_kernel_submit_time - host__device_times_start[0];
+            ueEnd += mic_first_kernel_submit_time - host__device_times_start[0];
           #else
-            ueStart += mic_tracing_offload_start_local - device__device_times_start[1];
-            ueEnd += mic_tracing_offload_start_local - device__device_times_start[1];
+            ueStart += mic_first_kernel_submit_time - host__device_times_start[1];
+            ueEnd += mic_first_kernel_submit_time - host__device_times_start[1];
           #endif
 
-          //if (i == 0) { printf("[DEBUG:MIC:TRACING:COMPUTE] user event = { %.6le, %.6le } - %.6le\n", ueStart, ueEnd, ueEnd - ueStart); }
           if (dist > 7) { dist = 7; }  // NOTE: Make sure that the distance is put in the "7+" category if it is >7
           traceUserBracketEvent(MIC_EVENT_DEVICE_COMPUTE + dist, ueStart, ueEnd);
         }
 
         // Create patch (force reduction) user events
-        for (int i = 0; i < device__force_lists_size; i++) {
-          double ueStart = device__device_times_patches[i * 2];
-          double ueEnd = device__device_times_patches[i * 2 + 1];
+        for (int i = 0; i < host__force_lists_size; i++) {
+          double ueStart = host__device_times_patches[i * 2];
+          double ueEnd = host__device_times_patches[i * 2 + 1];
           #if MIC_MULTIPLE_KERNELS != 0
-            ueStart += mic_tracing_offload_start_remote - device__device_times_start[0];
-            ueEnd += mic_tracing_offload_start_remote - device__device_times_start[0];
+            ueStart += mic_first_kernel_submit_time - host__device_times_start[0];
+            ueEnd += mic_first_kernel_submit_time - host__device_times_start[0];
           #else
-            ueStart += mic_tracing_offload_start_local - device__device_times_start[1];
-            ueEnd += mic_tracing_offload_start_local - device__device_times_start[1];
+            ueStart += mic_first_kernel_submit_time - host__device_times_start[1];
+            ueEnd += mic_first_kernel_submit_time - host__device_times_start[1];
           #endif
-	  //if (i == 0) { printf("[DEBUG:MIC:TRACING:PATCH] user event = { %.6le, %.6le } - %.6le\n", ueStart, ueEnd, ueEnd - ueStart); }
           traceUserBracketEvent(MIC_EVENT_DEVICE_PATCH, ueStart, ueEnd);
         }
 
       #endif // MIC_DEVICE_TRACING_DETAILED
 
       // Create phases
-      double lPTime0 = device__device_times_start[3];
-      double lPTime1 = device__device_times_start[5];
-      double lPTime2 = device__device_times_start[7];
-      double lPTime3 = device__device_times_start[9];
+      double lPTime0 = host__device_times_start[3];
+      double lPTime1 = host__device_times_start[5];
+      double lPTime2 = host__device_times_start[7];
+      double lPTime3 = host__device_times_start[9];
       #if MIC_MULTIPLE_KERNELS != 0
-        double rPTime0 = device__device_times_start[2];
-        double rPTime1 = device__device_times_start[4];
-        double rPTime2 = device__device_times_start[6];
-        double rPTime3 = device__device_times_start[8];
-        rPTime0 += mic_tracing_offload_start_remote - device__device_times_start[0];
-        lPTime0 += mic_tracing_offload_start_remote - device__device_times_start[0];
-        rPTime1 += mic_tracing_offload_start_remote - device__device_times_start[0];
-        lPTime1 += mic_tracing_offload_start_remote - device__device_times_start[0];
-        rPTime2 += mic_tracing_offload_start_remote - device__device_times_start[0];
-        lPTime2 += mic_tracing_offload_start_remote - device__device_times_start[0];
-        rPTime3 += mic_tracing_offload_start_remote - device__device_times_start[0];
-        lPTime3 += mic_tracing_offload_start_remote - device__device_times_start[0];
+        double rPTime0 = host__device_times_start[2];
+        double rPTime1 = host__device_times_start[4];
+        double rPTime2 = host__device_times_start[6];
+        double rPTime3 = host__device_times_start[8];
+        rPTime0 += mic_first_kernel_submit_time - host__device_times_start[0];
+        lPTime0 += mic_first_kernel_submit_time - host__device_times_start[0];
+        rPTime1 += mic_first_kernel_submit_time - host__device_times_start[0];
+        lPTime1 += mic_first_kernel_submit_time - host__device_times_start[0];
+        rPTime2 += mic_first_kernel_submit_time - host__device_times_start[0];
+        lPTime2 += mic_first_kernel_submit_time - host__device_times_start[0];
+        rPTime3 += mic_first_kernel_submit_time - host__device_times_start[0];
+        lPTime3 += mic_first_kernel_submit_time - host__device_times_start[0];
         traceUserBracketEvent(MIC_EVENT_DEVICE_COMPUTES, rPTime0, rPTime1);
         traceUserBracketEvent(MIC_EVENT_DEVICE_VIRIALS, rPTime1, rPTime2);
         traceUserBracketEvent(MIC_EVENT_DEVICE_PATCHES, rPTime2, rPTime3);
       #else
-        lPTime0 += mic_tracing_offload_start_local - device__device_times_start[1];
-        lPTime1 += mic_tracing_offload_start_local - device__device_times_start[1];
-        lPTime2 += mic_tracing_offload_start_local - device__device_times_start[1];
-        lPTime3 += mic_tracing_offload_start_local - device__device_times_start[1];
+        lPTime0 += mic_first_kernel_submit_time - host__device_times_start[1];
+        lPTime1 += mic_first_kernel_submit_time - host__device_times_start[1];
+        lPTime2 += mic_first_kernel_submit_time - host__device_times_start[1];
+        lPTime3 += mic_first_kernel_submit_time - host__device_times_start[1];
       #endif
       traceUserBracketEvent(MIC_EVENT_DEVICE_COMPUTES, lPTime0, lPTime1);
       traceUserBracketEvent(MIC_EVENT_DEVICE_VIRIALS, lPTime1, lPTime2);
       traceUserBracketEvent(MIC_EVENT_DEVICE_PATCHES, lPTime2, lPTime3);
     }
     #endif  // MIC_DEVICE_TRACING
-
-    // DMK - MEMORY CHECK
-    #if MIC_MALLOC_CHECK != 0
-      _MM_MALLOC_VERIFY;
-      #pragma offload target(mic:myDevice)
-      { _MM_MALLOC_VERIFY; }
-    #endif
   }
 
   if (workStarted == 1) { return 0; }
@@ -2750,45 +2606,13 @@ int ComputeNonbondedMIC::finishWork() {
   // DMK - NOTE : If this is the end of the step for this compute
   if ( !simParams->GBISOn || gbisPhase == 3 ) {
 
-    //// DMK - NOTE : Contribute virial
-    //Tensor virial_tensor;
-    //virial_tensor.xx = kernel_data->virial_xx;
-    //virial_tensor.xy = kernel_data->virial_xy;
-    //virial_tensor.xz = kernel_data->virial_xz;
-    //virial_tensor.yx = kernel_data->virial_xy;
-    //virial_tensor.yy = kernel_data->virial_yy;
-    //virial_tensor.yz = kernel_data->virial_yz;
-    //virial_tensor.zx = kernel_data->virial_xz;
-    //virial_tensor.zy = kernel_data->virial_yz;
-    //virial_tensor.zz = kernel_data->virial_zz;
-    //// DMK - TODO | FIXME : GBIS support needed eventually
-    //ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NBOND, virial_tensor);
-    //if (doEnergy) {
-    //  reduction->item(REDUCTION_LJ_ENERGY) += kernel_data->vdwEnergy;
-    //  reduction->item(REDUCTION_ELECT_ENERGY) += kernel_data->electEnergy;
-    //  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += kernel_data->fullElectEnergy;
-    //}
-    //if (doSlow) {
-    //  Tensor virial_slow_tensor;
-    //  virial_slow_tensor.xx = kernel_data->fullElectVirial_xx;
-    //  virial_slow_tensor.xy = kernel_data->fullElectVirial_xy;
-    //  virial_slow_tensor.xz = kernel_data->fullElectVirial_xz;
-    //  virial_slow_tensor.yx = kernel_data->fullElectVirial_xy;
-    //  virial_slow_tensor.yy = kernel_data->fullElectVirial_yy;
-    //  virial_slow_tensor.yz = kernel_data->fullElectVirial_yz;
-    //  virial_slow_tensor.zx = kernel_data->fullElectVirial_xz;
-    //  virial_slow_tensor.zy = kernel_data->fullElectVirial_yz;
-    //  virial_slow_tensor.zz = kernel_data->fullElectVirial_zz;
-    //  ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_SLOW, virial_slow_tensor);
-    //}
+    // DMK - DEBUG
+    MICP("submitting reduction...\n"); MICPF;
 
     atomsChanged = 0;
     reduction->submit();
 
-    #if (VTUNE_INFO != 0) && (VTUNE_TASKS != 0)
-      endOffloadTask();
-    #endif
-
+    #if 0
     mic_timer_count++;
     if ( simParams->outputCudaTiming &&
 	  step % simParams->outputCudaTiming == 0 ) {
@@ -2826,6 +2650,7 @@ int ComputeNonbondedMIC::finishWork() {
       mic_timer_count = 0;
       mic_timer_total = 0;
     }
+    #endif
 
   } // !GBISOn || gbisPhase==3  
 
@@ -2842,7 +2667,28 @@ int ComputeNonbondedMIC::finishWork() {
   return 1;  // finished and ready for next step
 }
 
-void mic_print_stats() { _mic_print_stats(myDevice); }
+
+__thread FILE* mic_output = NULL;
+__thread int mic_output_set = 0;
+
+
+void debugInit(FILE* fout) {
+  if (mic_output != NULL) { return; }
+  if (fout != NULL) {
+    mic_output = fout;
+    mic_output_set = 1;
+  } else {
+    char fname[256];
+    sprintf(fname, "mic_debug.%d", CkMyPe());
+    printf("[MIC-INFO] :: Creating MIC debug file \"%s\" for PE %d...\n", fname, CkMyPe());
+    mic_output = fopen(fname, "w");
+    mic_output_set = 0;
+  }
+}
+
+void debugClose() {
+  if (mic_output_set == 0) { fclose(mic_output); mic_output = NULL; }
+}
 
 
 #endif  // NAMD_MIC

@@ -107,11 +107,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-#define USE_DMK_COMMON (0)
-#if USE_DMK_COMMON != 0
-  #pragma offload_attribute (push, target(mic))
-  #include "dmk_common.h"
-  #pragma offload_attribute (pop)
+#include <stdlib.h>
+#include <stdio.h>
+#include <offload.h>
+#include <string.h>
+#include <stdint.h>
+#ifndef __MIC__
+  #include "charm++.h"
 #endif
 
 
@@ -121,17 +123,12 @@
 // There are three main ways in which the force computation loop can be compiled,
 //   including those listed in the table below.
 //
-//            VERSION   MIC_HANDCODE_FORCE   MIC_PAD_PLGEN   ALSO RECOMMENDED ("set" these, others "unset")
-//    ---------------   ------------------   -------------   ------------------------------------------------------------------------------
-//             scalar                   0               0    
-//    auto-vectorized                   0               1    MIC_HANDCODE_PLGEN(1) (until auto vectorization of pairlist generation loop is working)
-//    hand-vectorized                   1             n/a    MIC_HANDCODE_FORCE_CALCR2TABLE(1), MIC_HANDCODE_FORCE_USEGATHER(1), MIC_HANDCODE_FORCE_SOA_VS_AOS(1), 
-//            --- for all versions of the code ---           MULTIPLE_THREADS(1), MIC_SORT_ATOMS(1), MIC_HANDCODE_FORCE_SINGLE(1), MIC_SPLIT_WITH_HOST(1)
-
-// Flags to enable/disable __assume, __assume_aligned, and restrict usage
-#define USE_ASSUME                        ( 1 )  // 0 - disable, !0 - enable "__ASSUME" (as "__assume")
-#define USE_ASSUME_ALIGNED                ( 1 )  // 0 - disable, !0 - enable "__ASSUME_ALIGNED" (as "__assume_aligned")
-#define USE_RESTRICT                      ( 1 )  // 0 - disable, !0 - enable "RESTRICT" (as "restrict")
+//                VERSION   MIC_HANDCODE_FORCE   MIC_PAD_PLGEN   ALSO RECOMMENDED ("set" these, others "unset")
+//    -------------------   ------------------   -------------   ------------------------------------------------------------------------------
+//                 scalar                   0               0    
+//    compiler-vectorized                   0               1    MIC_HANDCODE_PLGEN(1) (until auto vectorization of pairlist generation loop is working)
+//        hand-vectorized                   1             n/a    MIC_HANDCODE_FORCE_CALCR2TABLE(1), MIC_HANDCODE_FORCE_USEGATHER(1), MIC_HANDCODE_FORCE_SOA_VS_AOS(1)
+//              --- for all versions of the code ---             MULTIPLE_THREADS(1), MIC_SORT_ATOMS(1), MIC_HANDCODE_FORCE_SINGLE(1), MIC_SPLIT_WITH_HOST(1)
 
 // Flags to enable/disable the use of handcoding
 #define MIC_HANDCODE_FORCE                     ( 1 ) // 1 // 0 - disable, !0 - enable hand-coded force generation loop
@@ -140,7 +137,6 @@
   #define MIC_HANDCODE_FORCE_USEGATHER_NBTBL   ( 0 )
   #define MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT  ( 0 )  // 0 - disable, !0 - enable loading of vdw type information prior to the cutoff check within the force loops
   #define MIC_HANDCODE_FORCE_COMBINE_FORCES    ( 1 ) // 1 // 0 - disable, !0 - enable a single set of force updates (short-fast and full), rather than two separate updates in the force loop body (allowing indexes, etc. to be reused for both)
-  #define MIC_HANDCODE_FORCE_TRANS_AS_MADD     ( 0 )  // 0 - disable, !0 - make use of the madd instruction when loading the nonbonded table values
 
 // Flags that were originally part of handcoding, but are now more general
 #define MIC_HANDCODE_FORCE_SINGLE            ( 1 ) // 1 // 0 - disable, !0 - enable use of single precision to calculate force magnitude in force loops (forces still accumulated in double precision)
@@ -172,7 +168,7 @@
 
 #define MIC_SORT_COMPUTES                 ( 1 )
 
-#define MIC_VIRIAL_ENERGY_ALT             ( 0 )
+#define MIC_SYNC_INPUT                    ( 1 )
 
 #define MIC_SUBMIT_ATOMS_ON_ARRIVAL       ( 0 )
 
@@ -181,44 +177,36 @@
   #define REFINE_PAIRLIST_HANDCODE        ( 0 )  // 0 - disable, !0 - use hand-coded version of the pairlist refinement code
   #define REFINE_PAIRLISTS_XYZ            ( 0 )  // 0 - disable, !0 - save dX (delta X), dY, and dZ values along with r2 values as part of the pairlist refinement output process
 
-// Flags used to enable/disable and control force splitting
-#define FORCE_SPLITTING                   ( 0 )  // 0 - disable, 8 - enable force splitting
-  #define FORCE_SPLITTING_PFDIST          ( 0 )  // 0 - disable, >=1 - software prefetch distance
-    #define FORCE_SPLITTING_PFHINT        ( 3 )  // Type of software prefetch to issue, when prefetching is enabled (FORCE_SPLITTING_PFDIST)
-
 #define MIC_PREFETCH_DISTANCE             ( 0 )
   #define MIC_PREFETCH_HINT               ( 3 )
 
 // Flag used to enable/disable various checks within and related to the MIC computation code
-#define MIC_FULL_DOUBLE                   ( 0 )  // 0 - disable, !0 - enable forces as double rather than float
-#define MIC_FULL_CHECK                    ( 0 )  // 0 - disable, !0 - enable various checks use to help verify correct operation, but that are not required to perform the calculations themselves
+#define MIC_FULL_CHECK                    ( 1 )  // 0 - disable, !0 - enable various checks use to help verify correct operation, but that are not required to perform the calculations themselves
 #define MIC_EXCL_CHECKSUM                 ( 0 )  // 0 - disable, !0 - enable the generation of exclusion checksum values
-
-#define MIC_MALLOC_CHECK                  ( 0 )
+#define MIC_EXCL_CHECKSUM_FULL            ( 1 )  // NOTE: Mutually exclusive with MIC_EXCL_CHECKSUM
+#define MIC_DATA_STRUCT_VERIFY            ( 0 )
+  #define MIC_DATA_STRUCT_VERIFY_KERNELS  ( 0 )
+#define MIC_HEARTBEAT                     ( 0 )
 
 // Alignment used for various buffers, values, etc., in bytes
-//#define MIC_ALIGN                         ( 64 )  // NOTE : Must be > 0 and must be a multiple of the cacheline size
 #define MIC_ALIGN                         ( 4 * 1024 )  // NOTE : Must be > 0 and must be a multiple of the cacheline size
 
-// #define MIC_MAX_DEVICES_PER_NODE          ( XXX ) // Moved to Patch.h to reduce build dependencies
+#define MIC_MAX_DEVICES_PER_NODE          ( 16 )
 
-#define MIC_LOCK_MEMORY                   ( 0 )
+#define MIC_PRINT_CONFIG                  ( 1 )  // 0 - disable, !0 - enable the printing of configuration information (macros defined in this file) at the start of a simulation
 
-// Information prints
-#define MIC_PRINT_CONFIG                  ( 1 )
-
-
+#define MIC_DEBUG                         ( 0 )  // 0 - disable, !0 - enable extra debugging output to be printed to files (1 file per PE) via MICP statements
 
 #define NUM_PAIRLIST_TYPES                ( 4 )  // Number of pairlist types (i.e. multiplier used for mallocs, etc.)
   #define PL_NORM_INDEX                   ( 0 )  //   Index for normal pairlist
-  #define PL_MOD_INDEX                    ( 1 )  //   Index for modified pairlist
-  #define PL_EXCL_INDEX                   ( 2 )  //   Index for excluded pairlist
+  #define PL_EXCL_INDEX                   ( 1 )  //   Index for excluded pairlist
+  #define PL_MOD_INDEX                    ( 2 )  //   Index for modified pairlist
   #define PL_NORMHI_INDEX                 ( 3 )  //   Index for the "normal high" pairlist (temporary pairlist used for entries that are far apart, used to separate the sets of entries, close and far, used in normal pairlist conditioning... see MIC_CONDITION_NORMAL)
 
 // Projections tracing
-#define MIC_TRACING                       ( 0 )
-  #define MIC_DEVICE_TRACING              ( 0 )  // NOTE: Multi-MIC runs not supported yet for this option... Separately enable tracing of events on the device itself
-  #define MIC_DEVICE_TRACING_DETAILED     ( 0 )
+#define MIC_TRACING                       ( 0 )  // 0 - disable, !0 - enable tracing information to be collected on the host
+  #define MIC_DEVICE_TRACING              ( 0 )  // 0 - disable, !0 - enable the collection of extra tracing information on the device itself (only high-level events, like the total time for all computes, for all patches, etc.) (requires MIC_TRACING to be set)
+  #define MIC_DEVICE_TRACING_DETAILED     ( 0 )  // 0 - disable, !0 - enable the collection of more tracing information on the device, including start and stop times for each task (requires MIC_DEVICE_TRACING to be sent)
   #define MIC_TRACING_EVENT_BASE          ( 10000 )
   #define MIC_EVENT_OFFLOAD_REMOTE        ( MIC_TRACING_EVENT_BASE +  0 )
   #define MIC_EVENT_OFFLOAD_LOCAL         ( MIC_TRACING_EVENT_BASE +  1 )
@@ -226,190 +214,122 @@
   #define MIC_EVENT_OFFLOAD_POLLSET       ( MIC_TRACING_EVENT_BASE +  3 )
   #define MIC_EVENT_FUNC_DOWORK           ( MIC_TRACING_EVENT_BASE +  4 )
   #define MIC_EVENT_FUNC_FINISHWORK       ( MIC_TRACING_EVENT_BASE +  5 )
-  #define MIC_EVENT_DEVICE_COMPUTES       ( MIC_TRACING_EVENT_BASE +  6 )
-  #define MIC_EVENT_DEVICE_VIRIALS        ( MIC_TRACING_EVENT_BASE +  7 )
-  #define MIC_EVENT_DEVICE_PATCHES        ( MIC_TRACING_EVENT_BASE +  8 )
-  #define MIC_EVENT_DEVICE_PATCH          ( MIC_TRACING_EVENT_BASE +  9 )
-  #define MIC_EVENT_DEVICE_COMPUTE        ( MIC_TRACING_EVENT_BASE + 10 )
-  #define MIC_TRACING_NUM_EVENTS          ( 18 )
-
-// VTune tracing
-#define VTUNE_INFO                        ( 0 )
-  #define VTUNE_TASKS                     ( 0 )
+  #define MIC_EVENT_ATOMS_SUBMIT          ( MIC_TRACING_EVENT_BASE +  6 )
+  #define MIC_EVENT_ATOMS_TRANSFER        ( MIC_TRACING_EVENT_BASE +  7 )
+  #define MIC_EVENT_ATOMS_WAIT            ( MIC_TRACING_EVENT_BASE +  8 )
+  #define MIC_EVENT_SYNC_INPUT_PRAGMA     ( MIC_TRACING_EVENT_BASE +  9 )
+  #define MIC_EVENT_DEVICE_COMPUTES       ( MIC_TRACING_EVENT_BASE + 10 )
+  #define MIC_EVENT_DEVICE_VIRIALS        ( MIC_TRACING_EVENT_BASE + 11 )
+  #define MIC_EVENT_DEVICE_PATCHES        ( MIC_TRACING_EVENT_BASE + 12 )
+  #define MIC_EVENT_DEVICE_PATCH          ( MIC_TRACING_EVENT_BASE + 13 )
+  #define MIC_EVENT_DEVICE_COMPUTE        ( MIC_TRACING_EVENT_BASE + 14 )
+  #define MIC_TRACING_NUM_EVENTS          ( 22 )
 
 // DMK - DEBUG
-#define MIC_STATS_LOOP_COUNTS             (  0 )
-  #define MIC_STATS_LOOP_COUNTS_BIN_SIZE  ( 32 )
-  #define MIC_STATS_LOOP_COUNTS_NUM_BINS  (5120)
-#define MIC_ACTIVE_CUTOFF_STATS           (  0 )
-#define MIC_GATHER_SCATTER_STATS          (  0 )
-#define MIC_PRAGMA_TIMING_STATS           (  0 )
 #define MIC_KERNEL_DATA_TRANSFER_STATS    (  0 )
 
-#if (MIC_MALLOC_CHECK != 0) && (USE_DMK_COMMON != 0)
-  #define _MM_MALLOC_WRAPPER(s, a, l) _safe_mm_malloc((s), (a), (l))
-  #define _MM_FREE_WRAPPER(p) _safe_mm_free(p)
-  #define _MM_MALLOC_VERIFY _safe_mm_verify()
-#else
-  #define _MM_MALLOC_WRAPPER(s, a, l) _mm_malloc((s), (a))
-  #define _MM_FREE_WRAPPER(p) _mm_free(p)
-  #define _MM_MALLOC_VERIFY
-#endif
+// DMK - NOTE : Leaving these macros in as hooks for now
+#define _MM_MALLOC_WRAPPER(s, a, l) _mm_malloc((s), (a))
+#define _MM_FREE_WRAPPER(p) _mm_free(p)
+#define _MM_MALLOC_VERIFY
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Configuration Checks/Overrides
 
 // If not compiling for the MIC device, disable all MIC specific code
+#include <stdint.h>
 #if defined(__MIC__) || defined(__MIC2__)
+  #include <immintrin.h>
 #else
   #undef MIC_HANDCODE_FORCE
   #define MIC_HANDCODE_FORCE            (0)
   #undef MIC_HANDCODE_PLGEN
   #define MIC_HANDCODE_PLGEN            (0)
-  #undef FORCE_SPLITTING
-  #define FORCE_SPLITTING               (0)
 #endif
-
-// If MIC_HANDCODE_FORCE is set, ensure that FORCE_SPLITTING is not set.
 
 // If the MIC_FULL_CHECK flag is set, enable checks for both __ASSUME and
 //   __ASSUME_ALIGNED to ensure the cases for these macros are actually true.
 //   Also ensure that MIC_EXCL_CHECKSUM is enabled.
 #if MIC_FULL_CHECK != 0
+  #define __FULL_CHECK(X) X
   #define __ASSERT(c) assert(c)
   #define CHECK_ASSUME          (1)
   #define CHECK_ASSUME_ALIGNED  (1)
-  #if MIC_EXCL_CHECKSUM == 0
-    #warning "MIC_EXCL_CHECKSUM enabled (because MIC_FULL_CHECK was enabled)"
+  #if (MIC_EXCL_CHECKSUM == 0) && (MIC_EXCL_CHECKSUM_FULL == 0)
+    #warning "MIC_EXCL_CHECKSUM_FULL enabled (because MIC_FULL_CHECK was enabled)"
   #endif
-  #undef MIC_EXCL_CHECKSUM
-  #define MIC_EXCL_CHECKSUM     (1)
+  #undef MIC_EXCL_CHECKSUM_FULL
+  #define MIC_EXCL_CHECKSUM_FULL  (1)
 #else
+  #define __FULL_CHECK(X)
   #define __ASSERT(c)
   #define CHECK_ASSUME          (0)
   #define CHECK_ASSUME_ALIGNED  (0)
 #endif
 
-// If collecting stats on the device, disable multi-threading
-#if MIC_STATS_LOOP_COUNTS != 0
-  #if MULTIPLE_THREADS != 0
-    #warning "MULTIPLE_THREADS disabled (because MIC_STATS_LOOP_COUNTS was enabled)"
-  #endif
-  #undef MULTIPLE_THREADS
-  #define MULTIPLE_THREADS  (0)
+// Create a macro that can be used within the body of offload pragmas that asserts the
+//   offload section was executed on a MIC device
+#if defined(__MIC__)
+  #define __MUST_BE_MIC
+#else
+  #define __MUST_BE_MIC  __ASSERT(0)
 #endif
 
-// If building the hand-coded version of the kernels, make sure FORCE_SPLITTING is disabled
-#if MIC_HANDCODE_FORCE != 0
+// DMK - TODO | FIXME : When MIC_EXCL_CHECKSUM_FULL works correctly, swap this check so that
+//   FULL is the default (it will handle runs with >1 host cores, split with host, etc.)
+#if MIC_EXCL_CHECKSUM != 0
 
-  #if FORCE_SPLITTING != 0
-    #warning "FORCE_SPITTING disabled (because MIC_HANDCODE_FORCE was enabled; combination not supported)"
+  #if MIC_EXCL_CHECKSUM_FULL != 0
+    #warning "MIC_EXCL_CHECKSUM_FULL disabled (because MIC_FULL_CHECK was enabled)"
   #endif
-  #undef FORCE_SPLITTING
-  #define FORCE_SPLITTING  (0)
+  #undef MIC_EXCL_CHECKSUM_FULL
+  #define MIC_EXCL_CHECKSUM_FULL     (0)
 
-#endif
+  #if MIC_SPLIT_WITH_HOST != 0
+    #warning "MIC_EXCL_CHECKSUM disabled (because MIC_SPLIT_WITH_HOST was enabled)"
+  #endif
+  #undef MIC_EXCL_CHECKSUM
+  #define MIC_EXCL_CHECKSUM     (0)
 
-// Check for a valid value for FORCE_SPLITTING - If non-zero but not valid, then set to
-//   valid and set, assuming the point was to set it since it is non-zero
-#if FORCE_SPLITTING != 0 && FORCE_SPLITTING != 8
-  #warning "Invalid value for FORCE_SPLITTING (should be 0 or 8)... Changing to 8 (enabled)"
-  #undef FORCE_SPLITTING
-  #define FORCE_SPLITTING  (8)
 #endif
 
 // For now, if padding the pairlist with zeros, disable pairlist tiling
-#if MIC_PAD_PLGEN != 0
-  #if MIC_HANDCODE_FORCE != 0  // DMK - TODO | FIXME - Add support to scalar version, so it can auto-vectorize without FORCE_SPLITTING (reduce i forces outside of inner ivdep loop)
-
-    #if REFINE_PAIRLISTS != 0
-      #warning "REFINE_PAIRLISTS disabled (because MIC_PAD_PLGEN was enabled; combination not supported yet)"
-    #endif
-    #undef REFINE_PAIRLISTS
-    #define REFINE_PAIRLISTS  (0)
-
+#if (MIC_PAD_PLGEN != 0) && (MIC_HANDCODE_FORCE != 0)
+  #if REFINE_PAIRLISTS != 0
+    #warning "REFINE_PAIRLISTS disabled (because MIC_PAD_PLGEN && MIC_HANDCODE_FORCE were enabled; combination not supported yet)"
   #endif
+  #undef REFINE_PAIRLISTS
+  #define REFINE_PAIRLISTS  (0)
 #endif
 
-//#if (MIC_HANDCODE_FORCE != 0) && (MIC_HANDCODE_FORCE_SINGLE != 0)
+// If using the handcoded force loop with mixed precision, disable the use of pairlist refinement (not supported yet)
 #if MIC_HANDCODE_FORCE_SINGLE != 0
-
   #if REFINE_PAIRLISTS != 0
     #warning "REFINE_PAIRLISTS disabled (because MIC_HANDCODE_FORCE_SINGLE was enabled)"
   #endif
   #undef REFINE_PAIRLISTS
   #define REFINE_PAIRLISTS  (0)
-
-#else
-
-  // NOTE : This macro is now independent of MIC_HANDCODE* (but haven't updated the name yet)
-  //// NOTE : Leave this macro defined on the host, even though the MIC_HANDCODE_FORCE will be disabled on the host
-  //#if defined(__MIC__) || defined(__MIC2__)
-  //  #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-  //    #warning "MIC_HANDCODE_FORCE_SOA_VS_AOS disabled (because MIC_HANDCODE_FORCE or MIC_HANDCODE_FORCE_SINGLE is not set; required)"
-  //  #endif
-  //  #undef MIC_HANDCODE_FORCE_SOA_VS_AOS
-  //  #define MIC_HANDCODE_FORCE_SOA_VS_AOS (0)
-  //#endif
-
 #endif
 
+// If AOS has been enabled, ensure that loading VDW upfront has been disabled (not supported, doesn't
+//   make much sense as x,y,z,q are in a different array than vdwType)
 #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-
-  #if FORCE_SPLITTING != 0
-    #warning "FORCE_SPLITTING disabled (because MIC_HANDCODE_FORCE_SOA_VS_AOS was enabled; combination not supported)"
-  #endif
-  #undef FORCE_SPLITTING
-  #define FORCE_SPLITTING (0)
-
   #if MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT != 0
     #warning "MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT disabled (because MIC_HANDCODE_FORCE_SOA_VS_AOS was enabled; combination not supported)"
   #endif
   #undef MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT
   #define MIC_HANDCODE_FORCE_LOAD_VDW_UPFRONT (0)
-
-  // NOTE : This macro is now independent of MIC_HANDCODE* (but haven't updated the name yet)
-  //#if MIC_PAD_PLGEN == 0
-  //  #warning "MIC_PAD_PLGEN enabled (because MIC_HANDCODE_FORCE_SOA_VS_AOS was enabled; required)"
-  //#endif
-  //#undef MIC_PAD_PLGEN
-  //#define MIC_PAD_PLGEN (1)
-
-  // NOTE : This macro is now independent of MIC_HANDCODE* (but haven't updated the name yet)
-  //#if MIC_HANDCODE_FORCE_COMBINE_FORCES == 0
-  //  #warning "MIC_HANDCODE_FORCE_COMBINE_FORCES enabled (because MIC_HANDCODE_FORCE_SOA_VS_AOS was enabled; required)"
-  //#endif
-  //#undef MIC_HANDCODE_FORCE_COMBINE_FORCES
-  //#define MIC_HANDCODE_FORCE_COMBINE_FORCES (1)
-
 #endif
 
-#if MIC_ACTIVE_CUTOFF_STATS != 0
-
-  #if MULTIPLE_THREADS != 0
-    #warning "MULTIPLE_THREADS disabled (because MIC_ACTIVE_CUTOFF_STATS was enabled)"
-  #endif
-  #undef MULTIPLE_THREADS
-  #define MULTIPLE_THREADS  (0)
-
-#endif
-
-#if MIC_GATHER_SCATTER_STATS != 0
-
-  #if MULTIPLE_THREADS != 0
-    #warning "MULTIPLE_THREADS disabled (because MIC_GATHER_SCATTER_STATS was enabled)"
-  #endif
-  #undef MULTIPLE_THREADS
-  #define MULTIPLE_THREADS  (0)
-
-#endif
-
+// Check for a negative value specified as the prefetch distance (macro's value is used, so require positive)
 #if MIC_PREFETCH_DISTANCE < 0
   #warning "INVALID MIC_PREFETCH_DISTANCE value (disabling)"
   #undef MIC_PREFETCH_DISTANCE
   #define MIC_PREFETCH_DISTANCE (0)
 #endif
 
+// If MIC-specific compute partitioning has been enabled, ensure that non-compatable macros/features have not also been set
 #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
 
   #if MIC_ENABLE_COMPUTE_PARTITIONING != 0
@@ -426,6 +346,23 @@
 
 #endif
 
+// If tracing has been enabled, ensure that the other required tracing macros are properly set
+#if MIC_DEVICE_TRACING_DETAILED != 0
+  #if MIC_DEVICE_TRACING == 0
+    #warning "MIC_DEVICE_TRACING enabled (because MIC_DEVICE_TRACING_DETAILED was enabled)"
+  #endif
+  #undef MIC_DEVICE_TRACING
+  #define MIC_DEVICE_TRACING  (1)
+#endif
+#if MIC_DEVICE_TRACING != 0
+  #if MIC_TRACING == 0
+    #warning "MIC_TRACING enabled (because MIC_DEVICE_TRACING was enabled)"
+  #endif
+  #undef MIC_TRACING
+  #define MIC_TRACING  (1)
+#endif
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Tracing Macros (Projections)
 
@@ -440,6 +377,10 @@
     MIC_TRACING_REGISTER_EVENT("MIC polling set", MIC_EVENT_OFFLOAD_POLLSET); \
     MIC_TRACING_REGISTER_EVENT("MIC ::doWork", MIC_EVENT_FUNC_DOWORK); \
     MIC_TRACING_REGISTER_EVENT("MIC ::finishWork", MIC_EVENT_FUNC_FINISHWORK); \
+    MIC_TRACING_REGISTER_EVENT("MIC atom submit", MIC_EVENT_ATOMS_SUBMIT); \
+    MIC_TRACING_REGISTER_EVENT("MIC atom transfer", MIC_EVENT_ATOMS_TRANSFER); \
+    MIC_TRACING_REGISTER_EVENT("MIC atom wait", MIC_EVENT_ATOMS_WAIT); \
+    MIC_TRACING_REGISTER_EVENT("MIC sync input pragma", MIC_EVENT_SYNC_INPUT_PRAGMA); \
     MIC_TRACING_REGISTER_EVENT("[MIC] computes", MIC_EVENT_DEVICE_COMPUTES); \
     MIC_TRACING_REGISTER_EVENT("[MIC] virials", MIC_EVENT_DEVICE_VIRIALS); \
     MIC_TRACING_REGISTER_EVENT("[MIC] patches", MIC_EVENT_DEVICE_PATCHES); \
@@ -468,6 +409,26 @@
   
 
 ////////////////////////////////////////////////////////////////////////////////
+// Debug functions
+
+
+extern void debugInit(FILE* fout);
+extern void debugClose();
+#if MIC_DEBUG != 0
+  extern __thread FILE* mic_output;
+  extern double CmiWallTimer();
+  extern int CmiMyPe();
+  #define MICP(fmt, ...)  fprintf(((mic_output == NULL) ? (stdout) : (mic_output)), "[%013.6lf, %05d] " fmt, CmiWallTimer(), CmiMyPe(), ##__VA_ARGS__)
+  #define MICPF           fflush((mic_output != NULL) ? (mic_output) : (stdout))
+#else
+  #define MICP(fmt, ...)
+  #define MICPF
+#endif
+// NOTE: The bodies are defined in ComputeNonbondMIC.C and these should only
+//   be used in host code.
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Shared Types
 
 #pragma offload_attribute (push, target(mic))
@@ -479,19 +440,13 @@ struct  float3 {  float x,y,z  ; };
 struct  float4 {  float x,y,z,w; };
 struct double3 { double x,y,z  ; };
 struct double4 { double x,y,z,w; };
-struct    int2 {    int x, y   ; };
+struct    int2 {    int x,y    ; };
 struct    int3 {    int x,y,z  ; };
 struct    int4 {    int x,y,z,w; };
 
-#if MIC_FULL_DOUBLE != 0
-  typedef double mic_position_t;
-  typedef double3 mic_position3_t;
-  typedef double4 mic_position4_t;
-#else
-  typedef float mic_position_t;
-  typedef float3 mic_position3_t;
-  typedef float4 mic_position4_t;
-#endif
+typedef float mic_position_t;
+typedef float3 mic_position3_t;
+typedef float4 mic_position4_t;
 
 // Data structure that represents a compute object/task on the MIC device.  An
 //   array of these data structures will be passed down to the device, where each
@@ -523,6 +478,12 @@ struct patch_pair {  // must be multiple of 16!
   #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
     int numParts;
     int part;
+    int __padding1__[2];
+  #endif
+
+  #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
+    uint64_t patch1_atomDataPtr;
+    uint64_t patch2_atomDataPtr;
   #endif
 
   // DMK - DEBUG
@@ -537,6 +498,8 @@ struct patch_pair {  // must be multiple of 16!
   int p1;
   int p2;
   int cid;
+
+  int __padding0__[3];
 };
 
 // Data structure used to associate individual force outputs (per compute object)
@@ -595,8 +558,6 @@ struct mic_constants {
 struct mic_kernel_data {
 
   // Inputs
-  //int patchPairStart;
-  //int patchPairEnd;
   int isRemote;
   int numLocalAtoms;
   int numLocalComputes;
@@ -623,6 +584,8 @@ struct mic_kernel_data {
   double electEnergy;
   double fullElectEnergy;
 
+  int exclusionSum;
+
   double __padding_0__;
 };
 
@@ -633,7 +596,7 @@ struct mic_kernel_data {
 //   between patch_pairs and mic_params (one per iteration of the parallel for
 //   processing the computes).
 struct mic_params {
-  // DMK - TODO | FIXME : Reorder fields to pack data into less memory
+  // DMK - TODO | FIXME : Reorder fields to pack data into less memory (if needed)
 
   patch_pair *pp;            // Pointer to the associated patch_pair structure
   force_list *fl[2];         // Pointers to force list structures (one per input patch)
@@ -648,13 +611,6 @@ struct mic_params {
     int** plArray_ptr;     // Pointer to the scratch buffer pointer for pairlist entries (so can be maintained across calls)
     int* plSize_ptr;       // Pointer to the length of the plArray scratch buffer
     double** r2Array_ptr;  // Pointer to the scratch buffer pointer for r2 (radius squared) values
-  #endif
-
-  // If force splitting is enabled, these are pointers to other pointers/scalars so
-  //   that they can be maintained across calls/timesteps
-  #if FORCE_SPLITTING != 0
-    double** forceScratch_ptr;   // Pointer to the pointer for a scratch buffer containing intermidiate force values during the processing of a compute
-    int* forceScratch_size_ptr;  // Pointer to the length of the scratch buffer
   #endif
 
   void *table_four_base_ptr;     // Base pointer for nonbonded force table
@@ -733,6 +689,12 @@ struct mic_params {
   int ppI;
   int p1;
   int p2;
+  int pe;
+  int timestep;
+
+  int exclusionSum;
+
+  int __padding0__[1];
 };
 
 #pragma offload_attribute (pop)
@@ -746,24 +708,24 @@ struct mic_params {
 // A function to initialize variables, etc. related to the device's operation.
 void mic_init_device(const int pe, const int node, const int deviceNum);
 
-// A function to free variables, etc. related to the device's operation.
+// A functions to free variables, etc. related to the device's operation.
 void mic_free_device(const int deviceNum);
 
 // A function to test if the function's execution is actually offloaded to
 //   a device (i.e. test if offloading is working correctly).
 //   Returns 1 if offloading is working for device 'dev', and 0 if not.
-int mic_check(int dev);
+int mic_check(int deviceNum);
 
 // A function that transfers the nonbonded force table to the device
 void mic_bind_table_four(const int deviceNum,
-                         const double *table_four,
+                         const double * table_four,
                          const int table_four_n,
                          const int table_four_n_16
                         );
 
 // A function that transfers the Lennard-Jones table to the device
 void mic_bind_lj_table(const int deviceNum,
-                       const char *lj_table,
+                       const char * lj_table,
                        const int lj_table_dim,
                        const int lj_table_size
                       );
@@ -792,11 +754,13 @@ void mic_bind_patch_pairs_only(const int deviceNum,
                                const int patch_pairs_size,
                                const int patch_pairs_bufSize
 			      );
+
 void mic_bind_force_lists_only(const int deviceNum,
                                force_list *force_lists,
                                const int force_lists_size,
                                const int force_lists_bufSize
 			      );
+
 void mic_bind_atoms_only(const int deviceNum,
                          atom *atoms,
                          atom_param *atom_params,
@@ -805,6 +769,7 @@ void mic_bind_atoms_only(const int deviceNum,
                          const int atoms_size,
                          const int atoms_bufSize
 			);
+
 void mic_bind_force_buffers_only(const int deviceNum, const int force_buffers_size);
 
 
@@ -815,7 +780,8 @@ void mic_submit_patch_data(const int deviceNum,
                            const int transferBytes,
                            const int allocBytes_host,
                            int &allocBytes_device,
-                           uint64_t &devicePtr
+                           uint64_t &devicePtr,
+                           void* &signal
                           );
 #endif  // MIC_SUBMIT_ATOMS_ON_ARRIVAL
 
@@ -845,15 +811,6 @@ int mic_check_local_kernel_complete(const int deviceNum);
 
 // DMK - DEBUG
 void _mic_print_stats(const int deviceNum);
-
-
-#if (VTUNE_INFO != 0) && (VTUNE_TASKS != 0)
-  void endOffloadTask();
-#endif
-
-#if MIC_PRAGMA_TIMING_STATS != 0
-  extern void pragma_timing_submitFinish(double,int,int);
-#endif
 
 
 #endif  // NAMD_MIC

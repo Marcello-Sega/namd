@@ -222,11 +222,7 @@ TABENERGY(NOTABENERGY( foo bar ) )
   (p) = (void*)(ptr64 - (ptr64 & a1)); \
 }
 
-//#if (0 PAIR(+1))
-//  #define __MIC_PAD_PLGEN_CTRL (0)
-//#else
-  #define __MIC_PAD_PLGEN_CTRL (MIC_PAD_PLGEN)
-//#endif
+#define __MIC_PAD_PLGEN_CTRL (MIC_PAD_PLGEN)
 
 ///// End Macro Definition Region
 ////////////////////////////////////////////////////////////////////////////////
@@ -239,7 +235,6 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
 
   ///// Setup Various Arrays/Values Required by this Compute Function /////
 
-  //#if (MIC_HANDCODE_FORCE != 0) && (MIC_HANDCODE_FORCE_SINGLE != 0)
   #if MIC_HANDCODE_FORCE_SINGLE != 0
     #define CALC_TYPE float
   #else
@@ -296,22 +291,42 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   // Setup pointers to atom input arrays
   #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
     atom * RESTRICT p_0 = params.p[0]; __ASSERT(p_0 != NULL);  __ASSUME_ALIGNED(p_0);
-    atom * RESTRICT p_1 = params.p[1]; __ASSERT(p_1 != NULL);  __ASSUME_ALIGNED(p_1);
     atom_param * RESTRICT pExt_0 = params.pExt[0]; __ASSERT(pExt_0 != NULL);  __ASSUME_ALIGNED(pExt_0);
-    atom_param * RESTRICT pExt_1 = params.pExt[1]; __ASSERT(pExt_1 != NULL);  __ASSUME_ALIGNED(pExt_1);
+    #if (0 SELF(+1))
+      #define p_1  p_0
+      #define pExt_1  pExt_0
+    #else
+      atom * RESTRICT p_1 = params.p[1]; __ASSERT(p_1 != NULL);  __ASSUME_ALIGNED(p_1);
+      atom_param * RESTRICT pExt_1 = params.pExt[1]; __ASSERT(pExt_1 != NULL);  __ASSUME_ALIGNED(pExt_1);
+    #endif
   #else
-    mic_position_t * RESTRICT p_0_x = params.p_x[0], * RESTRICT p_1_x = params.p_x[1];
-    mic_position_t * RESTRICT p_0_y = params.p_y[0], * RESTRICT p_1_y = params.p_y[1];
-    mic_position_t * RESTRICT p_0_z = params.p_z[0], * RESTRICT p_1_z = params.p_z[1];
-    mic_position_t * RESTRICT p_0_q = params.p_q[0], * RESTRICT p_1_q = params.p_q[1];
+    mic_position_t * RESTRICT p_0_x = params.p_x[0];
+    mic_position_t * RESTRICT p_0_y = params.p_y[0];
+    mic_position_t * RESTRICT p_0_z = params.p_z[0];
+    mic_position_t * RESTRICT p_0_q = params.p_q[0];
     int * RESTRICT pExt_0_vdwType = params.pExt_vdwType[0];
     int * RESTRICT pExt_0_index = params.pExt_index[0];
     int * RESTRICT pExt_0_exclIndex = params.pExt_exclIndex[0];
     int * RESTRICT pExt_0_exclMaxDiff = params.pExt_exclMaxDiff[0];
-    int * RESTRICT pExt_1_vdwType = params.pExt_vdwType[1];
-    int * RESTRICT pExt_1_index = params.pExt_index[1];
-    int * RESTRICT pExt_1_exclIndex = params.pExt_exclIndex[1];
-    int * RESTRICT pExt_1_exclMaxDiff = params.pExt_exclMaxDiff[1];
+    #if (0 SELF(+1))
+      #define p_1_x  p_0_x
+      #define p_1_y  p_0_y
+      #define p_1_z  p_0_z
+      #define p_1_q  p_0_q
+      #define p_1_vdwType  p_0_vdwType
+      #define p_1_index  p_0_index
+      #define p_1_exclIndex  p_0_exclIndex
+      #define p_1_exclMaxDiff  p_0_exclMaxDiff
+    #else
+      mic_position_t * RESTRICT p_1_x = params.p_x[1];
+      mic_position_t * RESTRICT p_1_y = params.p_y[1];
+      mic_position_t * RESTRICT p_1_z = params.p_z[1];
+      mic_position_t * RESTRICT p_1_q = params.p_q[1];
+      int * RESTRICT pExt_1_vdwType = params.pExt_vdwType[1];
+      int * RESTRICT pExt_1_index = params.pExt_index[1];
+      int * RESTRICT pExt_1_exclIndex = params.pExt_exclIndex[1];
+      int * RESTRICT pExt_1_exclMaxDiff = params.pExt_exclMaxDiff[1];
+    #endif
     __ASSERT(p_0_x != NULL); __ASSERT(p_0_y != NULL); __ASSERT(p_0_z != NULL); __ASSERT(p_0_q != NULL);
     __ASSERT(p_1_x != NULL); __ASSERT(p_1_y != NULL); __ASSERT(p_1_z != NULL); __ASSERT(p_1_q != NULL);
     __ASSERT(pExt_0_vdwType != NULL); __ASSERT(pExt_0_index != NULL);
@@ -328,37 +343,46 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
     __ASSUME_ALIGNED(pExt_1_exclIndex); __ASSUME_ALIGNED(pExt_1_exclMaxDiff);
   #endif
 
-  //// DMK - DEBUG
-  //printf("[ATOMS] :: atoms[ppI:%d] = {\n", params.ppI);
-  //for (int i = 0; i < i_upper; i++) {
-  //  printf("[ATOMS] ::   i:%4d : x:%.3lf y:%.3lf z:%.3lf q:%.3lf\n",
-  //         i,
-  //         #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-  //           p_0[i].x, p_0[i].y, p_0[i].z, p_0[i].charge
-  //         #else
-  //           p_0_x[i], p_0_y[i], p_0_z[i], p_0_q[i]
-  //         #endif
-  //        );
-  //}
-  //printf("[ATOMS] :: }\n");
-
   // Setup pointers to force output arrays and clear those arrays (init to zero)
   #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-    double4 * RESTRICT f_0 = params.ff[0]; __ASSERT(f_0 != NULL); __ASSUME_ALIGNED(f_0);
-    double4 * RESTRICT f_1 = params.ff[1]; __ASSERT(f_1 != NULL); __ASSUME_ALIGNED(f_1);
+    double4 * RESTRICT f_0 = params.ff[0];
+    #if (0 SELF(+1))
+      #define f_1  f_0
+    #else
+      double4 * RESTRICT f_1 = params.ff[1];
+    #endif
+    __ASSERT(f_0 != NULL); __ASSUME_ALIGNED(f_0);
+    __ASSERT(f_1 != NULL); __ASSUME_ALIGNED(f_1);
     memset(f_0, 0, sizeof(double4) * i_upper_16);
     PAIR( memset(f_1, 0, sizeof(double4) * j_upper_16); )
     #if (0 FULL(+1))
-      double4 * RESTRICT fullf_0 = params.fullf[0]; __ASSERT(fullf_0 != NULL); __ASSUME_ALIGNED(fullf_0);
-      double4 * RESTRICT fullf_1 = params.fullf[1]; __ASSERT(fullf_1 != NULL); __ASSUME_ALIGNED(fullf_1);
+      double4 * RESTRICT fullf_0 = params.fullf[0];
+      #if (0 SELF(+1))
+        #define fullf_1  fullf_0
+      #else
+        double4 * RESTRICT fullf_1 = params.fullf[1];
+      #endif
+      __ASSERT(fullf_0 != NULL); __ASSUME_ALIGNED(fullf_0);
+      __ASSERT(fullf_1 != NULL); __ASSUME_ALIGNED(fullf_1);
       memset(fullf_0, 0, sizeof(double4) * i_upper_16);
       PAIR( memset(fullf_1, 0, sizeof(double4) * j_upper_16); )
     #endif
   #else
-    double * RESTRICT f_0_x = params.ff_x[0], * RESTRICT f_1_x = params.ff_x[1];
-    double * RESTRICT f_0_y = params.ff_y[0], * RESTRICT f_1_y = params.ff_y[1];
-    double * RESTRICT f_0_z = params.ff_z[0], * RESTRICT f_1_z = params.ff_z[1];
-    double * RESTRICT f_0_w = params.ff_w[0], * RESTRICT f_1_w = params.ff_w[1];
+    double * RESTRICT f_0_x = params.ff_x[0];
+    double * RESTRICT f_0_y = params.ff_y[0];
+    double * RESTRICT f_0_z = params.ff_z[0];
+    double * RESTRICT f_0_w = params.ff_w[0];
+    #if (0 SELF(+1))
+      #define f_1_x  f_0_x
+      #define f_1_y  f_0_y
+      #define f_1_z  f_0_z
+      #define f_1_w  f_0_w
+    #else
+      double * RESTRICT f_1_x = params.ff_x[1];
+      double * RESTRICT f_1_y = params.ff_y[1];
+      double * RESTRICT f_1_z = params.ff_z[1];
+      double * RESTRICT f_1_w = params.ff_w[1];
+    #endif
     __ASSERT(f_0_x != NULL); __ASSERT(f_0_y != NULL); __ASSERT(f_0_z != NULL); __ASSERT(f_0_w != NULL);
     __ASSERT(f_1_x != NULL); __ASSERT(f_1_y != NULL); __ASSERT(f_1_z != NULL); __ASSERT(f_1_w != NULL);
     __ASSUME_ALIGNED(f_0_x); __ASSUME_ALIGNED(f_1_x);
@@ -368,10 +392,21 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
     memset(f_0_x, 0, 4 * sizeof(double) * i_upper_16);
     PAIR( memset(f_1_x, 0, 4 * sizeof(double) * j_upper_16); )
     #if (0 FULL(+1))
-      double * RESTRICT fullf_0_x = params.fullf_x[0], * RESTRICT fullf_1_x = params.fullf_x[1];
-      double * RESTRICT fullf_0_y = params.fullf_y[0], * RESTRICT fullf_1_y = params.fullf_y[1];
-      double * RESTRICT fullf_0_z = params.fullf_z[0], * RESTRICT fullf_1_z = params.fullf_z[1];
-      double * RESTRICT fullf_0_w = params.fullf_w[0], * RESTRICT fullf_1_w = params.fullf_w[1];
+      double * RESTRICT fullf_0_x = params.fullf_x[0];
+      double * RESTRICT fullf_0_y = params.fullf_y[0];
+      double * RESTRICT fullf_0_z = params.fullf_z[0];
+      double * RESTRICT fullf_0_w = params.fullf_w[0];
+      #if (0 SELF(+1))
+        #define fullf_1_x  fullf_0_x
+        #define fullf_1_y  fullf_0_y
+        #define fullf_1_z  fullf_0_z
+        #define fullf_1_w  fullf_0_w
+      #else
+        double * RESTRICT fullf_1_x = params.fullf_x[1];
+        double * RESTRICT fullf_1_y = params.fullf_y[1];
+        double * RESTRICT fullf_1_z = params.fullf_z[1];
+        double * RESTRICT fullf_1_w = params.fullf_w[1];
+      #endif
       __ASSERT(fullf_0_x != NULL); __ASSERT(fullf_0_y != NULL); __ASSERT(fullf_0_z != NULL); __ASSERT(fullf_0_w != NULL);
       __ASSERT(fullf_1_x != NULL); __ASSERT(fullf_1_y != NULL); __ASSERT(fullf_1_z != NULL); __ASSERT(fullf_1_w != NULL);
       __ASSUME_ALIGNED(fullf_0_x); __ASSUME_ALIGNED(fullf_1_x);
@@ -391,10 +426,6 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   CALC_TYPE offset_z = (CALC_TYPE)(params.offset.z);
 
   ///// Generate the Pairlists /////
-
-  //// DMK - DEBUG
-  //printf("[MIC] :: %d :: Starting pairlist generation...\n", params.ppI);
-  //fflush(NULL);
 
   // Grab the pairlist pointers for the various pairlists that will be used
   int * RESTRICT pairlist_norm = params.pairlists_ptr[PL_NORM_INDEX];
@@ -736,16 +767,14 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
 
             #endif
 
-	    //#if MIC_PAD_PLGEN != 0
             #if __MIC_PAD_PLGEN_CTRL != 0
-              //#if (MIC_HANDCODE_FORCE != 0) && (MIC_HANDCODE_FORCE_SINGLE != 0)
               #if MIC_HANDCODE_FORCE_SINGLE != 0
                 const int padLen = 16;
               #else
                 const int padLen = 8;
               #endif
-              const int padValue = (1 << 16) | 0xFFFF;
-              // NOTE: xxx % 8 != 2 because offset includes first two ints (pairlist sizes)
+              const int padValue = (i << 16) | 0xFFFF;
+              // NOTE: xxx % 8 != 2 because pairlist offset includes first two ints (pairlist size and alloc size)
               while (plOffset_norm % padLen != 2) { pairlist_norm[plOffset_norm++] = padValue; }
               while (plOffset_mod  % padLen != 2) { pairlist_mod [plOffset_mod++ ] = padValue; }
               while (plOffset_excl % padLen != 2) { pairlist_excl[plOffset_excl++] = padValue; }
@@ -768,8 +797,11 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
         int numParts = params.pp->numParts;
         int part = params.pp->part;
 
-        // DMK - TODO | FIXME : generate plGenILo and Hi differently for selfs, because of the unequal work per "i" atom
+        // Generate plGenILo and plGenHi values (the portion of the "i" atoms that will be processed by this "part").
+        //   Note that this is done differently for self computes, because of the unequal work per "i" atom.  For
+        //   pair computes, the "i" iteration space is just divided up evenly.
         #if (0 SELF(+1))
+
           // For self computes where the iteration space forms a triangle, divide the rows in the
           //   iteration space so more "shorter" rows are grouped together while fewer "longer" rows
           //   are grouped together.
@@ -790,19 +822,14 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
           plGenILo = (i_upper - 1) - plGenIHi;
           plGenIHi = (i_upper - 1) - plGenTmp;
 
-          //// DMK - DEBUG
-          //if (params.ppI < 10) {
-          //  printf("[DEBUG:SELF-%04d-%02d] %d -> %d (i_upper:%d, totalArea:%f, areaPerPart:%f)\n",
-          //         params.ppI, part, plGenILo, plGenIHi, i_upper, totalArea, areaPerPart
-          //        );
-	  //}
+        #else  // SELF
 
-        #else
           // For pair computes where the iteration space forms a square, divide the rows in the
           //   iteration space evenly since they all have the same area
           int plGenILo = (int)(((float)(i_upper)) * ((float)(part    )) / ((float)(numParts)));
           int plGenIHi = (int)(((float)(i_upper)) * ((float)(part + 1)) / ((float)(numParts)));
-        #endif
+
+        #endif  // SELF
 
         // Round up plGenILo and plGenIHi to a multiple of 16 so there is no false sharing
         //   on force output cachelines
@@ -810,17 +837,15 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
         plGenIHi = (plGenIHi + 15) & (~15);
         if (plGenIHi > i_upper SELF(-1)) { plGenIHi = i_upper SELF(-1); }
 
-        //// DMK - DEBUG
-        //printf("[DEBUG:MIC] :: generating pairlist cid:%d,%d - i:%d->%d(%d)\n",
-        //       params.pp->cid, params.pp->part, plGenILo, plGenIHi, i_upper
-        //      );
-
         #pragma loop_count (500)
         for (int i = plGenILo; i < plGenIHi; i++) {
-      #else
+
+      #else  // MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
+
         #pragma loop_count (500)
         for (int i = 0; i < i_upper SELF(-1); i++) {
-      #endif
+
+      #endif  // MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
 
         // If the pairlist is not long enough, grow the pairlist
         PAIRLIST_GROW_CHECK(pairlist_norm, plOffset_norm, 50);
@@ -843,6 +868,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
 
         #if MIC_HANDCODE_PLGEN != 0
 
+	  // Setup loop constants ("i" atom values) and iterator vector.
           __m512 p_i_x_vec = _mm512_set_1to16_ps(p_i_x);
           __m512 p_i_y_vec = _mm512_set_1to16_ps(p_i_y);
           __m512 p_i_z_vec = _mm512_set_1to16_ps(p_i_z);
@@ -921,6 +947,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
             //   to the next iteration.
             __mmask16 cutoff_mask = _mm512_mask_cmple_ps_mask(active_mask, r2_vec, _mm512_set_1to16_ps((float)(plcutoff2)));
 
+            // If nothing passed the cutoff check, then move on to the next set of atoms (iteration)
             if (_mm512_kortestz(cutoff_mask, cutoff_mask)) { continue; }
 
             #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
@@ -958,30 +985,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
             __m512i offset_minor_vec = _mm512_and_epi32(_mm512_set_1to16_epi32(0x001f), offset_vec); // NOTE : offset % 32
 
             // Gather exclFlags using offset_major values and then extra 2-bit fields using offset_minor.
-            #if 0
-              int offset_major[16] __attribute__((aligned(64)));
-              int exclFlags[16] __attribute__((aligned(64)));
-              _mm512_store_epi32(offset_major, offset_major_vec);
-              exclFlags[ 0] = params.exclusion_bits[offset_major[ 0]];
-              exclFlags[ 1] = params.exclusion_bits[offset_major[ 1]];
-              exclFlags[ 2] = params.exclusion_bits[offset_major[ 2]];
-              exclFlags[ 3] = params.exclusion_bits[offset_major[ 3]];
-              exclFlags[ 4] = params.exclusion_bits[offset_major[ 4]];
-              exclFlags[ 5] = params.exclusion_bits[offset_major[ 5]];
-              exclFlags[ 6] = params.exclusion_bits[offset_major[ 6]];
-              exclFlags[ 7] = params.exclusion_bits[offset_major[ 7]];
-              exclFlags[ 8] = params.exclusion_bits[offset_major[ 8]];
-              exclFlags[ 9] = params.exclusion_bits[offset_major[ 9]];
-              exclFlags[10] = params.exclusion_bits[offset_major[10]];
-              exclFlags[11] = params.exclusion_bits[offset_major[11]];
-              exclFlags[12] = params.exclusion_bits[offset_major[12]];
-              exclFlags[13] = params.exclusion_bits[offset_major[13]];
-              exclFlags[14] = params.exclusion_bits[offset_major[14]];
-              exclFlags[15] = params.exclusion_bits[offset_major[15]];
-              __m512i exclFlags_vec = _mm512_load_epi32(exclFlags);
-            #else
-              __m512i exclFlags_vec = _mm512_mask_i32gather_epi32(_mm512_setzero_epi32(), cutoff_mask, offset_major_vec, params.exclusion_bits, _MM_SCALE_4);
-            #endif
+            __m512i exclFlags_vec = _mm512_mask_i32gather_epi32(_mm512_setzero_epi32(), cutoff_mask, offset_major_vec, params.exclusion_bits, _MM_SCALE_4);
             exclFlags_vec = _mm512_mask_srlv_epi32(_mm512_setzero_epi32(), indexRange_mask, exclFlags_vec, offset_minor_vec);
             exclFlags_vec = _mm512_and_epi32(exclFlags_vec, _mm512_set_1to16_epi32(0x03));  // NOTE : Mask out all but 2 LSBs
 
@@ -1005,6 +1009,8 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
             _mm512_mask_packstorelo_epi32(pairlist_mod  + plOffset_mod      ,  mod_mask, plEntry_vec);
             _mm512_mask_packstorehi_epi32(pairlist_mod  + plOffset_mod  + 16,  mod_mask, plEntry_vec);
             __m512i one_vec = _mm512_set_1to16_epi32(1);
+
+            // Move the offsets forward by the number of atoms added to each list
             plOffset_norm += _mm512_mask_reduce_add_epi32(norm_mask, one_vec);
             #if MIC_CONDITION_NORMAL != 0
               plOffset_normhi += _mm512_mask_reduce_add_epi32(normhi_mask, one_vec);
@@ -1021,7 +1027,6 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
           #elif (0 SELF(+1))
             #pragma loop_count (300)
           #endif
-          //#pragma ivdep
           for (int j = 0 SELF(+i+1); j < j_upper; j++) {
 
             // Load the "j" atom's position, calculate/check the distance (squared)
@@ -1108,6 +1113,8 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
 
     #endif  // if MIC_TILE_PLGEN != 0
 
+    // If we are conditioning the normal pairlist, place the contents of pairlist_normhi
+    //   at the end of pairlist_norm
     #if MIC_CONDITION_NORMAL != 0
 
       // Make sure there is enough room in pairlist_norm for the contents of pairlist_normhi
@@ -1207,16 +1214,6 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
     double fullElectVirial_zz = 0;
   #endif
 
-  //// DMK - DEBUG
-  //printf("[PL] :: pairlist[%5d, %3d, %3d] = { %6d %6d %6d }\n",
-  //       params.ppI, params.p1, params.p2,
-  //       pairlist_norm[1], pairlist_mod[1], pairlist_excl[1]
-  //      );
-
-  //// DMK - DEBUG
-  //printf("[MIC] :: %d :: Starting NORMAL...\n", params.ppI);
-  //fflush(NULL);
-
   // NORMAL LOOP
   #define PAIRLIST pairlist_norm
   #define NORMAL(X) X
@@ -1227,10 +1224,6 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   #undef NORMAL
   #undef EXCLUDED
   #undef MODIFIED
-
-  //// DMK - DEBUG
-  //printf("[MIC] :: %d :: Starting MODIFIED...\n", params.ppI);
-  //fflush(NULL);
 
   // MODIFIED LOOP
   #define PAIRLIST pairlist_mod
@@ -1244,11 +1237,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   #undef MODIFIED
 
   // EXCLUDED LOOP
-  #ifdef FULLELECT
-
-    //// DMK - DEBUG
-    //printf("[MIC] :: %d :: Starting EXCLUDED...\n", params.ppI);
-    //fflush(NULL);
+  #if defined(FULLELECT)
 
     #define PAIRLIST pairlist_excl
     #undef FAST
@@ -1267,19 +1256,42 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
     #undef NORMAL
     #undef EXCLUDED
     #undef MODIFIED
-  #else
+
+  #else  // defined(FULLELECT)
+
     // If we are not executing the excluded loop, then we need to count exclusive
     //   interactions per atom
-    
-    // DMK - TODO | FIXME : The vectorizor is vectorizing 16-way
-    //   instead of 8 way.  Changing the data type of fs_0_w did not help (must
-    //   be doing work as 32-bit and doing UP_CONV to 64-bit in multiple stores).
+
+    // If we are doing the full exclusion checksum (global across all cores, host and MIC alike), then
+    //   contribute the number of entries in the EXCLUDED pairlist (valid only if padding pairlists)
+    #if MIC_EXCL_CHECKSUM_FULL != 0
+      {
+        #if __MIC_PAD_PLGEN_CTRL != 0
+          // NOTE: If using padding, the pairlist will have 'invalid' entries mixed in with the
+          //   valid entries, so we need to scan through and only count the valid entries
+          const int * const pairlist_excl_base = pairlist_excl + 2;
+          const int pairlist_excl_len = pairlist_excl[1] - 2;
+          int exclSum = 0;
+          __ASSUME_ALIGNED(pairlist_excl_base);
+          #pragma simd reduction(+ : exclSum)
+          for (int plI = 0; plI < pairlist_excl_len; plI++) {
+            if ((pairlist_excl_base[plI] & 0xFFFF) != 0xFFFF) {
+              exclSum += 1;
+	    }
+          }
+          params.exclusionSum += exclSum;
+        #else
+          params.exclusionSum += pairlist_excl[1] - 2; // NOTE: Size includes first two elements (alloc size and size), don't count those
+        #endif
+      }
+    #endif
+
+    // Contribute to device-specific exclusion checksum    
     #if MIC_EXCL_CHECKSUM != 0
       #pragma novector
       for (int plI = 2; plI < pairlist_excl[1]; plI++) {
-        //#if MIC_PAD_PLGEN != 0
         #if __MIC_PAD_PLGEN_CTRL != 0
-          if (pairlist_excl[plI] == -1) { continue; }
+          if ((pairlist_excl[plI] & 0xFFFF) == 0xFFFF) { continue; }
         #endif
         const int i = (pairlist_excl[plI] >> 16) & 0xFFFF;
         const int j = (pairlist_excl[plI]      ) & 0xFFFF;
@@ -1292,7 +1304,8 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
         #endif
       }
     #endif
-  #endif
+
+  #endif  // defined(FULLELECT)
 
   // If this is a self compute, do the virial calculation here
   #if (0 SHORT( FAST( SELF(+1))))
@@ -1350,85 +1363,40 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   FAST( ENERGY( SHORT( params.electEnergy = electEnergy; ) ) )
   FULL( ENERGY( params.fullElectEnergy = fullElectEnergy; ) )
 
-
-  // DMK - DEBUG
-  #if 0
-  if (params.p1 == 7 || params.p2 == 7) {
-
-    #if (0 FULL(+1))
-      const char label[] = "01";
-    #else
-      const char label[] = "00";
-    #endif
-
-    #if (0 PAIR(+1))
-      printf("ci[%s] :: %03d, %03d :: i_upper:%d j_upper:%d\n",
-             label, params.p1, params.p2, i_upper, j_upper
-            );
-    #else
-      printf("ci[%s] :: %03d, %03d :: i_upper:%d\n",
-             label, params.p1, params.p2, i_upper
-            );
-    #endif
-
-    #if (0 FAST(SHORT(+1)))
-      //if (params.p1 == 0) {
-        //printf("f_0_x:%p\n", f_0_x);
-        for (int i = 0; i < i_upper; i++) {
-          printf("cfo[%s] :: %03d, %03d :: i:%03d :: %+.3le, %+.3le, %+.3le\n",
-                 #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-                   label, params.p1, params.p2, i, f_0[i].x, f_0[i].y, f_0[i].z
-                 #else
-                   label, params.p1, params.p2, i, f_0_x[i], f_0_y[i], f_0_z[i]
-                 #endif
-	        );
-        }
-      //}
-      #if (0 PAIR(+1))
-        //if (params.p2 == 0) {
-	  //printf("f_1_x:%p\n", f_1_x);
-          for (int j = 0; j < j_upper; j++) {
-            printf("cfo[%s] :: %03d, %03d :: j:%03d :: %+.3le, %+.3le, %+.3le\n",
-                   #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-                     label, params.p1, params.p2, j, f_1[j].x, f_1[j].y, f_1[j].z
-                   #else
-                     label, params.p1, params.p2, j, f_1_x[j], f_1_y[j], f_1_z[j]
-                   #endif
-	          );
-          }
-	//}
-      #endif
-    #endif
-    #if (0 FULL(+1))
-      //printf("fullf_0_x:%p\n", fullf_0_x);
-      for (int i = 0; i < i_upper; i++) {
-        printf("cffo[%s] :: %03d, %03d :: i:%03d :: %+.3le, %+.3le, %+.3le\n",
-               #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-                 label, params.p1, params.p2, i, fullf_0[i].x, fullf_0[i].y, fullf_0[i].z
-               #else
-                 label, params.p1, params.p2, i, fullf_0_x[i], fullf_0_y[i], fullf_0_z[i]
-               #endif
-	      );
-      }
-      #if (0 PAIR(+1))
-        //printf("fullf_1_x:%p\n", fullf_1_x);
-        for (int j = 0; j < j_upper; j++) {
-          printf("cffo[%s] :: %03d, %03d :: j:%03d :: %+.3le, %+.3le, %+.3le\n",
-                 #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-                   label, params.p1, params.p2, j, fullf_1[j].x, fullf_1[j].y, fullf_1[j].z
-                 #else
-                   label, params.p1, params.p2, j, fullf_1_x[j], fullf_1_y[j], fullf_1_z[j]
-                 #endif
-	        );
-        }
-      #endif
-    #endif
-  }
-  #endif
-
   #undef CALC_TYPE
 }
 
+
+// Undefine atom and force macros for SELF computes
+#if (0 SELF(+1))
+  #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
+    #undef p_1
+    #undef pExt_1
+    #undef f_1
+    #if (0 FULL(+1))
+      #undef fullf_1
+    #endif
+  #else
+    #undef p_1_x
+    #undef p_1_y
+    #undef p_1_z
+    #undef p_1_q
+    #undef p_1_vdwType
+    #undef p_1_index
+    #undef p_1_exclIndex
+    #undef p_1_exclMaxDiff
+    #undef f_1_x
+    #undef f_1_y
+    #undef f_1_z
+    #undef f_1_w
+    #if (0 FULL(+1))
+      #undef fullf_1_x
+      #undef fullf_1_y
+      #undef fullf_1_z
+      #undef fullf_1_w
+    #endif
+  #endif
+#endif
 
 #undef __MIC_PAD_PLGEN_CTRL
 

@@ -460,23 +460,19 @@ void ProxyMgr::createProxies(void)
   //   to be excuted on either a host or on a device
   #if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
 
-    //int deviceThreshold = (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) - 2;
-    //int deviceThreshold = ((int)(0.5f * (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) + 1.5f) - 3)
-    //                    + mic_get_device_count();
+    const SimParameters * simParams = Node::Object()->simParameters;
+    int deviceThreshold = simParams->mic_deviceThreshold;
+    int mic_hostSplit = simParams->mic_hostSplit;
+    if (deviceThreshold < 0) {
+      int dt_base = ((int)(0.5f * (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) + 1.5f) - 2); 
+      int dt_procs = mic_get_device_count() - 1;
+      deviceThreshold = dt_base + dt_procs;
+    }
 
-    int dt_base = ((int)(0.5f * (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) + 1.5f) - 2);
-    int dt_procs = 1 * mic_get_device_count() - 1;
-    int dt_nodes = 0;
-    //int numNodes = CkNumNodes() / 4;  // Starting at 4 nodes, increase the threshold by one each time the the number of nodes doubles
-    //while (numNodes > 0) { dt_nodes++; numNodes /= 2; }
-    int deviceThreshold = dt_base + dt_procs + dt_nodes;
-
-    int mic_hostSplit = Node::Object()->simParameters->mic_hostSplit;
-
-    // DMK - DEBUG
+    // Display the device threshold that is used
     if (CkMyPe() == 0) {
-      printf("[MIC] :: deviceThreshold:%d\n", deviceThreshold);
-      printf("[MIC] :: mic_hostSplit:%d\n", mic_hostSplit);
+      iout << iINFO << "MIC DEVICE THRESHOLD: " << deviceThreshold << "\n" << endi;
+      // DMK - NOTE : Leave out mic_hostSplit (reserved for now)
     }
 
     int nComputes = computeMap->numComputes();
