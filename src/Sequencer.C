@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:19 $
- * $Revision: 1.1211 $
+ * $Author: jim $
+ * $Date: 2013/09/17 23:20:19 $
+ * $Revision: 1.1212 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -334,7 +334,7 @@ void Sequencer::integrate() {
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 
       // impose hard wall potential for Drude bond length
-      hardWallDrude(0.5 * timestep, 1);
+      hardWallDrude(timestep, 1);
 
       minimizationQuenchVelocity();
 

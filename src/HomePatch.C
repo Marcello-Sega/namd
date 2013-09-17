@@ -1793,7 +1793,7 @@ int HomePatch::hardWallDrude(const BigReal timestep, Tensor *virial,
   int i, ia, ib, j;
   int dieOnError = simParams->rigidDie;
   Tensor wc;  // constraint virial
-  BigReal idz, zmin, delta_T, maxtime=timestep*2.0,v_Bond;
+  BigReal idz, zmin, delta_T, maxtime=timestep,v_Bond;
   int nslabs;
 
   // start data for hard wall boundary between drude and its host atom
