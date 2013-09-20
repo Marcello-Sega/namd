@@ -34,7 +34,9 @@ class GlobalMasterServer {
   /* gives this control over <newClient> */
   void addClient(GlobalMaster *newClient);
  private:
+  int forceSendEnabled; // are total forces received?
   int numDataSenders; // the number of expected messages each cycle
+  int numForceSenders; // the number of expected force messages each cycle
   int recvCount; // the number of messages so far this cycle
   int firstTime; // used to be compatible with the ComputeGlobals
   int totalAtomsRequested; // the total number of atoms requested
@@ -50,6 +52,7 @@ class GlobalMasterServer {
   AtomIDList receivedAtomIDs;
   PositionList receivedAtomPositions;
   PositionList receivedGroupPositions; // the group positions
+  BigRealList receivedGroupMasses; // the group positions
   AtomIDList receivedForceIDs;
   ForceList receivedTotalForces;
 

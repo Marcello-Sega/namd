@@ -38,7 +38,6 @@ private:
 
   AtomIDList aid;
   AtomIDList gdef;  // definitions of groups
-  ResizeArray<BigReal> gmass;  // masses of groups
   
   // (For "loadtotalforces" TCL command)
   // The atom IDs and forces of the requested atoms on the node
@@ -46,8 +45,14 @@ private:
   // from "aid", since the latter is after atom migration.
   AtomIDList fid;
   ForceList totalForce;
+
+  Force **forcePtrs;
+  FullAtom **atomPtrs;
   
-  int *isRequested;  // whether this atom is requested by the TCL script
+  int forceSendEnabled; // are total forces received?
+  char *isRequested;  // whether this atom is requested by the TCL script
+  int isRequestedAllocSize;  // size of array
+  int endRequested;  // starting at this point assume not requested
   int dofull;  // whether "Results::slow" force will exist
 
   int firsttime;

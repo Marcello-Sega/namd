@@ -36,6 +36,8 @@ class GlobalMaster {
 		   PositionList::iterator p_i,
 		   PositionList::iterator g_i,
 		   PositionList::iterator g_e,
+		   BigRealList::iterator gm_i,
+		   BigRealList::iterator gm_e,
 		   AtomIDList::iterator last_atoms_forced_i,
 		   AtomIDList::iterator last_atoms_forced_e,
 		   ForceList::iterator last_forces_i,
@@ -105,8 +107,8 @@ class GlobalMaster {
   
   /* This helpful function returns an array with the masses of each of
      the groups whose positions we have.  */
-  ResizeArray<BigReal>::const_iterator getGroupMassBegin();
-  ResizeArray<BigReal>::const_iterator getGroupMassEnd();
+  BigRealList::const_iterator getGroupMassBegin();
+  BigRealList::const_iterator getGroupMassEnd();
 
  protected:
   /* These store the pointers to lists of atom ids and atom positions.
@@ -119,6 +121,8 @@ class GlobalMaster {
   PositionList::iterator atomPositionBegin;
   PositionList::iterator groupPositionBegin;
   PositionList::iterator groupPositionEnd;
+  BigRealList::iterator groupMassBegin;
+  BigRealList::iterator groupMassEnd;
 
   /* these store all the global forces being applied by masters */
   AtomIDList::iterator lastAtomsForcedBegin;
@@ -129,9 +133,6 @@ class GlobalMaster {
   AtomIDList::iterator forceIdBegin;
   AtomIDList::iterator forceIdEnd;
   ForceList::iterator totalForceBegin;
-  
-  /* this stores the masses of all the groups whose positions we have */
-  ResizeArray<BigReal> groupMasses;
   
   /* These store the requested atoms and forces, and the booleans
      indicate whether they (may) have changed. */

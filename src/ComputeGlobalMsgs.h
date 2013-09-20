@@ -34,9 +34,11 @@ class ComputeGlobalDataMsg : public CMessage_ComputeGlobalDataMsg {
 public:
   // data members
   int step;
+  int count;
   AtomIDList aid;
   PositionList p;
   PositionList gcom;  // group center of mass
+  BigRealList gmass;  // group total mass
   AtomIDList fid;
   ForceList tf;
 
@@ -57,6 +59,7 @@ public:
   ForceList f;
   ForceList gforce;  // force on group
 
+  int seq;
   int reconfig;
 
   /* If <resendCoordinates> is 1, this message indicates a request for

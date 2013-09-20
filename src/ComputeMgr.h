@@ -70,6 +70,7 @@ public:
   void recvComputeGlobalData(ComputeGlobalDataMsg *);
   void sendComputeGlobalResults(ComputeGlobalResultsMsg *);
   void recvComputeGlobalResults(ComputeGlobalResultsMsg *);
+  void enableComputeGlobalResults();
 
   void sendComputeDPMEData(ComputeDPMEDataMsg *);
   void recvComputeDPMEData(ComputeDPMEDataMsg *);
@@ -85,6 +86,9 @@ public:
 
   // Made public in order to access the ComputeGlobal on the node
   ComputeGlobal *computeGlobalObject; /* node part of global computes */
+  ResizeArray<ComputeGlobalResultsMsg*> computeGlobalResultsMsgs;
+  int computeGlobalResultsMsgSeq;
+  int computeGlobalResultsMsgMasterSeq;
 
   void sendYieldDevice(int pe);
   void recvYieldDevice(int pe);

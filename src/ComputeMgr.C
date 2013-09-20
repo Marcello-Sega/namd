@@ -94,6 +94,8 @@ ComputeMgr::ComputeMgr()
 {
     CkpvAccess(BOCclass_group).computeMgr = thisgroup;
     computeGlobalObject = 0;
+    computeGlobalResultsMsgSeq = -1;
+    computeGlobalResultsMsgMasterSeq = -1;
     computeDPMEObject = 0;
     computeEwaldObject = 0;
     computeNonbondedCUDAObject = 0;
@@ -1032,16 +1034,34 @@ void ComputeMgr:: recvComputeGlobalData(ComputeGlobalDataMsg *msg)
 
 void ComputeMgr:: sendComputeGlobalResults(ComputeGlobalResultsMsg *msg)
 {
-    (CProxy_ComputeMgr(CkpvAccess(BOCclass_group).computeMgr)).recvComputeGlobalResults(msg);
+    msg->seq = ++computeGlobalResultsMsgMasterSeq;
+    thisProxy.recvComputeGlobalResults(msg);
+}
+
+void ComputeMgr:: enableComputeGlobalResults()
+{
+    ++computeGlobalResultsMsgSeq;
+    for ( int i=0; i<computeGlobalResultsMsgs.size(); ++i ) {
+      if ( computeGlobalResultsMsgs[i]->seq == computeGlobalResultsMsgSeq ) {
+        ComputeGlobalResultsMsg *msg = computeGlobalResultsMsgs[i];
+        computeGlobalResultsMsgs.del(i);
+        recvComputeGlobalResults(msg);
+        break;
+      }
+    }
 }
 
 void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
 {
     if ( computeGlobalObject )
     {
+      if ( msg->seq == computeGlobalResultsMsgSeq ) {
         CmiEnableUrgentSend(1);
         computeGlobalObject->recvResults(msg);
         CmiEnableUrgentSend(0);
+      } else {
+        computeGlobalResultsMsgs.add(msg);
+      }
     }
     else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
     else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");

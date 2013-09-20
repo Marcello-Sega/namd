@@ -103,12 +103,10 @@ int GlobalMasterTcl::Tcl_addgroup(ClientData clientData,
 
   GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
   ResizeArray<AtomIDList> &group_list = self->modifyRequestedGroups();
-  ForceList &force_list = self->modifyGroupForces();
 
   /* set gcount to the number of groups after we add one, and add it! */
   int gcount = 1 + group_list.size();
   group_list.resize(gcount);
-  force_list.add(Vector(0,0,0)); // make sure the force is zero
 
   /* get the list of atoms that go in the group */
   int listc, i;  char **listv;
@@ -434,6 +432,11 @@ int GlobalMasterTcl::Tcl_addforce(ClientData clientData,
 
   GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
   if ( isgroup ) {
+    int ngrps = self->getGroupMassEnd() - self->getGroupMassBegin();
+    if ( atomid < 1 || atomid > ngrps ) {
+      Tcl_SetResult(interp,"requested group not available",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
     self->modifyGroupForces().item(atomid-1) += Vector(x,y,z);
   } else {
     self->modifyForcedAtoms().add(atomid-1);
@@ -568,6 +571,7 @@ void GlobalMasterTcl::calculate() {
   /* clear out the requested forces first! */
   modifyAppliedForces().resize(0);
   modifyForcedAtoms().resize(0);
+  modifyGroupForces().resize(getGroupMassEnd() - getGroupMassBegin());
   modifyGroupForces().setall(Vector(0,0,0));
 
 #ifdef NAMD_TCL

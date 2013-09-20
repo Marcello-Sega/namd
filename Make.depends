@@ -3630,6 +3630,15 @@ obj/GlobalMasterServer.o: \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
 	src/InfoStream.h \
+	src/Node.h \
+	src/ProcessorPrivate.h \
+	inc/Node.decl.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterServer.o $(COPTC) src/GlobalMasterServer.C
 obj/GlobalMasterTest.o: \

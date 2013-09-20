@@ -40,9 +40,11 @@ ComputeGlobalDataMsg::~ComputeGlobalDataMsg(void) {
 
 PACK_MSG(ComputeGlobalDataMsg,
   PACK(step);
+  PACK(count);
   PACK_RESIZE(aid);
   PACK_RESIZE(p);
   PACK_RESIZE(gcom);
+  PACK_RESIZE(gmass);
   PACK_RESIZE(fid);
   PACK_RESIZE(tf);
 )
@@ -62,6 +64,7 @@ PACK_MSG(ComputeGlobalResultsMsg,
   PACK_RESIZE(aid);
   PACK_RESIZE(f);
   PACK_RESIZE(gforce);
+  PACK(seq);
   PACK(reconfig);
   PACK(resendCoordinates);
   if ( packmsg_msg->reconfig ) {

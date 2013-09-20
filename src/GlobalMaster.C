@@ -18,6 +18,8 @@ void GlobalMaster::processData(AtomIDList::iterator a_i,
 			       PositionList::iterator p_i,
 			       PositionList::iterator g_i,
 			       PositionList::iterator g_e,
+			       BigRealList::iterator gm_i,
+			       BigRealList::iterator gm_e,
 			       AtomIDList::iterator last_atoms_forced_i,
 			       AtomIDList::iterator last_atoms_forced_e,
 			       ForceList::iterator last_forces_i,
@@ -29,6 +31,8 @@ void GlobalMaster::processData(AtomIDList::iterator a_i,
   atomPositionBegin = p_i;
   groupPositionBegin = g_i;
   groupPositionEnd = g_e;
+  groupMassBegin = gm_i;
+  groupMassEnd = gm_e;
   lastAtomsForcedBegin = last_atoms_forced_i;
   lastAtomsForcedEnd = last_atoms_forced_e;
   lastForcesBegin = last_forces_i;
@@ -44,28 +48,8 @@ void GlobalMaster::processData(AtomIDList::iterator a_i,
       NAMD_die("# of atoms forced != # of forces given");
   }
   if(appForcesChanged) {
-    if(reqGroups.size() != grpForces.size())
+    if(grpForces.size() != gm_e - gm_i)
       NAMD_die("# of groups forced != # of groups requested");
-  }
-
-  /* check if the groups have changed, and update the masses */
-  if(reqGroupsChanged) {
-    groupMasses.resize(0);
-
-    // is there a way to do this non-globally?
-    Molecule *mol = Node::Object()->molecule;
-
-    // update each group mass
-    int g;
-    for(g=0;g<reqGroups.size();g++) {
-      AtomIDList &atom_list = reqGroups[g];
-      BigReal mass = 0; // the total mass of the group
-      int a;
-      for(a=0;a<atom_list.size();a++) { // get the total
-	mass += mol->atommass(a);
-      }
-      groupMasses.add(mass); // add the mass to the group
-    }
   }
 }
 
@@ -73,7 +57,7 @@ void GlobalMaster::check() const {
   /* check to make sure the force arrays still match */
   if(fAtoms.size() != appForces.size())
     NAMD_die("# of atoms forced != # of forces given");
-  if(reqGroups.size() != grpForces.size())
+  if(grpForces.size() != groupMassEnd - groupMassBegin)
     NAMD_die("# of groups forced != # of groups requested");
 }
 
@@ -90,6 +74,19 @@ void GlobalMaster::calculate() {
 GlobalMaster::GlobalMaster() {
   step = -1;
   clearChanged();
+  atomIdBegin = 0;
+  atomIdEnd = 0;
+  atomPositionBegin = 0;
+  groupPositionBegin = 0;
+  groupPositionEnd = 0;
+  groupMassBegin = 0;
+  groupMassEnd = 0;
+  lastAtomsForcedBegin = 0;
+  lastAtomsForcedEnd = 0;
+  lastForcesBegin = 0;
+  forceIdBegin = 0;
+  forceIdEnd = 0;
+  totalForceBegin = 0;
 }
 
 bool GlobalMaster::changedAtoms() {
@@ -171,13 +168,13 @@ PositionList::const_iterator GlobalMaster::getGroupPositionEnd() {
   return groupPositionEnd;
 }
 
-ResizeArray<BigReal>::const_iterator GlobalMaster::getGroupMassBegin()
+BigRealList::const_iterator GlobalMaster::getGroupMassBegin()
 {
-  return groupMasses.begin();
+  return groupMassBegin;
 }
 
-ResizeArray<BigReal>::const_iterator GlobalMaster::getGroupMassEnd() {
-  return groupMasses.end();
+BigRealList::const_iterator GlobalMaster::getGroupMassEnd() {
+  return groupMassEnd;
 }
 
 AtomIDList::const_iterator GlobalMaster::getLastAtomsForcedBegin() {
