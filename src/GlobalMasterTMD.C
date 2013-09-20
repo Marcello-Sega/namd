@@ -108,8 +108,10 @@ void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms, bool isTwo
   numatoms = tmdpdb.num_atoms();
   if (numatoms < 1) 
     NAMD_die("No atoms found in TMDFile\n");
-  if (numatoms != numTotalAtoms)
-    NAMD_die("The number of atoms in TMDFile must be equal to the total number of atoms in the structure!");
+  if (numatoms < numTotalAtoms)
+    iout << iWARN << "The number of atoms in TMDFile is less than the total number of atoms in the structure.\n" << endi;
+  if (numatoms > numTotalAtoms)
+    NAMD_die("The number of atoms in TMDFile must not exceed the total number of atoms in the structure!");
   if ( modifyRequestedAtoms().size() )
     NAMD_bug("GlobalMasterTMD::parseAtoms() modifyRequestedAtoms() not empty");
 

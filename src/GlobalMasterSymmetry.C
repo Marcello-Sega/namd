@@ -222,8 +222,10 @@ void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms, int s
   int numatoms = tmdpdb.num_atoms();
   if (numatoms < 1) 
     NAMD_die("No atoms found in symmetryFile\n");
-  if (numatoms != numTotalAtoms)
-    NAMD_die("The number of atoms in symmetryFile must be equal to the total number of atoms in the structure!");
+  if (numatoms < numTotalAtoms)
+    iout << iWARN << "The number of atoms in symmetryFile is less than the total number of atoms in the structure.\n" << endi;
+  if (numatoms > numTotalAtoms)
+    NAMD_die("The number of atoms in symmetryFile must not exceed the total number of atoms in the structure!");
  // if ( modifyRequestedAtoms().size() )
  //   NAMD_bug("GlobalMasterSymmetry::parseAtoms() modifyRequestedAtoms() not empty");
 
