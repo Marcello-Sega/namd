@@ -27,6 +27,7 @@ PDB::PDB(const char *pdbfilename, int expectedNumAtoms){
   FILE *infile;
   char buf[160];
 
+  altlocArray = 0;
   atomArray = new PDBCoreData[expectedNumAtoms];
 
   atomCount = 0;
@@ -187,6 +188,7 @@ PDB::PDB( const char *pdbfilename) {
 
 #ifdef MEM_OPT_VERSION
 //pruning the PDBData structure into PDBCoreData by only leaving X/Y/Z, occupancy and temperaturefactor
+     altlocArray = new char[atomCount];
      atomArray = new PDBCoreData[atomCount];
      if(atomArray == NULL)
          NAMD_die("memory allocation failed in PDB::PDB");
@@ -199,6 +201,7 @@ PDB::PDB( const char *pdbfilename) {
          atomArray[i].coor[2] = coor[2];
          atomArray[i].myoccupancy = tmp->data->occupancy();
          atomArray[i].tempfactor = tmp->data->temperaturefactor();
+         altlocArray[i] = tmp->data->alternatelocation()[0];
      }
 
      //free the PDBAtomList
@@ -241,6 +244,8 @@ PDB::~PDB( void )
 	int i;
 	for (i=atomCount-1; i>=0; i--)
 	   delete atomArray[i];
+#else
+	delete [] altlocArray;
 #endif
 	delete [] atomArray;
 	atomArray = NULL;
@@ -559,6 +564,7 @@ PDB::PDB( const char *filename, Ambertoppar *amber_data)
   readtoeoln(infile);
 
 #ifdef MEM_OPT_VERSION
+  altlocArray = 0;
   atomArray = new PDBCoreData[atomCount];
 #else
   atomArray = new PDBAtomPtr[atomCount];
@@ -636,6 +642,7 @@ PDB::PDB(const char *filename, const GromacsTopFile *topology) {
 
   /* read in the atoms */
 #ifdef MEM_OPT_VERSION
+  altlocArray = 0;
   atomArray = new PDBCoreData[atomCount];
 #else
   atomArray = new PDBAtomPtr[atomCount];

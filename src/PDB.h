@@ -37,6 +37,7 @@ class PDB {
     PDBAtomList *atomListHead, *atomListTail;
 
 #ifdef MEM_OPT_VERSION
+    char *altlocArray;
     PDBCoreData *atomArray;
 #else
     PDBAtom **atomArray;
@@ -78,6 +79,7 @@ class PDB {
 
 #ifdef MEM_OPT_VERSION
     PDBCoreData *atom(int place);           
+    char alternatelocation(int place) { return altlocArray[place]; }
     
     void delPDBCoreData() { delete [] atomArray; atomArray=NULL; } 
 #else

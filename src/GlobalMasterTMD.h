@@ -27,9 +27,11 @@ private:
   int numatoms;
   Vector *atompos;
   Vector *atompos2;
+  char *altloc;
   bool qDiffRMSD;
   std::map <int, std::vector<int>  > dmap;
   std::map <int, BigReal > kmap;
+  std::map <int, int > altlocmap;
   int numTMDatoms;
   BigReal K;
   BigReal initialRMS, finalRMS;
@@ -37,6 +39,7 @@ private:
   int currentStep, firstStep, lastStep;
   BigReal *target;
   BigReal *target2;
+  BigReal *weight;
   //int *target_aid;
   // mapping of atom id's to array positions
   //int *aidmap;

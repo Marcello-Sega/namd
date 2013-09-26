@@ -94,8 +94,26 @@ GlobalMasterTMD::GlobalMasterTMD() {
   firstStep = params->TMDFirstStep;
   lastStep = params->TMDLastStep;
   qDiffRMSD=params->TMDDiffRMSD;
+  altloc = 0;
   if (qDiffRMSD) parseAtoms(params->TMDFile2,Node::Object()->molecule->numAtoms, 1);
   parseAtoms(params->TMDFile,Node::Object()->molecule->numAtoms, 0);
+
+  //iterate through all domains to see if altloc is used
+  map <int, vector<int> >::iterator it;
+  for (it = dmap.begin(); it != dmap.end(); ++it){  
+    int refcount = 0;
+    int biascount = 0;
+    for(int i = 0; i<it->second.size(); i++){
+      char aloc = altloc[it->second[i]];
+      if ( aloc & 1 ) ++biascount;
+      if ( aloc & 2 ) ++refcount;
+    }
+    altlocmap[it->first] = ( refcount ? 1 : 0 );
+    if ( ! refcount ) refcount = it->second.size();
+    iout << iINFO << "TMD domain " << it->first <<
+      " has " << it->second.size() << " atoms " <<
+      refcount << " fitted " << biascount << " biased\n" << endi;
+  }
 
  // k /= numTMDatoms;
   iout << iINFO << numTMDatoms << " TMD ATOMS\n" << endi;
@@ -127,14 +145,21 @@ void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms, bool isTwo
     atompos = new Vector[numatoms];
     tmdpdb.get_all_positions(atompos);
   }
+  if ( ! altloc ) altloc = new char[numatoms];
   int i;
   for (i=0; i<numatoms; i++) {
 #ifdef MEM_OPT_VERSION
     PDBCoreData *atom = tmdpdb.atom(i);
+    char aloc = tmdpdb.alternatelocation(i);
 #else
     PDBAtom *atom = tmdpdb.atom(i); // get an atom from the file
+    char aloc = atom->alternatelocation()[0];
 #endif
-    if (atom->occupancy()) { // if occupancy is not 0, then add it!
+    if ( aloc ) aloc -= '0';
+    if ( aloc ) aloc = 2;  // 2 bit == reference
+    if ( atom->occupancy() ) aloc |= 1;  // 1 bit == biased
+    altloc[i] = aloc;
+    if ( aloc ) {
       if(isTwo){
         target2[3*numTMDatoms  ] = atompos2[i].x;
         target2[3*numTMDatoms+1] = atompos2[i].y;
@@ -185,6 +210,13 @@ void GlobalMasterTMD::NewTarget(int domain)
      target2[3*i+2] = atompos2[it->second[i]].z; 
    }   
   }
+  delete [] weight;  weight = 0;
+  if ( altlocmap.find(domain)->second ) {
+    weight = new BigReal [it->second.size()];
+    for(int i = 0; i<it->second.size(); i++){
+      weight[i] = ( (altloc[it->second[i]] & 2) ? 1.0 : 0.0 );
+    }
+  }
 //   target_aid[i] = it->second[i];
 //   aidmap[it->second[i]] = i; 
 
@@ -195,6 +227,7 @@ GlobalMasterTMD::~GlobalMasterTMD() {
 //  delete [] aidmap;
   delete [] atompos;
   delete [] atompos2;
+  delete [] altloc;
   delete [] target2;
 }
 void GlobalMasterTMD::calculate() {
@@ -244,7 +277,7 @@ if(qDiffRMSD){
   // align target with current coordinates.   Uses same weight for all
   // atoms.  Maybe instead use weight from occupancy?
   BigReal ttt[16], pre[3], post[3];
-  BigReal curRMS = MatrixFitRMS(it->second.size(), target, curpos, NULL, ttt);
+  BigReal curRMS = MatrixFitRMS(it->second.size(), target, curpos, weight, ttt);
   // Compute targetRMS.
   if (initialRMS < 0) {
     initialRMS = curRMS;
@@ -254,7 +287,7 @@ if(qDiffRMSD){
   BigReal curRMS1 =  1.; 
   BigReal ttt1[16]; 
   if(qDiffRMSD){
-    curRMS1 = MatrixFitRMS(it->second.size(), target2, curpos2, NULL, ttt1);
+    curRMS1 = MatrixFitRMS(it->second.size(), target2, curpos2, weight, ttt1);
     curRMS = curRMS0 - curRMS1 ;
   }
 
@@ -291,11 +324,10 @@ if(qDiffRMSD){
     // compute forces on each atom
     BigReal myrms = 0;
       for (int i=0; i<it->second.size(); i++) {
-      BigReal k;  
+      BigReal k = 0.; 
       if(!K){
         k = kmap[it->second[i]];  
-      }
-      else{
+      } else if ( (! weight) || (altloc[it->second[i]] & 1) ) {
         k = K/it->second.size();  
       }
    //   BigReal prefac = k * (targetRMS / curRMS - 1); 
@@ -330,11 +362,10 @@ if(qDiffRMSD){
       // compute forces on each atom
       BigReal myrms = 0;
         for (int i=0; i<it->second.size(); i++) {
-        BigReal k;  
+        BigReal k = 0.;
         if(!K){
           k = kmap[it->second[i]];  
-        }
-        else{
+        } else if ( (! weight) || (altloc[it->second[i]] & 1) ) {
           k = K/it->second.size();  
         }
      //   BigReal prefac = k * (targetRMS / curRMS - 1); 
