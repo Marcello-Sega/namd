@@ -449,7 +449,10 @@ symmetry groups, you must include one additional {\tt symmetrykfile} per {\tt sy
 {Path to PDB file}
 {
 Restrained atoms are those whose occupancy (O) is nonzero in the symmetry pdb file.
-The file must contain the same number of atoms as the structure file.  The value in
+The file must contain no more atoms than the structure file and those atoms
+present must have the exact same index as the structure file (i.e., the file
+may contain a truncated atom selection ``index $< N$'' but not an arbitrary selection).
+The value in
 the occupancy column represent the "symmetry group" the atom belongs to.  These symmetry
 groups are used for denoting monomers of the same type.  These groups will be transformed by the
 matrices in their own {\tt symmetryMatrixFile} and averaged separetely from other groups.  
@@ -512,10 +515,22 @@ where $RMS(t)$ is the instantaneous best-fit RMS distance of the current
 coordinates from the target coordinates, and $RMS^*(t)$ evolves linearly
 from the initial RMSD at the first TMD step to the final RMSD at the last 
 TMD step.  The spring constant $k$ is scaled down by the number $N$ of targeted
-atoms. Atoms can be separated into non-overlapping constraint domains by
-assigning integer values in the beta column of the .pdb file.  Forces on
+atoms.
+
+Atoms can be separated into non-overlapping constraint domains by
+assigning integer values in the beta column of the {\tt TMDFile}.  Forces on
 the atoms will be calculated for each domain independently of the other domains.
- 
+
+Within each domain, the set of atoms used to fit the target structure can be
+different from the set of atoms that are biased towards the target structure.
+If the altloc field in the {\tt TMDFile} is not ` ' or `0' then the atom is fitted.
+If the occupancy is non-zero then the atom is biased.
+If none of the atoms in a domain have altloc set then all biased atoms are fitted.
+
+Note that using different atoms for fitting and biasing
+or not using the same spring constant for all target atoms within
+a domain will result in forces conserving neither energy nor momentum.
+In this case harmonic restraints and Langevin dynamics are likely needed.
 
 \begin{itemize}
 \item
@@ -543,9 +558,13 @@ timestep, and {\tt currentRMS} is the actual RMSD.}
 \NAMDCONF{TMDFile}{File for TMD information}
 {Path to PDB file}
 {
-Target atoms are those whose occupancy (O) is nonzero in the TMD PDB file.
-The file must contain the same number of atoms as the structure file.  The
-coordinates for the target structure are also taken from the targeted
+Biased atoms are those whose occupancy (O) is nonzero in the TMD PDB file.
+Fitted atoms are those whose altloc field is not ` ' or `0', if present,
+otherwise all biased atoms are fitted.
+The file must contain no more atoms than the structure file and those atoms
+present must have the exact same index as the structure file (i.e., the file
+may contain a truncated atom selection ``index $< N$'' but not an arbitrary selection).
+The coordinates for the target structure are also taken from the targeted
 atoms in this file.  Non-targeted atoms are ignored.  The beta column of targetted
 atoms is used to designate non-overlapping constraint domains.  Forces will be
 calculated for atoms within a domain separately from atoms of other domains.
