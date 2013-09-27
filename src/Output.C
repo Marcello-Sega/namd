@@ -572,12 +572,68 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
   //  close the file before exiting
   if ( timestep == END_OF_RUN ) {
     if ( ! first ) {
-      iout << "CLOSING COORDINATE DCD FILE\n" << endi;
+      iout << "CLOSING COORDINATE DCD FILE " << simParams->dcdFilename << "\n" << endi;
       close_dcd_write(fileid);
     } else {
-      iout << "COORDINATE DCD FILE WAS NOT CREATED\n" << endi;
+      iout << "COORDINATE DCD FILE " << simParams->dcdFilename << " WAS NOT CREATED\n" << endi;
     }
     return;
+  }
+
+  if ( simParams->dcdfirst ) {
+
+    //  Close old DCD file
+    if ( ! first ) {
+      iout << "CLOSING COORDINATE DCD FILE " << simParams->olddcdFilename << "\n" << endi;
+      close_dcd_write(fileid);
+    } else {
+      iout << "COORDINATE DCD FILE " << simParams->olddcdFilename << " WAS NOT CREATED\n" << endi;
+    }
+
+    //  Open new DCD file
+    iout << "OPENING COORDINATE DCD FILE " << simParams->dcdFilename << "\n" << endi;
+
+    fileid=open_dcd_write(simParams->dcdFilename);
+
+    if (fileid == DCD_FILEEXISTS)
+    {
+      char err_msg[257];
+
+      sprintf(err_msg, "DCD file %s already exists!!",
+        simParams->dcdFilename);
+
+      NAMD_err(err_msg);
+    }
+    else if (fileid < 0)
+    {
+      char err_msg[257];
+
+      sprintf(err_msg, "Couldn't open DCD file %s",
+        simParams->dcdFilename);
+
+      NAMD_err(err_msg);
+    }
+
+    int NSAVC, NFILE, NPRIV, NSTEP;
+    NSAVC = simParams->dcdFrequency;
+    NSTEP = NSAVC * (simParams->N/NSAVC);
+    NPRIV = simParams->firstTimestep+NSAVC;
+    NPRIV = NSAVC * (NPRIV/NSAVC);
+    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+
+    //  Write out the header
+    ret_code = write_dcdheader(fileid, 
+        simParams->dcdFilename,
+        n, NFILE, NPRIV, NSAVC, NSTEP,
+        simParams->dt/TIMEFACTOR, lattice != NULL);
+
+
+    if (ret_code<0)
+    {
+      NAMD_err("Writing of DCD header failed!!");
+    }
+
+    simParams->dcdfirst = FALSE;
   }
 
   if (first)
@@ -648,7 +704,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
   }
 
   //  Write out the values for this timestep
-  iout << "WRITING COORDINATES TO DCD FILE AT STEP "
+  iout << "WRITING COORDINATES TO DCD FILE " << simParams->dcdFilename << " AT STEP "
 	<< timestep << "\n" << endi;
   fflush(stdout);
   if (lattice) {

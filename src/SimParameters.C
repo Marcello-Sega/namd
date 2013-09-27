@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2013/09/12 22:31:18 $
- * $Revision: 1.1420 $
+ * $Author: mayne $
+ * $Date: 2013/09/27 22:45:47 $
+ * $Revision: 1.1421 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -188,6 +188,13 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
   SCRIPT_PARSE_FLOAT("consForceScaling",consForceScaling)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
+  SCRIPT_PARSE_INT("DCDfreq",dcdFrequency)
+  if ( ! strncasecmp(param,"DCDfile",MAX_SCRIPT_PARAM_SIZE) ) { 
+    strcpy(olddcdFilename,dcdFilename);
+    dcdfirst = TRUE;
+    strcpy(dcdFilename,value);
+    return;
+  }
   SCRIPT_PARSE_STRING("tclBCArgs",tclBCArgs)
   SCRIPT_PARSE_VECTOR("eField",eField)
   SCRIPT_PARSE_FLOAT("eFieldFreq",eFieldFreq)
@@ -2305,9 +2312,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      if (! opts.defined("dcdfile")) {
        strcpy(dcdFilename,outputFilename);
        strcat(dcdFilename,".dcd");
+       strcpy(olddcdFilename,dcdFilename);
      }
    } else {
      dcdFilename[0] = STRINGNULL;
+     olddcdFilename[0] = STRINGNULL;
    }
 
    if (velDcdFrequency) {

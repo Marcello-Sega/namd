@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2013/09/12 22:31:18 $
- * $Revision: 1.1223 $
+ * $Author: mayne $
+ * $Date: 2013/09/27 22:45:47 $
+ * $Revision: 1.1224 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -196,6 +196,8 @@ public:
 	int xstFrequency;		//  How often (in timesteps) should
 					//  a XST trajectory file be updated
 	char auxFilename[128];		//  auxilary output filename
+	char olddcdFilename[128];	//  DCD filename
+        Bool dcdfirst;          // flag of writing the DCDfile for the first time
 	char dcdFilename[128];		//  DCD filename
 	char velDcdFilename[128];       //  Velocity DCD filename
 	char forceDcdFilename[128];     //  Force DCD filename
