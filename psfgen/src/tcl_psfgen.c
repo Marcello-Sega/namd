@@ -276,7 +276,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.6");
+  Tcl_PkgProvide(interp, "psfgen", "1.6.2");
 
 #ifdef NAMD_VERSION
   {
@@ -402,7 +402,7 @@ int tcl_psfcontext(ClientData data, Tcl_Interp *interp,
       char newkey[128];
       psfgen_data *newdata;
       sprintf(newkey,"Psfgen_%d",newid);
-      if ( newdata = Tcl_GetAssocData(interp,newkey,0) ) {
+      if ((newdata = Tcl_GetAssocData(interp,newkey,0)) != NULL) {
         if ( newdata->in_use ) {
           Tcl_SetResult(interp,"specified context in use",TCL_VOLATILE);
           return TCL_ERROR;

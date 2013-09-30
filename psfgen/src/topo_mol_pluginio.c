@@ -196,7 +196,7 @@ static int plugin_read_bonds(molfile_plugin_t *plg, void *rv,
     sprintf(msg, "bonds: %d", nbonds);
     print_msg(v, msg);
 
-    for (i=0; i < nbonds; i++) {
+    for (i=nbonds-1; i >= 0; i--) {
       topo_mol_atom_t *atom1, *atom2;
       topo_mol_bond_t *tuple;
       int ind1, ind2;
@@ -252,14 +252,24 @@ static int plugin_read_angles(molfile_plugin_t *plg, void *rv,
             numangles, numdihedrals, numimpropers, numcterms);
     print_msg(v, msg);
 
-    for (i=0; i < numangles; i++) {
+    for (i=numangles-1; i >= 0; i--) {
       topo_mol_angle_t *tuple;
+      int ind1, ind2, ind3;
 
-      atom1 = molatomlist[angles[3*i  ]-1];
-      atom2 = molatomlist[angles[3*i+1]-1];
-      atom3 = molatomlist[angles[3*i+2]-1];
+      ind1 = angles[3*i  ]-1;
+      ind2 = angles[3*i+1]-1;
+      ind3 = angles[3*i+2]-1;
 
-      tuple = memarena_alloc(mol->arena,sizeof(topo_mol_angle_t));
+      if (ind1 < 0 || ind2 < 0 || ind3 < 0 ||
+          ind1 >= natoms || ind2 >= natoms || ind3 >= natoms) {
+        return -1; /* Bad indices, abort now */
+      }
+
+      atom1 = molatomlist[ind1];
+      atom2 = molatomlist[ind2];
+      atom3 = molatomlist[ind3];
+
+      tuple = memarena_alloc(mol->angle_arena,sizeof(topo_mol_angle_t));
       tuple->next[0] = atom1->angles;
       tuple->atom[0] = atom1;
       tuple->next[1] = atom2->angles;
@@ -273,15 +283,26 @@ static int plugin_read_angles(molfile_plugin_t *plg, void *rv,
       atom3->angles = tuple;
     }
 
-    for (i=0; i < numdihedrals; i++) {
+    for (i=numdihedrals-1; i >= 0; i--) {
       topo_mol_dihedral_t *tuple;
+      int ind1, ind2, ind3, ind4;
 
-      atom1 = molatomlist[dihedrals[4*i  ]-1];
-      atom2 = molatomlist[dihedrals[4*i+1]-1];
-      atom3 = molatomlist[dihedrals[4*i+2]-1];
-      atom4 = molatomlist[dihedrals[4*i+3]-1];
+      ind1 = dihedrals[4*i  ]-1;
+      ind2 = dihedrals[4*i+1]-1;
+      ind3 = dihedrals[4*i+2]-1;
+      ind4 = dihedrals[4*i+3]-1;
 
-      tuple = memarena_alloc(mol->arena,sizeof(topo_mol_dihedral_t));
+      if (ind1 < 0 || ind2 < 0 || ind3 < 0 || ind4 < 0 ||
+          ind1 >= natoms || ind2 >= natoms || ind3 >= natoms || ind4 >= natoms) {
+        return -1; /* Bad indices, abort now */
+      }
+
+      atom1 = molatomlist[ind1];
+      atom2 = molatomlist[ind2];
+      atom3 = molatomlist[ind3];
+      atom4 = molatomlist[ind4];
+
+      tuple = memarena_alloc(mol->dihedral_arena,sizeof(topo_mol_dihedral_t));
       tuple->next[0] = atom1->dihedrals;
       tuple->atom[0] = atom1;
       tuple->next[1] = atom2->dihedrals;
@@ -298,13 +319,24 @@ static int plugin_read_angles(molfile_plugin_t *plg, void *rv,
       atom4->dihedrals = tuple;
     }
 
-    for (i=0; i < numimpropers; i++) {
+    for (i=numimpropers-1; i >= 0; i--) {
       topo_mol_improper_t *tuple;
+      int ind1, ind2, ind3, ind4;
  
-      atom1 = molatomlist[impropers[4*i  ]-1];
-      atom2 = molatomlist[impropers[4*i+1]-1];
-      atom3 = molatomlist[impropers[4*i+2]-1];
-      atom4 = molatomlist[impropers[4*i+3]-1];
+      ind1 = impropers[4*i  ]-1;
+      ind2 = impropers[4*i+1]-1;
+      ind3 = impropers[4*i+2]-1;
+      ind4 = impropers[4*i+3]-1;
+
+      if (ind1 < 0 || ind2 < 0 || ind3 < 0 || ind4 < 0 ||
+          ind1 >= natoms || ind2 >= natoms || ind3 >= natoms || ind4 >= natoms) {
+        return -1; /* Bad indices, abort now */
+      }
+
+      atom1 = molatomlist[ind1];
+      atom2 = molatomlist[ind2];
+      atom3 = molatomlist[ind3];
+      atom4 = molatomlist[ind4];
 
       tuple = memarena_alloc(mol->arena,sizeof(topo_mol_improper_t));
       tuple->next[0] = atom1->impropers;
@@ -323,13 +355,18 @@ static int plugin_read_angles(molfile_plugin_t *plg, void *rv,
       atom4->impropers = tuple;
     }
 
-    for (i=0; i < numcterms; i++) {
+    for (i=numcterms-1; i >= 0; i--) {
       topo_mol_atom_t *atoml[8];
       topo_mol_cmap_t *tuple;
+      int indx;
 
       tuple = memarena_alloc(mol->arena,sizeof(topo_mol_cmap_t));
       for (j = 0; j < 8; ++j) {
-        atoml[j] = molatomlist[cterms[8*i+j]-1];
+        indx = cterms[8*i+j]-1;
+        if (indx < 0 || indx >= natoms) {
+          return -1; /* Bad indices, abort now */
+        }
+        atoml[j] = molatomlist[indx];
         tuple->next[j] = atoml[j]->cmaps;
         tuple->atom[j] = atoml[j];
       }
@@ -594,6 +631,9 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
       }
     } 
 
+    if (atomcoords) free(atomcoords);
+    atomcoords = NULL;
+
     /* Check to see if we broke out of the loop prematurely */
     if (i != natoms) {
       print_msg(v, "ERROR: failed reading structure");
@@ -621,19 +661,24 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
      * read bonds
      */
     if (!coordinatesonly  && !residuesonly && plg->read_bonds != NULL)
-      plugin_read_bonds(plg, rv, mol, natoms, molatomlist, v, print_msg);
+      if ( plugin_read_bonds(plg, rv, mol, natoms, molatomlist, v, print_msg) ) {
+        print_msg(v, "ERROR: failed reading bonds");
+        free(molatomlist);
+        return -1;
+      }
 
 
     /*
      * Read angles/dihedrals/impropers/cross-terms
      */
     if (!coordinatesonly && !residuesonly && plg->read_angles != NULL)
-      plugin_read_angles(plg, rv, mol, natoms, molatomlist, v, print_msg);
+      if( plugin_read_angles(plg, rv, mol, natoms, molatomlist, v, print_msg) ) {
+        print_msg(v, "ERROR: failed reading angles");
+        free(molatomlist);
+        return -1;
+      }
 
 
-
-    if (atomcoords)
-      free(atomcoords);
     free(molatomlist);
   } 
 

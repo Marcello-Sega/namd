@@ -78,6 +78,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
 
   char buf[128];
   int iseg,nseg,ires,nres,atomid;
+  int namdfmt, charmmext;
   topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
   topo_mol_atom_t *atom;
@@ -98,12 +99,14 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
   topo_mol_patchres_t *patchres;
   char defpatch[10];
   fpos_t ntitle_pos, save_pos;
-  const char *ntitle_fmt;
+  char ntitle_fmt[128];
   int ntitle_count;
   strcpy(defpatch,"");
 
   if ( ! mol ) return -1;
 
+  namdfmt = 0;
+  charmmext = 0;
   atomid = 0;
   nbonds = 0;
   nangls = 0;
@@ -116,11 +119,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
     if (! seg) continue;
 
     if ( strlen(seg->segid) > 4 ) {
-      sprintf(buf,
-	"error: segid %s is longer than 4 characters allowed by psf format",
-	seg->segid);
-      print_msg(v,buf);
-      return -2;
+      charmmext = 1;
     }
 
     nres = hasharray_count(seg->residue_hash);
@@ -128,6 +127,15 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
       res = &(seg->residue_array[ires]);
       for ( atom = res->atoms; atom; atom = atom->next ) {
         atom->atomid = ++atomid;
+        if (strlen(atom->name) > 4) {
+          charmmext = 1;
+        }
+        if ((! charmmfmt) && (strlen(atom->type) > 4)) {
+          charmmext = 1;
+        }
+        if ((! charmmfmt) && (strlen(atom->type) > 6)) {
+          namdfmt = 1;
+        }
         for ( bond = atom->bonds; bond;
                 bond = topo_mol_bond_next(bond,atom) ) {
           if ( bond->atom[0] == atom && ! bond->del ) {
@@ -172,18 +180,31 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
   sprintf(buf,"total of %d impropers",nimprs);
   print_msg(v,buf);
 
-  ntitle_fmt = "PSF\n\n%8d !NTITLE\n";
+  if ( namdfmt ) { charmmext = 0; }
+  else if ( atomid > 9999999 ) { charmmext = 1; }
+
+  if ( namdfmt ) {
+    print_msg(v,"Structure requires space-delimited NAMD PSF format");
+  } else if ( charmmext ) {
+    print_msg(v,"Structure requires EXTended PSF format");
+  }
+
+  ntitle_fmt[0] = '\0';
+  strcat(ntitle_fmt, "PSF");
+  if ( namdfmt ) strcat(ntitle_fmt, " NAMD");
+  if ( charmmext ) strcat(ntitle_fmt, " EXT");
   if ( nocmap ) {
     sprintf(buf,"total of %d cross-terms (not written to file)",ncmaps);
   } else {
     sprintf(buf,"total of %d cross-terms",ncmaps);
     if ( ncmaps ) {
-      ntitle_fmt = "PSF CMAP\n\n%8d !NTITLE\n";
+      strcat(ntitle_fmt, " CMAP");
     } else {
       nocmap = 1;
     }
   }
   print_msg(v,buf);
+  strcat(ntitle_fmt, "\n\n%8d !NTITLE\n");
 
   fgetpos(file,&ntitle_pos);
   fprintf(file,ntitle_fmt,1);
@@ -267,11 +288,15 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
           return -3;
         }
         typeid = mol->defs->type_array[idef].id;
-        fprintf(file,"%8d %-4s %-4s %-4s %-4s %4d %10.6f     %9.4f  %10d\n",
+        fprintf(file, ( charmmext ?
+                     "%10d %-8s %-8s %-8s %-8s %4d %10.6f    %10.4f  %10d\n" :
+                     "%8d %-4s %-4s %-4s %-4s %4d %10.6f    %10.4f  %10d\n" ),
                 atom->atomid, seg->segid,res->resid,res->name,
                 atom->name,typeid,atom->charge,atom->mass,0);
       } else for ( atom = res->atoms; atom; atom = atom->next ) {
-        fprintf(file,"%8d %-4s %-4s %-4s %-4s %-4s %10.6f     %9.4f  %10d\n",
+        fprintf(file, ( charmmext ?
+                     "%10d %-8s %-8s %-8s %-8s %-6s %10.6f    %10.4f  %10d\n" :
+                     "%8d %-4s %-4s %-4s %-4s %-4s %10.6f    %10.4f  %10d\n" ),
                 atom->atomid, seg->segid,res->resid,res->name,
                 atom->name,atom->type,atom->charge,atom->mass,0);
       }
@@ -292,7 +317,8 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
                 bond = topo_mol_bond_next(bond,atom) ) {
           if ( bond->atom[0] == atom && ! bond->del ) {
             if ( numinline == 4 ) { fprintf(file,"\n");  numinline = 0; }
-            fprintf(file," %7d %7d",atom->atomid,bond->atom[1]->atomid);
+            fprintf(file, ( charmmext ? " %9d %9d" : " %7d %7d"),
+                    atom->atomid,bond->atom[1]->atomid);
             ++numinline;
           }
         }
@@ -314,7 +340,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
                 angl = topo_mol_angle_next(angl,atom) ) {
           if ( angl->atom[0] == atom && ! angl->del ) {
             if ( numinline == 3 ) { fprintf(file,"\n");  numinline = 0; }
-            fprintf(file," %7d %7d %7d",atom->atomid,
+            fprintf(file, ( charmmext ? " %9d %9d %9d" : " %7d %7d %7d"),atom->atomid,
                 angl->atom[1]->atomid,angl->atom[2]->atomid);
             ++numinline;
           }
@@ -337,7 +363,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
                 dihe = topo_mol_dihedral_next(dihe,atom) ) {
           if ( dihe->atom[0] == atom && ! dihe->del ) {
             if ( numinline == 2 ) { fprintf(file,"\n");  numinline = 0; }
-            fprintf(file," %7d %7d %7d %7d",atom->atomid,
+            fprintf(file, ( charmmext ? " %9d %9d %9d %9d" : " %7d %7d %7d %7d"),atom->atomid,
                 dihe->atom[1]->atomid,dihe->atom[2]->atomid,
                 dihe->atom[3]->atomid);
             ++numinline;
@@ -361,7 +387,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
                 impr = topo_mol_improper_next(impr,atom) ) {
           if ( impr->atom[0] == atom && ! impr->del ) {
             if ( numinline == 2 ) { fprintf(file,"\n");  numinline = 0; }
-            fprintf(file," %7d %7d %7d %7d",atom->atomid,
+            fprintf(file, ( charmmext ? " %9d %9d %9d %9d" : " %7d %7d %7d %7d"),atom->atomid,
                 impr->atom[1]->atomid,impr->atom[2]->atomid,
                 impr->atom[3]->atomid);
             ++numinline;
@@ -380,13 +406,13 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
     int i, fullrows;
     fullrows = atomid/8;
     for (i=0; i<fullrows; ++i) 
-      fprintf(file, "%8d%8d%8d%8d%8d%8d%8d%8d\n",0,0,0,0,0,0,0,0);
+      fprintf(file, (charmmext?"%10d%10d%10d%10d%10d%10d%10d%10d\n":"%8d%8d%8d%8d%8d%8d%8d%8d\n"),0,0,0,0,0,0,0,0);
     for (i=atomid - fullrows*8; i; --i)
-      fprintf(file, "%8d",0);
+      fprintf(file, (charmmext?"%10d":"%8d"),0);
   } 
   fprintf(file,"\n\n");
 
-  fprintf(file,"%8d %7d !NGRP\n%8d%8d%8d\n\n",1,0,0,0,0);
+  fprintf(file,(charmmext?"%8d %7d !NGRP\n%10d%10d%10d\n\n":"%8d %7d !NGRP\n%8d%8d%8d\n\n"),1,0,0,0,0);
 
   if ( ! nocmap ) {
     fprintf(file,"%8d !NCRTERM: cross-terms\n",ncmaps);
@@ -400,7 +426,8 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
           for ( cmap = atom->cmaps; cmap;
                   cmap = topo_mol_cmap_next(cmap,atom) ) {
             if ( cmap->atom[0] == atom && ! cmap->del ) {
-              fprintf(file," %7d %7d %7d %7d %7d %7d %7d %7d\n",atom->atomid,
+              fprintf(file,( charmmext ? " %9d %9d %9d %9d %9d %9d %9d %9d\n"
+                         : " %7d %7d %7d %7d %7d %7d %7d %7d\n"),atom->atomid,
                   cmap->atom[1]->atomid,cmap->atom[2]->atomid,
                   cmap->atom[3]->atomid,cmap->atom[4]->atomid,
                   cmap->atom[5]->atomid,cmap->atom[6]->atomid,

@@ -61,7 +61,7 @@ int psf_get_atom(FILE *f, char *name, char *atype, char *resname,
   if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, f)) {
     return(-1);
   }
-  read_count = sscanf(inbuf, "%d %s %s %s %s %s %lf %lf",
+  read_count = sscanf(inbuf, "%d %7s %7s %7s %7s %7s %lf %lf",
     &num, segname, resid, resname, name, atype, q, m);
 
   if (read_count != 8) {
@@ -76,7 +76,7 @@ int psf_get_atom(FILE *f, char *name, char *atype, char *resname,
 }
  
 
-int psf_get_bonds(FILE *f, int n, int *bonds) {
+int psf_get_bonds(FILE *f, int fw, int n, int *bonds) {
   char inbuf[PSF_RECORD_LENGTH+2];
   char *bondptr = NULL;
   int i=0;
@@ -91,10 +91,10 @@ int psf_get_bonds(FILE *f, int n, int *bonds) {
     }
     if((bonds[2*i] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((bonds[2*i+1] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     i++;
   }
 
@@ -102,7 +102,7 @@ int psf_get_bonds(FILE *f, int n, int *bonds) {
 }
 
 
-int psf_get_angles(FILE *f, int n, int *angles) {
+int psf_get_angles(FILE *f, int fw, int n, int *angles) {
   char inbuf[PSF_RECORD_LENGTH+2];
   char *bondptr = NULL;
   int i=0;
@@ -117,13 +117,13 @@ int psf_get_angles(FILE *f, int n, int *angles) {
     }
     if((angles[3*i] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((angles[3*i+1] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((angles[3*i+2] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     i++;
   }
 
@@ -131,7 +131,7 @@ int psf_get_angles(FILE *f, int n, int *angles) {
 }
 
 
-int psf_get_dihedrals(FILE *f, int n, int *dihedrals) {
+int psf_get_dihedrals(FILE *f, int fw, int n, int *dihedrals) {
   char inbuf[PSF_RECORD_LENGTH+2];
   char *bondptr = NULL;
   int i=0;
@@ -146,16 +146,16 @@ int psf_get_dihedrals(FILE *f, int n, int *dihedrals) {
     }
     if((dihedrals[4*i] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((dihedrals[4*i+1] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((dihedrals[4*i+2] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((dihedrals[4*i+3] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     i++;
   }
 
@@ -163,16 +163,16 @@ int psf_get_dihedrals(FILE *f, int n, int *dihedrals) {
 }
 
 
-int psf_get_impropers(FILE *f, int n, int *impropers) {
+int psf_get_impropers(FILE *f, int fw, int n, int *impropers) {
   
   /* Same format */
-  return psf_get_dihedrals(f, n, impropers);
+  return psf_get_dihedrals(f, fw, n, impropers);
 }
 
 
-int psf_get_cmaps(FILE *f, int n, int *cmaps) {
+int psf_get_cmaps(FILE *f, int fw, int n, int *cmaps) {
   
   /* Same format */
-  return psf_get_dihedrals(f, 2*n, cmaps);
+  return psf_get_dihedrals(f, fw, 2*n, cmaps);
 }
 

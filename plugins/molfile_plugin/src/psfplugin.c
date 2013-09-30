@@ -11,7 +11,7 @@
  *
  *      $RCSfile: psfplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.5 $       $Date: 2012/08/24 14:15:02 $
+ *      $Revision: 1.6 $       $Date: 2013/09/30 22:08:56 $
  *
  ***************************************************************************/
 
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "fortread.h"
 
@@ -43,6 +44,39 @@ typedef struct {
 } psfdata;
 
 
+/* Formatted reads:
+ *
+ * copy at most 'maxlen' characters from source to target allowing overflow.
+ *
+ * leading white space up to 'len' is skipped over but counts towards 'maxlen'.
+ * the copy stops at first whitspace or a '\0'.
+ * unlike strncpy(3) the result will always be \0 terminated.
+ *
+ * intended for copying (short) strings from formatted fortran
+ * i/o files that must not contain whitespace (e.g. residue names,
+ * atom name/types etc. in .pdb, .psf and alike.).
+ *
+ * returns number of bytes of overflow.
+ */
+static int strnwscpy_shift(char *target, const char *source,
+                           const int len, const int maxlen) {
+  int i, c;
+
+  for (i=0, c=0; i<maxlen; ++i) {
+    if (*source == '\0' || (c > 0 && *source == ' ') || (c == 0 && i == len)) {
+      break;
+    }
+
+    if (*source == ' ') {
+      source++;
+    } else {
+      *target++ = *source++;
+      c++;
+    }
+  }
+  *target = '\0';
+  return ( i > len ? i - len : 0 );
+}
 
 /* Read in the next atom info into the given storage areas; this assumes
    that file has already been moved to the beginning of the atom records.
@@ -65,57 +99,103 @@ static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
   num = atoi(inbuf); /* atom index */
 
   if (namdfmt == 1) {
-    /* XXX We should add field width limits here so that      */
-    /*     a PSF file with crazy wide fields cannot overwrite */
-    /*     destination buffers.                               */
     int cnt;
-    cnt = sscanf(inbuf, "%d %s %d %s %s %s %f %f",
+    cnt = sscanf(inbuf, "%d %7s %d %7s %7s %7s %f %f",
                  &num, segname, resid, resname, name, atype, q, m);
     if (cnt != 8) {
       printf("psfplugin) Failed to parse atom line in NAMD PSF file:\n");
       printf("psfplugin)   '%s'\n", inbuf);
       return -1;
     }
-  } else if (charmmdrude == 1) {
-    /* CHARMM PSF format is (if DRUDE and CHEQ are enabled):
+  } else if (charmmdrude == 1 || charmmext == 1) {
+    int xplorshift;
+    /* CHARMM PSF format is (if DRUDE or (?) CHEQ are enabled):
      *  '(I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2G14.6,I8,2G14.6)'
      */
+    if ( inbuf[10] != ' ' ||
+         inbuf[19] != ' ' ||
+         inbuf[28] != ' ' ||
+         inbuf[37] != ' ' ||
+         inbuf[46] != ' ' ) {
+      printf("psfplugin) Failed to parse atom line in PSF file:\n");
+      printf("psfplugin)   '%s'\n", inbuf);
+      return -1;
+    }
+
     strnwscpy(segname, inbuf+11, 7);
     strnwscpy(resname, inbuf+29, 7);
     strnwscpy(name, inbuf+38, 7);
+
+    xplorshift = 0;
     strnwscpy(atype, inbuf+47, 4);
+    if ( ! isdigit(atype[0]) ) {
+      strnwscpy(atype, inbuf+47, 6);
+      xplorshift = 2;
+    }
+
+    if ( inbuf[51+xplorshift] != ' ' ) {
+      printf("psfplugin) Failed to parse atom line in PSF file:\n");
+      printf("psfplugin)   '%s'\n", inbuf);
+      return -1;
+    }
     
     *resid = atoi(inbuf+20);
-    *q = (float) atof(inbuf+52);
-    *m = (float) atof(inbuf+68);
+    *q = (float) atof(inbuf+52+xplorshift);
+    *m = (float) atof(inbuf+66+xplorshift);
     // data we don't currently read:
-    //   *imove = atoi(inbuf+84);
-    //   *alphadp = atof(inbuf+92);
-    //   *tholei = atof(inbuf+108);
-  } else if (charmmext == 1) {
-    /* CHARMM PSF format is (if CMAP and CHEQ are also enabled):
-     *  '(I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2G14.6,I8,2G14.6)'
-     */
-    strnwscpy(segname, inbuf+11, 7);
-    strnwscpy(resname, inbuf+29, 7);
-    strnwscpy(name, inbuf+38, 7);
-    strnwscpy(atype, inbuf+47, 4);
-    
-    *resid = atoi(inbuf+20);
-    *q = (float) atof(inbuf+52);
-    *m = (float) atof(inbuf+68);
+    // if (charmmdrude == 1) {
+    //   *imove = atoi(inbuf+80+xplorshift);
+    //   *alphadp = atof(inbuf+88+xplorshift);
+    //   *tholei = atof(inbuf+102+xplorshift);
+    // }
   } else {
     /* CHARMM PSF format is 
      *  '(I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2G14.6,I8)'
      */
-    strnwscpy(segname, inbuf+9, 4);
-    strnwscpy(resname, inbuf+19, 4);
-    strnwscpy(name, inbuf+24, 4);
-    strnwscpy(atype, inbuf+29, 4);
+    const char *rdbuf = inbuf;
+    char intbuf[16];
 
-    *resid = atoi(inbuf+13);
-    *q = (float) atof(inbuf+34);
-    *m = (float) atof(inbuf+50);
+    intbuf[0] = '\0';
+    rdbuf += strnwscpy_shift(intbuf, rdbuf, 8, 10);
+    if ( rdbuf[8] != ' ' ) {
+      printf("psfplugin) Failed to parse atom index in PSF file:\n");
+      printf("psfplugin)   '%s'\n", inbuf);
+      return -1;
+    }
+    rdbuf += strnwscpy_shift(segname, rdbuf+9, 4, 7);
+    if ( rdbuf[13] != ' ' ) {
+      printf("psfplugin) Failed to parse segname in PSF file:\n");
+      printf("psfplugin)   '%s'\n", inbuf);
+      return -1;
+    }
+    intbuf[0] = '\0';
+    rdbuf += strnwscpy_shift(intbuf, rdbuf+14, 4, 8);
+    *resid = atoi(intbuf);
+    if ( rdbuf[18] != ' ' ) {
+      printf("psfplugin) Failed to parse resid in PSF file:\n");
+      printf("psfplugin)   '%s'\n", inbuf);
+      return -1;
+    }
+    rdbuf += strnwscpy_shift(resname, rdbuf+19, 4, 7);
+    if ( rdbuf[23] != ' ' ) {
+      printf("psfplugin) Failed to parse resname in PSF file:\n");
+      printf("psfplugin)   '%s'\n", inbuf);
+      return -1;
+    }
+    rdbuf += strnwscpy_shift(name, rdbuf+24, 4, 7);
+    if ( rdbuf[28] != ' ' ) {
+      printf("psfplugin) Failed to parse atom name in PSF file:\n");
+      printf("psfplugin)   '%s'\n", inbuf);
+      return -1;
+    }
+    rdbuf += strnwscpy_shift(atype, rdbuf+29, 4, 7);
+    if ( rdbuf[33] != ' ' ) {
+      printf("psfplugin) Failed to parse atom type in PSF file:\n");
+      printf("psfplugin)   '%s'\n", inbuf);
+      return -1;
+    }
+    *q = (float) atof(rdbuf+34);
+    *m = (float) atof(rdbuf+48);
   }
 
 #if 0
@@ -397,9 +477,10 @@ static int read_bonds(void *v, int *nbonds, int **fromptr, int **toptr,
 }
 
 
-static int psf_get_angles(FILE *f, int n, int *angles) {
+static int psf_get_angles(FILE *f, int n, int *angles, int charmmext) {
   char inbuf[PSF_RECORD_LENGTH+2];
   char *bondptr = NULL;
+  int fw = charmmext ? 10 : 8;
   int i=0;
   while (i<n) {
     if((i % 3) == 0) {
@@ -412,13 +493,13 @@ static int psf_get_angles(FILE *f, int n, int *angles) {
     }
     if((angles[3*i] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((angles[3*i+1] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((angles[3*i+2] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     i++;
   }
 
@@ -426,9 +507,10 @@ static int psf_get_angles(FILE *f, int n, int *angles) {
 }
 
 
-static int psf_get_dihedrals_impropers(FILE *f, int n, int *dihedrals) {
+static int psf_get_dihedrals_impropers(FILE *f, int n, int *dihedrals, int charmmext) {
   char inbuf[PSF_RECORD_LENGTH+2];
   char *bondptr = NULL;
+  int fw = charmmext ? 10 : 8;
   int i=0;
   while (i<n) {
     if((i % 2) == 0) {
@@ -441,16 +523,16 @@ static int psf_get_dihedrals_impropers(FILE *f, int n, int *dihedrals) {
     }
     if((dihedrals[4*i] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((dihedrals[4*i+1] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((dihedrals[4*i+2] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     if((dihedrals[4*i+3] = atoi(bondptr)) < 1)
       break;
-    bondptr += 8;
+    bondptr += fw;
     i++;
   }
 
@@ -493,7 +575,7 @@ static int read_angles(void *v, int *numangles, int **angles,
   psf->numangles    = psf_start_block(psf->fp, "NTHETA"); /* get angle count */
   if (psf->numangles > 0) {
     psf->angles = (int *) malloc(3*psf->numangles*sizeof(int));
-    psf_get_angles(psf->fp, psf->numangles, psf->angles);
+    psf_get_angles(psf->fp, psf->numangles, psf->angles, psf->charmmext);
   } else {
     printf("psfplugin) WARNING: no angles defined in PSF file.\n");
   }
@@ -501,7 +583,7 @@ static int read_angles(void *v, int *numangles, int **angles,
   psf->numdihedrals = psf_start_block(psf->fp, "NPHI");   /* get dihed count */
   if (psf->numdihedrals > 0) {
     psf->dihedrals = (int *) malloc(4*psf->numdihedrals*sizeof(int));
-    psf_get_dihedrals_impropers(psf->fp, psf->numdihedrals, psf->dihedrals);
+    psf_get_dihedrals_impropers(psf->fp, psf->numdihedrals, psf->dihedrals, psf->charmmext);
   } else {
     printf("psfplugin) WARNING: no dihedrals defined in PSF file.\n");
   }
@@ -509,7 +591,7 @@ static int read_angles(void *v, int *numangles, int **angles,
   psf->numimpropers = psf_start_block(psf->fp, "NIMPHI"); /* get imprp count */
   if (psf->numimpropers > 0) {
     psf->impropers = (int *) malloc(4*psf->numimpropers*sizeof(int));
-    psf_get_dihedrals_impropers(psf->fp, psf->numimpropers, psf->impropers);
+    psf_get_dihedrals_impropers(psf->fp, psf->numimpropers, psf->impropers, psf->charmmext);
   } else {
     printf("psfplugin) WARNING: no impropers defined in PSF file.\n");
   }
@@ -519,7 +601,7 @@ static int read_angles(void *v, int *numangles, int **angles,
     psf->cterms = (int *) malloc(8*psf->numcterms*sizeof(int));
 
     /* same format as dihedrals, but double the number of terms */
-    psf_get_dihedrals_impropers(psf->fp, psf->numcterms * 2, psf->cterms);
+    psf_get_dihedrals_impropers(psf->fp, psf->numcterms * 2, psf->cterms, psf->charmmext);
   } else {
     printf("psfplugin) no cross-terms defined in PSF file.\n");
   }
@@ -667,30 +749,42 @@ static int write_psf_structure(void *v, int optflags,
   psfdata *psf = (psfdata *)v;
   const molfile_atom_t *atom;
   int i, fullrows;
+  int xplorfmt = 0;
+
+  for (i=0; i<psf->numatoms; i++) {
+    if ( ! isdigit(atoms[i].type[0]) ) xplorfmt = 1;
+  }
 
   /* determine if we must write out an EXT formatted PSF file */
   /* check the field width of the PSF atom records            */
-  if (psf->numatoms > 99999999) {
-    psf->charmmext = 1; /* force output to EXTended PSF format      */
-  }
-  if (psf->namdfmt == 0 || psf->charmmext == 0) {
+  if (psf->namdfmt == 0) {
+    int fw = xplorfmt ? 6 : 4;
     for (i=0; i<psf->numatoms; i++) {
-      const char *atomname; 
-      atom = &atoms[i];
-      atomname = atom->name;
-
-      if (strlen(atom->type) > 4) {
+      if (strlen(atoms[i].type) > fw) {
         psf->namdfmt = 1;   /* force output to NAMD PSF variant because */
-                            /* the atom types are also too long...      */
-        psf->charmmext = 1; /* force output to EXTended PSF format      */
+                            /* the atom types are too long              */
       }
-      if (strlen(atom->name) > 4) {
-        psf->charmmext = 1; /* force output to EXTended PSF format      */
+    }
+  }
+  if (psf->namdfmt) {
+    psf->charmmext = 0; /* using space-delimited format anyway */
+  } else {
+    if (psf->numatoms > 9999999) { /* allow space-delimited readers */
+      psf->charmmext = 1; /* force output to EXTended PSF format      */
+    }
+    if (psf->charmmext == 0) {
+      for (i=0; i<psf->numatoms; i++) {
+        if (strlen(atoms[i].name) > 4) {
+          psf->charmmext = 1; /* force output to EXTended PSF format      */
+        }
+        if (xplorfmt && strlen(atoms[i].type) > 4) {
+          psf->charmmext = 1; /* force output to EXTended PSF format      */
+        }
       }
-    }  
+    }
   }
   if (psf->namdfmt == 1) {
-    printf("psfplugin) Structure requires EXTended NAMD version of the PSF format\n");
+    printf("psfplugin) Structure requires space-delimited NAMD PSF format\n");
   } else if (psf->charmmext == 1) {
     printf("psfplugin) Structure requires EXTended PSF format\n");
   }
@@ -734,16 +828,18 @@ static int write_psf_structure(void *v, int optflags,
       atomname++;
 
     if (psf->charmmext) {
-      fprintf(psf->fp, "%10d %-8s %-8d %-8s %-8s %-4s %10.6f     %9.4f  %10d\n",
+      fprintf(psf->fp, xplorfmt ? 
+                       "%10d %-8s %-8d %-8s %-8s %-6s %10.6f    %10.4f  %10d\n"
+                     : "%10d %-8s %-8d %-8s %-8s %-4s %10.6f    %10.4f  %10d\n",
               i+1, atom->segid, atom->resid, atom->resname,
               atomname, atom->type, atom->charge, atom->mass, 0);
     } else if (psf->charmmfmt) {
       /* XXX replace hard-coded 0 with proper atom type ID code */
-      fprintf(psf->fp, "%8d %-4s %-4d %-4s %-4s %4d %10.6f     %9.4f  %10d\n",
+      fprintf(psf->fp, "%8d %-4s %-4d %-4s %-4s %4d %10.6f    %10.4f  %10d\n",
               i+1, atom->segid, atom->resid, atom->resname,
               atomname, /* atom->typeid */ 0, atom->charge, atom->mass, 0);
     } else {
-      fprintf(psf->fp, "%8d %-4s %-4d %-4s %-4s %-4s %10.6f     %9.4f  %10d\n",
+      fprintf(psf->fp, "%8d %-4s %-4d %-4s %-4s %-4s %10.6f    %10.4f  %10d\n",
               i+1, atom->segid, atom->resid, atom->resname,
               atomname, atom->type, atom->charge, atom->mass, 0);
     }
@@ -757,7 +853,9 @@ static int write_psf_structure(void *v, int optflags,
   if (psf->nbonds > 0 && psf->from != NULL && psf->to != NULL) {
     fprintf(psf->fp, "%8d !NBOND: bonds\n", psf->nbonds);
     for (i=0; i<psf->nbonds; i++) {
-      if (psf->charmmext)
+      if (psf->namdfmt)
+        fprintf(psf->fp, " %7d %7d", psf->from[i], psf->to[i]);
+      else if (psf->charmmext)
         fprintf(psf->fp, "%10d%10d", psf->from[i], psf->to[i]);
       else
         fprintf(psf->fp, "%8d%8d", psf->from[i], psf->to[i]);
@@ -788,7 +886,7 @@ static int write_psf_structure(void *v, int optflags,
     fprintf(psf->fp, "%8d !NTHETA: angles\n", psf->numangles);
     for (numinline=0,i=0; i<psf->numangles; i++) {
       if ( numinline == 3 ) { fprintf(psf->fp, "\n");  numinline = 0; }
-      fprintf(psf->fp, " %7d %7d %7d", 
+      fprintf(psf->fp, psf->charmmext ? "%10d%10d%10d" : " %7d %7d %7d", 
               psf->angles[i*3], psf->angles[i*3+1], psf->angles[i*3+2]);
       numinline++;
     }
@@ -797,7 +895,7 @@ static int write_psf_structure(void *v, int optflags,
     fprintf(psf->fp, "%8d !NPHI: dihedrals\n", psf->numdihedrals);
     for (numinline=0,i=0; i<psf->numdihedrals; i++) {
       if ( numinline == 2 ) { fprintf(psf->fp, "\n");  numinline = 0; }
-      fprintf(psf->fp, " %7d %7d %7d %7d", 
+      fprintf(psf->fp, psf->charmmext ? "%10d%10d%10d%10d" : " %7d %7d %7d %7d", 
               psf->dihedrals[i*4], psf->dihedrals[i*4+1], 
               psf->dihedrals[i*4+2], psf->dihedrals[i*4+3]);
       numinline++;
@@ -807,7 +905,7 @@ static int write_psf_structure(void *v, int optflags,
     fprintf(psf->fp, "%8d !NIMPHI: impropers\n", psf->numimpropers);
     for (numinline=0,i=0; i<psf->numimpropers; i++) {
       if ( numinline == 2 ) { fprintf(psf->fp, "\n");  numinline = 0; }
-      fprintf(psf->fp, " %7d %7d %7d %7d",
+      fprintf(psf->fp, psf->charmmext ? "%10d%10d%10d%10d" : " %7d %7d %7d %7d",
               psf->impropers[i*4  ], psf->impropers[i*4+1], 
               psf->impropers[i*4+2], psf->impropers[i*4+3]);
       numinline++;
@@ -827,18 +925,21 @@ static int write_psf_structure(void *v, int optflags,
   /* Pad with zeros, one for every atom */
   fullrows = psf->numatoms/8;
   for (i=0; i<fullrows; ++i)
-    fprintf(psf->fp, "%8d%8d%8d%8d%8d%8d%8d%8d\n", 0, 0, 0, 0, 0, 0, 0, 0);
+    fprintf(psf->fp, psf->charmmext ? "%10d%10d%10d%10d%10d%10d%10d%10d\n" :
+                     "%8d%8d%8d%8d%8d%8d%8d%8d\n", 0, 0, 0, 0, 0, 0, 0, 0);
   for (i=psf->numatoms - fullrows*8; i; --i)
-    fprintf(psf->fp, "%8d", 0);
+    fprintf(psf->fp, psf->charmmext ? "%10d" : "%8d", 0);
   fprintf(psf->fp, "\n\n");
-  fprintf(psf->fp, "%8d %7d !NGRP\n%8d%8d%8d\n\n", 1, 0, 0, 0, 0);
+  fprintf(psf->fp, psf->charmmext ? "%8d %7d !NGRP\n%10d%10d%10d\n\n" :
+                   "%8d %7d !NGRP\n%8d%8d%8d\n\n", 1, 0, 0, 0, 0);
 
 
   /* write out cross-terms */
   if (psf->numcterms > 0) {
     fprintf(psf->fp, "%8d !NCRTERM: cross-terms\n", psf->numcterms);
     for (i=0; i<psf->numcterms; i++) {
-      fprintf(psf->fp, " %7d %7d %7d %7d %7d %7d %7d %7d\n",
+      fprintf(psf->fp, psf->charmmext ? "%10d%10d%10d%10d%10d%10d%10d%10d\n" :
+                       " %7d %7d %7d %7d %7d %7d %7d %7d\n",
               psf->cterms[i*8  ], psf->cterms[i*8+1], 
               psf->cterms[i*8+2], psf->cterms[i*8+3],
               psf->cterms[i*8+4], psf->cterms[i*8+5],

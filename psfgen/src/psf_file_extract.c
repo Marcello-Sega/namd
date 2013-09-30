@@ -131,7 +131,7 @@ static int extract_segment_extra_data(FILE *file, topo_mol *mol) {
   return 0;
 }
 
-static int extract_bonds(FILE *file, topo_mol *mol, int natoms, 
+static int extract_bonds(FILE *file, int fw, topo_mol *mol, int natoms, 
                          topo_mol_atom_t **molatomlist) {
 
   int *bonds;
@@ -144,7 +144,7 @@ static int extract_bonds(FILE *file, topo_mol *mol, int natoms,
   }
   bonds = (int *)malloc(2*nbonds*sizeof(int));
 
-  if (psf_get_bonds(file, nbonds, bonds)) {
+  if (psf_get_bonds(file, fw, nbonds, bonds)) {
     free(bonds);
     return -1;
   }
@@ -179,7 +179,7 @@ static int extract_bonds(FILE *file, topo_mol *mol, int natoms,
   return 0;
 }
 
-static int extract_angles(FILE *file, topo_mol *mol, int natoms, 
+static int extract_angles(FILE *file, int fw, topo_mol *mol, int natoms, 
                          topo_mol_atom_t **molatomlist) {
 
   int i, nangles;
@@ -189,7 +189,7 @@ static int extract_angles(FILE *file, topo_mol *mol, int natoms,
   if (nangles < 0) return -1; 
   angles = (int *)malloc(3*nangles*sizeof(int));
 
-  if (psf_get_angles(file, nangles, angles)) {
+  if (psf_get_angles(file, fw, nangles, angles)) {
     free(angles); 
     return -1; 
   } 
@@ -202,7 +202,7 @@ static int extract_angles(FILE *file, topo_mol *mol, int natoms,
     atom2 = molatomlist[angles[3*i+1]-1];
     atom3 = molatomlist[angles[3*i+2]-1];
    
-    tuple = memarena_alloc(mol->arena,sizeof(topo_mol_angle_t));
+    tuple = memarena_alloc(mol->angle_arena,sizeof(topo_mol_angle_t));
     tuple->next[0] = atom1->angles;
     tuple->atom[0] = atom1;
     tuple->next[1] = atom2->angles;
@@ -219,7 +219,7 @@ static int extract_angles(FILE *file, topo_mol *mol, int natoms,
   return 0;
 }
 
-static int extract_dihedrals(FILE *file, topo_mol *mol, int natoms,
+static int extract_dihedrals(FILE *file, int fw, topo_mol *mol, int natoms,
                          topo_mol_atom_t **molatomlist) {
 
   int i, ndihedrals;
@@ -229,7 +229,7 @@ static int extract_dihedrals(FILE *file, topo_mol *mol, int natoms,
   if (ndihedrals < 0) return -1; 
   dihedrals = (int *)malloc(4*ndihedrals*sizeof(int));
 
-  if (psf_get_dihedrals(file, ndihedrals, dihedrals)) {
+  if (psf_get_dihedrals(file, fw, ndihedrals, dihedrals)) {
     free(dihedrals); 
     return -1;
   }
@@ -243,7 +243,7 @@ static int extract_dihedrals(FILE *file, topo_mol *mol, int natoms,
     atom3 = molatomlist[dihedrals[4*i+2]-1];
     atom4 = molatomlist[dihedrals[4*i+3]-1];
 
-    tuple = memarena_alloc(mol->arena,sizeof(topo_mol_dihedral_t));
+    tuple = memarena_alloc(mol->dihedral_arena,sizeof(topo_mol_dihedral_t));
     tuple->next[0] = atom1->dihedrals;
     tuple->atom[0] = atom1;
     tuple->next[1] = atom2->dihedrals;
@@ -263,7 +263,7 @@ static int extract_dihedrals(FILE *file, topo_mol *mol, int natoms,
   return 0;
 }
 
-static int extract_impropers(FILE *file, topo_mol *mol, int natoms,
+static int extract_impropers(FILE *file, int fw, topo_mol *mol, int natoms,
                          topo_mol_atom_t **molatomlist) {
 
   int i, nimpropers;
@@ -273,7 +273,7 @@ static int extract_impropers(FILE *file, topo_mol *mol, int natoms,
   if (nimpropers < 0) return -1; 
   impropers = (int *)malloc(4*nimpropers*sizeof(int));
 
-  if (psf_get_impropers(file, nimpropers, impropers)) {
+  if (psf_get_impropers(file, fw, nimpropers, impropers)) {
     free(impropers); 
     return -1;
   } 
@@ -307,7 +307,7 @@ static int extract_impropers(FILE *file, topo_mol *mol, int natoms,
   return 0;
 }
 
-static int extract_cmaps(FILE *file, topo_mol *mol, int natoms,
+static int extract_cmaps(FILE *file, int fw, topo_mol *mol, int natoms,
                          topo_mol_atom_t **molatomlist) {
 
   int i, j, ncmaps;
@@ -319,7 +319,7 @@ static int extract_cmaps(FILE *file, topo_mol *mol, int natoms,
   }
   cmaps = (int *)malloc(8*ncmaps*sizeof(int));
 
-  if (psf_get_cmaps(file, ncmaps, cmaps)) {
+  if (psf_get_cmaps(file, fw, ncmaps, cmaps)) {
     free(cmaps); 
     return -1;
   } 
@@ -399,10 +399,22 @@ static topo_mol_residue_t *get_residue(topo_mol_segment_t *seg,
 
 int psf_file_extract(topo_mol *mol, FILE *file, void *v,
                                 void (*print_msg)(void *, const char *)) {
-  int i, natoms, npatch;
+  int i, natoms, npatch, charmmext;
   psfatom *atomlist;
   topo_mol_atom_t **molatomlist;
   long filepos;
+  char inbuf[PSF_RECORD_LENGTH+2];
+
+  /* Read header flags */
+  if (feof(file) || (inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file))) {
+    print_msg(v,"ERROR: Unable to read psf file");
+    return -1;
+  }
+  if ( strncmp(inbuf, "PSF", 3) ) {
+    print_msg(v,"ERROR: File does not begin with PSF - wrong format?");
+    return -1;
+  }
+  charmmext = ( strstr(inbuf, "EXT") ? 1 : 0 ); 
 
   /* Read patch info from REMARKS */
   npatch = extract_patches(file, mol);
@@ -510,35 +522,35 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
   extract_segment_extra_data(file, mol);
   fseek(file, filepos, SEEK_SET);
 
-  if (extract_bonds(file, mol, natoms, molatomlist)) {
+  if (extract_bonds(file, (charmmext ? 10 : 8), mol, natoms, molatomlist)) {
     print_msg(v,"Error processing bonds");
     free(atomlist);
     free(molatomlist);
     return -1;
   }
  
-  if (extract_angles(file, mol, natoms, molatomlist)) {
+  if (extract_angles(file, (charmmext ? 10 : 8), mol, natoms, molatomlist)) {
     print_msg(v,"Error processing angles");
     free(atomlist);
     free(molatomlist);
     return -1;
   }
 
-  if (extract_dihedrals(file, mol, natoms, molatomlist)) {
+  if (extract_dihedrals(file, (charmmext ? 10 : 8), mol, natoms, molatomlist)) {
     print_msg(v,"Error processing dihedrals");
     free(atomlist);
     free(molatomlist);
     return -1;
   }
 
-  if (extract_impropers(file, mol, natoms, molatomlist)) {
+  if (extract_impropers(file, (charmmext ? 10 : 8), mol, natoms, molatomlist)) {
     print_msg(v,"Error processing impropers");
     free(atomlist);
     free(molatomlist);
     return -1;
   }
 
-  switch (extract_cmaps(file, mol, natoms, molatomlist)) {
+  switch (extract_cmaps(file, (charmmext ? 10 : 8), mol, natoms, molatomlist)) {
   case 0:
     break;
   case 1:
