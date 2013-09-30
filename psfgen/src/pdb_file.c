@@ -228,7 +228,7 @@ void write_pdb_atom(FILE *outfile,
     float y, float z, float occ, float beta, char *chain, char *segname,
     char *element) {
 
-  char name[6];
+  char name[6], rname[5], sname[5];
   char chainc, insertionc;
   int p;
 
@@ -245,8 +245,17 @@ void write_pdb_atom(FILE *outfile,
     }
   }
 
+  strncpy(rname, resname, 4);
+  rname[4] = '\0';
+  resname = rname;
+
   chainc = ( chain[0] ? chain[0] : ' ' );
+  resid = resid % 10000;
   insertionc = ( insertion[0] ? insertion[0] : ' ' );
+
+  strncpy(sname, segname, 4);
+  sname[4] = '\0';
+  segname = sname;
 
   if (index < 100000) {
     fprintf(outfile,
