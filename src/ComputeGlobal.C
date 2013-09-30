@@ -206,6 +206,7 @@ void ComputeGlobal::doWork()
   else {
     if ( hasPatchZero ) {
       ComputeGlobalDataMsg *msg = new ComputeGlobalDataMsg;
+      msg->step = -1;
       msg->count = 1;
       comm->sendComputeGlobalData(msg);
     }
