@@ -10,7 +10,7 @@
  *
  *      $RCSfile: fastio.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.7 $       $Date: 2013/06/07 21:43:26 $
+ *      $Revision: 1.8 $       $Date: 2013/09/30 22:02:44 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -27,7 +27,7 @@
 #define FIO_DIRECT  0x04 /* emulate Unix O_DIRECT flag */
  
 /* Compiling on windows */
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 
 #if 1 
 /* use native Windows I/O calls */
@@ -550,7 +550,7 @@ static fio_size_t fio_fwrite(void *ptr, fio_size_t size,
       if (rc < 0) {
         printf("fio_fwrite(): rc %ld  sz: %ld\n", rc, size);
         perror("  perror fio_fwrite(): ");
-        break;
+        return cnt;
       }
     }
     len += rc;

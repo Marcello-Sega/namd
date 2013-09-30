@@ -11,7 +11,7 @@
  *
  *      $RCSfile: jsplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.4 $       $Date: 2013/06/07 21:43:26 $
+ *      $Revision: 1.5 $       $Date: 2013/09/30 22:02:44 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -64,7 +64,9 @@
  *
  ***************************************************************************/
 
+#if 1
 #define INFOMSGS  1
+#endif
 
 #if 1
 #define ENABLEJSSHORTREADS 1
@@ -153,7 +155,8 @@ static void *alloc_aligned_ptr(size_t sz, size_t blocksz, void **unalignedptr) {
 #define JSOPT_ATOMICNUMBER  0x00002000  /* file contains atomic numbers */
 
 typedef struct {
-  fio_fd fd;
+  int verbose;                 /* flag to enable console info output    */
+  fio_fd fd;                   /* main file descriptor                  */
   long natoms;                 /* handle uses a long type for natoms to */
                                /* help force promotion of file offset   */
                                /* arithmetic to long types              */
@@ -222,6 +225,7 @@ static void *open_js_read(const char *path, const char *filetype, int *natoms) {
 
   js = (jshandle *)malloc(sizeof(jshandle));
   memset(js, 0, sizeof(jshandle));
+  js->verbose = (getenv("VMDJSVERBOSE") != NULL);
 #if JSMAJORVERSION > 1
   js->parsed_structure=0;
   js->directio_block_size=1;
@@ -261,7 +265,8 @@ static void *open_js_read(const char *path, const char *filetype, int *natoms) {
   fio_read_int32(js->fd, &js->nframes);
   if ((jsmagicnumber != JSMAGICNUMBER) || (jsendianism != JSENDIANISM)) {
 #if defined(INFOMSGS)
-    printf("jsplugin) opposite endianism file, enabling byte swapping\n");
+    if (js->verbose)
+      printf("jsplugin) opposite endianism file, enabling byte swapping\n");
 #endif
     js->reverseendian = 1;
     swap4_aligned(&jsmagicnumber, 1);
@@ -272,7 +277,8 @@ static void *open_js_read(const char *path, const char *filetype, int *natoms) {
     swap4_aligned(&js->nframes, 1);
   } else {
 #if defined(INFOMSGS)
-    printf("jsplugin) native endianism file\n");
+    if (js->verbose)
+      printf("jsplugin) native endianism file\n");
 #endif
   }
 
@@ -325,10 +331,12 @@ static int js_calc_timestep_blocking_info(void *mydata) {
   ts_block_offset = (js->ts_file_offset + bszmask) & (~bszmask);
 
 #if defined(INFOMSGS)
-  printf("jsplugin) TS block size %ld  curpos: %ld  blockpos: %ld\n", 
-         (long) js->directio_block_size, 
-         (long) js->ts_file_offset, 
-         (long) ts_block_offset);
+  if (js->verbose) {
+    printf("jsplugin) TS block size %ld  curpos: %ld  blockpos: %ld\n", 
+           (long) js->directio_block_size, 
+           (long) js->ts_file_offset, 
+           (long) ts_block_offset);
+  }
 #endif
 
   /* seek to the first block of the first timestep */
@@ -365,11 +373,13 @@ static int js_calc_timestep_blocking_info(void *mydata) {
 #endif
 
 #if defined(INFOMSGS)
-  printf("jsplugin) TS crds sz: %ld psz: %ld  ucell sz: %ld psz: %ld\n",
-         (long) js->ts_crd_sz,
-         (long) js->ts_crd_padsz, 
-         (long) js->ts_ucell_sz, 
-         (long) js->ts_ucell_padsz);
+  if (js->verbose) {
+    printf("jsplugin) TS crds sz: %ld psz: %ld  ucell sz: %ld psz: %ld\n",
+           (long) js->ts_crd_sz,
+           (long) js->ts_crd_padsz, 
+           (long) js->ts_ucell_sz, 
+           (long) js->ts_ucell_padsz);
+  }
 #endif
 
   return MOLFILE_SUCCESS;
@@ -390,7 +400,8 @@ static int read_js_structure(void *mydata, int *optflags,
     swap4_aligned(&js->optflags, 1);
 
 #if defined(INFOMSGS)
-  printf("jsplugin) read option flags: %0x08x\n", js->optflags);
+  if (js->verbose)
+    printf("jsplugin) read option flags: %0x08x\n", js->optflags);
 #endif
 
   /* Check to see if block-based trajectory I/O is used  */
@@ -401,8 +412,10 @@ static int read_js_structure(void *mydata, int *optflags,
       swap4_aligned(&js->directio_block_size, 1);
 
 #if defined(INFOMSGS)
-    printf("jsplugin) Block-based I/O enabled: block size %d bytes\n", 
-           js->directio_block_size);
+    if (js->verbose) {
+      printf("jsplugin) Block-based I/O enabled: block size %d bytes\n", 
+             js->directio_block_size);
+    }
 #endif
 
     /* Check to ensure that we can handle the block size used by the */
@@ -419,7 +432,9 @@ static int read_js_structure(void *mydata, int *optflags,
       } else {
         js->directio_enabled = 1;
 #if defined(INFOMSGS)
-        printf("jsplugin) Direct I/O enabled for file '%s'\n", js->path);
+        if (js->verbose) {
+          printf("jsplugin) Direct I/O enabled for file '%s'\n", js->path);
+        }
 #endif
       } 
     }
@@ -472,9 +487,11 @@ static int read_js_structure(void *mydata, int *optflags,
     }
 
 #if defined(INFOMSGS)
-    printf("jsplugin) reading string tables...\n");
-    printf("jsplugin) %d %d %d %d %d\n",
-           numatomnames, numatomtypes, numresnames, numsegids, numchains);
+    if (js->verbose) {
+      printf("jsplugin) reading string tables...\n");
+      printf("jsplugin) %d %d %d %d %d\n",
+             numatomnames, numatomtypes, numresnames, numsegids, numchains);
+    }
 #endif
 
     /* skip forward to first TS if the caller gives us NULL ptrs */
@@ -515,7 +532,9 @@ static int read_js_structure(void *mydata, int *optflags,
         if (js->reverseendian)
           swap4_aligned(&js->nbonds, 1);
 #if defined(INFOMSGS)
-        printf("jsplugin)   %d bonds...\n", js->nbonds);
+        if (js->verbose) {
+          printf("jsplugin)   %d bonds...\n", js->nbonds);
+        }
 #endif
 
         offset += 2 * js->nbonds * sizeof(int);
@@ -531,7 +550,9 @@ static int read_js_structure(void *mydata, int *optflags,
         if (js->reverseendian)
           swap4_aligned(&js->numangles, 1);
 #if defined(INFOMSGS)
-        printf("jsplugin)   %d angles...\n", js->numangles);
+        if (js->verbose) {
+          printf("jsplugin)   %d angles...\n", js->numangles);
+        }
 #endif
         fio_fseek(js->fd, sizeof(int)*3L*js->numangles, FIO_SEEK_CUR);
 
@@ -547,7 +568,9 @@ static int read_js_structure(void *mydata, int *optflags,
         if (js->reverseendian)
           swap4_aligned(&js->numimpropers, 1);
 #if defined(INFOMSGS)
-        printf("jsplugin)   %d impropers...\n", js->numimpropers);
+        if (js->verbose) {
+          printf("jsplugin)   %d impropers...\n", js->numimpropers);
+        }
 #endif
         fio_fseek(js->fd, sizeof(int)*4L*js->numimpropers, FIO_SEEK_CUR);
       }
@@ -557,7 +580,9 @@ static int read_js_structure(void *mydata, int *optflags,
         if (js->reverseendian)
           swap4_aligned(&js->numcterms, 1);
 #if defined(INFOMSGS)
-        printf("jsplugin)   %d cterms...\n", js->numcterms);
+        if (js->verbose) {
+          printf("jsplugin)   %d cterms...\n", js->numcterms);
+        }
 #endif
         fio_fseek(js->fd, sizeof(int)*8L*js->numcterms, FIO_SEEK_CUR);
       }
@@ -577,7 +602,8 @@ static int read_js_structure(void *mydata, int *optflags,
     chains    = (char **) malloc(numchains    * sizeof(char *));
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   atom names...\n");
+    if (js->verbose)
+      printf("jsplugin)   atom names...\n");
 #endif
 
     /* read in the string tables */
@@ -587,7 +613,8 @@ static int read_js_structure(void *mydata, int *optflags,
     }
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   atom types...\n");
+    if (js->verbose)
+      printf("jsplugin)   atom types...\n");
 #endif
     for (i=0; i<numatomtypes; i++) {
       atomtypes[i] = (char *) malloc(16 * sizeof(char));
@@ -595,7 +622,8 @@ static int read_js_structure(void *mydata, int *optflags,
     }
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   residue names...\n");
+    if (js->verbose)
+      printf("jsplugin)   residue names...\n");
 #endif
     for (i=0; i<numresnames; i++) {
       resnames[i] = (char *) malloc(8 * sizeof(char));
@@ -603,7 +631,8 @@ static int read_js_structure(void *mydata, int *optflags,
     }
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   segment names...\n");
+    if (js->verbose)
+      printf("jsplugin)   segment names...\n");
 #endif
     for (i=0; i<numsegids; i++) {
       segids[i] = (char *) malloc(8 * sizeof(char));
@@ -611,7 +640,8 @@ static int read_js_structure(void *mydata, int *optflags,
     }
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   chain names...\n");
+    if (js->verbose)
+      printf("jsplugin)   chain names...\n");
 #endif
     for (i=0; i<numchains; i++) {
       chains[i] = (char *) malloc(2 * sizeof(char));
@@ -619,13 +649,15 @@ static int read_js_structure(void *mydata, int *optflags,
     }
 
 #if defined(INFOMSGS)
-    printf("jsplugin) reading numeric field tables...\n");
+    if (js->verbose)
+      printf("jsplugin) reading numeric field tables...\n");
 #endif
     /* read in all of the atom fields */
     shortbuf = (short *) malloc(js->natoms * sizeof(short));
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   atom name indices...\n");
+    if (js->verbose)
+      printf("jsplugin)   atom name indices...\n");
 #endif
     /* read in atom names */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
@@ -639,7 +671,8 @@ static int read_js_structure(void *mydata, int *optflags,
     free(atomnames);
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   atom type indices...\n");
+    if (js->verbose)
+      printf("jsplugin)   atom type indices...\n");
 #endif
     /* read in atom types */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
@@ -653,7 +686,8 @@ static int read_js_structure(void *mydata, int *optflags,
     free(atomtypes);
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   residue name indices...\n");
+    if (js->verbose)
+      printf("jsplugin)   residue name indices...\n");
 #endif
     /* read in resnames */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
@@ -667,7 +701,8 @@ static int read_js_structure(void *mydata, int *optflags,
     free(resnames);
     
 #if defined(INFOMSGS)
-    printf("jsplugin)   segment name indices...\n");
+    if (js->verbose)
+      printf("jsplugin)   segment name indices...\n");
 #endif
     /* read in segids */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
@@ -681,7 +716,8 @@ static int read_js_structure(void *mydata, int *optflags,
     free(segids);
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   chain name indices...\n");
+    if (js->verbose)
+      printf("jsplugin)   chain name indices...\n");
 #endif
     /* read in chains */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
@@ -705,7 +741,8 @@ static int read_js_structure(void *mydata, int *optflags,
     intbuf = (int *) malloc(js->natoms * sizeof(int));
 
 #if defined(INFOMSGS)
-    printf("jsplugin)   residue indices...\n");
+    if (js->verbose)
+      printf("jsplugin)   residue indices...\n");
 #endif
     /* read in resid */
     fio_fread(intbuf, js->natoms * sizeof(int), 1, js->fd);
@@ -722,7 +759,8 @@ static int read_js_structure(void *mydata, int *optflags,
 
 
 #if defined(INFOMSGS)
-    printf("jsplugin) reading optional per-atom tables...\n");
+    if (js->verbose)
+      printf("jsplugin) reading optional per-atom tables...\n");
 #endif
     /*
      * read in optional single-precision float data blocks
@@ -734,7 +772,8 @@ static int read_js_structure(void *mydata, int *optflags,
     /* read in optional data if it exists */
     if (js->optflags & JSOPT_OCCUPANCY) {
 #if defined(INFOMSGS)
-      printf("jsplugin)   occupancy...\n");
+      if (js->verbose)
+        printf("jsplugin)   occupancy...\n");
 #endif
       *optflags |= MOLFILE_OCCUPANCY;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
@@ -747,7 +786,8 @@ static int read_js_structure(void *mydata, int *optflags,
 
     if (js->optflags & JSOPT_BFACTOR) {
 #if defined(INFOMSGS)
-      printf("jsplugin)   bfactor...\n");
+      if (js->verbose)
+        printf("jsplugin)   bfactor...\n");
 #endif
       *optflags |= MOLFILE_BFACTOR;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
@@ -760,7 +800,8 @@ static int read_js_structure(void *mydata, int *optflags,
 
     if (js->optflags & JSOPT_MASS) { 
 #if defined(INFOMSGS)
-      printf("jsplugin)   mass...\n");
+      if (js->verbose)
+        printf("jsplugin)   mass...\n");
 #endif
       *optflags |= MOLFILE_MASS;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
@@ -773,7 +814,8 @@ static int read_js_structure(void *mydata, int *optflags,
 
     if (js->optflags & JSOPT_CHARGE) { 
 #if defined(INFOMSGS)
-      printf("jsplugin)   charge...\n");
+      if (js->verbose)
+        printf("jsplugin)   charge...\n");
 #endif
       *optflags |= MOLFILE_CHARGE;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
@@ -786,7 +828,8 @@ static int read_js_structure(void *mydata, int *optflags,
 
     if (js->optflags & JSOPT_RADIUS) { 
 #if defined(INFOMSGS)
-      printf("jsplugin)   radius...\n");
+      if (js->verbose)
+        printf("jsplugin)   radius...\n");
 #endif
       *optflags |= MOLFILE_RADIUS;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
@@ -810,7 +853,8 @@ static int read_js_structure(void *mydata, int *optflags,
 
     if (js->optflags & JSOPT_ATOMICNUMBER) { 
 #if defined(INFOMSGS)
-      printf("jsplugin)   atomic number...\n");
+      if (js->verbose)
+        printf("jsplugin)   atomic number...\n");
 #endif
       *optflags |= MOLFILE_ATOMICNUMBER;
       fio_fread(intbuf, js->natoms * sizeof(int), 1, js->fd);
@@ -835,7 +879,8 @@ static int read_js_structure(void *mydata, int *optflags,
       if (js->reverseendian)
         swap4_aligned(&js->nbonds, 1);
 #if defined(INFOMSGS)
-      printf("jsplugin)   %d bonds...\n", js->nbonds);
+      if (js->verbose)
+        printf("jsplugin)   %d bonds...\n", js->nbonds);
 #endif
 
       js->bondfrom = (int *) malloc(js->nbonds * sizeof(int));
@@ -849,7 +894,8 @@ static int read_js_structure(void *mydata, int *optflags,
 
       if (js->optflags & JSOPT_BONDORDERS) {
 #if defined(INFOMSGS)
-        printf("jsplugin)   bond orders...\n");
+        if (js->verbose)
+          printf("jsplugin)   bond orders...\n");
 #endif
         js->bondorders = (float *) malloc(js->nbonds * sizeof(float));
         fio_fread(js->bondorders, js->nbonds * sizeof(float), 1, js->fd);
@@ -863,7 +909,8 @@ static int read_js_structure(void *mydata, int *optflags,
       if (js->reverseendian)
         swap4_aligned(&js->numangles, 1);
 #if defined(INFOMSGS)
-      printf("jsplugin)   %d angles...\n", js->numangles);
+      if (js->verbose)
+        printf("jsplugin)   %d angles...\n", js->numangles);
 #endif
       js->angles = (int *) malloc(3L * js->numangles * sizeof(int));
       fio_fread(js->angles, sizeof(int)*3L*js->numangles, 1, js->fd);
@@ -874,7 +921,8 @@ static int read_js_structure(void *mydata, int *optflags,
       if (js->reverseendian)
         swap4_aligned(&js->numdihedrals, 1);
 #if defined(INFOMSGS)
-      printf("jsplugin)   %d dihedrals...\n", js->numdihedrals);
+      if (js->verbose)
+        printf("jsplugin)   %d dihedrals...\n", js->numdihedrals);
 #endif
       js->dihedrals = (int *) malloc(4L * js->numdihedrals * sizeof(int));
       fio_fread(js->dihedrals, sizeof(int)*4L*js->numdihedrals, 1, js->fd);
@@ -886,7 +934,8 @@ static int read_js_structure(void *mydata, int *optflags,
         swap4_aligned(&js->numimpropers, 1);
       js->impropers = (int *) malloc(4L * js->numimpropers * sizeof(int));
 #if defined(INFOMSGS)
-      printf("jsplugin)   %d impropers...\n", js->numimpropers);
+      if (js->verbose)
+        printf("jsplugin)   %d impropers...\n", js->numimpropers);
 #endif
       fio_fread(js->impropers, sizeof(int)*4L*js->numimpropers, 1, js->fd);
       if (js->reverseendian)
@@ -898,7 +947,8 @@ static int read_js_structure(void *mydata, int *optflags,
         swap4_aligned(&js->numcterms, 1);
       js->cterms = (int *) malloc(8L * js->numcterms * sizeof(int));
 #if defined(INFOMSGS)
-      printf("jsplugin)   %d cterms...\n", js->numcterms);
+      if (js->verbose)
+        printf("jsplugin)   %d cterms...\n", js->numcterms);
 #endif
       fio_fread(js->cterms, sizeof(int)*8L*js->numcterms, 1, js->fd);
       if (js->reverseendian)
@@ -906,8 +956,10 @@ static int read_js_structure(void *mydata, int *optflags,
     }
 
 #if defined(INFOMSGS)
-    printf("jsplugin) final optflags: %08x\n", *optflags);
-    printf("jsplugin) structure information complete\n");
+    if (js->verbose) {
+      printf("jsplugin) final optflags: %08x\n", *optflags);
+      printf("jsplugin) structure information complete\n");
+    }
 #endif
 
     /* record the file offset for the first timestep */
@@ -917,7 +969,8 @@ static int read_js_structure(void *mydata, int *optflags,
   }
 
 #if defined(INFOMSGS)
-  printf("jsplugin) no structure information available\n");
+  if (js->verbose)
+    printf("jsplugin) no structure information available\n");
 #endif
 
   /* record the file offset for the first timestep */
@@ -1116,7 +1169,7 @@ static int read_js_timestep(void *v, int natoms, molfile_timestep_t *ts) {
     iov[1].iov_len  = js->ts_ucell_padsz;
 
 #if 1
-    /* Use fall-back code instead of readv():
+    /* Use fall-back code instead of readv():                            */
     /*  Some platforms implement readv() as user level code in libc,     */
     /*  and due to POSIX atomicity requirements for readv()/writev(),    */
     /*  they may copy data to internal temp buffers, which can kill      */
@@ -1763,9 +1816,37 @@ static int write_js_angles(void * v,
 
 static int write_js_timestep(void *v, const molfile_timestep_t *ts) { 
   jshandle *js = (jshandle *)v;
+  double *unitcell=NULL;
+
+  /* If no structure data was written and this is the first timestep */
+  /* we must complete writing the file header and performing the     */
+  /* seek to the next filesystem block and VM-page boundary when     */
+  /* using direct I/O APIs...                                        */
+  if (js->directio_ucell_blkbuf == NULL) {
+    printf("jsplugin) no structure data, writing timesteps only...\n");
+    if (getenv("VMDJSBLOCKIO")) {
+      js->optflags |= JSOPT_TS_BLOCKIO;
+      js->directio_block_size = MOLFILE_DIRECTIO_MIN_BLOCK_SIZE; 
+    }
+
+    /* write flags data to the file */
+    fio_write_int32(js->fd, js->optflags); 
+    printf("jsplugin) writing option flags: %0x08x\n", js->optflags);
+
+    /* Check to see if block-based trajectory I/O is used  */
+    /* and write out the block size for this file.         */
+    if (js->optflags & JSOPT_TS_BLOCKIO) {
+      fio_fwrite(&js->directio_block_size, sizeof(int), 1, js->fd);
+      printf("jsplugin) Block-based I/O enabled: block size %d bytes\n", 
+             js->directio_block_size);
+    }
+
+    /* update the file offset for the first timestep */
+    js_calc_timestep_blocking_info(js);
+  }
 
   /* set unit cell pointer to the TS block-aligned buffer area */
-  double *unitcell = (double *) js->directio_ucell_blkbuf;
+  unitcell = (double *) js->directio_ucell_blkbuf;
 
   js->nframes++; /* increment frame count written to the file so far */
 
