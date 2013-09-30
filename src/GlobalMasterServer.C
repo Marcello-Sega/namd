@@ -113,6 +113,11 @@ void GlobalMasterServer::resetAtomList(AtomIDList &atomsRequested) {
     /* go to next master */
     m_i++;
   }
+
+  /* remove duplicates */
+  sort(atomsRequested.begin(), atomsRequested.end());
+  AtomIDList::iterator it = unique(atomsRequested.begin(), atomsRequested.end());
+  atomsRequested.resize( distance(atomsRequested.begin(), it) );
 }
 
 void GlobalMasterServer::resetGroupList(AtomIDList &groupsRequested,
@@ -301,6 +306,7 @@ void GlobalMasterServer::callClients() {
         if (positions[i].atomID == rqAtoms[j]){
           clientAtomPositions.add(receivedAtomPositions[positions[i].index]);
           clientAtomIDs.add(rqAtoms[j]);
+          --i;  // rqAtoms may contain repeats
           if ( ++j == num_atoms_requested ) break;
         }
       }
