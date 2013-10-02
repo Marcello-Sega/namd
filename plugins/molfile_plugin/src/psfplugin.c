@@ -11,7 +11,7 @@
  *
  *      $RCSfile: psfplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.6 $       $Date: 2013/09/30 22:08:56 $
+ *      $Revision: 1.7 $       $Date: 2013/10/02 02:39:12 $
  *
  ***************************************************************************/
 
@@ -77,6 +77,37 @@ static int strnwscpy_shift(char *target, const char *source,
   *target = '\0';
   return ( i > len ? i - len : 0 );
 }
+
+/* atoi() replacement
+ *
+ * reads int with field width fw handling various overflow cases to
+ * support both " %7d %7d" and "%8d%8d" writers up to 100M atoms.
+ *
+ */
+
+static int atoifw(char **ptr, int fw) {
+  char *op = *ptr;
+  int ival = 0;
+  int iws = 0;
+  char tmpc;
+
+  sscanf(op, "%d%n", &ival, &iws);
+  if ( iws == fw ) { /* "12345678 123..." or " 1234567 123..." */
+    *ptr += iws;
+  } else if ( iws < fw ) { /* left justified? */
+    while ( iws < fw && op[iws] == ' ' ) ++iws;
+    *ptr += iws;
+  } else if ( iws < 2*fw ) { /* " 12345678 123..." */
+    *ptr += iws;
+  } else { /* " 123456712345678" or "1234567812345678" */
+    tmpc = op[fw];  op[fw] = '\0';
+    ival = atoi(op);
+    op[fw] = tmpc;
+    *ptr += fw;
+  }
+  return ival;
+}
+
 
 /* Read in the next atom info into the given storage areas; this assumes
    that file has already been moved to the beginning of the atom records.
@@ -243,6 +274,7 @@ static int psf_start_block(FILE *file, const char *blockname) {
    not 0-based.  Returns 1 if all nbond bonds found; 0 otherwise.  */
 static int psf_get_bonds(FILE *f, int nbond, int fromAtom[], int toAtom[], int charmmext, int namdfmt) {
   char *bondptr=NULL;
+  int fw = charmmext ? 10 : 8;
   char inbuf[PSF_RECORD_LENGTH+2];
   int i=0;
   size_t minlinesize;
@@ -266,15 +298,9 @@ static int psf_get_bonds(FILE *f, int nbond, int fromAtom[], int toAtom[], int c
 
         /* Check that there is enough space in the line we are about to read */
         if (nbond-i >= 4) {
-          if (charmmext == 1) 
-            minlinesize = 20*4; 
-          else 
-            minlinesize = 16*4;
+          minlinesize = 2*fw*4; 
         } else {
-          if (charmmext == 1)
-            minlinesize = 20*(nbond-i); 
-          else 
-            minlinesize = 16*(nbond-i);
+          minlinesize = 2*fw*(nbond-i); 
         }
 
         if (strlen(inbuf) < minlinesize) {
@@ -284,27 +310,17 @@ static int psf_get_bonds(FILE *f, int nbond, int fromAtom[], int toAtom[], int c
         bondptr = inbuf;
       }
 
-      if ((fromAtom[i] = atoi(bondptr)) < 1) {
+      if ((fromAtom[i] = atoifw(&bondptr,fw)) < 1) {
         printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
         rc=-1;
         break;
       }
   
-      if (charmmext == 1)
-        bondptr += 10; 
-      else 
-        bondptr += 8;
-  
-      if ((toAtom[i] = atoi(bondptr)) < 1) {
+      if ((toAtom[i] = atoifw(&bondptr,fw)) < 1) {
         printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
         rc=-1;
         break;
       }
-
-      if (charmmext == 1)
-        bondptr += 10; 
-      else
-        bondptr += 8;
     }
 
     i++;
@@ -491,15 +507,12 @@ static int psf_get_angles(FILE *f, int n, int *angles, int charmmext) {
       }
       bondptr = inbuf;
     }
-    if((angles[3*i] = atoi(bondptr)) < 1)
+    if((angles[3*i] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((angles[3*i+1] = atoi(bondptr)) < 1)
+    if((angles[3*i+1] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((angles[3*i+2] = atoi(bondptr)) < 1)
+    if((angles[3*i+2] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
     i++;
   }
 
@@ -521,18 +534,14 @@ static int psf_get_dihedrals_impropers(FILE *f, int n, int *dihedrals, int charm
       }
       bondptr = inbuf;
     }
-    if((dihedrals[4*i] = atoi(bondptr)) < 1)
+    if((dihedrals[4*i] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((dihedrals[4*i+1] = atoi(bondptr)) < 1)
+    if((dihedrals[4*i+1] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((dihedrals[4*i+2] = atoi(bondptr)) < 1)
+    if((dihedrals[4*i+2] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((dihedrals[4*i+3] = atoi(bondptr)) < 1)
+    if((dihedrals[4*i+3] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
     i++;
   }
 

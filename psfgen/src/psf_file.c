@@ -76,6 +76,30 @@ int psf_get_atom(FILE *f, char *name, char *atype, char *resname,
 }
  
 
+static int atoifw(char **ptr, int fw) {
+  char *op = *ptr;
+  int ival = 0;
+  int iws = 0;
+  char tmpc;
+
+  sscanf(op, "%d%n", &ival, &iws);
+  if ( iws == fw ) { /* "12345678 123..." or " 1234567 123..." */
+    *ptr += iws;
+  } else if ( iws < fw ) { /* left justified? */
+    while ( iws < fw && op[iws] == ' ' ) ++iws;
+    *ptr += iws;
+  } else if ( iws < 2*fw ) { /* " 12345678 123..." */
+    *ptr += iws;
+  } else { /* " 123456712345678" or "1234567812345678" */
+    tmpc = op[fw];  op[fw] = '\0';
+    ival = atoi(op);
+    op[fw] = tmpc;
+    *ptr += fw;
+  }
+  return ival;
+}
+
+
 int psf_get_bonds(FILE *f, int fw, int n, int *bonds) {
   char inbuf[PSF_RECORD_LENGTH+2];
   char *bondptr = NULL;
@@ -89,12 +113,10 @@ int psf_get_bonds(FILE *f, int fw, int n, int *bonds) {
       }
       bondptr = inbuf;
     }
-    if((bonds[2*i] = atoi(bondptr)) < 1)
+    if((bonds[2*i] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((bonds[2*i+1] = atoi(bondptr)) < 1)
+    if((bonds[2*i+1] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
     i++;
   }
 
@@ -115,15 +137,12 @@ int psf_get_angles(FILE *f, int fw, int n, int *angles) {
       }
       bondptr = inbuf;
     }
-    if((angles[3*i] = atoi(bondptr)) < 1)
+    if((angles[3*i] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((angles[3*i+1] = atoi(bondptr)) < 1)
+    if((angles[3*i+1] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((angles[3*i+2] = atoi(bondptr)) < 1)
+    if((angles[3*i+2] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
     i++;
   }
 
@@ -144,18 +163,14 @@ int psf_get_dihedrals(FILE *f, int fw, int n, int *dihedrals) {
       }
       bondptr = inbuf;
     }
-    if((dihedrals[4*i] = atoi(bondptr)) < 1)
+    if((dihedrals[4*i] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((dihedrals[4*i+1] = atoi(bondptr)) < 1)
+    if((dihedrals[4*i+1] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((dihedrals[4*i+2] = atoi(bondptr)) < 1)
+    if((dihedrals[4*i+2] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
-    if((dihedrals[4*i+3] = atoi(bondptr)) < 1)
+    if((dihedrals[4*i+3] = atoifw(&bondptr,fw)) < 1)
       break;
-    bondptr += fw;
     i++;
   }
 
