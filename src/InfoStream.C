@@ -14,6 +14,12 @@
 #include "Tensor.h"
 #include <stdio.h>
 
+CkpvExtern(infostream, iout_obj);
+
+infostream& infostream::access_iout_obj() {
+  return CkpvAccess(iout_obj);
+}
+
 infostream::infostream() {}
 
 infostream::~infostream() {;}

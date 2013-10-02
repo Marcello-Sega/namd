@@ -13,13 +13,14 @@
 
 #include <iostream>
 #include <sstream>
-#include "charm++.h"
 class Vector;
 class Tensor;
 
 class infostream : public std::ostringstream
 {
   public:
+  static infostream& access_iout_obj();
+
   infostream();
   ~infostream();
   void endi();
@@ -76,9 +77,7 @@ std::ostream& iPE(std::ostream& s);  // outlined because of CkMyPe()
 #define iERRORF  iERROR << iFILE
 #define iDEBUGF  iDEBUG << iFILE
 
-CkpvExtern(infostream, iout_obj);
-
-#define iout CkpvAccess(iout_obj)
+#define iout infostream::access_iout_obj()
 
 #endif /* INFOSTREAM_H */
 
