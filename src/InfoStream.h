@@ -43,6 +43,10 @@ class infostream : public std::ostringstream
   LOCALMOD(unsigned int);
   LOCALMOD(unsigned long);
   LOCALMOD(unsigned short);
+#ifdef _MSC_VER
+  LOCALMOD(__int64);
+  LOCALMOD(unsigned __int64);
+#endif
   /** << floats **/
   LOCALMOD(float);
   LOCALMOD(double);
