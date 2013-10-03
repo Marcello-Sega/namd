@@ -6,7 +6,6 @@
 
 module ComputePmeMgr {
   message PmeGridMsg {
-    PmeReduction evir[];
     int zlist[];
     char fgrid[];
     float qgrid[];
@@ -16,7 +15,6 @@ module ComputePmeMgr {
   };
   message PmeSharedTransMsg;
   message PmeUntransMsg{
-    PmeReduction evir[];
     float qgrid[];
   };
   message PmeSharedUntransMsg;
@@ -28,6 +26,10 @@ module ComputePmeMgr {
   message PmePencilInitMsg;
 
   message PmeAckMsg;
+
+  message PmeEvirMsg {
+    PmeReduction evir[];
+  };
 
   initproc void Pme_init();
 
@@ -81,21 +83,6 @@ module ComputePmeMgr {
 	  atomic "backward_fft" { backward_fft(); }
 	}
 	atomic "send_ungrid" {
-	/*
-	  int send_evir = 1;
-	  for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
-	    PmeGridMsg *msg = grid_msgs[imsg];
-	    if ( msg->hasData ) {
-	      if ( send_evir ) {
-		msg->evir[0] = evir;
-		send_evir = 0;
-	      } else {
-		msg->evir[0] = 0.;
-	      }
-	    }
-	    send_ungrid(msg);
-	  }
-	*/
 	   send_all_ungrid();
 	}
 	if ( ! hasData ) {
@@ -159,6 +146,7 @@ module ComputePmeMgr {
 	//	thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
       base_init(initmsg); delete initmsg;
       fft_init();
+      evir_init();
       }
       while ( 1 ) {
         atomic { hasData = 0; }
@@ -220,6 +208,8 @@ module ComputePmeMgr {
     entry void recvUngrid(PmeGridMsg *);
     entry void recvAck(PmeAckMsg *);
     entry void ungridCalc(void);
+    entry void recvRecipEvir(PmeEvirMsg *);
+    entry void addRecipEvirClient(void);
 
     entry void recvArrays(
 		CProxy_PmeXPencil, CProxy_PmeYPencil, CProxy_PmeZPencil);

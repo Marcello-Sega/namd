@@ -89,7 +89,6 @@ public:
   int sequence;
   int hasData;
   Lattice lattice;
-  PmeReduction *evir;
   int start;
   int len;
   int zlistlen;
@@ -123,8 +122,6 @@ class PmeUntransMsg : public CMessage_PmeUntransMsg {
 public:
 
   int sourceNode;
-  int has_evir;
-  PmeReduction *evir;
   int y_start;
   int ny;
   float *qgrid;
@@ -136,6 +133,11 @@ public:
   PmeUntransMsg *msg;
   int *count;
   CmiNodeLock lock;
+};
+
+class PmeEvirMsg : public CMessage_PmeEvirMsg {
+public:
+  PmeReduction *evir;
 };
 
 class PmePencilMap : public CBase_PmePencilMap {
@@ -207,6 +209,56 @@ struct LocalPmeInfo {
 struct NodePmeInfo {
   int npe, pe_start, real_node;
 };
+
+
+static int findRecipEvirPe() {
+    PatchMap *patchMap = PatchMap::Object();
+    {
+      int mype = CkMyPe();
+      if ( patchMap->numPatchesOnNode(mype) ) {
+        return mype; 
+      }
+    }
+    {
+      int node = CmiMyNode();
+      int firstpe = CmiNodeFirst(node);
+      int nodeSize = CmiNodeSize(node);
+      int myrank = CkMyRank();
+      for ( int i=0; i<nodeSize; ++i ) {
+        int pe = firstpe + (myrank+i)%nodeSize;
+        if ( patchMap->numPatchesOnNode(pe) ) {
+          return pe;
+        }
+      }
+    }
+    {
+      int *pelist;
+      int nodeSize;
+      CmiGetPesOnPhysicalNode(CmiPhysicalNodeID(CkMyPe()), &pelist, &nodeSize);
+      int myrank;
+      for ( int i=0; i<nodeSize; ++i ) {
+        if ( pelist[i] == CkMyPe() ) myrank = i;
+      }
+      for ( int i=0; i<nodeSize; ++i ) {
+        int pe = pelist[(myrank+i)%nodeSize];
+        if ( patchMap->numPatchesOnNode(pe) ) {
+          return pe;
+        }
+      }
+    }
+    {
+      int mype = CkMyPe();
+      int npes = CkNumPes();
+      for ( int i=0; i<npes; ++i ) {
+        int pe = (mype+i)%npes;
+        if ( patchMap->numPatchesOnNode(pe) ) {
+          return pe;
+        }
+      }
+    }
+    NAMD_bug("findRecipEvirPe() failed!");
+    return -999;  // should never happen
+}
 
 
 //Assigns gridPeMap and transPeMap to different set of processors.
@@ -313,6 +365,8 @@ public:
   void copyResults(PmeGridMsg *);
   void copyPencils(PmeGridMsg *);
   void ungridCalc(void);
+  void recvRecipEvir(PmeEvirMsg *);
+  void addRecipEvirClient(void);
   void submitReductions();
 
 #if 0 && USE_PERSISTENT
@@ -381,6 +435,9 @@ private:
   int noWorkCount;
   int doWorkCount;
   int ungridForcesCount;
+  int recipEvirCount;   // used in compute only
+  int recipEvirClients; // used in compute only
+  int recipEvirPe;      // used in trans only
   
   LocalPmeInfo *localInfo;
   NodePmeInfo *gridNodeInfo;
@@ -411,7 +468,6 @@ private:
   int untrans_count;
   int ungrid_count;
   PmeGridMsg **gridmsg_reuse;
-  PmeReduction recip_evir[PME_MAX_EVALS];
   PmeReduction recip_evir2[PME_MAX_EVALS];
 
   int compute_sequence;  // set from patch computes, used for priorities
@@ -544,6 +600,9 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
   useBarrier = 0;
   sendTransBarrier_received = 0;
   usePencils = 0;
+  recipEvirCount = 0;
+  recipEvirClients = 0;
+  recipEvirPe = -999;
 }
 
 
@@ -1263,6 +1322,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   // the following only for nodes doing reciprocal sum
 
   if ( myTransPe >= 0 ) {
+    recipEvirPe = findRecipEvirPe();
+    pmeProxy[recipEvirPe].addRecipEvirClient();
+  }
+
+  if ( myTransPe >= 0 ) {
       int k2_start = localInfo[myTransPe].y_start_after_transpose;
       int k2_end = k2_start + localInfo[myTransPe].ny_after_transpose;
       #ifdef OPENATOM_VERSION
@@ -1894,6 +1958,17 @@ void ComputePmeMgr::sendUntrans(void) {
 
   ComputePmeMgr **mgrObjects = pmeNodeProxy.ckLocalBranch()->mgrObjects;
 
+  { // send energy and virial
+    PmeEvirMsg *newmsg = new (numGrids, PRIORITY_SIZE) PmeEvirMsg;
+    for ( int g=0; g<numGrids; ++g ) {
+      newmsg->evir[g] = recip_evir2[g];
+    }
+    SET_PRIORITY(newmsg,grid_sequence,PME_UNGRID_PRIORITY)
+    CmiEnableUrgentSend(1);
+    pmeProxy[recipEvirPe].recvRecipEvir(newmsg);
+    CmiEnableUrgentSend(0);
+  }
+
 #if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
@@ -1909,16 +1984,11 @@ void ComputePmeMgr::sendUntrans(void) {
       int cpylen = li.nx * zdim;
       totlen += cpylen;
     }
-    PmeUntransMsg *newmsg = new (numGrids, ny * totlen * numGrids, PRIORITY_SIZE) PmeUntransMsg;
+    PmeUntransMsg *newmsg = new (ny * totlen * numGrids, PRIORITY_SIZE) PmeUntransMsg;
     newmsg->sourceNode = myTransPe;
     newmsg->y_start = y_start;
     newmsg->ny = ny;
     for ( int g=0; g<numGrids; ++g ) {
-      if ( j == 0 ) {  // only need these once
-        newmsg->evir[g] = recip_evir2[g];
-      } else {
-        newmsg->evir[g] = 0.;
-      }
       float *qmsg = newmsg->qgrid + ny * totlen * g;
       pe = gridNodeInfo[node].pe_start;
       for (int i=0; i<npe; ++i, ++pe) {
@@ -1986,11 +2056,6 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
 
 void ComputePmeMgr::procUntrans(PmeUntransMsg *msg) {
   // CkPrintf("recvUntrans on Pe(%d)\n",CkMyPe());
-  if ( untrans_count == numTransPes ) {
-    for ( int g=0; g<numGrids; ++g ) {
-      recip_evir[g] = 0.;
-    }
-  }
 
 #if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
@@ -1999,9 +2064,6 @@ void ComputePmeMgr::procUntrans(PmeUntransMsg *msg) {
   NodePmeInfo &nodeInfo(gridNodeInfo[myGridNode]);
   int first_pe = nodeInfo.pe_start;
   int g;
-  if ( myGridPe == first_pe ) for ( g=0; g<numGrids; ++g ) {
-    recip_evir[g] += msg->evir[g];
-  }
 
  if ( msg->ny ) {
   int zdim = myGrid.dim3;
@@ -2061,15 +2123,6 @@ void ComputePmeMgr::sendUngrid(void) {
     // int msglen = qgrid_len;
     PmeGridMsg *newmsg = gridmsg_reuse[j];
     int pe = newmsg->sourceNode;
-    if ( j == 0 ) {  // only need these once
-      for ( int g=0; g<numGrids; ++g ) {
-        newmsg->evir[g] = recip_evir[g];
-      }
-    } else {
-      for ( int g=0; g<numGrids; ++g ) {
-        newmsg->evir[g] = 0.;
-      }
-    }
     int zdim = myGrid.dim3;
     int flen = newmsg->len;
     int fstart = newmsg->start;
@@ -2131,8 +2184,6 @@ void ComputePmeMgr::ungridCalc(void) {
       q_list[i][myGrid.K3+j] = q_list[i][j];
     }
   }
-
-  ungridForcesCount = pmeComputes.size();
 
   for ( int i=0; i<pmeComputes.size(); ++i ) {
     WorkDistrib::messageEnqueueWork(pmeComputes[i]);
@@ -2326,7 +2377,7 @@ void ComputePmeMgr::setup_recvgrid_persistent()
 int ComputePme::noWork() {
 
   if ( patch->flags.doFullElectrostatics ) {
-    if ( ! myMgr->ungridForcesCount ) return 0;  // work to do, enqueue as usual
+    if ( ! myMgr->ungridForcesCount && ! myMgr->recipEvirCount ) return 0;  // work to do, enqueue as usual
     myMgr->heldComputes.add(this);
     return 1;  // don't enqueue yet
   }
@@ -2343,6 +2394,20 @@ int ComputePme::noWork() {
   return 1;  // no work for this step
 }
 
+void ComputePmeMgr::addRecipEvirClient() {
+  ++recipEvirClients;
+}
+
+void ComputePmeMgr::recvRecipEvir(PmeEvirMsg *msg) {
+  if ( ! pmeComputes.size() ) NAMD_bug("ComputePmeMgr::recvRecipEvir() called on pe without patches");
+  for ( int g=0; g<numGrids; ++g ) {
+    evir[g] += msg->evir[g];
+  }
+  delete msg;
+  // CkPrintf("recvRecipEvir pe %d %d %d\n", CkMyPe(), ungridForcesCount, recipEvirCount);
+  if ( ! --recipEvirCount && ! ungridForcesCount ) submitReductions();
+}
+
 void ComputePme::doWork()
 {
   DebugM(4,"Entering ComputePme::doWork().\n");
@@ -2350,10 +2415,12 @@ void ComputePme::doWork()
   if ( basePriority >= COMPUTE_HOME_PRIORITY ) {
     basePriority = PME_PRIORITY;
     ungridForces();
-    if ( ! --(myMgr->ungridForcesCount) ) myMgr->submitReductions();
+    // CkPrintf("doWork 2 pe %d %d %d\n", CkMyPe(), myMgr->ungridForcesCount, myMgr->recipEvirCount);
+    if ( ! --(myMgr->ungridForcesCount) && ! myMgr->recipEvirCount ) myMgr->submitReductions();
     return;
   }
   basePriority = COMPUTE_HOME_PRIORITY + PATCH_PRIORITY(patchID);
+  // CkPrintf("doWork 1 pe %d %d %d\n", CkMyPe(), myMgr->ungridForcesCount, myMgr->recipEvirCount);
 
 #ifdef TRACE_COMPUTE_OBJECTS
     double traceObjStartTime = CmiWallTimer();
@@ -2545,6 +2612,9 @@ void ComputePme::doWork()
 #endif
 
  if ( --(myMgr->doWorkCount) == 0 ) {
+  myMgr->recipEvirCount = myMgr->recipEvirClients;
+  myMgr->ungridForcesCount = myMgr->pmeComputes.size();
+
   for (int j=0; j<myGrid.order-1; ++j) {
     myMgr->fz_arr[j] |= myMgr->fz_arr[myGrid.K3+j];
   }
@@ -2616,7 +2686,7 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
     // if ( ! hd ) ++savedMessages;
 
     
-    PmeGridMsg *msg = new ( hd*numGrids, hd*zlistlen, hd*flen,
+    PmeGridMsg *msg = new ( hd*zlistlen, hd*flen,
 	hd*fcount*zlistlen, PRIORITY_SIZE) PmeGridMsg;
     msg->sourceNode = CkMyPe();
     msg->hasData = hd;
@@ -2742,7 +2812,6 @@ void ComputePmeMgr::copyPencils(PmeGridMsg *msg) {
   float *qmsg = msg->qgrid;
   int g;
   for ( g=0; g<numGrids; ++g ) {
-    evir[g] += msg->evir[g];
     char *f = f_arr + g*fsize;
     float **q = q_arr + g*fsize;
     for ( int i=ibegin; i<iend; ++i ) {
@@ -2820,7 +2889,7 @@ void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
       if ( fz_arr[i] ) ++zlistlen;
     }
 
-    PmeGridMsg *msg = new (numGrids, zlistlen, flen*numGrids,
+    PmeGridMsg *msg = new (zlistlen, flen*numGrids,
 				fcount*zlistlen, PRIORITY_SIZE) PmeGridMsg;
 
     msg->sourceNode = CkMyPe();
@@ -2866,7 +2935,6 @@ void ComputePmeMgr::copyResults(PmeGridMsg *msg) {
   float *qmsg = msg->qgrid;
   int g;
   for ( g=0; g<numGrids; ++g ) {
-    evir[g] += msg->evir[g];
     char *f = msg->fgrid + g*flen;
     float **q = q_arr + fstart + g*fsize;
     for ( int i=0; i<flen; ++i ) {
@@ -3566,7 +3634,7 @@ private:
 class PmeXPencil : public PmePencil<CBase_PmeXPencil> {
 public:
     PmeXPencil_SDAG_CODE
-    PmeXPencil() { __sdag_init();  myKSpace = 0; setMigratable(false); imsg=imsgb=0; }
+    PmeXPencil() { __sdag_init();  myKSpace = 0; setMigratable(false); imsg=imsgb=0; recipEvirPe = -999; }
     PmeXPencil(CkMigrateMessage *) { __sdag_init(); }
 	~PmeXPencil() {
 	#ifdef NAMD_FFTW
@@ -3595,6 +3663,8 @@ public:
 #endif
 #endif
     int ny, nz;
+    int recipEvirPe;
+    void evir_init();
     PmeKSpace *myKSpace;
 #if USE_PERSISTENT
     void  setup_persistent() {
@@ -3623,6 +3693,11 @@ public:
 #endif
 
 };
+
+void PmeXPencil::evir_init() {
+  recipEvirPe = findRecipEvirPe();
+  initdata.pmeProxy[recipEvirPe].addRecipEvirClient();
+}
 
 void PmeZPencil::fft_init() {
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
@@ -4612,9 +4687,7 @@ void PmeXPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 		int ib = send_order[evirIdx];
 		int nx = block1;
 		if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-		PmeUntransMsg *msg = new (1,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;		
-		msg->evir[0] = evir;
-		msg->has_evir = 1;				
+		PmeUntransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;		
 		msg->sourceNode = thisIndex.y;
 		msg->ny = ny;
 		float *md = msg->qgrid;
@@ -4642,8 +4715,7 @@ void PmeXPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 		int ib = send_order[isend];
 		int nx = block1;
 		if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-		PmeUntransMsg *msg = new (0,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
-		msg->has_evir = 0;		
+		PmeUntransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
 		msg->sourceNode = thisIndex.y;
 		msg->ny = ny;
 		float *md = msg->qgrid;
@@ -4681,6 +4753,17 @@ void PmeXPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 }
 
 void PmeXPencil::send_untrans() {
+
+  { // send energy and virial
+    int numGrids = 1;
+    PmeEvirMsg *newmsg = new (numGrids, PRIORITY_SIZE) PmeEvirMsg;
+    newmsg->evir[0] = evir;
+    SET_PRIORITY(newmsg,sequence,PME_UNGRID_PRIORITY)
+    CmiEnableUrgentSend(1);
+    initdata.pmeProxy[recipEvirPe].recvRecipEvir(newmsg);
+    CmiEnableUrgentSend(0);
+  }
+
 #if USE_PERSISTENT
   if (untrans_handle == NULL) setup_persistent();
 #endif
@@ -4728,13 +4811,9 @@ void PmeXPencil::send_untrans() {
     }
     int nx = block1;
     if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-    PmeUntransMsg *msg = new (send_evir, nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
     if ( send_evir ) {
-      msg->evir[0] = evir;
-      msg->has_evir = 1;
       send_evir = 0;
-    } else {
-      msg->has_evir = 0;
     }
     msg->sourceNode = thisIndex.y;
     msg->ny = ny;
@@ -4774,7 +4853,6 @@ void PmeXPencil::send_untrans() {
 }
 
 void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
-  if ( msg->has_evir ) evir += msg->evir[0];
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
   int jb = msg->sourceNode;
@@ -4903,9 +4981,7 @@ void PmeYPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 		int jb = send_order[evirIdx];
 		int ny = block2;
 		if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-		PmeUntransMsg *msg = new (1,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;		
-		msg->evir[0] = evir;
-		msg->has_evir = 1;				
+		PmeUntransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;		
 		msg->sourceNode = thisIndex.z;
 		msg->ny = nz;
 		float *md = msg->qgrid;
@@ -4934,8 +5010,7 @@ void PmeYPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 		int jb = send_order[isend];
 		int ny = block2;
 		if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-		PmeUntransMsg *msg = new (0,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
-		msg->has_evir = 0;
+		PmeUntransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
 		msg->sourceNode = thisIndex.z;
 		msg->ny = nz;
 		float *md = msg->qgrid;
@@ -5023,13 +5098,9 @@ void PmeYPencil::send_untrans() {
     }
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-    PmeUntransMsg *msg = new (send_evir,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
     if ( send_evir ) {
-      msg->evir[0] = evir;
-      msg->has_evir = 1;
       send_evir = 0;
-    } else {
-      msg->has_evir = 0;
     }
     msg->sourceNode = thisIndex.z;
     msg->ny = nz;
@@ -5079,7 +5150,6 @@ void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {
     if(imsg==0) evir=0.;
 #endif
 
-  if ( msg->has_evir ) evir += msg->evir[0];
   int block3 = initdata.grid.block3;
   int dim3 = initdata.grid.dim3;
   int kb = msg->sourceNode;
@@ -5217,13 +5287,6 @@ void PmeZPencil::send_all_ungrid() {
 void PmeZPencil::send_subset_ungrid(int fromIdx, int toIdx, int specialIdx){
 	for (int imsg=fromIdx; imsg <=toIdx; ++imsg ) {
 		PmeGridMsg *msg = grid_msgs[imsg];
-		if ( msg->hasData) {
-			if (imsg == specialIdx) {
-				msg->evir[0] = evir;				
-			} else {
-				msg->evir[0] = 0.;
-			}
-		}
 		send_ungrid(msg);
 	}
 }
