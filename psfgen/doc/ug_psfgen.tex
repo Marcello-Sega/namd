@@ -334,10 +334,8 @@ proc addwater { psffile pdbfile watpsf watpdb } {
 	# a box of equilibrated water.  The water box should be large enough
 	# to easily contain our protein.
 	resetpsf
-	readpsf $psffile
-	readpsf $watpsf
-	coordpdb $pdbfile
-	coordpdb $watpdb
+	readpsf $psffile pdb $pdbfile
+	readpsf $watpsf pdb $watpdb
 
 	# Load the combined structure into VMD   
 	writepsf combine.psf
@@ -500,6 +498,15 @@ are regenerated from scratch.}
 \KEYDEF{dihedrals}{Enable generation of dihedrals from angles.}}
 {After one or more segments have been built.}
 
+\item \COMMAND{\IKEY{regenerate} \OKEY{resids}}
+{Remove insertion codes and minimally modify resids to retain uniqueness.
+No modifications will be made in segments that have monotonically increasing resids
+and do not contain insertion codes.
+Within a segment, no modifications will be made to residues preceeding the
+first non-increasing resid or residue with an insertion code.}
+{\KEYDEF{resids}{Enable regeneration of resids to remove insertion codes.}}
+{After one or more segments have been built.}
+
 \item \COMMAND{\IKEY{multiply} \ARG{factor} \ARG{segid\OARG{{\em :resid}\OARG{:atomname}}} \OARG{...}}
 {Create multiple images of a set of atoms for use in locally enhanced sampling.  The beta column of the output pdb file is set to 1...\ARG{factor} for each image.  Multiple copies of bonds, angles, etc. are created.  Atom, residue or segment names are not altered; images are distinguished only by beta value.  This is not a normal molecular structure and may confuse other tools.}
 {\ARGDEF{factor}{}\\
@@ -599,10 +606,14 @@ section of the PSF file.}
 \ARGDEF{file name}{PSF file to be generated.}}
 {After all segments have been built and patched.}
 
-\item \COMMAND{\IKEY{readpsf} \ARG{file name}}
-{Read in structure information from PSF file and adds it to the structure.
+\item \COMMAND{\IKEY{readpsf} \ARG{file name} \OKEY{pdb} \OARG{pdb file name}}
+{Read in structure information from PSF file and add it to the structure.
+Optionally also read coordinates and insertion codes from a PDB file,
+assuming that the atom order is the same in both files.
 It is an error if any segments in the PSF file already exist.}
-{\ARGDEF{file name}{PSF file in X-PLOR format (names for atom types).}}
+{\ARGDEF{file name}{PSF file in X-PLOR format (names for atom types).}\\
+\KEYDEF{pdb}{Read coordinates and insertion codes from PDB file.}\\
+\ARGDEF{pdb file name}{PDB file with atoms in same order as PSF file.}}
 {Anywhere but within segment.}
 
 \item \COMMAND{\IKEY{pdbalias atom} \ARG{residue name} \ARG{alternate name} \ARG{real name}}

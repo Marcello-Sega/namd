@@ -8,8 +8,8 @@
 int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v, 
                                 void (*print_msg)(void *, const char *)) {
 
-  char buf[128];
-  int iseg,nseg,ires,nres,atomid;
+  char buf[128], insertion[2];
+  int iseg,nseg,ires,nres,atomid,resid;
   int has_guessed_atoms = 0;
   double x,y,z,o,b;
   topo_mol_segment_t *seg;
@@ -58,8 +58,11 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
           break;
         }
         b = atom->partition;
-        write_pdb_atom(file,atomid,atom->name,res->name,atoi(res->resid),
-		"",(float)x,(float)y,(float)z,(float)o,(float)b,res->chain,
+        insertion[0] = 0;
+        insertion[1] = 0;
+        sscanf(res->resid, "%d%c", &resid, insertion);
+        write_pdb_atom(file,atomid,atom->name,res->name,resid,insertion,
+		(float)x,(float)y,(float)z,(float)o,(float)b,res->chain,
 		seg->segid,atom->element);
       }
     }
@@ -125,6 +128,9 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
+      if (strlen(res->resid) > 4) {
+        charmmext = 1;
+      }
       for ( atom = res->atoms; atom; atom = atom->next ) {
         atom->atomid = ++atomid;
         if (strlen(atom->name) > 4) {

@@ -2,6 +2,7 @@
 #include <string.h>
 #include "psf_file.h"
 #include "psf_file_extract.h"
+#include "pdb_file.h"
 #include "topo_mol_struct.h"
 
 /* General note: in a few places I read various arrays in reverse order. 
@@ -397,10 +398,11 @@ static topo_mol_residue_t *get_residue(topo_mol_segment_t *seg,
 }
 
 
-int psf_file_extract(topo_mol *mol, FILE *file, void *v,
+int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, void *v,
                                 void (*print_msg)(void *, const char *)) {
   int i, natoms, npatch, charmmext;
   psfatom *atomlist;
+  double *atomcoords;
   topo_mol_atom_t **molatomlist;
   long filepos;
   char inbuf[PSF_RECORD_LENGTH+2];
@@ -426,7 +428,6 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
   }
  
   atomlist = (psfatom *)malloc(natoms * sizeof(psfatom));
-  molatomlist = (topo_mol_atom_t **)malloc(natoms * sizeof(topo_mol_atom_t *));
 
   /* Read in all atoms */
   for (i=0; i<natoms; i++) {
@@ -434,11 +435,70 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
     if (psf_get_atom(file, atom->name,atom->atype,atom->resname, atom->segname,
                      atom->resid, &atom->charge, &atom->mass)
         < 0) {
-      print_msg(v,"error reading atoms");
+      print_msg(v,"error reading atoms from psf file");
+      free(atomlist);
+      return -1;
+    }
+  }
+
+  /* Optionally read coordinates and insertion code from PDB file */
+  atomcoords = 0;
+  if ( pdbfile ) {
+    char record[PDB_RECORD_LENGTH+2];
+    int indx, insertions;
+    float x,y,z,o,b;
+    char name[8], resname[8], chain[8];
+    char segname[8], element[8], resid[8], insertion[8];
+
+    atomcoords = (double *)malloc(natoms * 3 * sizeof(double));
+
+    insertions = 0;
+    i=0; 
+    do {
+      if((indx = read_pdb_record(pdbfile, record)) == PDB_ATOM) {
+        if ( i >= natoms ) {
+          print_msg(v,"too many atoms in pdb file");
+          free(atomlist);
+          free(atomcoords);
+          return -1;
+        }
+        get_pdb_fields(record, name, resname, chain,
+                   segname, element, resid, insertion, &x, &y, &z, &o, &b);
+        psfatom *atom = atomlist + i;
+        if ( strncmp(atom->name,name,4) ||
+             strncmp(atom->resname,resname,4) ||
+             strncmp(atom->segname,segname,4) ) {
+          print_msg(v,"atom mismatch in pdb file");
+          print_msg(v,record);
+          free(atomlist);
+          free(atomcoords);
+          return -1;
+        }
+        if ( insertion[0] != ' ' && insertion[0] != '\0' && strncmp(atom->resid,resid,8) ) {
+          strncpy(atom->resid,resid,7);  atom->resid[7] = 0;
+          ++insertions;
+        }
+        atomcoords[i*3    ] = x;
+        atomcoords[i*3 + 1] = y;
+        atomcoords[i*3 + 2] = z;
+        ++i;
+      }
+    } while (indx != PDB_END && indx != PDB_EOF);
+    if ( insertions ) {
+      char buf[80];
+      sprintf(buf, "Found %d mismatched resids with insertion codes in pdb file", insertions);
+      print_msg(v,buf);
+    }
+    if ( i < natoms ) {
+      print_msg(v,"too few atoms in pdb file");
+      free(atomlist);
+      free(atomcoords);
       return -1;
     }
   }
  
+  molatomlist = (topo_mol_atom_t **)malloc(natoms * sizeof(topo_mol_atom_t *));
+
   i=0; 
   while (i < natoms) {
     topo_mol_segment_t *seg;
@@ -483,10 +543,17 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
       strcpy(atomtmp->element,"");
       atomtmp->mass = atomlist[i].mass; 
       atomtmp->charge = atomlist[i].charge;
-      atomtmp->x = 0;       
-      atomtmp->y = 0;       
-      atomtmp->z = 0;       
-      atomtmp->xyz_state = TOPO_MOL_XYZ_VOID;
+      if (atomcoords) {
+        atomtmp->x = atomcoords[i*3    ];
+        atomtmp->y = atomcoords[i*3 + 1];
+        atomtmp->z = atomcoords[i*3 + 2];
+        atomtmp->xyz_state = TOPO_MOL_XYZ_SET;
+      } else {
+        atomtmp->x = 0;       
+        atomtmp->y = 0;       
+        atomtmp->z = 0;       
+        atomtmp->xyz_state = TOPO_MOL_XYZ_VOID;
+      }
       atomtmp->partition = 0;
       atomtmp->copy = 0;
       atomtmp->atomid = 0;
@@ -506,6 +573,9 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
       res->atoms = atomtmp;
     }  
   }  
+
+  if (atomcoords) free(atomcoords);
+  atomcoords = 0;
 
   /* Check to see if we broke out of the loop prematurely */
   if (i != natoms) {

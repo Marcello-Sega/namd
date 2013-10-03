@@ -31,6 +31,17 @@ hasharray * hasharray_create(void **itemarray, int itemsize) {
   return a;
 }
 
+int hasharray_clear(hasharray *a) {
+  if ( ! a ) return HASHARRAY_FAIL;
+  hash_destroy(&(a->hash));
+  memarena_destroy(a->keyarena);
+  if ( ! ( a->keyarena = memarena_create() ) ) {
+    return HASHARRAY_FAIL;
+  }
+  hash_init(&(a->hash),0);
+  return 0;
+}
+
 void hasharray_destroy(hasharray *a) {
   if ( ! a ) return;
   hash_destroy(&(a->hash));
@@ -40,6 +51,21 @@ void hasharray_destroy(hasharray *a) {
     *(a->itemarray) = 0;
   }
   free((void*)a);
+}
+
+int hasharray_reinsert(hasharray *a, const char *key, int pos) {
+  int i;
+  char *s;
+  if ( ! a ) return HASHARRAY_FAIL;
+  i = hash_lookup(&(a->hash),key);
+  if ( i != HASH_FAIL ) return i;
+  i = pos;
+  if ( ! ( s = memarena_alloc(a->keyarena,strlen(key)+1) ) ) {
+    return HASHARRAY_FAIL;
+  }
+  strcpy(s,key);
+  hash_insert(&(a->hash),s,i);
+  return i;
 }
 
 int hasharray_insert(hasharray *a, const char *key) {

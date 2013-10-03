@@ -1249,6 +1249,87 @@ int topo_mol_end(topo_mol *mol) {
   return 0;
 }
 
+int topo_mol_regenerate_resids(topo_mol *mol) {
+  int ires, nres, iseg, nseg, npres;
+  int prevresid, resid, npatchresptrs, ipatch;
+  topo_mol_segment_t *seg;
+  topo_mol_residue_t *res;
+  topo_mol_patch_t **patchptr, *patch;
+  topo_mol_patchres_t *patchres, **patchresptrs;
+  char newresid[NAMEMAXLEN+20], (*newpatchresids)[NAMEMAXLEN];
+
+  if (! mol) return -1;
+
+  nseg = hasharray_count(mol->segment_hash);
+  npatchresptrs=0;
+
+  /* clean patches so only valid items remain */
+  for ( patchptr = &(mol->patches); *patchptr; ) {
+    npres=0;
+    for ( patchres = (*patchptr)->patchresids; patchres; patchres = patchres->next ) {
+      ++npres;
+      /* Test the existence of segid:resid for the patch */
+      if (!topo_mol_validate_patchres(mol,patch->pname,patchres->segid, patchres->resid)) {
+        break;
+      }
+    }
+    if ( patchres ) {  /* remove patch from list */
+      *patchptr = (*patchptr)->next;
+      continue;
+    }
+    npatchresptrs += npres;
+    patchptr = &((*patchptr)->next);  /* continue to next patch */
+  }
+
+  patchresptrs = malloc(npatchresptrs * sizeof(topo_mol_patchres_t*));
+  if ( ! patchresptrs ) return -5;
+  newpatchresids = calloc(npatchresptrs, NAMEMAXLEN);
+  if ( ! newpatchresids ) return -6;
+
+  for ( ipatch=0, patch = mol->patches; patch; patch = patch->next ) {
+    for ( patchres = patch->patchresids; patchres; patchres = patchres->next ) {
+      patchresptrs[ipatch++] = patchres;
+    }
+  }
+
+  for ( iseg=0; iseg<nseg; ++iseg ) {
+    seg = mol->segment_array[iseg];
+    if ( ! seg ) continue;
+    nres = hasharray_count(seg->residue_hash);
+    if ( hasharray_clear(seg->residue_hash) == HASHARRAY_FAIL ) return -2;
+
+    prevresid = -100000;
+    for ( ires=0; ires<nres; ++ires ) {
+      res = &(seg->residue_array[ires]);
+      resid = atoi(res->resid);
+      if ( resid <= prevresid ) resid = prevresid + 1;
+      sprintf(newresid, "%d", resid);
+      if ( NAMETOOLONG(newresid) ) return -3;
+      if ( strcmp(res->resid, newresid) ) { /* changed, need to check patches */
+        for ( ipatch=0; ipatch < npatchresptrs; ++ipatch ) {
+          if ( ( ! strcmp(seg->segid, patchresptrs[ipatch]->segid) ) &&
+               ( ! strcmp(res->resid, patchresptrs[ipatch]->resid) ) ) {
+            sprintf(newpatchresids[ipatch], "%d", resid);
+          }
+        }
+      }
+      sprintf(res->resid, "%d", resid);
+      if ( hasharray_reinsert(seg->residue_hash,res->resid,ires) != ires ) return -4;
+      prevresid = resid;
+    }
+  }
+
+  for ( ipatch=0; ipatch < npatchresptrs; ++ipatch ) {
+    if ( newpatchresids[ipatch][0] ) {
+      strcpy(patchresptrs[ipatch]->resid,newpatchresids[ipatch]);
+    }
+  }
+
+  free(patchresptrs);
+  free(newpatchresids);
+  return 0;
+}
+
 int topo_mol_regenerate_angles(topo_mol *mol) {
   int errval;
   if ( mol ) {

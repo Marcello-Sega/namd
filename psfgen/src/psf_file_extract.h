@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "topo_mol.h"
 
-int psf_file_extract(topo_mol *mol, FILE *file, void *,
+int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, void *,
                                 void (*print_msg)(void *, const char *));
 
 #endif

@@ -163,11 +163,15 @@ int get_pdb_fields(char *record, char *name, char *resname, char *chain,
   if ( chain[0] == ' ' ) chain[0] = 0;
   else chain[1] = 0;
 
-  /* get residue id number */
+  /* get residue id number plus insertion code */
   strncpy(resid,record + 22, 4);
   resid[4] = '\0';
   while((len = strlen(resid)) > 0 && resid[len-1] == ' ')
     resid[len-1] = '\0';
+  if ( record[26] != ' ' ) {
+    resid[len] = record[26];
+    resid[++len] = '\0';
+  }
   while(len > 0 && resid[0] == ' ') {
     for(i=0; i < len; i++)  resid[i] = resid[i+1];
     len--;

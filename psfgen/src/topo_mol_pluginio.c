@@ -449,6 +449,9 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
   if (!coordinatesonly && !residuesonly) {
     print_msg(v, "Data fields found by plugin:");
   
+    if (optflags & MOLFILE_INSERTION)
+      print_msg(v, "  Insertion code");
+
     if (optflags & MOLFILE_ATOMICNUMBER)
       print_msg(v, "  Atomic number");
 
@@ -544,14 +547,19 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
 
     i=0;
     while (i < natoms) {
-      char residbuf[16];
+      char residbuf[16], insertion;
       topo_mol_segment_t *seg;
       topo_mol_residue_t *res;
       topo_mol_atom_t *atomtmp;
       int firstatom, j, residn;
       const char *resid, *segname;
 
-      sprintf(residbuf, "%d", atomarray[i].resid);
+      if ( optflags & MOLFILE_INSERTION ) {
+        insertion = atomarray[i].insertion[0];
+      } else {
+        insertion = '\0';
+      }
+      sprintf(residbuf, "%d%c", atomarray[i].resid, (insertion == ' ' ? '\0' : insertion));
       resid = residbuf;
       residn = atomarray[i].resid;
 
@@ -581,6 +589,7 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
       firstatom = i;
 #if 1
       while (i<natoms && (residn == atomarray[i].resid) &&
+             ( !(optflags&MOLFILE_INSERTION) || (insertion == atomarray[i].insertion[0]) ) && 
              !strcmp(segname, atomarray[i].segid)) {
 #else
       while (i<natoms && !strcmp(resid, atomarray[i].resid) &&
@@ -689,7 +698,7 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
   if (coordinatesonly) {
     for (i=0; i<natoms; i++) {
       topo_mol_ident_t target;
-      char residbuf[16];
+      char residbuf[16], insertion;
       char stmp[128];
       unsigned int utmp;
       int found=0;
@@ -706,7 +715,12 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
       else
         target.segid = segid;
 
-      sprintf(residbuf, "%d", atomarray[i].resid);
+      if ( optflags & MOLFILE_INSERTION ) {
+        insertion = atomarray[i].insertion[0];
+      } else {
+        insertion = '\0';
+      }
+      sprintf(residbuf, "%d%c", atomarray[i].resid, (insertion == ' ' ? '\0' : insertion));
       target.resid = residbuf;
 
 #if 0
@@ -766,7 +780,7 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
                           const char *filename, struct image_spec *images,
                           void *v, void (*print_msg)(void *, const char *)) {
   char buf[256];
-  int iseg,nseg,ires,nres,atomid;
+  int iseg,nseg,ires,nres,atomid,resid;
   int ia,ib,ic,ii;
   int has_guessed_atoms = 0;
   double x,y,z,o,b;
@@ -1007,10 +1021,15 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
         strcpy(atm->name, atom->name);
         strcpy(atm->type, atom->type);
         strcpy(atm->resname, res->name);
-        atm->resid = atoi(res->resid);
-        strcpy(atm->chain, res->chain);
+        if ( res->chain[0] == '\0' ) {
+          strcpy(atm->chain, " ");
+        } else {
+          strcpy(atm->chain, res->chain);
+        }
         strcpy(atm->segid, seg->segid);
-        strcpy(atm->insertion, "");
+        strcpy(atm->insertion, " ");
+        sscanf(res->resid, "%d%c", &resid, atm->insertion);
+        atm->resid = resid;
         strcpy(atm->altloc, "");
         atm->atomicnumber = -1; /* we should be able to do much better */
         atm->occupancy = o;
@@ -1066,7 +1085,7 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
   }
 
   /* set flags indicating what data is populated/valid */
-  optflags = MOLFILE_OCCUPANCY | MOLFILE_BFACTOR | 
+  optflags = MOLFILE_INSERTION | MOLFILE_OCCUPANCY | MOLFILE_BFACTOR |
              MOLFILE_MASS | MOLFILE_CHARGE;
 
   /* build bond list here */

@@ -38,6 +38,7 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
 
 int topo_mol_regenerate_angles(topo_mol *mol);
 int topo_mol_regenerate_dihedrals(topo_mol *mol);
+int topo_mol_regenerate_resids(topo_mol *mol);
 
 void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target);
 

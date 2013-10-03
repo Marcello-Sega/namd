@@ -588,9 +588,9 @@ int tcl_topology(ClientData data, Tcl_Interp *interp,
 
 int tcl_readpsf(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  FILE *psf_file;
+  FILE *psf_file, *pdb_file;
   int retval;
-  const char *filename;
+  const char *filename, *pdbfilename;
   char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
   PSFGEN_TEST_MOL(interp,psf);
@@ -600,12 +600,18 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  if ( argc > 2 ) {
+  if ( argc > 4 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
+  if ( argc > 2 && (argc < 4 || strcmp(argv[2],"pdb")) ) {
+    Tcl_SetResult(interp,"coordinate file arguments should be \"pdb <filename>\"",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
   filename = argv[1];
+  pdbfilename = ( argc == 4 ? argv[3] : 0 );
   /* Open psf as a binary file because the reading code uses ftell and
      fseek which do not work properly if the file is opened as text
      on Windows.  fgetpos/fsetpos misbehave in the exact same way.    */
@@ -614,12 +620,24 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
     Tcl_SetResult(interp,msg,TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
-  } else {
-    sprintf(msg,"reading structure from psf file %s",filename);
-    newhandle_msg(interp,msg);
-    retval = psf_file_extract(psf->mol, psf_file, interp, newhandle_msg);
-    fclose(psf_file);
   }
+  sprintf(msg,"reading structure from psf file %s",filename);
+  newhandle_msg(interp,msg);
+  pdb_file = 0;
+  if ( pdbfilename ) {
+    if ( ! ( pdb_file = fopen(pdbfilename,"rb") ) ) {
+      fclose(psf_file);
+      sprintf(msg,"ERROR: Unable to open pdb file %s",pdbfilename);
+      Tcl_SetResult(interp,msg,TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    sprintf(msg,"reading coordinates from pdb file %s",pdbfilename);
+    newhandle_msg(interp,msg);
+  }
+  retval = psf_file_extract(psf->mol, psf_file, pdb_file, interp, newhandle_msg);
+  fclose(psf_file);
+  if ( pdb_file ) fclose(pdb_file);
   if (retval) {
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
@@ -1097,22 +1115,23 @@ int tcl_auto(ClientData data, Tcl_Interp *interp,
 
 int tcl_regenerate(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  int i, angles, dihedrals;
+  int i, angles, dihedrals, resids;
   psfgen_data *psf = *(psfgen_data **)data;
   PSFGEN_TEST_MOL(interp,psf);
 
   if ( argc < 2 ) {
-    Tcl_SetResult(interp,"arguments: ?angles? ?dihedrals? ?none?",TCL_VOLATILE);
+    Tcl_SetResult(interp,"arguments: ?angles? ?dihedrals? ?resids?",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
-  angles = 0;  dihedrals = 0;
+  angles = 0;  dihedrals = 0;  resids = 0;
   for ( i = 1; i < argc; ++i ) {
     if ( ! strcmp(argv[i],"angles") ) angles = 1;
     else if ( ! strcmp(argv[i],"dihedrals") ) dihedrals = 1;
+    else if ( ! strcmp(argv[i],"resids") ) resids = 1;
     else {
-      Tcl_SetResult(interp,"arguments: ?angles? ?dihedrals?",TCL_VOLATILE);
+      Tcl_SetResult(interp,"arguments: ?angles? ?dihedrals? ?resids?",TCL_VOLATILE);
       psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
@@ -1131,6 +1150,15 @@ int tcl_regenerate(ClientData data, Tcl_Interp *interp,
     newhandle_msg(interp,"regenerating all dihedrals");
     if ( topo_mol_regenerate_dihedrals(psf->mol) ) {
       Tcl_AppendResult(interp,"ERROR: dihedral regeneration failed",NULL);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+  }
+
+  if ( resids ) {
+    newhandle_msg(interp,"regenerating all resids");
+    if ( topo_mol_regenerate_resids(psf->mol) ) {
+      Tcl_AppendResult(interp,"ERROR: resid regeneration failed",NULL);
       psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
