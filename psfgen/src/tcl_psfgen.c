@@ -186,6 +186,7 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *arg
 int tcl_readplugin(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_writepsf(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_writepdb(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
+int tcl_writenamdbin(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_writeplugin(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_first(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_last(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
@@ -262,6 +263,8 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"writepsf",tcl_writepsf,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"writepdb",tcl_writepdb,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"writenamdbin",tcl_writenamdbin,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"writemol",tcl_writeplugin,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
@@ -588,9 +591,9 @@ int tcl_topology(ClientData data, Tcl_Interp *interp,
 
 int tcl_readpsf(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  FILE *psf_file, *pdb_file;
+  FILE *psf_file, *pdb_file, *namdbin_file;
   int retval;
-  const char *filename, *pdbfilename;
+  const char *filename, *pdbfilename, *namdbinfilename;
   char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
   PSFGEN_TEST_MOL(interp,psf);
@@ -600,18 +603,25 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  if ( argc > 4 ) {
+  if ( argc > 6 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  if ( argc > 2 && (argc < 4 || strcmp(argv[2],"pdb")) ) {
-    Tcl_SetResult(interp,"coordinate file arguments should be \"pdb <filename>\"",TCL_VOLATILE);
+  if ( argc > 2 && (argc < 4 || (strcmp(argv[2],"pdb")&&strcmp(argv[2],"namdbin")) ) ) {
+    Tcl_SetResult(interp,"coordinate file arguments should be \"[pdb|namdbin] <filename>\"",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  if ( argc > 4 && (argc < 6 || strcmp(argv[2],"pdb") || strcmp(argv[4],"namdbin") ) ) {
+    Tcl_SetResult(interp,"binary coordinate file arguments should be \"namdbin <filename>\"",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   filename = argv[1];
-  pdbfilename = ( argc == 4 ? argv[3] : 0 );
+  namdbinfilename = ( (argc == 4 && ! strcmp(argv[2],"namdbin") ) ? argv[3] : 0 );
+  pdbfilename = ( (argc >= 4 && ! strcmp(argv[2],"pdb") ) ? argv[3] : 0 );
+  if ( argc == 6 ) namdbinfilename = argv[5];
   /* Open psf as a binary file because the reading code uses ftell and
      fseek which do not work properly if the file is opened as text
      on Windows.  fgetpos/fsetpos misbehave in the exact same way.    */
@@ -632,12 +642,26 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
       psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
-    sprintf(msg,"reading coordinates from pdb file %s",pdbfilename);
+    sprintf(msg,"reading coordinates and insertion codes from pdb file %s",pdbfilename);
     newhandle_msg(interp,msg);
   }
-  retval = psf_file_extract(psf->mol, psf_file, pdb_file, interp, newhandle_msg);
+  namdbin_file = 0;
+  if ( namdbinfilename ) {
+    if ( ! ( namdbin_file = fopen(namdbinfilename,"rb") ) ) {
+      fclose(psf_file);
+      if ( pdb_file ) fclose(pdb_file);
+      sprintf(msg,"ERROR: Unable to open namdbin file %s",namdbinfilename);
+      Tcl_SetResult(interp,msg,TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    sprintf(msg,"reading coordinates from namdbin file %s",namdbinfilename);
+    newhandle_msg(interp,msg);
+  }
+  retval = psf_file_extract(psf->mol, psf_file, pdb_file, namdbin_file, interp, newhandle_msg);
   fclose(psf_file);
   if ( pdb_file ) fclose(pdb_file);
+  if ( namdbin_file ) fclose(namdbin_file);
   if (retval) {
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
@@ -1428,6 +1452,47 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
   }
   fclose(res_file);
   newhandle_msg(interp, "Info: pdb file complete.");
+
+  return TCL_OK;
+}
+
+
+int tcl_writenamdbin(ClientData data, Tcl_Interp *interp,
+					int argc, CONST84 char *argv[]) {
+  FILE *res_file;
+  const char *filename;
+  char msg[2048];
+  psfgen_data *psf = *(psfgen_data **)data;
+  PSFGEN_TEST_MOL(interp,psf);
+
+  if ( argc == 1 ) {
+    Tcl_SetResult(interp,"no namdbin file specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  if ( argc > 2 ) {
+    Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  filename = argv[1];
+
+  if ( ! ( res_file = fopen(filename,"wb") ) ) {
+    sprintf(msg,"ERROR: Unable to open namdbin file %s to write coordinates\n",filename);
+    Tcl_SetResult(interp,msg,TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  sprintf(msg,"Info: writing namdbin file %s",filename);
+  newhandle_msg(interp,msg);
+  if ( topo_mol_write_namdbin(psf->mol,res_file,interp,newhandle_msg) ) {
+    Tcl_AppendResult(interp,"ERROR: failed on writing coordinates to namdbin file",NULL);
+    fclose(res_file);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  fclose(res_file);
+  newhandle_msg(interp, "Info: namdbin file complete.");
 
   return TCL_OK;
 }

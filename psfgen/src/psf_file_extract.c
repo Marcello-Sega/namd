@@ -398,7 +398,7 @@ static topo_mol_residue_t *get_residue(topo_mol_segment_t *seg,
 }
 
 
-int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, void *v,
+int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, FILE *namdbinfile, void *v,
                                 void (*print_msg)(void *, const char *)) {
   int i, natoms, npatch, charmmext;
   psfatom *atomlist;
@@ -494,6 +494,78 @@ int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, void *v,
       free(atomlist);
       free(atomcoords);
       return -1;
+    }
+  }
+
+  if ( namdbinfile ) {
+    int numatoms;
+    int filen;
+    int wrongendian;
+    char lenbuf[4];
+    char tmpc;
+    char static_assert_int_is_32_bits[sizeof(int) == 4 ? 1 : -1];
+    if ( ! atomcoords ) {
+      atomcoords = (double *)malloc(natoms * 3 * sizeof(double));
+    }
+    fseek(namdbinfile,0,SEEK_END);
+    numatoms = (ftell(namdbinfile)-4)/24;
+    if (numatoms < 1) {
+      print_msg(v,"namdbin file is too short");
+      free(atomlist);
+      free(atomcoords);
+      return -1;
+    }
+    fseek(namdbinfile,0,SEEK_SET);
+    fread(&filen, sizeof(int), 1, namdbinfile);
+    wrongendian = 0;
+    if (filen != numatoms) {
+      wrongendian = 1;
+      memcpy(lenbuf, (const char *)&filen, 4);
+      tmpc = lenbuf[0]; lenbuf[0] = lenbuf[3]; lenbuf[3] = tmpc;
+      tmpc = lenbuf[1]; lenbuf[1] = lenbuf[2]; lenbuf[2] = tmpc;
+      memcpy((char *)&filen, lenbuf, 4);
+    }
+    if (filen != numatoms) {
+      print_msg(v,"inconsistent atom count in namdbin file");
+      free(atomlist);
+      free(atomcoords);
+      return -1;
+    }
+    if (numatoms < natoms) {
+      print_msg(v,"too few atoms in namdbin file");
+      free(atomlist);
+      free(atomcoords);
+      return -1;
+    }
+    if (numatoms > natoms) {
+      print_msg(v,"too many atoms in namdbin file");
+      free(atomlist);
+      free(atomcoords);
+      return -1;
+    }
+    if (wrongendian) {
+      print_msg(v,"namdbin file appears to be other-endian");
+    }
+    if (fread(atomcoords, sizeof(double), 3 * natoms, namdbinfile)
+                                 != (size_t)(3 * natoms)) {
+      print_msg(v,"error reading data from namdbin file");
+      free(atomlist);
+      free(atomcoords);
+      return -1;
+    }
+    if (wrongendian) {
+      int i;
+      char tmp0, tmp1, tmp2, tmp3;
+      char *cdata = (char *) atomcoords;
+      print_msg(v,"converting other-endian data from namdbin file");
+      for ( i=0; i<3*natoms; ++i, cdata+=8 ) {
+        tmp0 = cdata[0]; tmp1 = cdata[1];
+        tmp2 = cdata[2]; tmp3 = cdata[3];
+        cdata[0] = cdata[7]; cdata[1] = cdata[6];
+        cdata[2] = cdata[5]; cdata[3] = cdata[4];
+        cdata[7] = tmp0; cdata[6] = tmp1;
+        cdata[5] = tmp2; cdata[4] = tmp3;
+      }
     }
   }
  

@@ -76,6 +76,79 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
   return 0;
 }
 
+int topo_mol_write_namdbin(topo_mol *mol, FILE *file, void *v, 
+                                void (*print_msg)(void *, const char *)) {
+
+  char static_assert_int_is_32_bits[sizeof(int) == 4 ? 1 : -1];
+  int iseg,nseg,ires,nres,atomid,resid;
+  int has_void_atoms = 0;
+  int numatoms;
+  double x,y,z,xyz[3];
+  topo_mol_segment_t *seg;
+  topo_mol_residue_t *res;
+  topo_mol_atom_t *atom;
+
+  if ( ! mol ) return -1;
+
+  numatoms = 0;
+  nseg = hasharray_count(mol->segment_hash);
+  for ( iseg=0; iseg<nseg; ++iseg ) {
+    seg = mol->segment_array[iseg];
+    if (! seg) continue;
+    nres = hasharray_count(seg->residue_hash);
+    for ( ires=0; ires<nres; ++ires ) {
+      res = &(seg->residue_array[ires]);
+      for ( atom = res->atoms; atom; atom = atom->next ) {
+        ++numatoms;
+      }
+    }
+  }
+  if ( fwrite(&numatoms, sizeof(int), 1, file) != 1 ) {
+    print_msg(v, "error writing namdbin file");
+    return -2;
+  }
+  for ( iseg=0; iseg<nseg; ++iseg ) {
+    seg = mol->segment_array[iseg];
+    if (! seg) continue;
+    nres = hasharray_count(seg->residue_hash);
+    for ( ires=0; ires<nres; ++ires ) {
+      res = &(seg->residue_array[ires]);
+      for ( atom = res->atoms; atom; atom = atom->next ) {
+        /* Paranoid: make sure x,y,z are set. */
+        x = y = z = 0.0;
+        switch ( atom->xyz_state ) {
+        case TOPO_MOL_XYZ_SET:
+        case TOPO_MOL_XYZ_GUESS:
+        case TOPO_MOL_XYZ_BADGUESS:
+          x = atom->x;  y = atom->y;  z = atom->z;
+          break;
+        default:
+          print_msg(v,"ERROR: Internal error, atom has invalid state.");
+          print_msg(v,"ERROR: Treating as void.");
+          /* Yes, fall through */
+        case TOPO_MOL_XYZ_VOID:
+          x = y = z = 0.0;
+          has_void_atoms = 1;
+          break;
+        }
+        xyz[0] = x;
+        xyz[1] = y;
+        xyz[2] = z;
+        if ( fwrite(xyz, sizeof(double), 3, file) != 3 ) {
+          print_msg(v, "error writing namdbin file");
+          return -3;
+        }
+      }
+    }
+  }
+
+  if (has_void_atoms) {
+    print_msg(v, 
+        "Warning: Atoms with unknown coordinates written at 0. 0. 0.");
+  }
+  return 0;
+}
+
 int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
                       void *v, void (*print_msg)(void *, const char *)) {
 
