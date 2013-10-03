@@ -11,7 +11,7 @@
  *
  *      $RCSfile: psfplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.7 $       $Date: 2013/10/02 02:39:12 $
+ *      $Revision: 1.8 $       $Date: 2013/10/03 20:33:39 $
  *
  ***************************************************************************/
 
@@ -113,7 +113,7 @@ static int atoifw(char **ptr, int fw) {
    that file has already been moved to the beginning of the atom records.
    Returns the serial number of the atom. If there is an error, returns -1.*/
 static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
-                        char *segname, int *resid, float *q, float *m, 
+                        char *segname, int *resid, char *insertion, float *q, float *m, 
                         int namdfmt, int charmmext, int charmmdrude) {
   char inbuf[PSF_RECORD_LENGTH+2];
   int num;
@@ -130,10 +130,13 @@ static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
   num = atoi(inbuf); /* atom index */
 
   if (namdfmt == 1) {
-    int cnt;
-    cnt = sscanf(inbuf, "%d %7s %d %7s %7s %7s %f %f",
-                 &num, segname, resid, resname, name, atype, q, m);
-    if (cnt != 8) {
+    int cnt, rcnt;
+    char residstr[8], trash;
+    cnt = sscanf(inbuf, "%d %7s %7s %7s %7s %7s %f %f",
+                 &num, segname, residstr, resname, name, atype, q, m);
+    insertion[0] = ' ';  insertion[1] = '\0';
+    rcnt = sscanf(residstr, "%d%c%c", resid, insertion, &trash);
+    if (cnt != 8 || rcnt < 1 || rcnt > 2) {
       printf("psfplugin) Failed to parse atom line in NAMD PSF file:\n");
       printf("psfplugin)   '%s'\n", inbuf);
       return -1;
@@ -170,7 +173,8 @@ static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
       return -1;
     }
     
-    *resid = atoi(inbuf+20);
+    insertion[0] = ' ';  insertion[1] = '\0';
+    sscanf(inbuf+20, "%d%c", resid, insertion);
     *q = (float) atof(inbuf+52+xplorshift);
     *m = (float) atof(inbuf+66+xplorshift);
     // data we don't currently read:
@@ -201,7 +205,8 @@ static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
     }
     intbuf[0] = '\0';
     rdbuf += strnwscpy_shift(intbuf, rdbuf+14, 4, 8);
-    *resid = atoi(intbuf);
+    insertion[0] = ' ';  insertion[1] = '\0';
+    sscanf(intbuf, "%d%c", resid, insertion);
     if ( rdbuf[18] != ' ' ) {
       printf("psfplugin) Failed to parse resid in PSF file:\n");
       printf("psfplugin)   '%s'\n", inbuf);
@@ -435,13 +440,13 @@ static int read_psf(void *v, int *optflags, molfile_atom_t *atoms) {
   int i;
   
   /* we read in the optional mass and charge data */
-  *optflags = MOLFILE_MASS | MOLFILE_CHARGE;
+  *optflags = MOLFILE_INSERTION | MOLFILE_MASS | MOLFILE_CHARGE;
 
   for (i=0; i<psf->numatoms; i++) {
     molfile_atom_t *atom = atoms+i; 
     if (get_psf_atom(psf->fp, atom->name, atom->type, 
-                     atom->resname, atom->segid, 
-                     &atom->resid, &atom->charge, &atom->mass, 
+                     atom->resname, atom->segid,
+                     &atom->resid, atom->insertion, &atom->charge, &atom->mass, 
                      psf->namdfmt, psf->charmmext, psf->charmmdrude) < 0) {
       fprintf(stderr, "couldn't read atom %d\n", i);
       fclose(psf->fp);
