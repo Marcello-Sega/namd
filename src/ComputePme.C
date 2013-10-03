@@ -3613,19 +3613,15 @@ private:
 
       CkArray *zPencil_local = initdata.zPencil.ckLocalBranch();
       untrans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * yBlocks);
-      int send_evir = 1;
       for ( int isend=0; isend<yBlocks; ++isend ) {
           int jb = send_order[isend];
           int ny1 = block2;
           if ( (jb+1)*block2 > K2 ) ny1 = K2 - jb*block2;
           int peer = zPencil_local->homePe(CkArrayIndex3D(thisIndex.x, jb, 0));
-          int size= sizeof(PmeUntransMsg) + sizeof(float)*nx*ny1*nz*2 + sizeof(PmeReduction)*send_evir +sizeof( envelope) + PRIORITY_SIZE/8+24;
-          int compress_start = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof( envelope); 
+          int size= sizeof(PmeUntransMsg) + sizeof(float)*nx*ny1*nz*2 + sizeof( envelope) + PRIORITY_SIZE/8+24;
+          int compress_start = sizeof(PmeUntransMsg) + sizeof( envelope); 
           int compress_size = sizeof(float)*nx*ny1*nz*2;
           untrans_handle[isend] = CmiCreateCompressPersistentSize(peer, size,  compress_start, compress_size, CMI_FLOATING);
-          if ( send_evir ) {
-              send_evir = 0;
-          } 
       }
     }
 #endif
@@ -3673,21 +3669,16 @@ public:
       int K1 = initdata.grid.K1;
       CkArray *yPencil_local = initdata.yPencil.ckLocalBranch();
       untrans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * xBlocks);
-      int send_evir = 1;
       for ( int isend=0; isend<xBlocks; ++isend ) {
           int ib = send_order[isend];
           int nx1 = block1;
           if ( (ib+1)*block1 > K1 ) nx1 = K1 - ib*block1;
           int peer = yPencil_local->procNum(CkArrayIndex3D(ib, 0, thisIndex.z));
-          int size = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir +       
+          int size = sizeof(PmeUntransMsg) +
               sizeof(float)*nx1*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8+24; 
-          int compress_start = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof( envelope); 
+          int compress_start = sizeof(PmeUntransMsg) + sizeof( envelope); 
           int compress_size = sizeof(float)*nx1*ny*nz*2;
           untrans_handle[isend] = CmiCreateCompressPersistentSize(peer, size, compress_start, compress_size, CMI_FLOATING);
-          if ( send_evir ) {
-              send_evir = 0;
-          }
-
       }
     }
 #endif
