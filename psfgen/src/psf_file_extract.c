@@ -456,6 +456,7 @@ int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, FILE *namdbinfile
     i=0; 
     do {
       if((indx = read_pdb_record(pdbfile, record)) == PDB_ATOM) {
+        psfatom *atom = atomlist + i;
         if ( i >= natoms ) {
           print_msg(v,"too many atoms in pdb file");
           free(atomlist);
@@ -464,7 +465,6 @@ int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, FILE *namdbinfile
         }
         get_pdb_fields(record, name, resname, chain,
                    segname, element, resid, insertion, &x, &y, &z, &o, &b);
-        psfatom *atom = atomlist + i;
         if ( strncmp(atom->name,name,4) ||
              strncmp(atom->resname,resname,4) ||
              strncmp(atom->segname,segname,4) ) {
