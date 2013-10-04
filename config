@@ -48,7 +48,19 @@ syntax:
           breaksw
           case x86_64:
             set ARCH_PAT = Linux-x86_64
-            set ARCH_PAT2 = CRAY-XT
+            if ( $?CRAY_PRE_COMPILE_OPTS ) then
+              switch ( $CRAY_PRE_COMPILE_OPTS )
+              case *seastar*:
+              case *gemini*:
+                set ARCH_PAT2 = CRAY-XT
+              breaksw
+              case *aries*:
+                set ARCH_PAT2 = CRAY-XC
+              breaksw
+              default:
+                set ARCH_PAT2 = CRAY
+              endsw
+            endif
           breaksw
           case ppc:
             set ARCH_PAT = Linux-P
