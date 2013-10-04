@@ -407,6 +407,7 @@ begin:
     set ARCH_SUFFIX = ${ARCH_SUFFIX}${SUF}
   endif
   if ( $CHARM_ARCH =~ gemini_gni-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ugni
+  if ( $CHARM_ARCH =~ gni-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ugni
   if ( $CHARM_ARCH =~ lapi-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-lapi
   if ( $CHARM_ARCH =~ pami-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-pami
   if ( $CHARM_ARCH =~ pamilrts-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-pamilrts
