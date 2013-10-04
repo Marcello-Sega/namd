@@ -51,8 +51,10 @@ syntax:
             if ( $?CRAY_PRE_COMPILE_OPTS ) then
               switch ( $CRAY_PRE_COMPILE_OPTS )
               case *seastar*:
-              case *gemini*:
                 set ARCH_PAT2 = CRAY-XT
+              breaksw
+              case *gemini*:
+                set ARCH_PAT2 = CRAY-XE
               breaksw
               case *aries*:
                 set ARCH_PAT2 = CRAY-XC
