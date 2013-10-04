@@ -492,9 +492,9 @@ begin:
     endif
     if ( $?CUDA_PREFIX ) then
       set CUDA_SO_FULL=`ls $CUDA_PREFIX/$CUDA_SO_PAT`
-      if ( $status ) set CUDA_SO_FULL=`ls $CUDA_PREFIX/$CUDA_SO_PAT.[0-9]`
-      if ( $status ) set CUDA_SO_FULL=`ls $CUDA_PREFIX/$CUDA_SO_PAT.[0-9].[0-9]`
-      if ( $status || $CUDA_SO_FULL !~ */* ) unset CUDA_SO_FULL
+      if ( x$CUDA_SO_FULL == x ) set CUDA_SO_FULL=`ls $CUDA_PREFIX/$CUDA_SO_PAT.[0-9]`
+      if ( x$CUDA_SO_FULL == x ) set CUDA_SO_FULL=`ls $CUDA_PREFIX/$CUDA_SO_PAT.[0-9].[0-9]`
+      if ( x$CUDA_SO_FULL == x || $CUDA_SO_FULL !~ */* ) unset CUDA_SO_FULL
     endif
     if ( $?CUDA_SO_FULL ) then
       echo "CUDASODIR = $CUDA_SO_FULL:h" >> Make.config
