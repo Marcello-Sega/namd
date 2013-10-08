@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2013/09/17 23:20:19 $
- * $Revision: 1.1212 $
+ * $Date: 2013/10/08 22:57:10 $
+ * $Revision: 1.1213 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -51,6 +51,7 @@ Sequencer::Sequencer(HomePatch *p) :
 {
     broadcast = new ControllerBroadcasts(& patch->ldObjHandle);
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+    min_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_MINIMIZER,1);
     if (simParams->pressureProfileOn) {
       int ntypes = simParams->pressureProfileAtomTypes;
       int nslabs = simParams->pressureProfileSlabs;
@@ -73,6 +74,7 @@ Sequencer::~Sequencer(void)
 {
     delete broadcast;
     delete reduction;
+    delete min_reduction;
     delete pressureProfileReduction;
     delete random;
 }
@@ -615,12 +617,18 @@ void Sequencer::newMinimizeDirection(BigReal c) {
   Force *f2 = patch->f[Results::nbond].begin();
   Force *f3 = patch->f[Results::slow].begin();
   int numAtoms = patch->numAtoms;
+  BigReal maxv2 = 0.;
 
   for ( int i = 0; i < numAtoms; ++i ) {
     a[i].velocity *= c;
     a[i].velocity += f1[i] + f2[i] + f3[i];
     if ( simParams->fixedAtomsOn && a[i].atomFixed ) a[i].velocity = 0;
+    BigReal v2 = a[i].velocity.length2();
+    if ( v2 > maxv2 ) maxv2 = v2;
   }
+
+  min_reduction->max(0,maxv2);
+  min_reduction->submit();
 
   // prevent hydrogens from being left behind
   BigReal fmax2 = 0.01 * TIMEFACTOR * TIMEFACTOR * TIMEFACTOR * TIMEFACTOR;

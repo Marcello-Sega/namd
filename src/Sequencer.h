@@ -36,6 +36,7 @@ protected:
 
     void integrate(); // Verlet integrator
     void minimize(); // CG minimizer
+      SubmitReduction *min_reduction;
 
     void runComputeObjects(int migration = 1, int pairlists = 0);
     int pairlistsAreValid;

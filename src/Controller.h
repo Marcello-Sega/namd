@@ -44,6 +44,7 @@ protected:
 
     void integrate(); // Verlet integrator
     void minimize(); // CG minimizer
+      RequireReduction *min_reduction;
 
     void receivePressure(int step, int minimize = 0);
       Tensor pressure_normal;

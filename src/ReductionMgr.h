@@ -158,6 +158,7 @@ typedef enum
 // Later this can be dynamic
 enum {
   REDUCTIONS_BASIC,
+  REDUCTIONS_MINIMIZER,
   REDUCTIONS_PPROF_BONDED,
   REDUCTIONS_PPROF_NONBONDED,
   REDUCTIONS_PPROF_INTERNAL,
@@ -298,6 +299,11 @@ private:
 public:
   inline BigReal& item(int i) {
     return data[i];
+  }
+  inline void max(int i, BigReal v) {
+    if ( v > data[i] ) {
+      data[i] = v;
+    }
   }
   void add(int nitems, const BigReal *arr) {
     for (int i=0; i<nitems; i++) data[i] += arr[i];

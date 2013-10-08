@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/09/12 22:31:16 $
- * $Revision: 1.1292 $
+ * $Date: 2013/10/08 22:57:09 $
+ * $Revision: 1.1293 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -138,6 +138,7 @@ Controller::Controller(NamdState *s) :
 {
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
+    min_reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_MINIMIZER,1);
     // for accelMD
     if (simParams->accelMDOn) {
        amd_reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_AMD);
@@ -206,6 +207,7 @@ Controller::~Controller(void)
 {
     delete broadcast;
     delete reduction;
+    delete min_reduction;
     delete amd_reduction;
     delete ppbonded;
     delete ppnonbonded;
@@ -471,10 +473,7 @@ void Controller::minimize() {
   const int numberOfSteps = simParams->N;
   int step = simParams->firstTimestep;
   slowFreq = nbondFreq = 1;
-  BigReal tinystep = simParams->minTinyStep;  // 1.0e-6
-  BigReal babystep = simParams->minBabyStep;  // 1.0e-2
   BigReal linegoal = simParams->minLineGoal;  // 1.0e-3
-  BigReal initstep = tinystep;
   const BigReal goldenRatio = 0.5 * ( sqrt(5.0) - 1.0 );
 
   CALCULATE
@@ -526,28 +525,17 @@ void Controller::minimize() {
       iout << "\n" << endi;
     }
     BigReal tol = fabs( linegoal * min_f_dot_v );
-    if ( initstep > babystep ) initstep = babystep;
-    if ( initstep < 1.0e-300 ) initstep = 1.0e-300;
     iout << "LINE MINIMIZER REDUCING GRADIENT FROM " <<
             fabs(min_f_dot_v) << " TO " << tol << "\n" << endi;
     int start_with_huge = last.noGradient;
-    x = initstep;
-    x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
-    if ( ! start_with_huge ) {
-      for ( int i_huge = 0; last.noGradient && i_huge < 10; ++i_huge ) {
-        x *= 0.25;  MOVETO(x);
-        initstep *= 0.25;
-      }
-    }
+    min_reduction->require();
+    BigReal maxstep = 0.1 / sqrt(min_reduction->item(0));
+    x = maxstep; MOVETO(x);
     // bracket minimum on line
-    initstep *= 0.25;
-    BigReal maxinitstep = initstep * 16.0;
     while ( last.u < mid.u ) {
-      initstep *= 2.0;
       lo = mid; mid = last;
-      x *= 2.0; MOVETO(x)
+      x += maxstep; MOVETO(x)
     }
-    if ( initstep > maxinitstep ) initstep = maxinitstep;
     hi = last;
 #define PRINT_BRACKET \
     iout << "LINE MINIMIZER BRACKET: DX " \

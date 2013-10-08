@@ -463,8 +463,16 @@ void ReductionMgr::remoteSubmit(ReductionSubmitMsg *msg) {
 #pragma disjoint (*curData,  *newData)
 #pragma unroll(4)
 #endif
-  for ( int i = 0; i < size; ++i ) {
-    curData[i] += newData[i];
+  if ( setID == REDUCTIONS_MINIMIZER ) {
+    for ( int i = 0; i < size; ++i ) {
+      if ( newData[i] > curData[i] ) {
+        curData[i] = newData[i];
+      }
+    }
+  } else {
+    for ( int i = 0; i < size; ++i ) {
+      curData[i] += newData[i];
+    }
   }
 //  CkPrintf("[%d] reduction Submit received from node[%d] %d\n",
 //    CkMyPe(),childIndex(msg->sourceNode),msg->sourceNode);
