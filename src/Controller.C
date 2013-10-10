@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/10/09 17:54:17 $
- * $Revision: 1.1294 $
+ * $Date: 2013/10/10 00:54:53 $
+ * $Revision: 1.1295 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -533,13 +533,16 @@ void Controller::minimize() {
     x = maxstep; MOVETO(x);
     // bracket minimum on line
     while ( last.u < mid.u ) {
+      if ( last.dudx < mid.dudx * (5.5 - x/maxstep)/5. ) {
+        x = 6 * maxstep; break;
+      }
       lo = mid; mid = last;
       x += maxstep;
       if ( x > 5.5 * maxstep ) break;
       MOVETO(x)
     }
     if ( x > 5.5 * maxstep ) {
-      iout << "MINIMIZER RESTARTING CONJUGATE GRADIENT ALGORITHM\n" << endi;
+      iout << "MINIMIZER RESTARTING CONJUGATE GRADIENT ALGORITHM DUE TO POOR PROGRESS\n" << endi;
       broadcast->minimizeCoefficient.publish(minSeq++,0.);
       broadcast->minimizeCoefficient.publish(minSeq++,0.); // v = f
       newDir = 1;
