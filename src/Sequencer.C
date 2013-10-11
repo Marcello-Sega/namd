@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2013/10/08 22:57:10 $
- * $Revision: 1.1213 $
+ * $Date: 2013/10/11 05:47:17 $
+ * $Revision: 1.1214 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -545,6 +545,10 @@ void Sequencer::minimize() {
     int &doLCPO = patch->flags.doLCPO;
     doLCPO = simParams->LCPOOn;
 
+    int doTcl = simParams->tclForcesOn;
+	int doColvars = simParams->colvarsOn;
+    ComputeGlobal *computeGlobal = Node::Object()->computeMgr->computeGlobalObject;
+
   int &doEnergy = patch->flags.doEnergy;
   doEnergy = 1;
 
@@ -554,6 +558,12 @@ void Sequencer::minimize() {
   }
 
   runComputeObjects(1,step<numberOfSteps); // must migrate here!
+
+  if ( doTcl || doColvars ) {
+    if ( doNonbonded ) saveForce(Results::nbond);
+    if ( doFullElectrostatics ) saveForce(Results::slow);
+    computeGlobal->saveTotalForces(patch);
+  }
 
   BigReal fmax2 = TIMEFACTOR * TIMEFACTOR * TIMEFACTOR * TIMEFACTOR;
 
@@ -581,6 +591,11 @@ void Sequencer::minimize() {
    }
 
     runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
+    if ( doTcl || doColvars ) {
+      if ( doNonbonded ) saveForce(Results::nbond);
+      if ( doFullElectrostatics ) saveForce(Results::slow);
+      computeGlobal->saveTotalForces(patch);
+    }
     submitMinimizeReductions(step,fmax2);
     submitCollections(step, 1);  // write out zeros for velocities
     rebalanceLoad(step);
