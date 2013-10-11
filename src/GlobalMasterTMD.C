@@ -95,6 +95,9 @@ GlobalMasterTMD::GlobalMasterTMD() {
   lastStep = params->TMDLastStep;
   qDiffRMSD=params->TMDDiffRMSD;
   altloc = 0;
+  target = 0;
+  target2 = 0;
+  weight = 0;
   if (qDiffRMSD) parseAtoms(params->TMDFile2,Node::Object()->molecule->numAtoms, 1);
   parseAtoms(params->TMDFile,Node::Object()->molecule->numAtoms, 0);
 
