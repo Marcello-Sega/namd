@@ -54,6 +54,8 @@ void ExclElem::computeForce(BigReal *reduction,
 
     if ( r2 > cutoff2 ) return;
 
+    if ( modified && r2 < 1.0 ) r2 = 1.0;  // match CUDA interpolation
+
     r2 += r2_delta;
 
     union { double f; int64 i; } r2i;
