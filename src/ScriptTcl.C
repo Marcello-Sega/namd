@@ -684,6 +684,78 @@ int ScriptTcl::Tcl_colvarbias(ClientData clientData,
   }
 }
 
+int ScriptTcl::Tcl_colvarvalue(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  colvarmodule *colvars = Node::Object()->colvars;
+  if ( ! colvars ) {
+    Tcl_SetResult(interp,"colvars module not active",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  // Pass the colvarvalue to Tcl
+  std::string name(argv[1]);
+  std::string value = colvars->read_colvar(name);
+  // Process from a colvar list to a Tcl compatible list
+  size_t found;
+  do {
+    found = value.find("(");
+    if (found != std::string::npos) {
+      value.replace(found, 1, " ");
+    } else {
+      break;
+    }
+  } while (true);
+  do {
+    found = value.find(")");
+    if (found != std::string::npos) {
+      value.replace(found, 1, " ");
+    } else {
+      break;
+    }
+  } while (true);
+  do {
+    found = value.find(",");
+    if (found != std::string::npos) {
+      value.replace(found, 1, " ");
+    } else {
+      break;
+    }
+  } while (true);
+  // Send the result to Tcl
+  Tcl_DString recvstr;
+  Tcl_DStringInit(&recvstr);
+  Tcl_DStringAppend(&recvstr,value.c_str(), -1);
+  Tcl_DStringResult(interp, &recvstr);
+  Tcl_DStringFree(&recvstr);
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_colvarfreq(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  colvarmodule *colvars = Node::Object()->colvars;
+  if ( ! colvars ) {
+    Tcl_SetResult(interp,"colvars module not active",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int new_freq;
+  if (Tcl_GetInt(interp,argv[1],&new_freq) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  colvars->cv_traj_freq = new_freq;
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_checkpoint(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -1078,6 +1150,10 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "measure", Tcl_measure,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "colvarbias", Tcl_colvarbias,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "colvarvalue", Tcl_colvarvalue,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "colvarfreq", Tcl_colvarfreq,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "checkpoint", Tcl_checkpoint,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
