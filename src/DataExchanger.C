@@ -7,12 +7,14 @@
 #include "DataExchanger.h"
 #include "ProcessorPrivate.h"
 
+#if CMK_HAS_PARTITION
 extern "C" {
   void setDefaultPartitionParams() {
     // if(!CmiMyNodeGlobal()) CmiPrintf("NAMD setDefaultPartitionParams called\n");
     CmiSetPartitionScheme(3);  // recursive bisection
   }
 }
+#endif
 
 //functions to receive and invoke chare's entry methods
 extern "C" {
