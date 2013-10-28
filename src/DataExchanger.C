@@ -7,6 +7,13 @@
 #include "DataExchanger.h"
 #include "ProcessorPrivate.h"
 
+extern "C" {
+  void setDefaultPartitionParams() {
+    // if(!CmiMyNodeGlobal()) CmiPrintf("NAMD setDefaultPartitionParams called\n");
+    CmiSetPartitionScheme(3);  // recursive bisection
+  }
+}
+
 //functions to receive and invoke chare's entry methods
 extern "C" {
   void packSend(int dst, int dstPart, char *data, int size, int handler) {
