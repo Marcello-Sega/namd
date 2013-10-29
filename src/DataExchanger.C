@@ -8,12 +8,14 @@
 #include "ProcessorPrivate.h"
 
 #if CMK_HAS_PARTITION
+#ifdef CmiMyPartitionSize
 extern "C" {
   void setDefaultPartitionParams() {
     // if(!CmiMyNodeGlobal()) CmiPrintf("NAMD setDefaultPartitionParams called\n");
     CmiSetPartitionScheme(3);  // recursive bisection
   }
 }
+#endif
 #endif
 
 //functions to receive and invoke chare's entry methods
