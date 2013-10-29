@@ -12,6 +12,7 @@
 #include "DataExchanger.decl.h"
 
 #define CPROXY_DE(x) ((CProxy_DataExchanger)(x))
+CpvExtern(int, breakScheduler);
 
 class DataMessage {
   public:

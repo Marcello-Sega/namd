@@ -18,6 +18,8 @@ extern "C" {
 #endif
 #endif
 
+CpvDeclare(int, breakScheduler);
+
 //functions to receive and invoke chare's entry methods
 extern "C" {
   void packSend(int dst, int dstPart, char *data, int size, int handler) {
@@ -54,25 +56,29 @@ extern "C" {
   void replica_send(char *sndbuf, int sendcount, int destPart, int destPE) {
     Pointer sendPointer(sndbuf);
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].send(sendPointer,sendcount,destPart,destPE); 
-    CsdScheduler(-1);
+    CpvAccess(breakScheduler) = 0;
+    while(!CpvAccess(breakScheduler)) CsdSchedulePoll();
   }
 
   void replica_recv(DataMessage **precvMsg, int srcPart, int srcPE) {
     Pointer recvPointer((char *) precvMsg);
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv(recvPointer,srcPart,srcPE);
-    CsdScheduler(-1);
+    CpvAccess(breakScheduler) = 0;
+    while(!CpvAccess(breakScheduler)) CsdSchedulePoll();
   }
 
   void replica_sendRecv(char *sndbuf, int sendcount, int destPart, int destPE, DataMessage **precvMsg, int srcPart, int srcPE)  {
     Pointer sendPointer(sndbuf);
     Pointer recvPointer((char *) precvMsg);
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].sendRecv(sendPointer,sendcount,destPart,destPE,recvPointer,srcPart,srcPE);
-    CsdScheduler(-1);
+    CpvAccess(breakScheduler) = 0;
+    while(!CpvAccess(breakScheduler)) CsdSchedulePoll();
   }
 
   void replica_barrier() {
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].barrier();
-    CsdScheduler(-1);
+    CpvAccess(breakScheduler) = 0;
+    while(!CpvAccess(breakScheduler)) CsdSchedulePoll();
   }
 } //endof extern C
 
@@ -81,6 +87,8 @@ extern "C" {
 //----------------------------------------------------------------------
 DataExchanger::DataExchanger()
 {
+  CpvInitialize(int, breakScheduler);
+  CpvAccess(breakScheduler) = 1;
   if(CmiMyPartition() == 0) 
     parent = -1;
   else 

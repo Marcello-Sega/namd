@@ -15,7 +15,7 @@ module DataExchanger {
         packSend(dst,dstPart,(char*)srcPointer.data,srcSize,recv_data_idx);
       }
       when recv_ack() serial { 
-        CsdExitScheduler();
+        CpvAccess(breakScheduler) = 1;
       }
     };
 
@@ -28,7 +28,7 @@ module DataExchanger {
             *((DataMessage**)recvPointer.data) = dmsg;
             packSend(dmsg->src,dmsg->srcPart,NULL,0,recv_ack_idx);
             loop = 0;
-            CsdExitScheduler();
+            CpvAccess(breakScheduler) = 1;
           } else {
             thisProxy[CkMyPe()].recv_data(p);
           }
@@ -54,7 +54,7 @@ module DataExchanger {
         }
       }
       when recv_ack() serial { 
-        CsdExitScheduler();
+        CpvAccess(breakScheduler) = 1;
       }
     };
 
@@ -80,7 +80,9 @@ module DataExchanger {
           }
         }
       }
-      serial { CsdExitScheduler();}
+      serial { 
+        CpvAccess(breakScheduler) = 1;
+      }
     };
   };
 };
