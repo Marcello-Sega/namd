@@ -7,7 +7,7 @@ parameters	alanin.params
 coordinates	alanin.pdb
 exclude		scaled1-4
 1-4scaling	0.4
-outputname 	output
+outputname 	output[myReplica]
 margin		1.0
 stepspercycle   3
 temperature	0
