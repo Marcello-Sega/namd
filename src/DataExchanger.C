@@ -11,7 +11,7 @@
 #ifdef CmiMyPartitionSize
 extern "C" {
   void setDefaultPartitionParams() {
-    // if(!CmiMyNodeGlobal()) CmiPrintf("NAMD setDefaultPartitionParams called\n");
+    // if(!CmiMyNodeGlobal()) printf("NAMD setDefaultPartitionParams called\n");
     CmiSetPartitionScheme(3);  // recursive bisection
   }
 }
