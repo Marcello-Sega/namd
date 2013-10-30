@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/10/10 00:54:53 $
- * $Revision: 1.1295 $
+ * $Date: 2013/10/30 18:26:14 $
+ * $Revision: 1.1296 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -284,7 +284,8 @@ void Controller::algorithm(void)
         minimize();
         break;
       case SCRIPT_RUN:
-        integrate();
+      case SCRIPT_CONTINUE:
+        integrate(scriptTask);
         break;
     }
     BackEnd::awaken();
@@ -314,7 +315,7 @@ extern "C" {
   typedef void (*namd_sighandler_t)(int);
 }
 
-void Controller::integrate() {
+void Controller::integrate(int scriptTask) {
     char traceNote[24];
   
     int step = simParams->firstTimestep;
@@ -331,6 +332,8 @@ void Controller::integrate() {
     else
       slowFreq = simParams->nonbondedFrequency;
     if ( step >= numberOfSteps ) slowFreq = nbondFreq = 1;
+
+  if ( scriptTask == SCRIPT_RUN ) {
 
     reassignVelocities(step);  // only for full-step velecities
     rescaleaccelMD(step);
@@ -351,6 +354,8 @@ void Controller::integrate() {
     }
     outputExtendedSystem(step);
     rebalanceLoad(step);
+
+  }
 
     // Handling SIGINT doesn't seem to be working on Lemieux, and it
     // sometimes causes the net-xxx versions of NAMD to segfault on exit, 

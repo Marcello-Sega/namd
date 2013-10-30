@@ -97,7 +97,7 @@ void ScriptTcl::runController(int task) {
   scriptBarrier.publish(barrierStep++,task);
   suspend();
 #ifdef NAMD_TCL
-  if ( task == SCRIPT_RUN || task == SCRIPT_MINIMIZE  ) {
+  if ( task == SCRIPT_RUN || task == SCRIPT_CONTINUE || task == SCRIPT_MINIMIZE  ) {
     doCallback(state->callback_labelstring.c_str(),
                state->callback_valuestring.c_str());
   }
@@ -413,12 +413,27 @@ int ScriptTcl::Tcl_run(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
-  if (argc != 2) {
-    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+  if (argc < 2) {
+    Tcl_SetResult(interp,"too few args",TCL_VOLATILE);
     return TCL_ERROR;
   }
+  if (argc > 3) {
+    Tcl_SetResult(interp,"too many args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int norepeat = 0;
+  if (argc == 3) {
+    if ( ! strcmp(argv[1], "norepeat") ) {
+      if ( script->runWasCalled ) { norepeat = 1; }
+    } else {
+      Tcl_SetResult(interp,
+        "first arg not norepeat",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  }
+  int numstepsarg = argc-1;
   int numsteps;
-  if (Tcl_GetInt(interp,argv[1],&numsteps) != TCL_OK) {
+  if (Tcl_GetInt(interp,argv[numstepsarg],&numsteps) != TCL_OK) {
     return TCL_ERROR;
   }
   if (numsteps < 0) {
@@ -438,11 +453,13 @@ int ScriptTcl::Tcl_run(ClientData clientData,
     iout << "TCL: Original numsteps " << simParams->N
          << " will be ignored.\n";
   }
-  iout << "TCL: Running for " << numsteps << " steps\n" << endi;
+  iout << "TCL: Running for " << numsteps << " steps";
+  if ( norepeat ) iout << " without repeating first step";
+  iout << "\n" << endi;
 
   script->setParameter("numsteps",simParams->firstTimestep + numsteps);
 
-  script->runController(SCRIPT_RUN);
+  script->runController(norepeat ? SCRIPT_CONTINUE : SCRIPT_RUN);
   script->runWasCalled = 1;
 
   script->setParameter("firsttimestep",simParams->N);

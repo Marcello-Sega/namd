@@ -110,6 +110,8 @@ Additional features include:
  \item The ``\icommand{run}'' command takes a number of steps to run (overriding the
     now optional numsteps parameter, which defaults to 0) and can be
     called repeatedly.  You can ``run 0'' just to get energies.
+    Normally the preceeding timestep is repeated to account for any modifications to the
+    energy function; this can be avoided with ``\icommand{run norepeat}''.
  \item The ``\icommand{minimize}'' command is similar to ``run'' and performs
     minimization for the specified number of force evaluations.
  \item The ``\icommand{output}'' command takes an output file basename and causes

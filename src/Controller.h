@@ -42,7 +42,7 @@ protected:
     friend class ScriptTcl;
     virtual void algorithm(void);	// subclasses redefine this method
 
-    void integrate(); // Verlet integrator
+    void integrate(int); // Verlet integrator
     void minimize(); // CG minimizer
       RequireReduction *min_reduction;
 

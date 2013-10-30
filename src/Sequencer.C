@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2013/10/11 05:47:17 $
- * $Revision: 1.1214 $
+ * $Date: 2013/10/30 18:26:15 $
+ * $Revision: 1.1215 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -144,7 +144,8 @@ void Sequencer::algorithm(void)
 	minimize();
 	break;
       case SCRIPT_RUN:
-	integrate();
+      case SCRIPT_CONTINUE:
+	integrate(scriptTask);
 	break;
     }
   }
@@ -155,7 +156,7 @@ void Sequencer::algorithm(void)
 
 extern int eventEndOfTimeStep;
 
-void Sequencer::integrate() {
+void Sequencer::integrate(int scriptTask) {
     char traceNote[24];
     char tracePrefix[20];
     sprintf(tracePrefix, "p:%d,s:",patch->patchID);
@@ -239,6 +240,10 @@ void Sequencer::integrate() {
     int &doEnergy = patch->flags.doEnergy;
     int energyFrequency = simParams->outputEnergies;
 
+    const int reassignFreq = simParams->reassignFreq;
+
+  if ( scriptTask == SCRIPT_RUN ) {
+
 //    printf("Doing initial rattle\n");
     rattle1(0.,0);  // enforce rigid bond constraints on initial positions
 
@@ -247,7 +252,6 @@ void Sequencer::integrate() {
 		patch->atom.begin(),patch->atom.end());
     }
 
-    const int reassignFreq = simParams->reassignFreq;
     if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
        reassignVelocities(timestep,step);
     }
@@ -300,6 +304,8 @@ void Sequencer::integrate() {
         traceUserSuppliedNote(traceNote);
     }
     rebalanceLoad(step);
+
+  } // scriptTask == SCRIPT_RUN
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
