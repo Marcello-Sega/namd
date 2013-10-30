@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: mayne $
- * $Date: 2013/09/27 22:45:47 $
- * $Revision: 1.1421 $
+ * $Author: jim $
+ * $Date: 2013/10/30 19:08:04 $
+ * $Revision: 1.1422 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -188,6 +188,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
   SCRIPT_PARSE_FLOAT("consForceScaling",consForceScaling)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
+  SCRIPT_PARSE_STRING("restartname",restartFilename)
   SCRIPT_PARSE_INT("DCDfreq",dcdFrequency)
   if ( ! strncasecmp(param,"DCDfile",MAX_SCRIPT_PARAM_SIZE) ) { 
     strcpy(olddcdFilename,dcdFilename);
