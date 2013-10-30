@@ -57,7 +57,6 @@ void GlobalMasterSMD::parseAtoms(const char *file, int numTotalAtoms) {
 
   // add a single group
   modifyRequestedGroups().resize(1);
-  modifyGroupForces().resize(1);
 
   // add all the required atoms to the group
 
@@ -108,6 +107,7 @@ void GlobalMasterSMD::calculate() {
   // second term below is along transverse direction: -diff*moveDir + (diff*moveDir - (curcm-cm)) = -(curcm-cm)
   // so if k = k2 and moveVel = 0, we see that f = -k * (curcm - cm), the desired result
   Force f = k*(moveVel*currentTime - diff)*moveDir + k2*(diff*moveDir - (curcm - cm));
+  modifyGroupForces().resize(1);
   modifyGroupForces()[0] = f;
 
   // print some output sometimes
