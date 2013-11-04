@@ -56,5 +56,8 @@ void replica_send(char *sndbuf, int sendcount, int destPart, int destPE);
 void replica_sendRecv(char *sndbuf, int sendcount, int destPart, int destPE, DataMessage **precvMsg, int srcPart, int srcPE);
 void replica_recv(DataMessage **precvMsg, int srcPart, int srcPE);
 void replica_barrier();
+
+void replica_bcast(char *buf, int count, int root=0);
+void replica_min_double(double *dat, int count);
 }
 #endif

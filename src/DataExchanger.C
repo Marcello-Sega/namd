@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "DataExchanger.h"
 #include "ProcessorPrivate.h"
+#include "common.h"
 
 #if CMK_HAS_PARTITION
 #ifdef CmiMyPartitionSize
@@ -79,6 +80,63 @@ extern "C" {
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].barrier();
     CpvAccess(breakScheduler) = 0;
     while(!CpvAccess(breakScheduler)) CsdSchedulePoll();
+  }
+
+  void replica_bcast(char *buf, int count, int root) {
+    if ( root != 0 ) NAMD_bug("replica_bcast root must be zero");
+    int rank = CmiMyPartition();
+    int size = CmiNumPartitions();
+    int i;
+    for ( i=1; i<size; i*=2 );
+    for ( i/=2; i>0; i/=2 ) {
+      if ( rank & (i - 1) ) continue;
+      if ( rank & i ) {
+        int src = rank - i;
+        CkPrintf("rank %d recv from %d\n", rank, src);
+        DataMessage *recvMsg = NULL;
+        replica_recv(&recvMsg, src, CkMyPe());
+        if ( recvMsg == NULL ) NAMD_bug("recvMsg == NULL in replica_bcast");
+        if ( recvMsg->size != count ) NAMD_bug("size != count in replica_bcast");
+        memcpy(buf, recvMsg->data, count);
+        CmiFree(recvMsg);
+      } else {
+        int dst = rank + i;
+        if ( dst < size ) {
+          CkPrintf("rank %d send to %d\n", rank, dst);
+          replica_send(buf, count, dst, CkMyPe());
+        }
+      }
+    }
+  }
+
+  void replica_min_double(double *dat, int count) {
+    int rank = CmiMyPartition();
+    int size = CmiNumPartitions();
+    for ( int i=1; i<size; i*=2 ) {
+      if ( rank & i ) {
+        int dst = rank - i;
+        CkPrintf("rank %d send to %d\n", rank, dst);
+        replica_send((char*)dat, count * sizeof(double), dst, CkMyPe());
+      } else {
+        int src = rank + i;
+        if ( src < size ) {
+          CkPrintf("rank %d recv from %d\n", rank, src);
+          DataMessage *recvMsg = NULL;
+          replica_recv(&recvMsg, src, CkMyPe());
+          if ( recvMsg == NULL ) NAMD_bug("recvMsg == NULL in replica_bcast");
+          if ( recvMsg->size != count * sizeof(double) ) NAMD_bug("size != count in replica_min_double");
+          double *rdat = new double[count];
+          memcpy(rdat, recvMsg->data, count * sizeof(double));
+          CmiFree(recvMsg);
+          for ( int j=0; j<count; ++j ) {
+            if ( rdat[j] < dat[j] ) dat[j] = rdat[j];
+          }
+          delete [] rdat;
+        }
+      }
+      if ( rank & (2 * i - 1) ) break;
+    }
+    replica_bcast((char*)dat, count * sizeof(double), 0);
   }
 } //endof extern C
 
