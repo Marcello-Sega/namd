@@ -36,6 +36,7 @@ public:
   void makePatches(ScaledPosition xmin, ScaledPosition xmax,
 			const Lattice &lattice, BigReal patchSize,
 			double maxNumPatches, int staticAtomAssignment,
+			int replicaUniformPatchGrids,
 			int asplit, int bsplit, int csplit);
   void checkMap();
 

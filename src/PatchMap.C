@@ -18,6 +18,7 @@
 #include "Lattice.h"
 #include "HomePatchList.h"
 #include "AtomMap.h"
+#include "DataExchanger.h"
 #include "memusage.h"
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 5
@@ -170,9 +171,29 @@ int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
 				const Lattice &lattice, BigReal patchSize,
 				double maxNumPatches, int staticAtomAssignment,
+				int replicaUniformPatchGrids,
 				int asplit, int bsplit, int csplit)
 {
   sizeGrid(xmin,xmax,lattice,patchSize,maxNumPatches,staticAtomAssignment,asplit,bsplit,csplit);
+
+  if ( replicaUniformPatchGrids ) {
+    int oldpcount = aDim * bDim * cDim;
+    double dims[3];
+    dims[0] = aDim;
+    dims[1] = bDim;
+    dims[2] = cDim;
+    replica_min_double(dims,3);
+    aDim = dims[0];
+    bDim = dims[1];
+    cDim = dims[2];
+    int newpcount = aDim * bDim * cDim;
+    if ( newpcount > oldpcount ) {
+      NAMD_bug("replicaUniformPatchGrids increased patch count");
+    }
+    if ( newpcount < oldpcount ) {
+      iout << iINFO << "PATCH GRID REDUCED TO BE UNIFORM ACROSS REPLICAS\n";
+    }
+  }
 
   iout << iINFO << "PATCH GRID IS ";
   iout << aDim;

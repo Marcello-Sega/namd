@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/08/28 17:23:34 $
- * $Revision: 1.1267 $
+ * $Date: 2013/11/04 21:43:21 $
+ * $Revision: 1.1268 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1201,7 +1201,8 @@ void WorkDistrib::patchMapInit(void)
     }
   }
 
-  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,params->staticAtomAssignment,
+  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
+	params->staticAtomAssignment, params->replicaUniformPatchGrids,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
 
 #else
@@ -1259,7 +1260,8 @@ void WorkDistrib::patchMapInit(void)
     }
   }
 
-  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,params->staticAtomAssignment,
+  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
+	params->staticAtomAssignment, params->replicaUniformPatchGrids,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
 
 #endif

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2013/11/04 18:52:28 $
- * $Revision: 1.1225 $
+ * $Date: 2013/11/04 21:43:20 $
+ * $Revision: 1.1226 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -778,6 +778,7 @@ public:
 					// for any given atom
 	Bool outputPatchDetails;	// print number of atoms per patch
         Bool staticAtomAssignment;      // never migrate atoms
+        Bool replicaUniformPatchGrids;  // same patch grid size on all replicas
 
 	//
         // hydrogen bond simulation parameters
