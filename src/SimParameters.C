@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/10/30 19:08:04 $
- * $Revision: 1.1422 $
+ * $Date: 2013/11/04 18:52:28 $
+ * $Revision: 1.1423 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -81,6 +81,23 @@ extern "C" {
 
 #define XXXBIGREAL 1.0e32
 
+
+char* SimParameters::getfromparseopts(const char* name, char *outbuf) {
+  if ( parseopts ) return parseopts->getfromptr(name,outbuf);
+  else return 0;
+}
+
+int SimParameters::istrueinparseopts(const char* name) {
+  if ( parseopts ) return parseopts->istruefromptr(name);
+  else return -1;
+}
+
+int SimParameters::issetinparseopts(const char* name) {
+  if ( parseopts ) return parseopts->issetfromptr(name);
+  else return -1;
+}
+
+
 /************************************************************************/
 /*                  */
 /*      FUNCTION initialize_config_data      */
@@ -97,7 +114,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
 {
 
-   ParseOptions opts;   //  Object to check consistency of config file
+   parseopts = new ParseOptions;   //  Object to check consistency of config file
+   ParseOptions &opts = *parseopts;
 
    config_parser(opts);
 

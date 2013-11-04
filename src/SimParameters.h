@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: mayne $
- * $Date: 2013/09/27 22:45:47 $
- * $Revision: 1.1224 $
+ * $Author: jim $
+ * $Date: 2013/11/04 18:52:28 $
+ * $Revision: 1.1225 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -871,8 +871,8 @@ public:
 
 public:
 
-        SimParameters() : mgridforcelist() {};
-        SimParameters(ConfigList *c, char *&cwd) : mgridforcelist() {
+        SimParameters() : mgridforcelist(), parseopts(0) {};
+        SimParameters(ConfigList *c, char *&cwd) : mgridforcelist(), parseopts(0) {
 	  initialize_config_data(c,cwd);
 	};
         ~SimParameters() {};
@@ -896,7 +896,11 @@ public:
 	int isRecvSpanningTreeOn(){ return proxyRecvSpanningTree == 1; }
 	int isRecvSpanningTreeUnset() { return proxyRecvSpanningTree == -1; }
 
+        char* getfromparseopts(const char* name, char *outbuf);
+        int istrueinparseopts(const char* name);
+        int issetinparseopts(const char* name);
 private:
+        ParseOptions *parseopts;
 
 	void config_parser(ParseOptions &opts);
 

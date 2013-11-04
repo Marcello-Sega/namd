@@ -17,6 +17,11 @@
 
 #include "strlib.h"		//  For strcasecmp and strncasecmp
 
+#ifdef NAMD_TCL
+#define USE_COMPAT_CONST
+#include <tcl.h>
+#endif
+
 // given the range, return the string
 const char *rstring(Range r)
 {
@@ -915,6 +920,76 @@ Bool ParseOptions::defined(const char *name)
       return TRUE;
    }
    return FALSE;
+}
+
+#ifdef NAMD_TCL
+#define PRINT_DOUBLE(BUF,VAL) Tcl_PrintDouble(0,VAL,BUF)
+
+static void PRINT_VECTOR(char *buf, Vector val) {
+  PRINT_DOUBLE(buf, val.x);
+  buf += strlen(buf); buf[0] = ' '; ++buf;
+  PRINT_DOUBLE(buf, val.y);
+  buf += strlen(buf); buf[0] = ' '; ++buf;
+  PRINT_DOUBLE(buf, val.z);
+  buf += strlen(buf); buf[0] = ' '; buf[1] = 0;
+}
+#endif
+
+//// special accessor for ScriptTcl - uses pointer value if available
+char* ParseOptions::getfromptr(const char* name, char *outbuf) {
+#ifdef NAMD_TCL
+   if ( ! name ) NAMD_bug("ParseOptions::getfromptr called with null name");
+   if ( ! outbuf ) NAMD_bug("ParseOptions::getfromptr called with null outbuf");
+   DataElement *el = internal_find(name);
+   if ( el == NULL ) return 0;
+   switch (el->type) {
+    case DataElement::FLOAT :
+      if ( el->fptr ) PRINT_DOUBLE(outbuf, *(el->fptr));
+      else PRINT_DOUBLE(outbuf, el->fdata);
+      return outbuf;
+    case DataElement::INT:
+    case DataElement::BOOL:
+      if ( el->iptr ) sprintf(outbuf,"%d", *(el->iptr));
+      else sprintf(outbuf,"%d", el->idata);
+      return outbuf;
+    case DataElement::STRINGLIST :
+      if ( el->slptr ) return (*(el->slptr))->data;
+      else if ( el->sldata ) return el->sldata->data;
+      else return 0;
+    case DataElement::STRING :
+      if ( el->sptr ) return el->sptr;
+      else if ( el->sldata ) return el->sldata->data;
+      else return 0;
+    case DataElement::VECTOR :
+      if ( el->vptr ) PRINT_VECTOR(outbuf, *(el->vptr));
+      else PRINT_VECTOR(outbuf, el->vdata);
+      return outbuf;
+    default:
+      iout << iERROR 
+	 << "Unknown data type " << (int)(el->type) << " for '" << name << "'"
+	 << "\n" << endi;
+   }
+#endif
+   return 0;
+}
+
+//// special accessor for ScriptTcl - uses pointer value if available
+int ParseOptions::istruefromptr(const char* name) {
+   if ( ! name ) NAMD_bug("ParseOptions::getfromptr called with null name");
+   DataElement *el = internal_find(name);
+   if ( el == NULL ) return -1;
+   if ( el->type != DataElement::BOOL ) return -2;
+   if ( el->iptr ) return ((*(el->iptr)) ? 1 : 0);
+   if ( ! el->is_defined ) return -3;  // ignores defaults
+   return (el->idata ? 1 : 0);
+}
+
+//// special accessor for ScriptTcl - uses pointer value if available
+int ParseOptions::issetfromptr(const char* name) {
+   if ( ! name ) NAMD_bug("ParseOptions::getfromptr called with null name");
+   DataElement *el = internal_find(name);
+   if ( el == NULL ) return -1;
+   return (el->is_defined ? 1 : 0);
 }
 
 //// accessors

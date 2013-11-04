@@ -78,6 +78,10 @@ void ScriptTcl::initcheck() {
       (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
     Tcl_CreateCommand(interp, "unknown", Tcl_param,
       (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+    Tcl_CreateCommand(interp, "isset", Tcl_isset_param,
+      (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+    Tcl_CreateCommand(interp, "istrue", Tcl_istrue_param,
+      (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #endif
     initWasCalled = 1;
 
@@ -331,22 +335,131 @@ int ScriptTcl::Tcl_config(ClientData clientData,
     strcat(data,argv[ai]);
   }
 
-  if ( ! *name || ! *data ) {
+  if ( ! *name ) {
     delete [] data;
     Tcl_SetResult(interp,"error parsing config file",TCL_VOLATILE);
     return TCL_ERROR;
   }
 
   ScriptTcl *script = (ScriptTcl *)clientData;
-  script->config->add_element( name, strlen(name), data, strlen(data) );
 
+  if ( *data ) {
+    script->config->add_element( name, strlen(name), data, strlen(data) );
+    delete [] data;
+    return TCL_OK;
+  }
   delete [] data;
+
+  StringList *strlist = script->config->find(name);
+  if ( ! strlist ) {
+    Tcl_SetResult(interp,"error parsing config file",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_SetResult(interp,strlist->data,TCL_VOLATILE);
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_isset_config(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  char *param = argv[1];
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  StringList *strlist = script->config->find(param);
+  Tcl_SetResult(interp, (char*)(strlist ? "1" : "0"), TCL_VOLATILE);
+  return TCL_OK;
+}
+
+static int atoBool(const char *s)
+{
+   if (!strcasecmp(s, "on")) return 1;
+   if (!strcasecmp(s, "off")) return 0;
+   if (!strcasecmp(s, "true")) return 1;
+   if (!strcasecmp(s, "false")) return 0;
+   if (!strcasecmp(s, "yes")) return 1;
+   if (!strcasecmp(s, "no")) return 0;
+   if (!strcasecmp(s, "1")) return 1;
+   if (!strcasecmp(s, "0")) return 0;
+   return -1;
+}
+
+int ScriptTcl::Tcl_istrue_config(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  char *param = argv[1];
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  StringList *strlist = script->config->find(param);
+  if ( ! strlist ) {
+    Tcl_SetResult(interp,"parameter value is not set",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int val = atoBool(strlist->data);
+  if ( val < 0 ) {
+    Tcl_SetResult(interp,"parameter value is not boolean",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_SetResult(interp, (char*)(val ? "1" : "0"), TCL_VOLATILE);
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_istrue_param(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  char *param = argv[1];
+  SimParameters *simParams = Node::Object()->simParameters;
+  int val = simParams->istrueinparseopts(param); 
+  if ( val == -1 ) {
+    Tcl_SetResult(interp,"unknown parameter",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  if ( val == -2 ) {
+    Tcl_SetResult(interp,"parameter is not boolean",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  if ( val == -3 ) {
+    Tcl_SetResult(interp,"parameter value is not set",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  if ( val != 0 && val != 1 ) {
+    Tcl_SetResult(interp,"bug in Tcl_istrue_param",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_SetResult(interp, (char*)(val ? "1" : "0"), TCL_VOLATILE);
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_isset_param(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  char *param = argv[1];
+  SimParameters *simParams = Node::Object()->simParameters;
+  int val = simParams->issetinparseopts(param); 
+  if ( val < 0 ) {
+    Tcl_SetResult(interp,"unknown parameter",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_SetResult(interp, (char*)(val ? "1" : "0"), TCL_VOLATILE);
   return TCL_OK;
 }
 
 int ScriptTcl::Tcl_param(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
-  if (argc != 3 && argc != 5) {
+  if (argc != 2 && argc != 3 && argc != 5) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
@@ -355,6 +468,19 @@ int ScriptTcl::Tcl_param(ClientData clientData,
   if ( strlen(param) + 1 > MAX_SCRIPT_PARAM_SIZE ) {
     Tcl_SetResult(interp,"parameter name too long",TCL_VOLATILE);
     return TCL_ERROR;
+  }
+
+  if ( argc == 2 ) { // get param value
+    char buf[MAX_SCRIPT_PARAM_SIZE];
+    SimParameters *simParams = Node::Object()->simParameters;
+    char *result = simParams->getfromparseopts(param,buf); 
+    if ( result ) {
+      Tcl_SetResult(interp, result,TCL_VOLATILE);
+      return TCL_OK;
+    } else {
+      Tcl_SetResult(interp,"unknown parameter",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
   }
 
   char value[MAX_SCRIPT_PARAM_SIZE];
@@ -1153,6 +1279,10 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "unknown", Tcl_config,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "param", Tcl_config,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "isset", Tcl_isset_config,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "istrue", Tcl_istrue_config,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "run", Tcl_run,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);

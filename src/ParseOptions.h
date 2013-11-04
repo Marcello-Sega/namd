@@ -237,6 +237,10 @@ class ParseOptions {
  private:
    DataElement *internal_find(const char *name);
  public:
+   // special accessor for ScriptTcl
+   char* getfromptr(const char* name, char *outbuf);
+   int istruefromptr(const char* name);
+   int issetfromptr(const char* name);
    // get the specified element.  Returns FALSE if not found or undefined;
    // prints warning if had to do a type conversion
    Bool get(const char* name, int *val);
