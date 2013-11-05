@@ -538,6 +538,19 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 }
 /*      END OF FUNCTION output_restart_velocities  */
 
+
+
+// This is here so it can access Output.h and Node.h
+void SimParameters::close_dcdfile() {
+
+  Output *output = Node::Object()->output;
+  if ( ! output ) return;
+
+  output->output_dcdfile(END_OF_RUN, 0, 0, 0);
+
+}
+
+
 /************************************************************************/
 /*                  */
 /*      FUNCTION output_dcdfile        */
@@ -577,63 +590,9 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     } else {
       iout << "COORDINATE DCD FILE " << simParams->dcdFilename << " WAS NOT CREATED\n" << endi;
     }
+    first = 1;
+    fileid = 0;
     return;
-  }
-
-  if ( simParams->dcdfirst ) {
-
-    //  Close old DCD file
-    if ( ! first ) {
-      iout << "CLOSING COORDINATE DCD FILE " << simParams->olddcdFilename << "\n" << endi;
-      close_dcd_write(fileid);
-    } else {
-      iout << "COORDINATE DCD FILE " << simParams->olddcdFilename << " WAS NOT CREATED\n" << endi;
-    }
-
-    //  Open new DCD file
-    iout << "OPENING COORDINATE DCD FILE " << simParams->dcdFilename << "\n" << endi;
-
-    fileid=open_dcd_write(simParams->dcdFilename);
-
-    if (fileid == DCD_FILEEXISTS)
-    {
-      char err_msg[257];
-
-      sprintf(err_msg, "DCD file %s already exists!!",
-        simParams->dcdFilename);
-
-      NAMD_err(err_msg);
-    }
-    else if (fileid < 0)
-    {
-      char err_msg[257];
-
-      sprintf(err_msg, "Couldn't open DCD file %s",
-        simParams->dcdFilename);
-
-      NAMD_err(err_msg);
-    }
-
-    int NSAVC, NFILE, NPRIV, NSTEP;
-    NSAVC = simParams->dcdFrequency;
-    NSTEP = NSAVC * (simParams->N/NSAVC);
-    NPRIV = simParams->firstTimestep+NSAVC;
-    NPRIV = NSAVC * (NPRIV/NSAVC);
-    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
-
-    //  Write out the header
-    ret_code = write_dcdheader(fileid, 
-        simParams->dcdFilename,
-        n, NFILE, NPRIV, NSAVC, NSTEP,
-        simParams->dt/TIMEFACTOR, lattice != NULL);
-
-
-    if (ret_code<0)
-    {
-      NAMD_err("Writing of DCD header failed!!");
-    }
-
-    simParams->dcdfirst = FALSE;
   }
 
   if (first)
@@ -641,9 +600,9 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     //  Allocate x, y, and z arrays since the DCD file routines
     //  need them passed as three independant arrays to be
     //  efficient
-    x = new float[n];
-    y = new float[n];
-    z = new float[n];
+    if ( ! x ) x = new float[n];
+    if ( ! y ) y = new float[n];
+    if ( ! z ) z = new float[n];
 
     if ( (x==NULL) || (y==NULL) || (z==NULL) )
     {

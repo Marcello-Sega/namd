@@ -41,6 +41,8 @@ class Output
 
 private:
 
+friend class SimParameters;
+
    //  output coords to dcd file
    //  Pass non-NULL Lattice to include unit cell in the timesteps.
    void output_dcdfile(int, int, FloatVector *, const Lattice *); 

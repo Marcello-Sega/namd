@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/11/04 21:43:20 $
- * $Revision: 1.1424 $
+ * $Date: 2013/11/05 20:59:24 $
+ * $Revision: 1.1425 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -209,8 +209,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_STRING("restartname",restartFilename)
   SCRIPT_PARSE_INT("DCDfreq",dcdFrequency)
   if ( ! strncasecmp(param,"DCDfile",MAX_SCRIPT_PARAM_SIZE) ) { 
-    strcpy(olddcdFilename,dcdFilename);
-    dcdfirst = TRUE;
+    close_dcdfile();  // *** implemented in Output.C ***
     strcpy(dcdFilename,value);
     return;
   }
@@ -2333,11 +2332,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      if (! opts.defined("dcdfile")) {
        strcpy(dcdFilename,outputFilename);
        strcat(dcdFilename,".dcd");
-       strcpy(olddcdFilename,dcdFilename);
      }
    } else {
      dcdFilename[0] = STRINGNULL;
-     olddcdFilename[0] = STRINGNULL;
    }
 
    if (velDcdFrequency) {

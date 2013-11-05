@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2013/11/04 21:43:20 $
- * $Revision: 1.1226 $
+ * $Date: 2013/11/05 20:59:24 $
+ * $Revision: 1.1227 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -196,8 +196,6 @@ public:
 	int xstFrequency;		//  How often (in timesteps) should
 					//  a XST trajectory file be updated
 	char auxFilename[128];		//  auxilary output filename
-	char olddcdFilename[128];	//  DCD filename
-        Bool dcdfirst;          // flag of writing the DCDfile for the first time
 	char dcdFilename[128];		//  DCD filename
 	char velDcdFilename[128];       //  Velocity DCD filename
 	char forceDcdFilename[128];     //  Force DCD filename
@@ -891,6 +889,7 @@ public:
 					//  master process
 	void scriptSet(const char *, const char *);
 					//  Set parameters at run time
+	void close_dcdfile();  // *** implemented in Output.C ***
 
 	int isSendSpanningTreeOn(){ return proxySendSpanningTree == 1; }
 	int isSendSpanningTreeUnset() { return proxySendSpanningTree == -1; }
