@@ -455,15 +455,17 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
 
   int baselen = strlen(namdMyNode->simParams->restartFilename);
   char *restart_name = new char[baselen+26];
+  const char *bsuffix = ".old";
 
   strcpy(restart_name, namdMyNode->simParams->restartFilename);
   if ( namdMyNode->simParams->restartSave ) {
     sprintf(timestepstr,".%d",timestep);
     strcat(restart_name, timestepstr);
+    bsuffix = ".BAK";
   }
   strcat(restart_name, ".coor");
 
-  NAMD_backup_file(restart_name,".old");
+  NAMD_backup_file(restart_name,bsuffix);
 
   //  Check to see if we should generate a binary or PDB file
   if (!namdMyNode->simParams->binaryRestart)
@@ -531,15 +533,17 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 
   int baselen = strlen(namdMyNode->simParams->restartFilename);
   char *restart_name = new char[baselen+26];
+  const char *bsuffix = ".old";
 
   strcpy(restart_name, namdMyNode->simParams->restartFilename);
   if ( namdMyNode->simParams->restartSave ) {
     sprintf(timestepstr,".%d",timestep);
     strcat(restart_name, timestepstr);
+    bsuffix = ".BAK";
   }
   strcat(restart_name, ".vel");
 
-  NAMD_backup_file(restart_name,".old");
+  NAMD_backup_file(restart_name,bsuffix);
 
   //  Check to see if we should write out a PDB or a binary file
   if (!namdMyNode->simParams->binaryRestart)

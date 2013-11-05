@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/10/30 18:26:14 $
- * $Revision: 1.1296 $
+ * $Date: 2013/11/05 23:49:15 $
+ * $Revision: 1.1297 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2884,14 +2884,16 @@ void Controller::outputExtendedSystem(int step)
       iout << "WRITING EXTENDED SYSTEM TO RESTART FILE AT STEP "
 		<< step << "\n" << endi;
       char fname[140];
+      const char *bsuffix = ".old";
       strcpy(fname, simParams->restartFilename);
       if ( simParams->restartSave ) {
         char timestepstr[20];
         sprintf(timestepstr,".%d",step);
         strcat(fname, timestepstr);
+        bsuffix = ".BAK";
       }
       strcat(fname, ".xsc");
-      NAMD_backup_file(fname,".old");
+      NAMD_backup_file(fname,bsuffix);
       std::ofstream xscFile(fname);
       while (!xscFile) {
         if ( errno == EINTR ) {
