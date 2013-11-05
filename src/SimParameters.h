@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2013/11/05 20:59:24 $
- * $Revision: 1.1227 $
+ * $Date: 2013/11/05 23:07:37 $
+ * $Revision: 1.1228 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -209,6 +209,7 @@ public:
 	int restartFrequency;		//  How often (in timesteps) shoud the
 					//  restart files be updated
         Bool restartSave;		//  unique filenames for restart files
+        Bool restartSaveDcd;		//  unique filenames for DCD files
 	Bool binaryRestart;		//  should restart files be
 					//  binary format rather than PDB
 	Bool binaryOutput;		//  should output files be

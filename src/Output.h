@@ -45,7 +45,7 @@ friend class SimParameters;
 
    //  output coords to dcd file
    //  Pass non-NULL Lattice to include unit cell in the timesteps.
-   void output_dcdfile(int, int, FloatVector *, const Lattice *); 
+   int output_dcdfile(int, int, FloatVector *, const Lattice *); 
    void output_veldcdfile(int, int, Vector *); 	//  output velocities to
 						//  dcd file
    void output_forcedcdfile(int, int, Vector *); //  output forces to

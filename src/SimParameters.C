@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/11/05 20:59:24 $
- * $Revision: 1.1425 $
+ * $Date: 2013/11/05 23:07:36 $
+ * $Revision: 1.1426 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -684,6 +684,8 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
      "velocity PDB files used for restarting", restartFilename);
    opts.optionalB("restartfreq", "restartsave", "Save restart files with "
      "unique filenames rather than overwriting", &restartSave, FALSE);
+   opts.optionalB("restartfreq", "restartsavedcd", "Save DCD files with "
+     "unique filenames at each restart", &restartSaveDcd, FALSE);
 
    opts.optionalB("restartfreq", "binaryrestart", "Specify use of binary restart files ", 
        &binaryRestart, TRUE);
@@ -2367,7 +2369,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (restartFrequency) {
      if (! opts.defined("restartname")) {
        strcpy(restartFilename,outputFilename);
-       strcat(restartFilename,".restart");
+       if ( ! restartSave ) strcat(restartFilename,".restart");
      }
    } else {
      restartFilename[0] = STRINGNULL;
@@ -4031,6 +4033,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << restartFrequency << "\n";
   if (restartSave) {
     iout << iINFO << "RESTART FILES WILL NOT BE OVERWRITTEN\n";
+  }
+  if (restartSaveDcd) {
+    iout << iINFO << "DCD FILE WILL BE SPLIT WHEN RESTART FILES ARE WRITTEN\n";
   }
 
   if (binaryRestart)

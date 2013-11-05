@@ -481,6 +481,31 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
   }
 
   delete [] restart_name;
+
+  if ( namdMyNode->simParams->restartSaveDcd ) {
+    if ( ! output_dcdfile(END_OF_RUN, 0, 0, 0) ) { // close old file
+      const char *old_name = namdMyNode->simParams->dcdFilename;
+      int old_len = strlen(old_name);
+      char *new_name = new char[old_len+26];
+      strcpy(new_name, old_name);
+      if ( old_len >= 4 && ! strcmp(new_name+old_len-4,".dcd") ) {
+        old_len -= 4;
+        new_name[old_len] = 0;
+      }
+      sprintf(timestepstr,".%d",timestep);
+      strcat(new_name, timestepstr);
+      strcat(new_name, ".dcd");
+      iout << "RENAMING COORDINATE DCD FILE " << old_name << " TO " << new_name << "\n" << endi;
+      NAMD_backup_file(new_name,".BAK");
+      if ( rename(old_name, new_name) ) {
+        char err_msg[257];
+        sprintf(err_msg, "Unable to rename DCD file %s to %s", old_name, new_name);
+        NAMD_err(err_msg);
+      }
+      delete [] new_name;
+    }
+  }
+
 }
 /*      END OF FUNCTION output_restart_coordinates  */
 
@@ -568,7 +593,7 @@ void SimParameters::close_dcdfile() {
 
 #define RAD2DEG 180.0/3.14159265359
 
-void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
+int Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     const Lattice *lattice)
 
 {
@@ -584,15 +609,17 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
   //  If this is the last time we will be writing coordinates,
   //  close the file before exiting
   if ( timestep == END_OF_RUN ) {
+    int rval = 0;
     if ( ! first ) {
       iout << "CLOSING COORDINATE DCD FILE " << simParams->dcdFilename << "\n" << endi;
       close_dcd_write(fileid);
     } else {
       iout << "COORDINATE DCD FILE " << simParams->dcdFilename << " WAS NOT CREATED\n" << endi;
+      rval = -1;
     }
     first = 1;
     fileid = 0;
-    return;
+    return rval;
   }
 
   if (first)
@@ -697,6 +724,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     NAMD_err("Writing of DCD step failed!!");
   }
 
+  return 0;
 }
 /*      END OF FUNCTION output_dcdfile      */
 
