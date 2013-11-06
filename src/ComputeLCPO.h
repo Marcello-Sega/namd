@@ -134,8 +134,8 @@ protected :
   ComputeNonbondedWorkArrays* const workArrays;
   int minPart, maxPart, numParts;
 
-  BigReal reductionData[reductionDataSize];
   SubmitReduction *reduction;
+  SubmitReduction *amd_reduction;
 
   private:
     BigReal bounds[3][2];
