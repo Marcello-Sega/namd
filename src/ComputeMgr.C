@@ -821,8 +821,6 @@ ComputeMgr::createComputes(ComputeMap *map)
     SimParameters *simParams = node->simParameters;
     int myNode = node->myid();
 
-    ComputeNonbondedUtil::select();
-
     if ( simParams->globalForcesOn && !myNode )
     {
         DebugM(4,"Mgr running on Node "<<CkMyPe()<<"\n");

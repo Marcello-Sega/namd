@@ -448,6 +448,8 @@ void Node::startup() {
     simParameters = node_simParameters;
     parameters = node_parameters;
     molecule = node_molecule;
+
+    SimParameters::nonbonded_select();
     
     #if !CMK_SMP || ! USE_CKLOOP
     //the CkLoop library should be only used in SMP mode

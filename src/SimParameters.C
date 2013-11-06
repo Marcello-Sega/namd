@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/11/05 23:07:36 $
- * $Revision: 1.1426 $
+ * $Date: 2013/11/06 15:08:43 $
+ * $Revision: 1.1427 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -326,6 +326,10 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   sprintf(error,"Setting parameter %s from script failed!\n",param);
   NAMD_die(error);
 
+}
+
+void SimParameters::nonbonded_select() {
+    ComputeNonbondedUtil::select();
 }
 
 /************************************************************************/

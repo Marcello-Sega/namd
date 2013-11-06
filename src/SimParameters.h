@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2013/11/05 23:07:37 $
- * $Revision: 1.1228 $
+ * $Date: 2013/11/06 15:08:43 $
+ * $Revision: 1.1229 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -891,6 +891,7 @@ public:
 	void scriptSet(const char *, const char *);
 					//  Set parameters at run time
 	void close_dcdfile();  // *** implemented in Output.C ***
+        static void nonbonded_select();
 
 	int isSendSpanningTreeOn(){ return proxySendSpanningTree == 1; }
 	int isSendSpanningTreeUnset() { return proxySendSpanningTree == -1; }
