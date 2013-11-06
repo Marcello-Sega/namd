@@ -346,6 +346,10 @@ if (patch->flags.doGBIS) {
       bornRadBox->close(&(gbisParams.bornRad[0]));
       reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbInterEnergy;
       reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbSelfEnergy;
+      if (accelMDOn) {
+        amd_reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbInterEnergy;
+        amd_reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbSelfEnergy;
+      }
       intRadBox->close(&(gbisParams.intRad[0]));
       dHdrPrefixBox->close(&(gbisParams.dHdrPrefix[0]));
   }
