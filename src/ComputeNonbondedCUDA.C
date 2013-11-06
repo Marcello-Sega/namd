@@ -740,6 +740,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
   reduction = 0;
+  amd_reduction = 0;
 
   SimParameters *params = Node::Object()->simParameters;
   if (params->pressureProfileOn) {
@@ -871,6 +872,9 @@ void ComputeNonbondedCUDA::assignPatches() {
 
   if ( npatches ) {
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+    if (accelMDOn) {
+       amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
+    }
   }
 
   int *count = new int[npatches];
@@ -1151,7 +1155,11 @@ GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
       computeMgr->sendNonbondedCUDASlaveReady(masterPe,
 			hostedPatches.size(),atomsChanged,sequence());
     }
-    if ( reduction ) reduction->submit();
+    if ( reduction ) {
+       reduction->submit();
+       if ( accelMDOn ) amd_reduction->submit();
+    }
+
     return 1;
   }
 
@@ -2067,6 +2075,14 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
       reduction->item(REDUCTION_ELECT_ENERGY) += energye;
       reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += energys;
     }
+    if (accelMDOn) {
+      ADD_TENSOR_OBJECT(amd_reduction,REDUCTION_VIRIAL_NBOND,virial_tensor);
+      if ( doEnergy ) {
+        amd_reduction->item(REDUCTION_LJ_ENERGY) += energyv;
+        amd_reduction->item(REDUCTION_ELECT_ENERGY) += energye;
+        amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += energys;
+      }
+    }
   }
   if ( doSlow ) {
     Tensor virial_slow_tensor;
@@ -2082,10 +2098,14 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
       virial_slow_tensor.zz += slow_virials[16*i+8];
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,virial_slow_tensor);
+    if (accelMDOn) {
+      ADD_TENSOR_OBJECT(amd_reduction,REDUCTION_VIRIAL_SLOW,virial_slow_tensor);
+    }
   }
 
   atomsChanged = 0;
   reduction->submit();
+  if (accelMDOn) amd_reduction->submit();
 
   cuda_timer_count++;
   if ( simParams->outputCudaTiming &&
