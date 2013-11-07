@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/11/07 22:54:24 $
- * $Revision: 1.1298 $
+ * $Date: 2013/11/07 23:25:18 $
+ * $Revision: 1.1299 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1347,9 +1347,14 @@ void Controller::rescaleaccelMD(int step, int minimize)
     BigReal dihedralEnergy;
     BigReal improperEnergy;
     BigReal crosstermEnergy;
+    BigReal boundaryEnergy;
+    BigReal miscEnergy;
     BigReal amd_electEnergy;
     BigReal amd_ljEnergy;
     BigReal amd_electEnergySlow;
+    BigReal amd_groLJEnergy;
+    BigReal amd_groGaussEnergy;
+    BigReal amd_goTotalEnergy;
     BigReal potentialEnergy;
     BigReal factor_dihe = 1;
     BigReal factor_tot = 1;
@@ -1367,6 +1372,8 @@ void Controller::rescaleaccelMD(int step, int minimize)
     dihedralEnergy = amd_reduction->item(REDUCTION_DIHEDRAL_ENERGY);
     improperEnergy = amd_reduction->item(REDUCTION_IMPROPER_ENERGY);
     crosstermEnergy = amd_reduction->item(REDUCTION_CROSSTERM_ENERGY);
+    boundaryEnergy = amd_reduction->item(REDUCTION_BC_ENERGY);
+    miscEnergy = amd_reduction->item(REDUCTION_MISC_ENERGY);
 
     GET_TENSOR(vir_dihe,amd_reduction,REDUCTION_VIRIAL_AMD_DIHE);
     GET_TENSOR(vir_normal,amd_reduction,REDUCTION_VIRIAL_NORMAL);
@@ -1376,9 +1383,17 @@ void Controller::rescaleaccelMD(int step, int minimize)
     if ( !( step % nbondFreq ) ) {
       amd_electEnergy = amd_reduction->item(REDUCTION_ELECT_ENERGY);
       amd_ljEnergy = amd_reduction->item(REDUCTION_LJ_ENERGY);
+      amd_groLJEnergy = amd_reduction->item(REDUCTION_GRO_LJ_ENERGY);
+      amd_groGaussEnergy = amd_reduction->item(REDUCTION_GRO_GAUSS_ENERGY);
+      BigReal goNativeEnergy = amd_reduction->item(REDUCTION_GO_NATIVE_ENERGY);
+      BigReal goNonnativeEnergy = amd_reduction->item(REDUCTION_GO_NONNATIVE_ENERGY);
+      amd_goTotalEnergy = goNativeEnergy + goNonnativeEnergy;
     } else {
       amd_electEnergy = electEnergy;
       amd_ljEnergy = ljEnergy;
+      amd_groLJEnergy = groLJEnergy;
+      amd_groGaussEnergy = groGaussEnergy;
+      amd_goTotalEnergy = goTotalEnergy;
     }
 
     if ( !( step % slowFreq ) ) {
@@ -1387,8 +1402,10 @@ void Controller::rescaleaccelMD(int step, int minimize)
       amd_electEnergySlow = electEnergySlow;
     }
 
-    potentialEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy 
-	       + crosstermEnergy + amd_electEnergy + amd_electEnergySlow + amd_ljEnergy;
+    potentialEnergy = bondEnergy + angleEnergy + dihedralEnergy +
+        improperEnergy + amd_electEnergy + amd_electEnergySlow + amd_ljEnergy +
+        crosstermEnergy + boundaryEnergy + miscEnergy +
+        amd_goTotalEnergy + amd_groLJEnergy + amd_groGaussEnergy;
 
     if (simParams->accelMDdihe) {
 
