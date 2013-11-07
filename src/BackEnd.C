@@ -246,10 +246,7 @@ void BackEnd::exit(void) {
   CmiPrintf("====================================================\n\n"
 	    "WallClock: %f  CPUTime: %f  Memory: %f MB\n",
 	    wallTime, cpuTime, memusage_MB());
-  int i;
-  for(i=1; i < CmiNumPes(); i++)
-    ExitSchedOn(i);
-  ConverseExit();
+  CkExit();
 }
 
 // start scheduler
