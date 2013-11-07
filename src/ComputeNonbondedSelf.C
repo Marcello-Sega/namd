@@ -24,11 +24,6 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
     minPart(minPartition), maxPart(maxPartition), numParts(numPartitions)
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-  if (accelMDOn) {
-     amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
-  } else {
-     amd_reduction = NULL;
-  }
   if (pressureProfileOn) {
     int n = pressureProfileAtomTypes;
     pressureProfileData = new BigReal[3*n*n*pressureProfileSlabs];
@@ -63,7 +58,6 @@ void ComputeNonbondedSelf::initialize() {
 ComputeNonbondedSelf::~ComputeNonbondedSelf()
 {
   delete reduction;
-  delete amd_reduction;
   delete pressureProfileReduction;
   delete [] pressureProfileData;
   if (avgPositionBox != NULL) {
@@ -129,9 +123,6 @@ int ComputeNonbondedSelf::noWork() {
 
     reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
     reduction->submit();
-
-    if (accelMDOn)
-      amd_reduction->submit();
 
     if (pressureProfileOn)
       pressureProfileReduction->submit();
@@ -346,10 +337,6 @@ if (patch->flags.doGBIS) {
       bornRadBox->close(&(gbisParams.bornRad[0]));
       reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbInterEnergy;
       reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbSelfEnergy;
-      if (accelMDOn) {
-        amd_reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbInterEnergy;
-        amd_reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbSelfEnergy;
-      }
       intRadBox->close(&(gbisParams.intRad[0]));
       dHdrPrefixBox->close(&(gbisParams.dHdrPrefix[0]));
   }
@@ -362,7 +349,6 @@ if (patch->flags.doGBIS) {
 *******************************************************************************/
   if (!patch->flags.doGBIS || gbisPhase == 3) {
   submitReductionData(reductionData,reduction);
-  if (accelMDOn) submitReductionData(reductionData,amd_reduction);
   if (pressureProfileOn)
     submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
@@ -371,7 +357,6 @@ if (patch->flags.doGBIS) {
 #endif
 
   reduction->submit();
-  if (accelMDOn) amd_reduction->submit();
   if (pressureProfileOn)
     pressureProfileReduction->submit();
   }// end not gbis

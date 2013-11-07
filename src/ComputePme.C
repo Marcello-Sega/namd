@@ -430,7 +430,6 @@ private:
   char *fz_arr;
   PmeReduction evir[PME_MAX_EVALS];
   SubmitReduction *reduction;
-  SubmitReduction *amd_reduction;
 
   int noWorkCount;
   int doWorkCount;
@@ -2262,12 +2261,6 @@ void ComputePmeMgr::initialize_computes() {
 
   strayChargeErrors = 0;
 
-  if (simParams->accelMDOn) {
-     amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
-  } else {
-     amd_reduction = NULL;
-  }
-
   qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
   fsize = myGrid.K1 * myGrid.dim2;
   q_arr = new float*[fsize*numGrids];
@@ -2388,7 +2381,6 @@ int ComputePme::noWork() {
   if ( ++(myMgr->noWorkCount) == myMgr->pmeComputes.size() ) {
     myMgr->noWorkCount = 0;
     myMgr->reduction->submit();
-    if (myMgr->amd_reduction) myMgr->amd_reduction->submit();
   }
 
   return 1;  // no work for this step
@@ -3152,19 +3144,6 @@ void ComputePmeMgr::submitReductions() {
       reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += evir[g][5] * scale;
       reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += evir[g][6] * scale;
 
-      if (amd_reduction) {
-      amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[g][0] * scale;
-      amd_reduction->item(REDUCTION_VIRIAL_SLOW_XX) += evir[g][1] * scale;
-      amd_reduction->item(REDUCTION_VIRIAL_SLOW_XY) += evir[g][2] * scale;
-      amd_reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += evir[g][3] * scale;
-      amd_reduction->item(REDUCTION_VIRIAL_SLOW_YX) += evir[g][2] * scale;
-      amd_reduction->item(REDUCTION_VIRIAL_SLOW_YY) += evir[g][4] * scale;
-      amd_reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += evir[g][5] * scale;
-      amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += evir[g][3] * scale;
-      amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += evir[g][5] * scale;
-      amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += evir[g][6] * scale;
-      }
-
       float scale2 = 0.;
 
       //alchElecLambdaStart = (alchFepOn || alchThermIntOn) ? simParams->alchElecLambdaStart : 0;
@@ -3203,7 +3182,6 @@ void ComputePmeMgr::submitReductions() {
       	else if( g==3 )	scale2 = scale + 1.0;
       }
       reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += evir[g][0] * scale2;
-      if (amd_reduction) amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += evir[g][0] * scale2;
       
       if (alchThermIntOn) {
         
@@ -3250,8 +3228,6 @@ void ComputePmeMgr::submitReductions() {
     }
     reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
     reduction->submit();
-    if (amd_reduction) amd_reduction->submit();
-
 
   for ( int i=0; i<heldComputes.size(); ++i ) {
     WorkDistrib::messageEnqueueWork(heldComputes[i]);

@@ -135,7 +135,6 @@ protected :
   int minPart, maxPart, numParts;
 
   SubmitReduction *reduction;
-  SubmitReduction *amd_reduction;
 
   private:
     BigReal bounds[3][2];

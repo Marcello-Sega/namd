@@ -254,11 +254,6 @@ void OptPmeXPencil::fft_init() {
   constant_pressure = initdata.constant_pressure;
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-  if (simParams->accelMDOn) {
-    amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
-  } else {
-    amd_reduction = NULL;
-  }  
 }
 
 //#define FFTCHECK   // run a grid of integers through the fft
@@ -503,24 +498,10 @@ void OptPmeXPencil::submit_evir() {
   reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += cdata[5];
   reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += cdata[6];   
 
-  if (amd_reduction) {
-    amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += cdata[0];
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XX) += cdata[1];
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XY) += cdata[2];
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += cdata[3];
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YX) += cdata[2];
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YY) += cdata[4];
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += cdata[5];
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += cdata[3];
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += cdata[5];
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += cdata[6];
-  }
-
   SimParameters *simParams = Node::Object()->simParameters;
   int fef = simParams->fullElectFrequency;
   for (int i = 0; i < fef; i++) {
     reduction->submit();
-    if (amd_reduction) amd_reduction->submit();
   }
 }
 

@@ -40,7 +40,6 @@ protected :
   Pairlists gbisStepPairlists[numGBISPairlists];
 
   SubmitReduction *reduction;
-  SubmitReduction *amd_reduction;
   SubmitReduction *pressureProfileReduction;
   BigReal *pressureProfileData;
 

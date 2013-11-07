@@ -40,7 +40,6 @@ protected :
 
   BigReal reductionData[reductionDataSize];
   SubmitReduction *reduction;
-  SubmitReduction *amd_reduction;
   SubmitReduction *pressureProfileReduction;
   BigReal *pressureProfileData;
 

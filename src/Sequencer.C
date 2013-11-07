@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2013/10/30 18:26:15 $
- * $Revision: 1.1215 $
+ * $Date: 2013/11/07 22:54:25 $
+ * $Revision: 1.1216 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -50,7 +50,8 @@ Sequencer::Sequencer(HomePatch *p) :
 	ldbSteps(0)
 {
     broadcast = new ControllerBroadcasts(& patch->ldObjHandle);
-    reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+    reduction = ReductionMgr::Object()->willSubmit(
+                  simParams->accelMDOn ? REDUCTIONS_AMD : REDUCTIONS_BASIC );
     min_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_MINIMIZER,1);
     if (simParams->pressureProfileOn) {
       int ntypes = simParams->pressureProfileAtomTypes;

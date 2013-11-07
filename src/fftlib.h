@@ -196,7 +196,6 @@ public:
     bool               constant_pressure;
 
     SubmitReduction *reduction;
-    SubmitReduction *amd_reduction;
 
     void initialize_manytomany ();
 };

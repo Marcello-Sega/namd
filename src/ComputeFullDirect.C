@@ -25,18 +25,12 @@ ComputeFullDirect::ComputeFullDirect(ComputeID c) : ComputeHomePatches(c)
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
   SimParameters *simParams = Node::Object()->simParameters;
-  if ( simParams->accelMDOn ) {
-      amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
-  } else {
-      amd_reduction = NULL;
-  }
   useAvgPositions = 1;
 }
 
 ComputeFullDirect::~ComputeFullDirect()
 {
   delete reduction;
-  delete amd_reduction;
 }
 
 BigReal calc_fulldirect(BigReal *data1, BigReal *results1, int n1,
@@ -75,7 +69,6 @@ void ComputeFullDirect::doWork()
       (*ap).forceBox->close(&r);
     }
     reduction->submit();
-    if ( amd_reduction ) amd_reduction->submit();
     return;
   }
 
@@ -259,20 +252,6 @@ void ComputeFullDirect::doWork()
   reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += virial.zy;
   reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += virial.zz;
   reduction->submit();
-
-  if ( amd_reduction ) {
-    amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += electEnergy;
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XX) += virial.xx;
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XY) += virial.xy;
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += virial.xz;
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YX) += virial.yx;
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YY) += virial.yy;
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += virial.yz;
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += virial.zx;
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += virial.zy;
-    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += virial.zz;
-    amd_reduction->submit();
-  }
 
   // add in forces
   local_ptr = localResults;

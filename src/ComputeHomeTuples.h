@@ -236,7 +236,6 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
     PatchMap *patchMap;
     AtomMap *atomMap;
     SubmitReduction *reduction;
-    SubmitReduction *amd_reduction;
     int accelMDdoDihe;
     SubmitReduction *pressureProfileReduction;
     BigReal *pressureProfileData;
@@ -249,10 +248,8 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
       
       SimParameters *params = Node::Object()->simParameters;
-      amd_reduction = NULL;
       accelMDdoDihe=false;
       if (params->accelMDOn) {
-         amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
          if (params->accelMDdihe || params->accelMDdual) accelMDdoDihe=true;
       }
       if (params->pressureProfileOn) {
@@ -276,10 +273,8 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       atomMap = AtomMap::Object();
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
       SimParameters *params = Node::Object()->simParameters;
-      amd_reduction = NULL;
       accelMDdoDihe=false;
       if (params->accelMDOn) {
-         amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
          if (params->accelMDdihe || params->accelMDdual) accelMDdoDihe=true;
       }
       if (params->pressureProfileOn) {
@@ -306,7 +301,6 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
   
     virtual ~ComputeHomeTuples() {
       delete reduction;
-      delete amd_reduction;
       delete [] isBasePatch;
       delete pressureProfileReduction;
       delete pressureProfileData;
@@ -412,12 +406,6 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       T::submitReductionData(reductionData,reduction);
       reduction->item(T::reductionChecksumLabel) += (BigReal)tupleCount;
       reduction->submit();
-      // reduction for accelMD
-      if ( amd_reduction ) {
-            T::submitReductionData(reductionData,amd_reduction);
-            amd_reduction->item(T::reductionChecksumLabel) += (BigReal)tupleCount;
-            amd_reduction->submit();
-      }
 
       if (pressureProfileReduction) {
         // For ease of calculation we stored interactions between types

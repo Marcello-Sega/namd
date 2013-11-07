@@ -43,11 +43,6 @@ ComputeLCPO::ComputeLCPO(ComputeID c, PatchID p[], int t[],
   {
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-  if (accelMDOn) {
-     amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
-  } else {
-     amd_reduction = NULL;
-  }
 
   setNumPatches(8);
   SimParameters *simParams = Node::Object()->simParameters;
@@ -86,7 +81,6 @@ ComputeLCPO::~ComputeLCPO() {
     }
   }
   delete reduction;
-  delete amd_reduction;
 } // destructor
 
 void ComputeLCPO::initialize() {
@@ -243,7 +237,6 @@ int ComputeLCPO::noWork() {
 
     reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
     reduction->submit();
-    if (accelMDOn) amd_reduction->submit();
     LdbCoordinator::Object()->skipWork(ldObjHandle);
 
     return 1;  // no work to do, do not enqueue
@@ -648,10 +641,6 @@ if ( true ) {
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
   reduction->item(REDUCTION_ELECT_ENERGY) += totalSurfaceArea * surfTen;
   reduction->submit();
-  if (accelMDOn) {
-    amd_reduction->item(REDUCTION_ELECT_ENERGY) += totalSurfaceArea * surfTen;
-    amd_reduction->submit();
-  }
 
 }//end do Force
 

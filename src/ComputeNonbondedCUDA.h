@@ -96,7 +96,6 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     PatchMap *patchMap;
     AtomMap *atomMap;
     SubmitReduction *reduction;
-    SubmitReduction *amd_reduction;
 
     ComputeNonbondedCUDAKernel *kernel;
 

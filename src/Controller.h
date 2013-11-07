@@ -16,6 +16,7 @@ class ControllerBroadcasts;
 class NamdState;
 class SimParameters;
 class RequireReduction;
+class SubmitReduction;
 
 #ifdef MEM_OPT_VERSION
 class CollectionMasterHandler;
@@ -172,6 +173,7 @@ protected:
     NamdState *const state;		// access data in state
     RequireReduction *reduction;
     RequireReduction *amd_reduction;
+    SubmitReduction *submit_reduction;
 
     // data for pressure profile reductions and output
     PressureProfileReduction *ppbonded;

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/11/05 23:49:15 $
- * $Revision: 1.1297 $
+ * $Date: 2013/11/07 22:54:24 $
+ * $Revision: 1.1298 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -137,13 +137,19 @@ Controller::Controller(NamdState *s) :
 	fflush_count(3)
 {
     broadcast = new ControllerBroadcasts;
-    reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
     min_reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_MINIMIZER,1);
     // for accelMD
     if (simParams->accelMDOn) {
-       amd_reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_AMD);
+       // REDUCTIONS_BASIC wil contain all potential energies and arrive first
+       amd_reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
+       // contents of amd_reduction be submitted to REDUCTIONS_AMD
+       submit_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
+       // REDUCTIONS_AMD will contain Sequencer contributions and arrive second
+       reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_AMD);
     } else {
        amd_reduction = NULL;
+       submit_reduction = NULL;
+       reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
     }
     // pressure profile reductions
     pressureProfileSlabs = 0;
@@ -209,6 +215,7 @@ Controller::~Controller(void)
     delete reduction;
     delete min_reduction;
     delete amd_reduction;
+    delete submit_reduction;
     delete ppbonded;
     delete ppnonbonded;
     delete ppint;
@@ -1314,6 +1321,12 @@ void Controller::rescaleaccelMD(int step, int minimize)
     if ( !simParams->accelMDOn ) return;
 
     amd_reduction->require();
+
+    // copy all to submit_reduction
+    for ( int i=0; i<REDUCTION_MAX_RESERVED; ++i ) {
+      submit_reduction->item(i) += amd_reduction->item(i);
+    }
+    submit_reduction->submit();
 
     if (step == simParams->firstTimestep) accelMDdVAverage = 0;
 //    if ( minimize || ((step < simParams->accelMDFirstStep ) || (step > simParams->accelMDLastStep ))) return;
