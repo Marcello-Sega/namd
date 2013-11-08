@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/11/06 15:08:43 $
- * $Revision: 1.1427 $
+ * $Date: 2013/11/08 18:37:44 $
+ * $Revision: 1.1428 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1012,10 +1012,10 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("alch", "alchElecLambda", "Lambda of electrostatic perturbation"
      "Coupling parameter value for electrostatic perturbation", &alchElecLambda, -1.0);	// an invalid lambda value
 
-//   opts.require("alch", "alchLambda", "Coupling parameter value", 
-//       &alchLambda);
-//   opts.require("alch", "alchLambda2", "Coupling comparison value",
-//       &alchLambda2);
+  opts.require("alch", "alchLambda", "Coupling parameter value", 
+      &alchLambda);
+  opts.require("alch", "alchLambda2", "Coupling comparison value",
+      &alchLambda2);
    opts.optional("alch", "alchFile", "PDB file with perturbation flags "
      "default is the input PDB file", PARSE_STRING); 
    opts.optional("alch", "alchCol", "Column in the alchFile with the "

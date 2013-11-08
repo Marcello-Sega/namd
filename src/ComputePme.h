@@ -42,8 +42,6 @@ public:
   int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
   int alchDecouple;
   BigReal alchElecLambdaStart;
-  BigReal elecLambdaUp;
-  BigReal elecLambdaDown;
   
   PmeRealSpace *myRealSpace[PME_MAX_EVALS];
   int numLocalAtoms;

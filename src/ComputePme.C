@@ -420,8 +420,6 @@ private:
   int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
   int alchDecouple;
   BigReal alchElecLambdaStart;
-  BigReal elecLambdaUp;
-  BigReal elecLambdaDown;
 
   float **q_arr;
   float **q_list;
@@ -2970,6 +2968,7 @@ void ComputePme::ungridForces() {
 
       if ( alchFepOn || alchThermIntOn ) {
         float scale = 1.;
+        BigReal elecLambdaUp, elecLambdaDown;
         if(simParams->alchFepWhamOn)	{
         	if(simParams->alchFepElecOn)	{
             elecLambdaUp = simParams->alchElecLambda;
@@ -3117,9 +3116,27 @@ void ComputePme::ungridForces() {
 
 void ComputePmeMgr::submitReductions() {
 
+    SimParameters *simParams = Node::Object()->simParameters;
+
     for ( int g=0; g<numGrids; ++g ) {
       float scale = 1.;
       if ( alchFepOn || alchThermIntOn ) {
+        BigReal elecLambdaUp, elecLambdaDown;
+        if(simParams->alchFepWhamOn)	{
+        	if(simParams->alchFepElecOn)	{
+            elecLambdaUp = simParams->alchElecLambda;
+            elecLambdaDown = 1.0 - simParams->alchElecLambda;
+        	}
+        	else {
+            elecLambdaUp = 0.0;
+            elecLambdaDown = 1.0;
+        	}
+        }
+        else		{
+        	elecLambdaUp =  (simParams->alchLambda <= alchElecLambdaStart)? 0. : \
+            (simParams->alchLambda - alchElecLambdaStart) / (1. - alchElecLambdaStart);
+        	elecLambdaDown =  ((1-simParams->alchLambda) <= alchElecLambdaStart)? 0. : ((1-simParams->alchLambda) - alchElecLambdaStart) / (1. - alchElecLambdaStart);
+        }
         if ( g == 0 ) scale = elecLambdaUp;
         else if ( g == 1 ) scale = elecLambdaDown;
         else if ( g == 2 ) scale = (elecLambdaUp + elecLambdaDown - 1)*(-1);
