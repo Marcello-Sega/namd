@@ -12,7 +12,7 @@ These are described below.
 \subsection{Constant Forces}
 
 NAMD provides the ability to apply constant forces to some atoms.
-There are two parameters that control this feature.
+There are three parameters that control this feature.
 
 \begin{itemize}
 
@@ -47,9 +47,12 @@ or updated between runs by using the \icommand{consForceConfig} command.
 \NAMD\ provides the ability to apply a constant electric field to the molecular
 system being simulated.
 Energy due to the external field will be reported in the MISC column
-and may be discontinuous in simulations using periodic boundary conditions if,
-for example, a charged hydrogen group moves outside of the central cell.
-There are two parameters that control this feature.
+and will be continuous even in simulations using periodic boundary conditions
+as unwrapped coordinates are used to calculate energy and pressure,
+resulting in linearly increasing pressure over time for systems with free ions.
+To avoid this effect, for periodic simulations the new {\tt eFieldNormalized} option
+should be used with the electric field vector multiplied by the cell dimension.
+There are three parameters that control this feature.
 
 \begin{itemize}
 
@@ -63,6 +66,13 @@ There are two parameters that control this feature.
 Units are ${\rm kcal} / ({\rm mol \; \AA} \; e)$, which is natural for simulations.
 This parameter may be changed between {\tt run} commands, allowing a square
 wave or other approximate wave form to be applied.}
+
+\item
+\NAMDCONFWDEF{eFieldNormalized}{electric field vector scaled by cell basis vectors?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Specifies whether or not that eField vector has been scaled by the cell basis vectors,
+thus indicating the voltage drop across the cell in units of ${\rm kcal} / ({\rm mol} \; e)$.
+The eField vector is then scaled by the reciprocal lattice vectors at each timestep.
+When eFieldNormalized is true the eField forces do not contribute to the pressure calculation.}
 
 \end{itemize}
 
