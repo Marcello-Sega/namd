@@ -123,9 +123,7 @@ protected:
       int recent_TiNo;
       void printTiMessage(int);
 
-      BigReal drudeComTemp;  // temperature of Drude centers of mass
       BigReal drudeBondTemp; // temperature of Drude bonds
-      BigReal drudeComTempAvg;
       BigReal drudeBondTempAvg;
 
       BigReal kineticEnergy;

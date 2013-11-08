@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/11/07 23:25:18 $
- * $Revision: 1.1299 $
+ * $Date: 2013/11/08 20:55:16 $
+ * $Revision: 1.1300 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -203,9 +203,7 @@ Controller::Controller(NamdState *s) :
     groupPressure_tavg = 0;
     tavg_count = 0;
     checkpoint_stored = 0;
-    drudeComTemp = 0;
     drudeBondTemp = 0;
-    drudeComTempAvg = 0;
     drudeBondTempAvg = 0;
 }
 
@@ -1186,7 +1184,7 @@ void Controller::receivePressure(int step, int minimize)
         = reduction->item(REDUCTION_DRUDEBOND_CENTERED_KINETIC_ENERGY);
       int g_bond = 3 * molecule->numDrudeAtoms;
       int g_com = numDegFreedom - g_bond;
-      drudeComTemp = 2.0 * drudeComKE / (g_com * BOLTZMANN);
+      temperature = 2.0 * drudeComKE / (g_com * BOLTZMANN);
       drudeBondTemp = (g_bond!=0 ? (2.*drudeBondKE/(g_bond*BOLTZMANN)) : 0.);
     }
 
@@ -2376,7 +2374,7 @@ void Controller::printEnergies(int step, int minimize)
       labels << "PERIODIC "; values << "{" << lattice.a_p() << " "
 		<< lattice.b_p() << " " << lattice.c_p() << "} ";
       if (simParameters->drudeOn) {
-        CALLBACKDATA("DRUDECOM",drudeComTemp);
+        CALLBACKDATA("DRUDEBOND",drudeBondTemp);
       }
       if ( simParameters->pairInteractionOn ) {
         CALLBACKLIST("VDW_FORCE",pairVDWForce);
@@ -2391,7 +2389,6 @@ void Controller::printEnergies(int step, int minimize)
 #undef CALLBACKDATA
 #endif
 
-    drudeComTempAvg += drudeComTemp;
     drudeBondTempAvg += drudeBondTemp;
 
     temp_avg += temperature;
@@ -2463,9 +2460,7 @@ void Controller::printEnergies(int step, int minimize)
 	}
         if (simParameters->drudeOn) {
           iout << "     ";
-	  iout << FORMAT("DRUDECOM");
 	  iout << FORMAT("DRUDEBOND");
-	  iout << FORMAT("DRCOMAVG");
 	  iout << FORMAT("DRBONDAVG");
         }
 	// Ported by JLai
@@ -2525,9 +2520,7 @@ void Controller::printEnergies(int step, int minimize)
     }
     if (simParameters->drudeOn) {
         iout << "     ";
-	iout << FORMAT(drudeComTemp);
 	iout << FORMAT(drudeBondTemp);
-	iout << FORMAT(drudeComTempAvg/avg_count);
 	iout << FORMAT(drudeBondTempAvg/avg_count);
     }
     // Ported by JLai
@@ -2569,7 +2562,6 @@ void Controller::printEnergies(int step, int minimize)
       iout << FORMAT(pairElectForce.z);
       iout << "\n" << endi;
     }
-    drudeComTempAvg = 0;
     drudeBondTempAvg = 0;
     temp_avg = 0;
     pressure_avg = 0;
