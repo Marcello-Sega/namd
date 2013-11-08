@@ -1706,7 +1706,7 @@ void ComputeNonbondedUtil :: NAME
         }
         if ( kk < NumNbtholePairParams ) {
     
-                BigReal aprod = mol->GetAtomAlpha(i) * mol->GetAtomAlpha(j);
+                BigReal aprod = mol->GetAtomAlpha(pExt_0[i].id) * mol->GetAtomAlpha(pExt_1[j].id);
                 const BigReal aa = nbthole_array[kk].tholeij * powf(aprod, -1.f/6);
                 const BigReal qqaa = CC * p_0[i].charge * p_1[j].charge;
                 const BigReal qqad = CC * p_0[i].charge * p_1[j+1].charge;
