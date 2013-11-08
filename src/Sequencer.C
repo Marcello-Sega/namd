@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2013/11/07 22:54:25 $
- * $Revision: 1.1216 $
+ * $Date: 2013/11/08 21:26:05 $
+ * $Revision: 1.1217 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -1191,9 +1191,13 @@ void Sequencer::reinitVelocities(void)
 
   for ( int i = 0; i < numAtoms; ++i )
   {
-    a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed && a[i].mass > 0.) ? Vector(0,0,0) :
+    a[i].velocity = ( ( (simParams->fixedAtomsOn && a[i].atomFixed) || a[i].mass <= 0.) ? Vector(0,0,0) :
       sqrt( kbT * ( a[i].partition ? tempFactor : 1.0 ) / a[i].mass )
         * random->gaussian_vector() );
+    if ( simParams->drudeOn && i+1 < numAtoms && a[i+1].mass < 1.0 && a[i+1].mass >= 0.001 ) {
+      a[i+1].velocity = a[i].velocity;  // zero is good enough
+      ++i;
+    }
   }
 }
 

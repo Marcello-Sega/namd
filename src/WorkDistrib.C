@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/11/04 21:43:21 $
- * $Revision: 1.1268 $
+ * $Date: 2013/11/08 21:26:05 $
+ * $Revision: 1.1269 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -3094,6 +3094,12 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
     randnum -= 6.0;
     
     v[i].z = randnum*kbToverM;
+  }
+
+  if ( simParams->drudeOn ) for (i=0; i<totalAtoms; i++) {
+    if ( structure->is_drude(i) ) {
+      v[i] = v[structure->get_mother_atom(i)];  // zero is good enough
+    }
   }
 }
 /*			END OF FUNCTION random_velocities		*/
