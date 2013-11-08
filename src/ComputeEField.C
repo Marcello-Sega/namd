@@ -39,6 +39,12 @@ void ComputeEField::doForce(FullAtom* p, Results* r) {
   BigReal t = patch->flags.step * simParams->dt;
   Vector eField1 = cos(omega * t - phi) * eField;
 
+  const int normalized = simParams->eFieldNormalized;
+  if ( normalized ) {
+    Lattice &l = homePatch->lattice;
+    eField1 = Vector(l.a_r()*eField1, l.b_r()*eField1, l.c_r()*eField1);
+  }
+
   Force *forces = r->f[Results::normal];
   BigReal energy = 0;
   Force extForce = 0.;
@@ -48,16 +54,20 @@ void ComputeEField::doForce(FullAtom* p, Results* r) {
   for (int i=0; i<numAtoms; i++) {
     Force force = p[i].charge * eField1; 
     forces[i] += force;
-    extForce += force;
     Position vpos = homePatch->lattice.reverse_transform(
 		p[i].position, p[i].transform );
     energy -= force * (vpos - homePatch->lattice.origin());
-    extVirial += outer(force,vpos);
+    if ( ! normalized ) {
+      extForce += force;
+      extVirial += outer(force,vpos);
+    }
   }
 
   reduction->item(REDUCTION_MISC_ENERGY) += energy;
-  ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,extForce);
-  ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,extVirial);
+  if ( ! normalized ) {
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,extForce);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,extVirial);
+  }
   reduction->submit();
 
 }

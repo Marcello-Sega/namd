@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/11/08 18:37:44 $
- * $Revision: 1.1428 $
+ * $Date: 2013/11/08 20:28:08 $
+ * $Revision: 1.1429 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1808,6 +1808,8 @@ void SimParameters::config_parser_boundary(ParseOptions &opts) {
    ///////////////  Electric field options
    opts.optionalB("main", "eFieldOn", "Should an electric field be applied",
                  &eFieldOn, FALSE);
+   opts.optionalB("eFieldOn", "eFieldNormalized", "Is eField vector scaled by cell basis vectors?",
+                 &eFieldNormalized, FALSE);
    opts.require("eFieldOn", "eField", "Electric field vector", &eField);
    opts.optional("eFieldOn", "eFieldFreq", "Electric field frequency", &eFieldFreq);
    opts.optional("eFieldOn", "eFieldPhase", "Electric field phase", &eFieldPhase);
@@ -4710,6 +4712,7 @@ if ( openatomOn )
       iout << iINFO << "E-FIELD VECTOR         ("
          << eField.x << ", " << eField.y
          << ", " << eField.z << ")\n";
+      if ( eFieldNormalized ) iout << iINFO << "E-FIELD VECTOR IS SCALED BY CELL BASIS VECTORS\n";
       iout << iINFO << "E-FIELD FREQUENCY IS (1/ps) " << eFieldFreq << "\n";
       iout << iINFO << "E-FIELD PHASE IS     (deg)  " << eFieldPhase << "\n";
 

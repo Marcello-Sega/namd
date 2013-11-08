@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2013/11/06 15:08:43 $
- * $Revision: 1.1229 $
+ * $Date: 2013/11/08 20:28:09 $
+ * $Revision: 1.1230 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -691,6 +691,7 @@ public:
         BigReal cylindricalBCk2;
 
 	Bool eFieldOn;                  //  Should a electric field be applied
+	Bool eFieldNormalized;          //  Is eField vector scaled by cell basis vectors
 	zVector eField;                 //  Electric field vector to be applied
 	BigReal eFieldFreq;		// Frequency of the electric field
 	BigReal eFieldPhase;		// Phase phi, cos(w*t-phi*PI/180) 
