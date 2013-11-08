@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/11/08 20:28:08 $
- * $Revision: 1.1429 $
+ * $Date: 2013/11/08 21:44:30 $
+ * $Revision: 1.1430 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3252,6 +3252,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        NAMD_die("Unknown ldBalancer selected");
    } else {
      ldBalancer = LDBAL_CENTRALIZED;
+#ifdef MEM_OPT_VERSION
+     if ( CkNumPes() > 1400 ) ldBalancer = LDBAL_HYBRID;
+#endif
    }
 
    if (opts.defined("ldbStrategy")) {
