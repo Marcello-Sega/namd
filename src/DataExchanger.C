@@ -92,7 +92,7 @@ extern "C" {
       if ( rank & (i - 1) ) continue;
       if ( rank & i ) {
         int src = rank - i;
-        CkPrintf("rank %d recv from %d\n", rank, src);
+        //CkPrintf("rank %d recv from %d\n", rank, src);
         DataMessage *recvMsg = NULL;
         replica_recv(&recvMsg, src, CkMyPe());
         if ( recvMsg == NULL ) NAMD_bug("recvMsg == NULL in replica_bcast");
@@ -102,7 +102,7 @@ extern "C" {
       } else {
         int dst = rank + i;
         if ( dst < size ) {
-          CkPrintf("rank %d send to %d\n", rank, dst);
+          //CkPrintf("rank %d send to %d\n", rank, dst);
           replica_send(buf, count, dst, CkMyPe());
         }
       }
@@ -115,12 +115,12 @@ extern "C" {
     for ( int i=1; i<size; i*=2 ) {
       if ( rank & i ) {
         int dst = rank - i;
-        CkPrintf("rank %d send to %d\n", rank, dst);
+        //CkPrintf("rank %d send to %d\n", rank, dst);
         replica_send((char*)dat, count * sizeof(double), dst, CkMyPe());
       } else {
         int src = rank + i;
         if ( src < size ) {
-          CkPrintf("rank %d recv from %d\n", rank, src);
+          //CkPrintf("rank %d recv from %d\n", rank, src);
           DataMessage *recvMsg = NULL;
           replica_recv(&recvMsg, src, CkMyPe());
           if ( recvMsg == NULL ) NAMD_bug("recvMsg == NULL in replica_bcast");
