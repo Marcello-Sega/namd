@@ -281,6 +281,10 @@ int ScriptTcl::Tcl_replicaBarrier(ClientData, Tcl_Interp *interp, int argc, char
 int ScriptTcl::Tcl_replicaAtomSendrecv(ClientData clientData, Tcl_Interp *interp, int argc, char **argv) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
+  if ( ! Node::Object()->simParameters->replicaUniformPatchGrids ) {
+    Tcl_SetResult(interp,"replicaUniformPatchGrids is required for atom exchange",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
   if ( argc < 2 || argc > 3 ) {
     Tcl_SetResult(interp,"bad arg count; args: dest ?source?",TCL_VOLATILE);
     return TCL_ERROR;
@@ -335,6 +339,10 @@ int ScriptTcl::Tcl_replicaAtomSendrecv(ClientData clientData, Tcl_Interp *interp
 int ScriptTcl::Tcl_replicaAtomSend(ClientData clientData, Tcl_Interp *interp, int argc, char **argv) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
+  if ( ! Node::Object()->simParameters->replicaUniformPatchGrids ) {
+    Tcl_SetResult(interp,"replicaUniformPatchGrids is required for atom exchange",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
   if ( argc != 2 ) {
     Tcl_SetResult(interp,"bad arg count; args: dest",TCL_VOLATILE);
     return TCL_ERROR;
@@ -368,6 +376,10 @@ int ScriptTcl::Tcl_replicaAtomSend(ClientData clientData, Tcl_Interp *interp, in
 int ScriptTcl::Tcl_replicaAtomRecv(ClientData clientData, Tcl_Interp *interp, int argc, char **argv) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
+  if ( ! Node::Object()->simParameters->replicaUniformPatchGrids ) {
+    Tcl_SetResult(interp,"replicaUniformPatchGrids is required for atom exchange",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
   if ( argc > 2 ) {
     Tcl_SetResult(interp,"bad arg count; args: ?source?",TCL_VOLATILE);
     return TCL_ERROR;
