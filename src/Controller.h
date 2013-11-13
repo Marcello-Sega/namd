@@ -27,7 +27,14 @@ class CollectionMaster;
 class Random;
 class PressureProfileReduction;
 
-class Controller
+struct ControllerState {
+    Tensor langevinPiston_strainRate;
+    Tensor berendsenPressure_avg;
+    int berendsenPressure_count;
+    BigReal smooth2_avg;
+};
+
+class Controller : protected ControllerState
 {
 public:
     Controller(NamdState *s);
@@ -130,7 +137,7 @@ protected:
       BigReal kineticEnergyHalfstep;
       BigReal kineticEnergyCentered;
       BigReal temperature;
-      BigReal smooth2_avg;
+      // BigReal smooth2_avg;
       BigReal smooth2_avg2;  // avoid internal compiler error
       Tensor pressure;
       Tensor groupPressure;
@@ -144,11 +151,11 @@ protected:
     void reassignVelocities(int);
     void tcoupleVelocities(int);
     void berendsenPressure(int);
-      Tensor berendsenPressure_avg;
-      int berendsenPressure_count;
+      // Tensor berendsenPressure_avg;
+      // int berendsenPressure_count;
     void langevinPiston1(int);
     void langevinPiston2(int);
-      Tensor langevinPiston_strainRate;
+      // Tensor langevinPiston_strainRate;
       Tensor strainRate_old;  // for langevinPistonBarrier no
       Tensor positionRescaleFactor;  // for langevinPistonBarrier no
 
@@ -201,10 +208,7 @@ protected:
     // for checkpoint/revert
     int checkpoint_stored;
     Lattice checkpoint_lattice;
-    Tensor checkpoint_langevinPiston_strainRate;
-    Tensor checkpoint_berendsenPressure_avg;
-    int checkpoint_berendsenPressure_count;
-    BigReal checkpoint_smooth2_avg;
+    ControllerState checkpoint_state;
 
 //for accelMD
    void rescaleaccelMD (int step, int minimize = 0);

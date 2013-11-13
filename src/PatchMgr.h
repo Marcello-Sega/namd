@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.h,v $
  * $Author: jim $
- * $Date: 2013/09/06 19:11:38 $
- * $Revision: 1.1030 $
+ * $Date: 2013/11/13 00:01:33 $
+ * $Revision: 1.1031 $
  *****************************************************************************/
 
 #ifndef PATCHMGR_H
@@ -66,6 +66,25 @@ class SetLatticeMsg : public CMessage_SetLatticeMsg {
 public:
   Lattice lattice;
 };
+
+class ExchangeAtomsReqMsg : public CMessage_ExchangeAtomsReqMsg {
+public:
+  int pid;
+  int dstpe;
+};
+
+class ExchangeAtomsMsg : public CMessage_ExchangeAtomsMsg {
+public:
+  Lattice lattice;
+  int pid;
+  int numAtoms;
+  FullAtom *atoms;
+};
+
+extern "C" {
+  void recvExchangeReq_handler(envelope*);
+  void recvExchangeMsg_handler(envelope*);
+}
 
 // PatchMgr creates and manages homepatches. There exist one instance of 
 // PatchMgr on each node (derived from Charm++ Group).  // That is, when a new operator causes creation of one instance on each node. 
@@ -128,6 +147,10 @@ public:
   void moveAllBy(MoveAllByMsg *msg);
   void setLattice(SetLatticeMsg *msg);
 
+  void sendExchangeReq(int pid, int src);
+  void recvExchangeReq(ExchangeAtomsReqMsg *msg);
+  void sendExchangeMsg(ExchangeAtomsMsg *msg, int dst, int dstpe);
+  void recvExchangeMsg(ExchangeAtomsMsg *msg);
 
 private:
   friend class PatchMap;
@@ -135,6 +158,9 @@ private:
 
   int numAllPatches;
   int numHomePatches;
+
+  int recvExchangeReq_index;
+  int recvExchangeMsg_index;
 
   // an array of patch pointers residing on this node
   HomePatchList homePatches;

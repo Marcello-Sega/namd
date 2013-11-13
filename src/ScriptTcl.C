@@ -22,6 +22,7 @@
 #include "Thread.h"
 #include "ProcessorPrivate.h"
 #include "PatchMgr.h"
+#include "PatchMap.h"
 #include "Measure.h"
 #include "colvarmodule.h"
 #include "DumpBench.h"
@@ -30,6 +31,8 @@
 #ifndef WIN32
 #include <strings.h>
 #endif
+
+#include "qd.h"
 
 #ifdef NAMD_TCL
 #define USE_COMPAT_CONST
@@ -274,6 +277,137 @@ int ScriptTcl::Tcl_replicaBarrier(ClientData, Tcl_Interp *interp, int argc, char
 #endif
   return TCL_OK;
 }
+
+int ScriptTcl::Tcl_replicaAtomSendrecv(ClientData clientData, Tcl_Interp *interp, int argc, char **argv) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if ( argc < 2 || argc > 3 ) {
+    Tcl_SetResult(interp,"bad arg count; args: dest ?source?",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int dest = -1;
+  if ( sscanf(argv[1], "%d", &dest) != 1 ) {
+    Tcl_SetResult(interp,"bad dest; args: dest ?source?",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int source = -1;
+  if ( argc == 3 ) {
+    if ( sscanf(argv[2], "%d", &source) != 1 ) {
+      Tcl_SetResult(interp,"bad source; args: dest ?source?",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  }
+
+#if CMK_HAS_PARTITION
+  if(dest != CmiMyPartition()) {
+    DataMessage *recvMsg = NULL;
+    replica_sendRecv((char*)&(script->state->lattice), sizeof(Lattice), dest, CkMyPe(), &recvMsg, source, CkMyPe());
+    CmiAssert(recvMsg != NULL);
+    memcpy(&(script->state->lattice), recvMsg->data, recvMsg->size);
+    CmiFree(recvMsg);
+  }
+#endif
+
+  char str[40];
+  sprintf(str, "%d", dest);
+  script->setParameter("scriptArg1", str);
+  sprintf(str, "%d", source);
+  script->setParameter("scriptArg2", str);
+
+  CkpvAccess(_qd)->create(2 * PatchMap::Object()->numPatches());
+
+  script->runController(SCRIPT_ATOMSENDRECV);
+
+#if CMK_HAS_PARTITION
+  if(dest != CmiMyPartition()) {
+    DataMessage *recvMsg = NULL;
+    ControllerState *cstate = script->state->controller;
+    replica_sendRecv((char*)cstate, sizeof(ControllerState), dest, CkMyPe(), &recvMsg, source, CkMyPe());
+    CmiAssert(recvMsg != NULL);
+    memcpy(cstate, recvMsg->data, recvMsg->size);
+    CmiFree(recvMsg);
+  }
+#endif
+
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_replicaAtomSend(ClientData clientData, Tcl_Interp *interp, int argc, char **argv) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if ( argc != 2 ) {
+    Tcl_SetResult(interp,"bad arg count; args: dest",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int dest = -1;
+  if ( sscanf(argv[1], "%d", &dest) != 1 ) {
+    Tcl_SetResult(interp,"bad dest; args: dest",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+#if CMK_HAS_PARTITION
+  replica_send((char*)&(script->state->lattice), sizeof(Lattice), dest, CkMyPe());
+#endif
+
+  char str[40];
+  sprintf(str, "%d", dest);
+  script->setParameter("scriptArg1", str);
+
+  CkpvAccess(_qd)->create(PatchMap::Object()->numPatches());
+
+  script->runController(SCRIPT_ATOMSEND);
+
+#if CMK_HAS_PARTITION
+  ControllerState *cstate = script->state->controller;
+  replica_send((char*)cstate, sizeof(ControllerState), dest, CkMyPe());
+#endif
+
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_replicaAtomRecv(ClientData clientData, Tcl_Interp *interp, int argc, char **argv) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if ( argc > 2 ) {
+    Tcl_SetResult(interp,"bad arg count; args: ?source?",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int source = -1;
+  if ( argc == 2 ) {
+    if ( sscanf(argv[1], "%d", &source) != 1 ) {
+      Tcl_SetResult(interp,"bad source; args: ?source?",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  }
+
+#if CMK_HAS_PARTITION
+  DataMessage *recvMsg = NULL;
+  replica_recv(&recvMsg, source, CkMyPe());
+  CmiAssert(recvMsg != NULL);
+  memcpy(&(script->state->lattice), recvMsg->data, recvMsg->size);
+  CmiFree(recvMsg);
+#endif
+
+  char str[40];
+  sprintf(str, "%d", source);
+  script->setParameter("scriptArg2", str);
+
+  CkpvAccess(_qd)->create(PatchMap::Object()->numPatches());
+
+  script->runController(SCRIPT_ATOMRECV);
+
+#if CMK_HAS_PARTITION
+  recvMsg = NULL;
+  ControllerState *cstate = script->state->controller;
+  replica_recv(&recvMsg, source, CkMyPe());
+  CmiAssert(recvMsg != NULL);
+  memcpy(cstate, recvMsg->data, recvMsg->size);
+  CmiFree(recvMsg);
+#endif
+
+  return TCL_OK;
+}
+
 
 int ScriptTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
@@ -1274,6 +1408,12 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "replicaBarrier", Tcl_replicaBarrier,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "replicaAtomSendrecv", Tcl_replicaAtomSendrecv,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "replicaAtomSend", Tcl_replicaAtomSend,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "replicaAtomRecv", Tcl_replicaAtomRecv,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "unknown", Tcl_config,

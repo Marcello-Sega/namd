@@ -13,6 +13,10 @@ module PatchMgr {
   message MoveAtomMsg;
   message MoveAllByMsg;
   message SetLatticeMsg;
+  message ExchangeAtomsReqMsg;
+  message ExchangeAtomsMsg {
+    FullAtom atoms[];
+  };
 
   group PatchMgr
   {
@@ -24,6 +28,8 @@ module PatchMgr {
     entry void moveAtom(MoveAtomMsg *);
     entry void moveAllBy(MoveAllByMsg *);
     entry void setLattice(SetLatticeMsg *);
+    entry void recvExchangeReq(ExchangeAtomsReqMsg*);
+    entry void recvExchangeMsg(ExchangeAtomsMsg*);
   } ;
 }
 

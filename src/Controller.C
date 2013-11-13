@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/11/08 20:55:16 $
- * $Revision: 1.1300 $
+ * $Date: 2013/11/13 00:01:32 $
+ * $Revision: 1.1301 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -269,10 +269,7 @@ void Controller::algorithm(void)
           << "\n" << endi;
         checkpoint_stored = 1;
         checkpoint_lattice = state->lattice;
-        checkpoint_langevinPiston_strainRate = langevinPiston_strainRate;
-        checkpoint_berendsenPressure_avg = berendsenPressure_avg;
-        checkpoint_berendsenPressure_count = berendsenPressure_count;
-        checkpoint_smooth2_avg = smooth2_avg;
+        checkpoint_state = *(ControllerState*)this;
         break;
       case SCRIPT_REVERT:
         iout << "REVERTING POSITIONS AT STEP " << simParams->firstTimestep
@@ -280,10 +277,11 @@ void Controller::algorithm(void)
         if ( ! checkpoint_stored )
           NAMD_die("Unable to revert, checkpoint was never called!");
         state->lattice = checkpoint_lattice;
-        langevinPiston_strainRate = checkpoint_langevinPiston_strainRate;
-        berendsenPressure_avg = checkpoint_berendsenPressure_avg;
-        berendsenPressure_count = checkpoint_berendsenPressure_count;
-        smooth2_avg = checkpoint_smooth2_avg;
+        *(ControllerState*)this = checkpoint_state;
+        break;
+      case SCRIPT_ATOMSENDRECV:
+      case SCRIPT_ATOMSEND:
+      case SCRIPT_ATOMRECV:
         break;
       case SCRIPT_MINIMIZE:
         minimize();

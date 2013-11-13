@@ -32,6 +32,7 @@ class Sequencer;
 class SubmitReduction;
 class ProxyGBISP1ResultMsg;
 class ProxyGBISP2ResultMsg;
+class ExchangeAtomsMsg;
 
 class ProxyNodeAwareSpanningTreeMsg;
 
@@ -135,6 +136,15 @@ public:
   // methods for CONTRA, etc
   void checkpoint(void);
   void revert(void);
+
+  // replica exchange
+  void exchangeAtoms(int scriptTask);
+  void recvExchangeReq(int req);
+  void recvExchangeMsg(ExchangeAtomsMsg *msg);
+  int exchange_dst;
+  int exchange_src;
+  int exchange_req;
+  ExchangeAtomsMsg *exchange_msg;
 
   // methods for QM (ExtForces replacement)
   void replaceForces(ExtForce *f);

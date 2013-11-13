@@ -17,6 +17,7 @@
 #include "time.h"
 #include <math.h>
 #include "charm++.h"
+#include "qd.h"
 
 #include "SimParameters.h"
 #include "HomePatch.h"
@@ -30,6 +31,7 @@
 #include "Molecule.h"
 #include "PatchMgr.h"
 #include "Sequencer.h"
+#include "Broadcasts.h"
 #include "LdbCoordinator.h"
 #include "Settle.h"
 #include "ReductionMgr.h"
@@ -90,6 +92,9 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
 #endif
 {
   settle_initialized = 0;
+
+  exchange_msg = 0;
+  exchange_req = -1;
 
   //tracking the end of gbis phases
   numGBISP1Arrived = 0;
@@ -193,6 +198,9 @@ HomePatch::HomePatch(PatchID pd, FullAtomList &al) : Patch(pd)
 { 
   atom.swap(al);
   settle_initialized = 0;
+
+  exchange_msg = 0;
+  exchange_req = -1;
 
   numGBISP1Arrived = 0;
   numGBISP2Arrived = 0;
@@ -2743,6 +2751,48 @@ void HomePatch::revert(void) {
   #endif
 }
 
+void HomePatch::exchangeAtoms(int scriptTask) {
+  SimParameters *simParams = Node::Object()->simParameters;
+  // CkPrintf("exchangeAtoms %d %d %d %d\n", CmiMyPartition(), scriptTask, (int)(simParams->scriptArg1), (int)(simParams->scriptArg2));
+  if ( scriptTask == SCRIPT_ATOMSEND || scriptTask == SCRIPT_ATOMSENDRECV ) {
+    exchange_dst = (int) simParams->scriptArg1;
+    // create and save outgoing message
+    exchange_msg = new (numAtoms,0) ExchangeAtomsMsg;
+    exchange_msg->lattice = lattice;
+    exchange_msg->pid = patchID;
+    exchange_msg->numAtoms = numAtoms;
+    memcpy(exchange_msg->atoms,atom.begin(),numAtoms*sizeof(FullAtom));
+    if ( exchange_req >= 0 ) {
+      recvExchangeReq(exchange_req);
+    }
+  }
+  if ( scriptTask == SCRIPT_ATOMRECV || scriptTask == SCRIPT_ATOMSENDRECV ) {
+    exchange_src = (int) simParams->scriptArg2;
+    PatchMgr::Object()->sendExchangeReq(patchID, exchange_src);
+  }
+}
+
+void HomePatch::recvExchangeReq(int req) {
+  exchange_req = req;
+  if ( exchange_msg ) {
+    // CkPrintf("recvExchangeReq %d %d\n", CmiMyPartition(), exchange_dst);
+    PatchMgr::Object()->sendExchangeMsg(exchange_msg, exchange_dst, exchange_req);
+    exchange_msg = 0;
+    exchange_req = -1;
+    CkpvAccess(_qd)->process();
+  }
+}
+
+void HomePatch::recvExchangeMsg(ExchangeAtomsMsg *msg) {
+  // CkPrintf("recvExchangeMsg %d %d\n", CmiMyPartition(), exchange_src);
+  lattice = msg->lattice;
+  numAtoms = msg->numAtoms;
+  atom.resize(numAtoms);
+  memcpy(atom.begin(),msg->atoms,numAtoms*sizeof(FullAtom));
+  delete msg;
+  CkpvAccess(_qd)->process();
+}
+
 void HomePatch::submitLoadStats(int timestep)
 {
   LdbCoordinator::Object()->patchLoad(patchID,numAtoms,timestep);
@@ -2837,6 +2887,7 @@ void HomePatch::doGroupSizeCheck()
 
   while ( p_i != p_e ) {
     const int hgs = p_i->hydrogenGroupSize;
+    if ( ! hgs ) break;  // avoid infinite loop on bug
     int ngs = hgs;
     if ( ngs > 5 ) ngs = 5;  // limit to at most 5 atoms per group
     BigReal x = p_i->position.x;
@@ -2857,6 +2908,10 @@ void HomePatch::doGroupSizeCheck()
       p_i[i].nonbondedGroupSize = 1;
     }
     p_i += hgs;
+  }
+
+  if ( p_i != p_e ) {
+    NAMD_bug("hydrogenGroupSize is zero in HomePatch::doGroupSizeCheck");
   }
 
   flags.maxGroupRadius = sqrt(maxrad2);

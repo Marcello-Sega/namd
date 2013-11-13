@@ -48,6 +48,9 @@ PatchMgr::PatchMgr()
     patchMap = PatchMap::Instance();
     patchMap->registerPatchMgr(this);
 
+    recvExchangeReq_index = CmiRegisterHandler((CmiHandler)recvExchangeReq_handler);
+    recvExchangeMsg_index = CmiRegisterHandler((CmiHandler)recvExchangeMsg_handler);
+
     // Message combining initialization
     migrationCountdown = 0;
     combineMigrationMsgs = new MigrateAtomsCombinedMsg*[CkNumPes()];
@@ -263,6 +266,58 @@ void PatchMgr::setLattice(SetLatticeMsg *msg) {
   }
   // Must also do this for SimParameters in order for pressure profile to work!
   Node::Object()->simParameters->lattice = msg->lattice;
+}
+
+void PatchMgr::sendExchangeReq(int pid, int src) {
+  ExchangeAtomsReqMsg *msg = new ExchangeAtomsReqMsg;
+  msg->pid = pid;
+  msg->dstpe = CkMyPe();
+  envelope *env = UsrToEnv(ExchangeAtomsReqMsg::pack(msg));
+  CmiSetHandler(env,recvExchangeReq_index);
+#if CMK_HAS_PARTITION
+  CmiInterSyncSendAndFree(CkMyPe(),src,env->getTotalsize(),(char*)env);
+#else
+  CmiSyncSendAndFree(CkMyPe(),env->getTotalsize(),(char*)env);
+#endif
+}
+
+extern "C" {
+  void recvExchangeReq_handler(envelope *env) {
+    PatchMgr::Object()->recvExchangeReq(ExchangeAtomsReqMsg::unpack(EnvToUsr(env)));
+  }
+}
+
+void PatchMgr::recvExchangeReq(ExchangeAtomsReqMsg *msg) {
+  int patchnode = patchMap->node(msg->pid);
+  if ( CkMyPe() != patchnode ) {
+    thisProxy[patchnode].recvExchangeReq(msg);
+  } else {
+    HomePatch *hp = patchMap->homePatch(msg->pid);
+    if ( ! hp ) NAMD_bug("null HomePatch pointer in PatchMgr::recvExchangeReq");
+    hp->recvExchangeReq(msg->dstpe);
+    delete msg;
+  }
+}
+
+void PatchMgr::sendExchangeMsg(ExchangeAtomsMsg *msg, int dst, int dstpe) {
+  envelope *env = UsrToEnv(ExchangeAtomsMsg::pack(msg));
+  CmiSetHandler(env,recvExchangeMsg_index);
+#if CMK_HAS_PARTITION
+  CmiInterSyncSendAndFree(dstpe,dst,env->getTotalsize(),(char*)env);
+#else
+  CmiSyncSendAndFree(dstpe,env->getTotalsize(),(char*)env);
+#endif
+}
+
+extern "C" {
+  void recvExchangeMsg_handler(envelope *env) {
+    PatchMgr::Object()->recvExchangeMsg(ExchangeAtomsMsg::unpack(EnvToUsr(env)));
+  }
+}
+
+void PatchMgr::recvExchangeMsg(ExchangeAtomsMsg *msg) {
+  HomePatch *hp = patchMap->homePatch(msg->pid);
+  hp->recvExchangeMsg(msg);
 }
 
 PACK_MSG(MovePatchesMsg,

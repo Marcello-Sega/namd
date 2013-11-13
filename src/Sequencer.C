@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2013/11/08 21:26:05 $
- * $Revision: 1.1217 $
+ * $Date: 2013/11/13 00:01:34 $
+ * $Revision: 1.1218 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -141,6 +141,11 @@ void Sequencer::algorithm(void)
         berendsenPressure_count = checkpoint_berendsenPressure_count;
         pairlistsAreValid = 0;
 	break;
+      case SCRIPT_ATOMSENDRECV:
+      case SCRIPT_ATOMSEND:
+      case SCRIPT_ATOMRECV:
+        patch->exchangeAtoms(scriptTask);
+        break;
       case SCRIPT_MINIMIZE:
 	minimize();
 	break;
