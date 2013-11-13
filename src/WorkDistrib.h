@@ -116,6 +116,8 @@ public:
 
   static void sortPmePes(int *pmepes, int xdim, int ydim);
 
+  void peOrderingReady();
+
 private:
   void buildNodeAwarePeOrdering(void);
 

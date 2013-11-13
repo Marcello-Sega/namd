@@ -22,6 +22,7 @@ module WorkDistrib {
   group WorkDistrib
   {
     entry WorkDistrib(void);
+    entry void peOrderingReady();
     entry void savePatchMap(PatchMapMsg *);
     entry void saveComputeMap(ComputeMapMsg *);
     entry void recvComputeMapChanges(ComputeMapChangeMsg *);

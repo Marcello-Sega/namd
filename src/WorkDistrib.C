@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/11/08 21:26:05 $
- * $Revision: 1.1269 $
+ * $Date: 2013/11/13 20:06:32 $
+ * $Revision: 1.1270 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -129,9 +129,23 @@ int* WorkDistrib::peDiffuseOrderingIndex;
 int* WorkDistrib::peCompactOrdering;
 int* WorkDistrib::peCompactOrderingIndex;
 
+void cuda_initialize();
+void mic_initialize();
+
+void WorkDistrib::peOrderingReady() {
+  //CkPrintf("WorkDistrib::peOrderingReady on %d\n", CkMyPe());
+#ifdef NAMD_CUDA
+  cuda_initialize();
+#endif
+#ifdef NAMD_MIC
+  mic_initialize();
+#endif
+}
+
 void WorkDistrib::buildNodeAwarePeOrdering() {
 
   if ( CmiMyRank() ) return;
+  //CkPrintf("WorkDistrib::buildNodeAwarePeOrdering on pe %d\n", CkMyPe());
 
   const int numPhys = CmiNumPhysicalNodes();
   const int numNode = CmiNumNodes();
@@ -177,6 +191,10 @@ void WorkDistrib::buildNodeAwarePeOrdering() {
       peCompactOrderingIndex[i]);
   }
 
+  for ( int i=1; i<CkMyNodeSize(); ++i ) {
+    thisProxy[CkMyPe()+i].peOrderingReady();
+  }
+  peOrderingReady();  // avoid delay
 }
 
 struct pe_sortop_coord_x {
