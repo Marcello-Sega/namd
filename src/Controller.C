@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/11/13 00:01:32 $
- * $Revision: 1.1301 $
+ * $Date: 2013/11/14 20:33:30 $
+ * $Revision: 1.1302 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -295,10 +295,6 @@ void Controller::algorithm(void)
   }
   enqueueCollections(END_OF_RUN);
   outputExtendedSystem(END_OF_RUN);
-  // note: this is a Converse interface call that gets translated to a
-  // null method call if CMK_OPTIMIZE is set.
-  if(traceAvailable())
-    traceClose();
   terminate();
 }
 
