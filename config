@@ -88,6 +88,10 @@ syntax:
       case Darwin:
         set ARCH_PAT = MacOSX
       breaksw
+      case CYGWIN*:
+        set ARCH_PAT = Win
+        set ARCH_PAT2 = Cygwin
+      breaksw
     endsw
     echo 'Possible options for <arch> on this machine based on uname: ' 
     ( cd arch ; ls -1 $ARCH_PAT*.arch $ARCH_PAT2*.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -2 -t)
