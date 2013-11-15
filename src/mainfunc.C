@@ -55,6 +55,15 @@ void after_backend_init(int argc, char **argv){
 
   for(argc = 0; argv[argc]; ++argc);
   if ( argc < 2 ) {
+#if defined(WIN32) && !defined(__CYGWIN__)
+    CkPrintf("\nFATAL ERROR: No simulation config file specified on command line.\n");
+    CkPrintf("\nNOTE: NAMD has no graphical interface and must be run from a command line.\n");
+    int nsleep = 10;
+    CkPrintf("\nSleeping %d seconds before exiting...\n", nsleep);
+    fflush(stdout);
+    sleep(nsleep);
+    CkPrintf("\n");
+#endif
     NAMD_die("No simulation config file specified on command line.");
   }
   char *origcwd = GETCWD(origcwd_buf,CWDSIZE);
