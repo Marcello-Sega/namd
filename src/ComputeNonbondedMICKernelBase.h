@@ -1,4 +1,6 @@
 
+#ifdef NAMD_MIC
+
 ////////////////////////////////////////////////////////////////////////////////
 ///// Begin Macro Definition Region
 
@@ -1382,3 +1384,10 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
 #endif
 
 #undef __MIC_PAD_PLGEN_CTRL
+
+#else  // NAMD_MIC
+
+#include "ComputeNonbondedMICKernelBase2.h"
+
+#endif  // NAMD_MIC
+

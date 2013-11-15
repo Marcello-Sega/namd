@@ -1,3 +1,4 @@
+#ifdef NAMD_MIC
 
   // For each entry in the pairlist...
 
@@ -501,3 +502,5 @@
   } // end pairlist-loop
 
   #endif
+
+#endif  // NAMD_MIC

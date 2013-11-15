@@ -1,6 +1,3 @@
-// This file only used for builds with Xeon Phi (MIC) support
-#ifdef NAMD_MIC
-
 
 #include "common.h"
 #include "charm++.h"
@@ -16,6 +13,9 @@
 #include <algorithm>
 
 #include "NamdTypes.h"
+
+// This file only used for builds with Xeon Phi (MIC) support
+#ifdef NAMD_MIC
 
 #include <offload.h>
 #include <queue>

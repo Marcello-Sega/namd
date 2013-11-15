@@ -1,3 +1,4 @@
+#ifdef NAMD_MIC
 
   #define GATHER_PS_I32_OFFSET(v, p, i, o) \
   { \
@@ -1548,3 +1549,5 @@
   #undef APPLY_FORCES_PS2PD_STEP_SUB_COMBO
   #undef APPLY_FORCES_PS2PD_JSTEP
   #undef APPLY_FORCES_PS2PD
+
+#endif  // NAMD_MIC

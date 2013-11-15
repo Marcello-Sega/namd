@@ -2381,5 +2381,9 @@ void mic_free_device(const int deviceNum) {
   if (host__kernel_data != NULL) { delete [] host__kernel_data; host__kernel_data = NULL; }
 }
 
+#else  // NAMD_MIC
+
+#include "ComputeNonbondedMICKernel.h"
+#include "ComputeNonbondedMICKernelBase.h"
 
 #endif  // NAMD_MIC
