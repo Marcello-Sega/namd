@@ -1,5 +1,5 @@
 #!/bin/csh -f
-set CHARM_VERSION = 6.5.1
+set CHARM_VERSION = 6.6.0-rc1
 goto begin
 syntax:
   echo ''
