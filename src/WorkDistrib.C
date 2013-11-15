@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/11/13 20:06:32 $
- * $Revision: 1.1270 $
+ * $Date: 2013/11/15 20:49:42 $
+ * $Revision: 1.1271 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1151,7 +1151,7 @@ void WorkDistrib::patchMapInit(void)
   int twoAwayZ = params->twoAwayZ;
 
   // SASA implementation is not compatible with twoAway patches
-  if (params->LCPOOn) {
+  if (params->LCPOOn && patchSize < 32.4) {
     if ( twoAwayX > 0 || twoAwayY > 0 || twoAwayZ > 0 ) {
       iout << iWARN << "Ignoring twoAway[XYZ] due to LCPO SASA implementation.\n" << endi;
     }
@@ -1220,7 +1220,7 @@ void WorkDistrib::patchMapInit(void)
   }
 
   patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
-	params->staticAtomAssignment, params->replicaUniformPatchGrids,
+	params->staticAtomAssignment, params->replicaUniformPatchGrids, params->LCPOOn,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
 
 #else
@@ -1279,7 +1279,7 @@ void WorkDistrib::patchMapInit(void)
   }
 
   patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
-	params->staticAtomAssignment, params->replicaUniformPatchGrids,
+	params->staticAtomAssignment, params->replicaUniformPatchGrids, params->LCPOOn,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
 
 #endif

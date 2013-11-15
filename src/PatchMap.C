@@ -171,7 +171,7 @@ int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
 				const Lattice &lattice, BigReal patchSize,
 				double maxNumPatches, int staticAtomAssignment,
-				int replicaUniformPatchGrids,
+				int replicaUniformPatchGrids, int lcpo,
 				int asplit, int bsplit, int csplit)
 {
   sizeGrid(xmin,xmax,lattice,patchSize,maxNumPatches,staticAtomAssignment,asplit,bsplit,csplit);
@@ -216,11 +216,11 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
   cMaxIndex = ( ! cPeriodic || cDim == 2 ) ? 10000 : cDim;
 
   aLength = aPeriodic ? 1.0 :
-      ( aDim > aAway + 1 ? aDim * (patchSize / aAway) : xmax.x - xmin.x );
+      ( lcpo || aDim > aAway + 1 ? aDim * (patchSize / aAway) : xmax.x - xmin.x );
   bLength = bPeriodic ? 1.0 :
-      ( bDim > bAway + 1 ? bDim * (patchSize / bAway) : xmax.y - xmin.y );
+      ( lcpo || bDim > bAway + 1 ? bDim * (patchSize / bAway) : xmax.y - xmin.y );
   cLength = cPeriodic ? 1.0 :
-      ( cDim > cAway + 1 ? cDim * (patchSize / cAway) : xmax.z - xmin.z );
+      ( lcpo || cDim > cAway + 1 ? cDim * (patchSize / cAway) : xmax.z - xmin.z );
 
   aOrigin = aPeriodic ? -0.5 : 0.5 * (xmin.x + xmax.x - aLength);
   bOrigin = bPeriodic ? -0.5 : 0.5 * (xmin.y + xmax.y - bLength);
