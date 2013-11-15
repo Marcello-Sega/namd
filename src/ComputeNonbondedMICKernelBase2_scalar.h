@@ -1,4 +1,3 @@
-#ifdef NAMD_MIC
 
   // For each entry in the pairlist...
 
@@ -44,10 +43,18 @@
       double fulltmp_y_i_sum = 0.0;
       double fulltmp_z_i_sum = 0.0;
 
+      #if MIC_EXCL_CHECKSUM_FULL != 0
+        int exclusionSum = 0;
+        #define EXCL_CHECKSUM_CLAUSE  reduction(+ : exclusionSum)
+      #else
+        #define EXCL_CHECKSUM_CLAUSE
+      #endif
+
       // Create an "inner" loop with one iteration per vector unit lane
-      #pragma simd reduction(+ : tmp_x_i_sum, tmp_y_i_sum, tmp_z_i_sum, tmp_w_i_sum, \
-                                 fulltmp_x_i_sum, fulltmp_y_i_sum, fulltmp_z_i_sum, \
-                                 params.exclusionSum )
+      #pragma simd vectorlength(16) \
+                   reduction(+ : tmp_x_i_sum, tmp_y_i_sum, tmp_z_i_sum, tmp_w_i_sum, \
+                                 fulltmp_x_i_sum, fulltmp_y_i_sum, fulltmp_z_i_sum ) \
+                   EXCL_CHECKSUM_CLAUSE
       for (int _plI_fs_inner = 0; _plI_fs_inner < _plI_fs_outer_step; _plI_fs_inner++) {
         const int plI = _plI_fs_outer + _plI_fs_inner;
         if ((plArray[plI] & 0xFFFF) != 0xFFFF) {
@@ -134,27 +141,10 @@
     #endif
 
       #if (MIC_EXCL_CHECKSUM_FULL != 0) && (0 EXCLUDED(+1) MODIFIED(+1))
-        params.exclusionSum += 1;
-      #endif
-
-      // Count this interaction as part of the exclChecksum
-      #if MIC_EXCL_CHECKSUM != 0
-        #if (0 MODIFIED(+1) EXCLUDED(+1))
-          #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-            #if __MIC_PAD_PLGEN_CTRL != 0
-              tmp_w_i_sum += 1.0;
-            #else
-              f_0[i].w += 1.0;
-            #endif
-            f_1[j].w += 1.0;
-          #else
-            #if __MIC_PAD_PLGEN_CTRL != 0
-              tmp_w_i_sum += 1.0;
-            #else
-              f_0_w[i] += 1.0;
-            #endif
-            f_1_w[j] += 1.0;
-          #endif
+        #if __MIC_PAD_PLGEN_CTRL != 0
+          exclusionSum += 1;
+        #else
+          params.exclusionSum += 1;
         #endif
       #endif
 
@@ -473,16 +463,10 @@
       } // end if
     } // end for
 
-    // Apply force reductions
-    #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-      #if MIC_EXCL_CHECKSUM != 0
-        f_0[i].w += tmp_w_i_sum;
-      #endif
-    #else
-      #if MIC_EXCL_CHECKSUM != 0
-        f_0_w[i] += tmp_w_i_sum;
-      #endif
+    #if MIC_EXCL_CHECKSUM_FULL != 0
+      params.exclusionSum += exclusionSum;
     #endif
+    #undef EXCL_CHECKSUM_CLAUSE
 
     #if (0 FAST(SHORT(+1)))
       #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
@@ -517,5 +501,3 @@
   } // end pairlist-loop
 
   #endif
-
-#endif  // NAMD_MIC

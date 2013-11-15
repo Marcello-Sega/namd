@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/11/15 20:49:42 $
- * $Revision: 1.1271 $
+ * $Date: 2013/11/15 22:05:58 $
+ * $Revision: 1.1272 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -137,9 +137,9 @@ void WorkDistrib::peOrderingReady() {
 #ifdef NAMD_CUDA
   cuda_initialize();
 #endif
-#ifdef NAMD_MIC
-  mic_initialize();
-#endif
+//#ifdef NAMD_MIC
+//  mic_initialize();
+//#endif
 }
 
 void WorkDistrib::buildNodeAwarePeOrdering() {
@@ -2503,6 +2503,11 @@ void WorkDistrib::mapComputeNonbonded(void)
    }
 #endif
 
+    // DMK - NOTE - For MIC builds (i.e. NAMD_MIC is defined), it is assumed that self computes are
+    //   mapped to the PE their associated patch is on. If the code below should change, making that
+    //   untrue, MIC builds should be special cased so that assumption still holds (or the host vs
+    //   device load balancing scheme should be modified).  (See the comment in the function
+    //   mic_assignComputes() in ComputeNonbondedMIC.C for more details.)
     for(int partition=0; partition < numPartitions; partition++)
     {
       cid=computeMap->storeCompute(patchMap->node(i),1,

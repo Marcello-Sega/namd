@@ -22,10 +22,8 @@ class ComputeNonbondedMIC : public Compute, private ComputeNonbondedUtil {
     PatchID pid[2];
     Vector offset;
     int isSelf;
-    #if (MIC_ENABLE_COMPUTE_PARTITIONING != 0) || (MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0)
-      int part;   // DMK - TODO : Look into making this a 'char' to reduce memory usage
-      int numParts;
-    #endif
+    int part;
+    int numParts;
   };
 
   struct patch_record {

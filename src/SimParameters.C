@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/11/08 21:44:30 $
- * $Revision: 1.1430 $
+ * $Date: 2013/11/15 22:05:57 $
+ * $Revision: 1.1431 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2028,7 +2028,7 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("maxExclusionFlags",POSITIVE);
 
    // MIC specific parameters
-   opts.optional("main", "mic_hostsplit", "DMK - reserved", &mic_hostSplit, 0);
+   opts.optional("main", "mic_hostSplit", "DMK - reserved", &mic_hostSplit, 0);
    opts.range("mic_hostsplit", NOT_NEGATIVE);
    opts.optional("main", "mic_numParts_self_p1", "MIC-Specific NumParts SELF Parameter 1", &mic_numParts_self_p1, 8);
    opts.range("mic_numParts_self_p1", POSITIVE);
@@ -2039,7 +2039,7 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optional("main", "mic_unloadMICPEs", "Indicates whether or not the load balancer should unload PEs driving Xeon Phi cards", &mic_unloadMICPEs, 1);
    opts.range("mic_unloadMICPEs", NOT_NEGATIVE);
    opts.optional("main", "mic_deviceThreshold", "Threshold to use for directing computes to Xeon Phi devices", &mic_deviceThreshold, -1);
-
+   opts.optional("main", "mic_singleKernel", "Set to non-zero to have all MIC work to be placed in a single kernel", &mic_singleKernel, 0);
 }
 
 #ifdef MEM_OPT_VERSION
@@ -3856,13 +3856,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";     
    iout << endi;
 
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
     maxSelfPart = maxPairPart = 1;
-#endif
-#if defined(NAMD_MIC)
-  #if MIC_ENABLE_COMPUTE_PARTITIONING == 0
-    maxSelfPart = maxPairPart = 1;
-  #endif
 #endif
 
    if (ldBalancer == LDBAL_HYBRID) {

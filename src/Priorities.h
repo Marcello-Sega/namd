@@ -65,7 +65,8 @@
 
 
 // MIC Computes
-#define COMPUTE_MIC_PRIORITY (4<<8)
+#define COMPUTE_MIC_PRIORITY__LO  PME_UNTRANS2_PRIORITY
+#define COMPUTE_MIC_PRIORITY__HI  PROXY_DATA_PRIORITY
 
 
 // from here on GB computes use normal compute priorities

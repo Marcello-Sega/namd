@@ -358,20 +358,16 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 #ifdef NAMD_CUDA
         register_cuda_compute_self(i,map->computeData[i].pids[0].pid);
 #elif defined(NAMD_MIC)
-        #if MIC_SPLIT_WITH_HOST != 0
-	  if (map->directToDevice(i) == 0) {
-            c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
-                                         computeNonbondedWorkArrays,
-                                         map->partition(i),map->partition(i)+1,
-                                         map->numPartitions(i)); // unknown delete
-            map->registerCompute(i,c);
-            c->initialize();
-          } else {
-        #endif
-            register_mic_compute_self(i,map->computeData[i].pids[0].pid,map->partition(i),map->numPartitions(i));
-        #if MIC_SPLIT_WITH_HOST != 0
-          }
-        #endif
+        if (map->directToDevice(i) == 0) {
+          c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
+                                       computeNonbondedWorkArrays,
+                                       map->partition(i),map->partition(i)+1,
+                                       map->numPartitions(i)); // unknown delete
+          map->registerCompute(i,c);
+          c->initialize();
+        } else {
+          register_mic_compute_self(i,map->computeData[i].pids[0].pid,map->partition(i),map->numPartitions(i));
+        }
 #else
         c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
                                      computeNonbondedWorkArrays,
@@ -402,20 +398,16 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 #ifdef NAMD_CUDA
         register_cuda_compute_pair(i,pid2,trans2);
 #elif defined(NAMD_MIC)
-        #if MIC_SPLIT_WITH_HOST != 0
-	  if (map->directToDevice(i) == 0) {
-            c = new ComputeNonbondedPair(i,pid2,trans2,
-                                         computeNonbondedWorkArrays,
-                                         map->partition(i),map->partition(i)+1,
-                                         map->numPartitions(i)); // unknown delete
-            map->registerCompute(i,c);
-            c->initialize();
-          } else {
-        #endif
-            register_mic_compute_pair(i,pid2,trans2,map->partition(i),map->numPartitions(i));
-        #if MIC_SPLIT_WITH_HOST != 0
-          }
-        #endif
+        if (map->directToDevice(i) == 0) {
+          c = new ComputeNonbondedPair(i,pid2,trans2,
+                                       computeNonbondedWorkArrays,
+                                       map->partition(i),map->partition(i)+1,
+                                       map->numPartitions(i)); // unknown delete
+          map->registerCompute(i,c);
+          c->initialize();
+        } else {
+          register_mic_compute_pair(i,pid2,trans2,map->partition(i),map->numPartitions(i));
+        }
 #else
         c = new ComputeNonbondedPair(i,pid2,trans2,
                                      computeNonbondedWorkArrays,
@@ -868,51 +860,9 @@ ComputeMgr::createComputes(ComputeMap *map)
     bool deviceIsMine = ( cuda_device_pe() == CkMyPe() );
 #endif
 
-    // If there is a MIC device, then loop through the computes, flagging each one
-    //   to be excuted on either a host or on a device
     #ifdef NAMD_MIC
       bool deviceIsMine = ( mic_device_pe() == CkMyPe() );
-      /*
-      #if MIC_SPLIT_WITH_HOST != 0
-        PatchMap *patchMap = PatchMap::Object();
-        int deviceThreshold = (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) - 2;
-        for (int i = 0; i < map->nComputes; i++) {
-          switch (map->type(i)) {
-
-            case computeNonbondedSelfType:
-              // Direct all non-bonded self computes to the device
-              map->setDirectToDevice(i, 1);
-              break;
-
-            case computeNonbondedPairType:
-              // Direct some non-bonded pair computes to the device, based on the manhattan distance
-              {
-                int pid0 = map->pid(i, 0);
-                int pid1 = map->pid(i, 1);
-                int index_a0 = patchMap->index_a(pid0);
-                int index_b0 = patchMap->index_b(pid0);
-                int index_c0 = patchMap->index_c(pid0);
-                int index_a1 = patchMap->index_a(pid1);
-                int index_b1 = patchMap->index_b(pid1);
-                int index_c1 = patchMap->index_c(pid1);
-                int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1));
-                int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1));
-                int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1));
-                int manDist = da + db + dc;
-                map->setDirectToDevice(i, ((manDist <= deviceThreshold) ? (1) : (0)));
-              }
-              break;
-
-            default:
-              // All other computes should be directed to the host (flag is ignored, but set it)
-              map->setDirectToDevice(i, 0);
-              break;
-
-          } // end switch (map->type(i))
-        } // end for (i < map->nComputes)
-      #endif // MIC_SPLIT_WITH_HOST != 0
-      */
-    #endif // NAMD_MIC
+    #endif
 
     for (int i=0; i < map->nComputes; i++)
     {
@@ -932,29 +882,21 @@ ComputeMgr::createComputes(ComputeMap *map)
 #ifdef NAMD_MIC
 
 	  case computeNonbondedSelfType:
-            #if MIC_SPLIT_WITH_HOST != 0
-              if (map->directToDevice(i)) { // If should be directed to the device...
-            #endif
-                if ( ! deviceIsMine ) continue;
-                if ( ! mic_device_shared_with_pe(map->computeData[i].node) ) continue;
-            #if MIC_SPLIT_WITH_HOST != 0
-              } else { // ... otherwise, direct to host...
-                if (map->computeData[i].node != myNode) { continue; }
-	      }
-            #endif
+            if (map->directToDevice(i) != 0) { // If should be directed to the device...
+              if ( ! deviceIsMine ) continue;
+              if ( ! mic_device_shared_with_pe(map->computeData[i].node) ) continue;
+            } else { // ... otherwise, direct to host...
+              if (map->computeData[i].node != myNode) { continue; }
+            }
             break;
 
 	  case computeNonbondedPairType:
-            #if MIC_SPLIT_WITH_HOST != 0
-              if (map->directToDevice(i)) { // If should be directed to the device...
-            #endif
-                if ( ! deviceIsMine ) continue;
-                if ( ! mic_device_shared_with_pe(map->computeData[i].node) ) continue;
-            #if MIC_SPLIT_WITH_HOST != 0
-              } else { // ... otherwise, direct to host...
-                if (map->computeData[i].node != myNode) { continue; }
-	      }
-            #endif
+            if (map->directToDevice(i)) { // If should be directed to the device...
+              if ( ! deviceIsMine ) continue;
+              if ( ! mic_device_shared_with_pe(map->computeData[i].node) ) continue;
+            } else { // ... otherwise, direct to host...
+              if (map->computeData[i].node != myNode) { continue; }
+            }
             break;
 
 #endif

@@ -1,4 +1,3 @@
-#ifdef NAMD_MIC
 
   #define GATHER_PS_I32_OFFSET(v, p, i, o) \
   { \
@@ -103,41 +102,6 @@
     SCATTER_INC_PS_I32_STEP((v), (p), (i), k3, 15, _MM_SWIZ_REG_BADC) \
   }
 
-  #define INC_EXCL_COUNTS_STEP(v, i, k, p) \
-    t0 = _mm512_mask_loadunpacklo_pd(t0, (k), &(f_0_w[tmpI32[(i)]])); \
-    t1 = _mm512_mask_loadunpacklo_pd(t1, (k), &(f_1_w[tmpJ32[(i)]])); \
-    t0 = _mm512_mask_add_pd(t0, (k), _mm512_swizzle_pd((v), (p)), t0); \
-    t1 = _mm512_mask_add_pd(t1, (k), _mm512_swizzle_pd((v), (p)), t1); \
-    _mm512_mask_packstorelo_pd(&(f_0_w[tmpI32[(i)]]), (k), t0); \
-    _mm512_mask_packstorelo_pd(&(f_1_w[tmpJ32[(i)]]), (k), t1);
-
-  #define INC_EXCL_COUNTS \
-  { \
-    __mmask16 k_lo = _mm512_int2mask(0x02); \
-    __mmask16 k_hi = _mm512_int2mask(0x20); \
-    __m512d t0 = _mm512_setzero_pd(); \
-    __m512d t1 = _mm512_setzero_pd(); \
-    __m512d v_lo = _mm512_mask_mov_pd(_mm512_setzero_pd(), cutoff_mask, _mm512_set_1to8_pd(1.0)); \
-    INC_EXCL_COUNTS_STEP(v_lo,  0, k_lo, _MM_SWIZ_REG_CDAB); \
-    INC_EXCL_COUNTS_STEP(v_lo,  1, k_lo, _MM_SWIZ_REG_DCBA); \
-    INC_EXCL_COUNTS_STEP(v_lo,  2, k_lo, _MM_SWIZ_REG_DACB); \
-    INC_EXCL_COUNTS_STEP(v_lo,  3, k_lo, _MM_SWIZ_REG_BADC); \
-    INC_EXCL_COUNTS_STEP(v_lo,  4, k_hi, _MM_SWIZ_REG_CDAB); \
-    INC_EXCL_COUNTS_STEP(v_lo,  5, k_hi, _MM_SWIZ_REG_DCBA); \
-    INC_EXCL_COUNTS_STEP(v_lo,  6, k_hi, _MM_SWIZ_REG_DACB); \
-    INC_EXCL_COUNTS_STEP(v_lo,  7, k_hi, _MM_SWIZ_REG_BADC); \
-    __m512d v_hi = _mm512_mask_mov_pd(_mm512_setzero_pd(), _mm512_kmerge2l1h(cutoff_mask, _mm512_kxor(cutoff_mask, cutoff_mask)), _mm512_set_1to8_pd(1.0)); \
-    INC_EXCL_COUNTS_STEP(v_hi,  8, k_lo, _MM_SWIZ_REG_CDAB); \
-    INC_EXCL_COUNTS_STEP(v_hi,  9, k_lo, _MM_SWIZ_REG_DCBA); \
-    INC_EXCL_COUNTS_STEP(v_hi, 10, k_lo, _MM_SWIZ_REG_DACB); \
-    INC_EXCL_COUNTS_STEP(v_hi, 11, k_lo, _MM_SWIZ_REG_BADC); \
-    INC_EXCL_COUNTS_STEP(v_hi, 12, k_hi, _MM_SWIZ_REG_CDAB); \
-    INC_EXCL_COUNTS_STEP(v_hi, 13, k_hi, _MM_SWIZ_REG_DCBA); \
-    INC_EXCL_COUNTS_STEP(v_hi, 14, k_hi, _MM_SWIZ_REG_DACB); \
-    INC_EXCL_COUNTS_STEP(v_hi, 15, k_hi, _MM_SWIZ_REG_BADC); \
-  }
-
-
   // DMK - NOTE - The instructions for these macros are they way they are so
   //   values are converted to double before accumulating (e.g. rather than
   //   sum the floats, convert, and then accumulate).
@@ -197,18 +161,6 @@
           FAST(SHORT(          _mm512_mask_packstorelo_pd(    f_1 + tmpJ32[(j_hi)], k_hi,  v_tmp); )) \
           FULL(                _mm512_mask_packstorelo_pd(fullf_1 + tmpJ32[(j_hi)], k_hi, fv_tmp);  ) \
 	}
-
-        // DMK - NOTE : If FAST & SHORT are set, then include the exclusion checksum with them.
-        //   If not, create a macro so that exclusion checksum code can be done separately.
-        #if (0 FAST(SHORT(+1)))
-          #define SEP_EXCL(X)
-        #else
-          #if (MIC_EXCL_CHECKSUM != 0) && (0 MODIFIED(+1) EXCLUDED(+1))
-            #define SEP_EXCL(X) X
-          #else
-            #define SEP_EXCL(X)
-          #endif
-        #endif
 
         #define APPLY_FORCES_PS2PD \
           { \
@@ -296,19 +248,6 @@
           FULL(               fi_xyzw = _mm512_mask_add_pd(fi_xyzw, k_lo, fi_xyzw, fv_xyzw);  ) \
           FAST(SHORT(                   _mm512_mask_packstorelo_pd(    f_0 + iTest_i, k_lo,  i_xyzw); )) \
           FULL(                         _mm512_mask_packstorelo_pd(fullf_0 + iTest_i, k_lo, fi_xyzw);  ) \
-          /* If FAST or SHORT are not defined, then include separate code for doing the exclusion checksum */ \
-          SEP_EXCL( __m512d tmp_w_vec = _mm512_set_1to8_pd(1.0); ) \
-          SEP_EXCL( __mmask16 cutoff_lo = _mm512_kand(cutoff_mask, _mm512_int2mask(0xFF)); ) \
-          SEP_EXCL( __mmask16 cutoff_hi = _mm512_kmerge2l1h(cutoff_mask, _mm512_kxor(cutoff_mask, cutoff_mask)); ) \
-          SEP_EXCL( __m512i jw_lo_vec = _mm512_or_epi32(_mm512_slli_epi32(j_vec, 2), _mm512_set_1to16_epi32(0x3)); ) \
-          SEP_EXCL( __m512i jw_hi_vec = _mm512_permute4f128_epi32(jw_lo_vec, _MM_PERM_BADC); ) \
-          SEP_EXCL( __m512d w_lo_vec = _mm512_mask_i32logather_pd(_mm512_setzero_pd(), cutoff_lo, jw_lo_vec, (double*)f_1, _MM_SCALE_8); ) \
-          SEP_EXCL( __m512d w_hi_vec = _mm512_mask_i32logather_pd(_mm512_setzero_pd(), cutoff_hi, jw_hi_vec, (double*)f_1, _MM_SCALE_8); ) \
-          SEP_EXCL(         w_lo_vec = _mm512_mask_add_pd(w_lo_vec, cutoff_lo, w_lo_vec, tmp_w_vec); ) \
-          SEP_EXCL(         w_hi_vec = _mm512_mask_add_pd(w_hi_vec, cutoff_hi, w_hi_vec, tmp_w_vec); ) \
-          SEP_EXCL(                    _mm512_mask_i32loscatter_pd((double*)f_1, cutoff_lo, jw_lo_vec, w_lo_vec, _MM_SCALE_8); ) \
-          SEP_EXCL(                    _mm512_mask_i32loscatter_pd((double*)f_1, cutoff_hi, jw_hi_vec, w_hi_vec, _MM_SCALE_8); ) \
-          SEP_EXCL( f_0[iTest_i].w += (double)(_mm512_reduce_add_ps(_mm512_mask_mov_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_set_1to16_ps(1.0f)))); ) \
           }
 
       #else // if MIC_HANDCODE_FORC_SOA_VS_AOS != 0
@@ -882,14 +821,6 @@
     // Calculate kqq = p_0_q[i] * p_1_q[j]
     __m512 kqq_vec = _mm512_mask_mul_ps(_mm512_setzero_ps(), cutoff_mask, p_i_q_vec, p_j_q_vec);
 
-    // Count these interactions as part of the exclChecksum (if need be)
-    // NOTE : When using AOS, exclusion counting is built in to APPLY_FORCES_PS2PD
-    #if (MIC_EXCL_CHECKSUM != 0) && (MIC_HANDCODE_FORCE_SOA_VS_AOS == 0)
-      #if (0 MODIFIED(+1) EXCLUDED(+1))
-        INC_EXCL_COUNTS
-      #endif
-    #endif
-
     // Calculate table_i = (r2 >> 46) + r2_delta_expc
     __m512i r2i_vec = _mm512_castps_si512(r2_vec);
     __m512i table_i_vec = _mm512_srli_epi32(r2i_vec, 17);
@@ -978,25 +909,49 @@
            table_four_i_8_vec,  table_four_i_9_vec,  table_four_i_10_vec, table_four_i_11_vec,
            table_four_i_12_vec, table_four_i_13_vec, table_four_i_14_vec, table_four_i_15_vec;
     {
-      #if MIC_HANDCODE_FORCE_USEGATHER_NBTLBL != 0
+      #if MIC_HANDCODE_FORCE_USEGATHER_NBTBL != 0
 
-      __m512i table_four_i_offsets = _mm512_slli_epi32(table_i_vec, 4); // NOTE: table_i * 16 (16 elements per table entry)
-      table_four_i_0_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask,                                                            table_four_i_offsets                             , table_four_base, _MM_SCALE_4);
-      table_four_i_1_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 1)), table_four_base, _MM_SCALE_4);
-      table_four_i_2_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 2)), table_four_base, _MM_SCALE_4);
-      table_four_i_3_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 3)), table_four_base, _MM_SCALE_4);
-      table_four_i_4_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 4)), table_four_base, _MM_SCALE_4);
-      table_four_i_5_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 5)), table_four_base, _MM_SCALE_4);
-      table_four_i_6_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 6)), table_four_base, _MM_SCALE_4);
-      table_four_i_7_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 7)), table_four_base, _MM_SCALE_4);
-      table_four_i_8_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 8)), table_four_base, _MM_SCALE_4);
-      table_four_i_9_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 9)), table_four_base, _MM_SCALE_4);
-      table_four_i_10_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(10)), table_four_base, _MM_SCALE_4);
-      table_four_i_11_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(11)), table_four_base, _MM_SCALE_4);
-      table_four_i_12_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(12)), table_four_base, _MM_SCALE_4);
-      table_four_i_13_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(13)), table_four_base, _MM_SCALE_4);
-      table_four_i_14_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(14)), table_four_base, _MM_SCALE_4);
-      table_four_i_15_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(15)), table_four_base, _MM_SCALE_4);
+        #if 0
+
+          __m512i table_four_i_offsets = _mm512_slli_epi32(table_i_vec, 4); // NOTE: table_i * 16 (16 elements per table entry)
+          table_four_i_0_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask,                                                            table_four_i_offsets                             , table_four_base, _MM_SCALE_4);
+          table_four_i_1_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 1)), table_four_base, _MM_SCALE_4);
+          table_four_i_2_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 2)), table_four_base, _MM_SCALE_4);
+          table_four_i_3_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 3)), table_four_base, _MM_SCALE_4);
+          table_four_i_4_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 4)), table_four_base, _MM_SCALE_4);
+          table_four_i_5_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 5)), table_four_base, _MM_SCALE_4);
+          table_four_i_6_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 6)), table_four_base, _MM_SCALE_4);
+          table_four_i_7_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 7)), table_four_base, _MM_SCALE_4);
+          table_four_i_8_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 8)), table_four_base, _MM_SCALE_4);
+          table_four_i_9_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32( 9)), table_four_base, _MM_SCALE_4);
+          table_four_i_10_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(10)), table_four_base, _MM_SCALE_4);
+          table_four_i_11_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(11)), table_four_base, _MM_SCALE_4);
+          table_four_i_12_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(12)), table_four_base, _MM_SCALE_4);
+          table_four_i_13_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(13)), table_four_base, _MM_SCALE_4);
+          table_four_i_14_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(14)), table_four_base, _MM_SCALE_4);
+          table_four_i_15_vec = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, _mm512_mask_add_epi32(_mm512_setzero_epi32(), cutoff_mask, table_four_i_offsets, _mm512_set_1to16_epi32(15)), table_four_base, _MM_SCALE_4);
+
+        #else
+
+          __m512i table_four_i_offsets = _mm512_slli_epi32(table_i_vec, 4); // NOTE: table_i * 16 (16 elements per table entry)
+          table_four_i_0_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base, _MM_SCALE_4);
+          table_four_i_1_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 1, _MM_SCALE_4);
+          table_four_i_2_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 2, _MM_SCALE_4);
+          table_four_i_3_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 3, _MM_SCALE_4);
+          table_four_i_4_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 4, _MM_SCALE_4);
+          table_four_i_5_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 5, _MM_SCALE_4);
+          table_four_i_6_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 6, _MM_SCALE_4);
+          table_four_i_7_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 7, _MM_SCALE_4);
+          table_four_i_8_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 8, _MM_SCALE_4);
+          table_four_i_9_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 9, _MM_SCALE_4);
+          table_four_i_10_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 10, _MM_SCALE_4);
+          table_four_i_11_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 11, _MM_SCALE_4);
+          table_four_i_12_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 12, _MM_SCALE_4);
+          table_four_i_13_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 13, _MM_SCALE_4);
+          table_four_i_14_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 14, _MM_SCALE_4);
+          table_four_i_15_vec  = _mm512_mask_i32gather_ps(_mm512_setzero_ps(), cutoff_mask, table_four_i_offsets, table_four_base + 15, _MM_SCALE_4);
+
+        #endif
 
       #else
 
@@ -1585,7 +1540,6 @@
   #undef SCATTER_INC_PD_I32
   #undef SCATTER_INC_PS_I32_STEP
   #undef SCATTER_INC_PS_I32
-  #undef INC_EXCL_COUNTS
   #undef CONTRIB_ADD_PS2PD
   #undef CONTRIB_SUB_PS2PD
   #undef APPLY_FORCES_PS2PD_STEP_ADD
@@ -1594,7 +1548,3 @@
   #undef APPLY_FORCES_PS2PD_STEP_SUB_COMBO
   #undef APPLY_FORCES_PS2PD_JSTEP
   #undef APPLY_FORCES_PS2PD
-
-  #undef SEP_EXCL
-
-#endif  // NAMD_MIC

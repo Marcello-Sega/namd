@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2013/11/08 20:28:09 $
- * $Revision: 1.1230 $
+ * $Date: 2013/11/15 22:05:57 $
+ * $Revision: 1.1231 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -869,6 +869,7 @@ public:
         int mic_numParts_pair_p2;
         int mic_unloadMICPEs;
         int mic_deviceThreshold;
+        int mic_singleKernel;
 
 public:
 

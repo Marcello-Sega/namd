@@ -1,4 +1,3 @@
-#ifdef NAMD_MIC
 
 { // Start a block so variables can be declared outsude the force loop
 
@@ -211,10 +210,3 @@
   #endif
 
 } // End block
-
-#else
-
-#include "ComputeNonbondedMICKernelBase2_handcode_single.h"
-#include "ComputeNonbondedMICKernelBase2_scalar.h"
-
-#endif  // NAMD_MIC

@@ -1,3 +1,6 @@
+// This file only used for builds with Xeon Phi (MIC) support
+#ifdef NAMD_MIC
+
 
 #include "common.h"
 #include "charm++.h"
@@ -14,10 +17,9 @@
 
 #include "NamdTypes.h"
 
-// This file only used for builds with Xeon Phi (MIC) support
-#ifdef NAMD_MIC
-
 #include <offload.h>
+#include <queue>
+#include <assert.h>
 
 
 //#define PRINT_GBIS
@@ -30,8 +32,8 @@
 
 // Declare (extern) the structures that will be used for holding kernel-specific data since
 //   virial data is located within that data structure (read below).
-extern __thread mic_kernel_data *host__remote_kernel_data;
-extern __thread mic_kernel_data *host__local_kernel_data;
+extern __thread mic_kernel_data * host__kernel_data;
+extern __thread int singleKernelFlag;
 
 // TRACING - Declare (extern) the buffers that hold the timing data passed back from the device
 #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
@@ -125,10 +127,6 @@ void mic_initialize() {
   if ( 0 == CkMyPe() ) {
     MIC_TRACING_REGISTER_EVENTS
   }
-
-  #if MIC_DEBUG > 0
-    debugInit(NULL);
-  #endif
 
   // Get the host name for this node
   char host[128];
@@ -237,7 +235,7 @@ void mic_initialize() {
           int thisPe = pesOnPhysicalNode[i];
           pesSharingDevice[numPesSharingDevice++] = thisPe;
           if ( devicePe < 1 ) devicePe = thisPe;
-          if ( WorkDistrib::pe_sortop_diffuse()(thisPe,devicePe) ) devicePe = thisPe;
+          if ( sortop_bitreverse(thisPe,devicePe) ) devicePe = thisPe;
         }
       }
       for ( int j = 0; j < ndevices; ++j ) {
@@ -649,13 +647,11 @@ void register_mic_compute_self(ComputeID c, PatchID pid, int part, int numParts)
   //   associated with the given self compute
   micCompute->requirePatch(pid);
 
-  #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
-    //numParts = MIC_SPECIFIC_COMPUTE_PARTITIONING__SELF_P1;
-    SimParameters *params = Node::Object()->simParameters;
-    numParts = params->mic_numParts_self_p1;
-    if (numParts < 1) { numParts = 1; }
-    for (int part = 0; part < numParts; part++) {
-  #endif
+  SimParameters *params = Node::Object()->simParameters;
+
+  numParts = params->mic_numParts_self_p1;
+  if (numParts < 1) { numParts = 1; }
+  for (int part = 0; part < numParts; part++) {
 
     // Create a compute record within the mic compute that represents
     //   the given self compute
@@ -665,24 +661,16 @@ void register_mic_compute_self(ComputeID c, PatchID pid, int part, int numParts)
     cr.offset = 0.;
     cr.isSelf = 1;
  
-    #if (MIC_ENABLE_COMPUTE_PARTITIONING != 0) || (MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0)
-      cr.part = part;
-      cr.numParts = numParts;
-    #endif 
+    cr.part = part;
+    cr.numParts = numParts;
 
-    #if MIC_MULTIPLE_KERNELS != 0
-      if (micCompute->patchRecords[pid].isLocal) {
-    #endif
-        micCompute->localComputeRecords.add(cr);
-    #if MIC_MULTIPLE_KERNELS != 0
-      } else {
-        micCompute->remoteComputeRecords.add(cr);
-      }
-    #endif
-
-  #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
+    if (singleKernelFlag != 0 || micCompute->patchRecords[pid].isLocal) {
+      micCompute->localComputeRecords.add(cr);
+    } else {
+      micCompute->remoteComputeRecords.add(cr);
     }
-  #endif
+
+  }
 }
 
 void register_mic_compute_pair(ComputeID c, PatchID pid[], int t[], int part, int numParts) {
@@ -707,70 +695,55 @@ void register_mic_compute_pair(ComputeID c, PatchID pid[], int t[], int part, in
   offset.y += ((t1/3)%3-1) - ((t2/3)%3-1);
   offset.z += (t1/9-1) - (t2/9-1);
 
-  #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
+  // Calculate the Manhattan distance between the patches and use that to determine how
+  //   many parts the pair compute should be broken up into
+  ComputeMap *computeMap = ComputeMap::Object();
+  PatchMap *patchMap = PatchMap::Object();
+  SimParameters *params = Node::Object()->simParameters;
 
-    // Calculate the Manhattan distance between the patches and use that to determine how
-    //   many parts the pair compute should be broken up into
-    ComputeMap *computeMap = ComputeMap::Object();
-    PatchMap *patchMap = PatchMap::Object();
-    int aSize = patchMap->gridsize_a();
-    int bSize = patchMap->gridsize_b();
-    int cSize = patchMap->gridsize_c();
-    int trans0 = computeMap->trans(c, 0);
-    int trans1 = computeMap->trans(c, 1);
-    int index_a0 = patchMap->index_a(pid[0]) + aSize * Lattice::offset_a(trans0);
-    int index_b0 = patchMap->index_b(pid[0]) + bSize * Lattice::offset_b(trans0);
-    int index_c0 = patchMap->index_c(pid[0]) + cSize * Lattice::offset_c(trans0);
-    int index_a1 = patchMap->index_a(pid[1]) + aSize * Lattice::offset_a(trans1);
-    int index_b1 = patchMap->index_b(pid[1]) + bSize * Lattice::offset_b(trans1);
-    int index_c1 = patchMap->index_c(pid[1]) + cSize * Lattice::offset_c(trans1);
-    int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1));
-    int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1));
-    int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1));
-    int manDist = da + db + dc;
+  int aSize = patchMap->gridsize_a();
+  int bSize = patchMap->gridsize_b();
+  int cSize = patchMap->gridsize_c();
+  int trans0 = computeMap->trans(c, 0);
+  int trans1 = computeMap->trans(c, 1);
+  int index_a0 = patchMap->index_a(pid[0]) + aSize * Lattice::offset_a(trans0);
+  int index_b0 = patchMap->index_b(pid[0]) + bSize * Lattice::offset_b(trans0);
+  int index_c0 = patchMap->index_c(pid[0]) + cSize * Lattice::offset_c(trans0);
+  int index_a1 = patchMap->index_a(pid[1]) + aSize * Lattice::offset_a(trans1);
+  int index_b1 = patchMap->index_b(pid[1]) + bSize * Lattice::offset_b(trans1);
+  int index_c1 = patchMap->index_c(pid[1]) + cSize * Lattice::offset_c(trans1);
+  int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1));
+  int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1));
+  int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1));
+  int manDist = da + db + dc;
 
-    // Create each part
-    //numParts = MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P1 - (MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P2 * manDist);
-    SimParameters *params = Node::Object()->simParameters;
-    numParts = params->mic_numParts_pair_p1 - (params->mic_numParts_pair_p2 * manDist);
-    if (numParts < 1) { numParts = 1; }
-    for (int part = 0; part < numParts; part++) {
+  // Create each part
+  numParts = params->mic_numParts_pair_p1 - (params->mic_numParts_pair_p2 * manDist);
+  if (numParts < 1) { numParts = 1; }
+  for (int part = 0; part < numParts; part++) {
 
-  #endif // MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
+    // Create a compute record within the mic compute that represents
+    //   the given pair compute
+    ComputeNonbondedMIC::compute_record cr;
+    cr.c = c;
+    cr.pid[0] = pid[0];  cr.pid[1] = pid[1];
+    cr.offset = offset;
+    cr.isSelf = 0;
 
-      // Create a compute record within the mic compute that represents
-      //   the given pair compute
-      ComputeNonbondedMIC::compute_record cr;
-      cr.c = c;
-      cr.pid[0] = pid[0];  cr.pid[1] = pid[1];
-      cr.offset = offset;
+    cr.part = part;
+    cr.numParts = numParts;
 
-      // If partitioning the pair computes, include the 'part' indexing info
-      #if (MIC_ENABLE_COMPUTE_PARTITIONING != 0) || (MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0)
-        cr.part = part;
-        cr.numParts = numParts;
-      #endif
+    // If splitting the kernels up into "local" and "remote" kernels, place the pair compute in
+    //   the "remote" kernel if either of the patches is "remote"... otherwise, mark as "local"
+    if ((singleKernelFlag != 0) ||
+        (micCompute->patchRecords[pid[0]].isLocal && micCompute->patchRecords[pid[1]].isLocal)
+       ) {
+      micCompute->localComputeRecords.add(cr);
+    } else {
+      micCompute->remoteComputeRecords.add(cr);
+    }
 
-      // Mark as 'not a self compute' (i.e. is a pair)
-      cr.isSelf = 0;
-
-      // If splitting the kernels up into "local" and "remote" kernels, place the pair compute in
-      //   the "remote" kernel if either of the patches is "remote"... otherwise, mark as "local"
-      #if MIC_MULTIPLE_KERNELS != 0
-        if (micCompute->patchRecords[pid[0]].isLocal &&
-            micCompute->patchRecords[pid[1]].isLocal
-           ) {
-      #endif
-          micCompute->localComputeRecords.add(cr);
-      #if MIC_MULTIPLE_KERNELS != 0
-        } else {
-          micCompute->remoteComputeRecords.add(cr);
-        }
-      #endif
-
-  #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
-    }  // end for (part < numParts)
-  #endif
+  }  // end for (part < numParts)
 }
 
 
@@ -829,11 +802,16 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
   if (params->pressureProfileOn) {
     NAMD_die("pressure profile not supported in MIC");
   }
+  singleKernelFlag = ((params->mic_singleKernel) ? (1) : (0));
 
   atomsChanged = 1;
   computesChanged = 1;
   workStarted = 0;
-  basePriority = PROXY_DATA_PRIORITY;
+  if (CkNumPes() < 4) {
+    basePriority = COMPUTE_MIC_PRIORITY__HI; //PROXY_DATA_PRIORITY;
+  } else {
+    basePriority = COMPUTE_MIC_PRIORITY__LO; //PROXY_DATA_PRIORITY;
+  }
   localWorkMsg2 = new (PRIORITY_SIZE) LocalWorkMsg;
 
   // Master and slaves
@@ -851,6 +829,7 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
     printf("Info: MIC NUMPARTS PAIR P1: %d\n", params->mic_numParts_pair_p1);
     printf("Info: MIC NUMPARTS PAIR P2: %d\n", params->mic_numParts_pair_p2);
     printf("Info: MIC UNLOAD MIC PEs: %d\n", params->mic_unloadMICPEs);
+    printf("Info: MIC NUM KERNELS: %d\n", (singleKernelFlag != 0) ? (1) : (2));
   }
 
   if ( master != this ) { // I am slave
@@ -895,24 +874,17 @@ void ComputeNonbondedMIC::requirePatch(int pid) {
   computesChanged = 1;
   patch_record &pr = patchRecords.item(pid);
   if ( pr.refCount == 0 ) {
-    //if ( mergegrids ) {
-    //  pr.isLocal = 0;
-    //} else if ( CkNumNodes() < 2 ) {
-    //  pr.isLocal = 1; //1 & ( 1 ^ patchMap->index_a(pid) ^ patchMap->index_b(pid) ^ patchMap->index_c(pid) );
+    //if ( CkNumNodes() < 2 ) {
+    //  pr.isLocal = 1 & ( 1 ^ patchMap->index_a(pid) ^ patchMap->index_b(pid) ^ patchMap->index_c(pid) );
     //} else {
-    //  pr.isLocal = 1; //( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
+      pr.isLocal = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
     //}
-    pr.isLocal = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
 
-    #if MIC_MULTIPLE_KERNELS != 0
-      if ( pr.isLocal ) {
-    #endif
-        localActivePatches.add(pid);
-    #if MIC_MULTIPLE_KERNELS != 0
-      } else {
-        remoteActivePatches.add(pid);
-      }
-    #endif
+    if ( singleKernelFlag != 0 || pr.isLocal ) {
+      localActivePatches.add(pid);
+    } else {
+      remoteActivePatches.add(pid);
+    }
 
     activePatches.add(pid);
     pr.patchID = pid;
@@ -945,15 +917,11 @@ void ComputeNonbondedMIC::registerPatches() {
 
       hostedPatches.add(pid);
 
-      #if MIC_MULTIPLE_KERNELS != 0
-        if ( pr.isLocal ) {
-      #endif
-          localHostedPatches.add(pid);
-      #if MIC_MULTIPLE_KERNELS != 0
-        } else {
-          remoteHostedPatches.add(pid);
-        }
-      #endif
+      if ( singleKernelFlag != 0 || pr.isLocal ) {
+        localHostedPatches.add(pid);
+      } else {
+        remoteHostedPatches.add(pid);
+      }
 
       ProxyMgr::Object()->createProxy(pid);
       pr.p = patchMap->patch(pid);
@@ -1175,14 +1143,29 @@ void mic_check_remote_progress(void *arg, double) {
   // If the offloaded work is finished, trigger finishWork()
   if (mic_check_remote_kernel_complete(myDevice)) {
 
-    ((ComputeNonbondedMIC*)arg)->messageFinishWork();
-    #if MIC_TRACING != 0
-      double now = CmiWallTimer();
-      mic_tracing_offload_end_remote = now;
-      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_REMOTE, mic_tracing_offload_start_remote, now);
-      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, now);
-      mic_tracing_polling_count = 0;
+    ComputeNonbondedMIC* compute = (ComputeNonbondedMIC*)arg;
+    #if MIC_SYNC_OUTPUT != 0
+      #if MIC_TRACING != 0
+        double xfer_start = CmiWallTimer();
+      #endif
+      mic_transfer_output(myDevice,
+                          1,
+                          compute->num_local_atom_records,
+                          compute->doSlow
+                         );
+      #if MIC_TRACING != 0
+        double xfer_end = CmiWallTimer();
+        MIC_TRACING_RECORD(MIC_EVENT_SYNC_OUTPUT_REMOTE_PRAGMA, xfer_start, xfer_end);
+      #endif
     #endif
+    compute->messageFinishWork();
+    //#if MIC_TRACING != 0
+    //  double now = CmiWallTimer();
+    //  mic_tracing_offload_end_remote = now;
+    //  MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_REMOTE, mic_tracing_offload_start_remote, now);
+    //  MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, now);
+    //  mic_tracing_polling_count = 0;
+    //#endif
     check_remote_count = 0;
 
     // DMK - DEBUG
@@ -1202,14 +1185,14 @@ void mic_check_remote_progress(void *arg, double) {
   // Otherwise, queue another poll attempt in the future to try again later
   } else {
 
-    #if MIC_TRACING != 0
-      if (++mic_tracing_polling_count > MIC_TRACING_POLLING_SET_FREQ) {
-        double now = CmiWallTimer();
-        MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, now);
-        mic_tracing_polling_start = now;
-        mic_tracing_polling_count = 0;
-      }
-    #endif
+    //#if MIC_TRACING != 0
+    //  if (++mic_tracing_polling_count > MIC_TRACING_POLLING_SET_FREQ) {
+    //    double now = CmiWallTimer();
+    //    MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, now);
+    //    mic_tracing_polling_start = now;
+    //    mic_tracing_polling_count = 0;
+    //  }
+    //#endif
     MIC_POLL(mic_check_remote_progress, arg);
   }
 }
@@ -1219,14 +1202,29 @@ void mic_check_local_progress(void *arg, double) {
   // If the offloaded work is finished, trigger finishWork()
   if (mic_check_local_kernel_complete(myDevice)) {
 
-    ((ComputeNonbondedMIC*)arg)->messageFinishWork();
-    #if MIC_TRACING != 0
-      double now = CmiWallTimer();
-      mic_tracing_offload_end_local = now;
-      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_LOCAL, mic_tracing_offload_start_local, now);
-      MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, now);
-      mic_tracing_polling_count = 0;
+    ComputeNonbondedMIC* compute = (ComputeNonbondedMIC*)arg;
+    #if MIC_SYNC_OUTPUT != 0
+      #if MIC_TRACING != 0
+        double xfer_start = CmiWallTimer();
+      #endif
+      mic_transfer_output(myDevice,
+                          0,
+                          compute->num_local_atom_records,
+                          compute->doSlow
+                         );
+      #if MIC_TRACING != 0
+        double xfer_end = CmiWallTimer();
+        MIC_TRACING_RECORD(MIC_EVENT_SYNC_OUTPUT_LOCAL_PRAGMA, xfer_start, xfer_end);
+      #endif
     #endif
+    compute->messageFinishWork();
+    //#if MIC_TRACING != 0
+    //  double now = CmiWallTimer();
+    //  mic_tracing_offload_end_local = now;
+    //  MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_LOCAL, mic_tracing_offload_start_local, now);
+    //  MIC_TRACING_RECORD(MIC_EVENT_OFFLOAD_POLLSET, mic_tracing_polling_start, now);
+    //  mic_tracing_polling_count = 0;
+    //#endif
     check_local_count = 0;
 
     // DMK - DEBUG
@@ -1448,12 +1446,23 @@ void ComputeNonbondedMIC::patchReady(PatchID patchID, int doneMigration, int seq
 
 int ComputeNonbondedMIC::noWork() {
 
+  //// DMK - DEBUG
+  //if (hostedPatches.size() <= 0) {
+  //  printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 1.0 - hostPatches.size():%d, master->activePatches.size():%d\n",
+  //         CkMyPe(), hostedPatches.size(), master->activePatches.size()
+  //        ); fflush(NULL);
+  //}
+
   SimParameters *simParams = Node::Object()->simParameters;
+
   Flags &flags = master->patchRecords[hostedPatches[0]].p->flags;
   lattice = flags.lattice;
   doSlow = flags.doFullElectrostatics;
   doEnergy = flags.doEnergy;
   step = flags.step;
+
+  //// DMK - DEBUG
+  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 2.0\n", CkMyPe()); fflush(NULL);
 
   // Wait for pending input buffers here
   // DMK - NOTE | TODO : For now this is blocking, but setup polling at some point.  May be possible to
@@ -1510,6 +1519,9 @@ int ComputeNonbondedMIC::noWork() {
     return 1;
   }
 
+  //// DMK - DEBUG
+  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 3.0\n", CkMyPe()); fflush(NULL);
+
   for ( int i=0; i<hostedPatches.size(); ++i ) {
     patch_record &pr = master->patchRecords[hostedPatches[i]];
     if (!simParams->GBISOn || gbisPhase == 1) {
@@ -1538,7 +1550,13 @@ int ComputeNonbondedMIC::noWork() {
     //}
   }
 
+  //// DMK - DEBUG
+  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 4.0\n", CkMyPe()); fflush(NULL);
+
   if ( master == this ) return 0; //work to do, enqueue as usual
+
+  //// DMK - DEBUG
+  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 5.0\n", CkMyPe()); fflush(NULL);
 
   // message masterPe
   computeMgr->sendNonbondedMICSlaveReady(masterPe,
@@ -1547,12 +1565,11 @@ int ComputeNonbondedMIC::noWork() {
                                          sequence()
                                         );
 
-  #if MIC_MULTIPLE_KERNELS != 0
-    workStarted = 1;
-  #else
-    workStarted = 2;
-  #endif
-  basePriority = COMPUTE_PROXY_PRIORITY;
+  workStarted = ((singleKernelFlag != 0) ? (2) : (1));
+  //basePriority = COMPUTE_MIC_PRIORITY; //COMPUTE_PROXY_PRIORITY;
+
+  //// DMK - DEBUG
+  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 6.0\n", CkMyPe()); fflush(NULL);
 
   return 1;
 }
@@ -1562,10 +1579,13 @@ void ComputeNonbondedMIC::doWork() {
   GBISP("C.N.MIC[%d]::doWork: seq %d, phase %d, workStarted %d\n", \
         CkMyPe(), sequence(), gbisPhase, workStarted);
 
+  //// DMK - DEBUG
+  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 1.0\n", CkMyPe()); fflush(NULL);
+
   if ( workStarted ) { //if work already started, check if finished
     if ( finishWork() ) {  // finished
       workStarted = 0;
-      basePriority = PROXY_DATA_PRIORITY;  // higher to aid overlap
+      //basePriority = COMPUTE_MIC_PRIORITY; //PROXY_DATA_PRIORITY;  // higher to aid overlap
 
       // DMK - DEBUG
       timestep++;
@@ -1574,35 +1594,37 @@ void ComputeNonbondedMIC::doWork() {
 
       workStarted = 2;
       //basePriority = PROXY_RESULTS_PRIORITY;  // lower for local
-      basePriority = PROXY_DATA_PRIORITY;  // lower for local
+      //basePriority = COMPUTE_MIC_PRIORITY; //PROXY_DATA_PRIORITY;  // lower for local
       if ( master == this && kernel_launch_state > 2 ) {
-        #if MIC_TRACING != 0
-          mic_tracing_polling_start = CmiWallTimer();
-          mic_tracing_polling_count = 0;
-        #endif
+        //#if MIC_TRACING != 0
+        //  mic_tracing_polling_start = CmiWallTimer();
+        //  mic_tracing_polling_count = 0;
+        //#endif
         mic_check_local_progress(this,0.);  // launches polling
       }
     }
     return;
   }
 
-  #if MIC_TRACING != 0
-    double doWork_start = CmiWallTimer();
-  #endif
+  //#if MIC_TRACING != 0
+  //  double doWork_start = CmiWallTimer();
+  //#endif
 
-  #if MIC_MULTIPLE_KERNELS != 0
-    workStarted = 1;
-  #else
-    workStarted = 2;
-  #endif
-  basePriority = COMPUTE_MIC_PRIORITY; //COMPUTE_PROXY_PRIORITY;
+  workStarted = ((singleKernelFlag != 0) ? (2) : (1));
+  //basePriority = COMPUTE_MIC_PRIORITY; //COMPUTE_PROXY_PRIORITY;
 
   Molecule *mol = Node::Object()->molecule;
   Parameters *params = Node::Object()->parameters;
   SimParameters *simParams = Node::Object()->simParameters;
 
+  //// DMK - DEBUG
+  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 2.0\n", CkMyPe()); fflush(NULL);
+
   //execute only during GBIS phase 1, or if not using GBIS
   if (!simParams->GBISOn || gbisPhase == 1) {
+
+    //// DMK - DEBUG
+    //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 2.1\n", CkMyPe()); fflush(NULL);
 
     // bind new patches to device
     if ( atomsChanged || computesChanged ) {
@@ -1845,10 +1867,8 @@ void ComputeNonbondedMIC::doWork() {
           patchRecords[p2].p->flags.pairlistTolerance;
 
         // Record the parts
-        #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
-          pp.numParts = cr.numParts;
-          pp.part = cr.part;
-        #endif
+        pp.numParts = cr.numParts;
+        pp.part = cr.part;
 
         // Record the patch centers
         Vector p1_center = micCompute->patchMap->center(p1);
@@ -1899,6 +1919,9 @@ void ComputeNonbondedMIC::doWork() {
       mic_bind_force_buffers_only(myDevice, num_force_records);
 
     } // atomsChanged || computesChanged
+
+    //// DMK - DEBUG
+    //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 2.2\n", CkMyPe()); fflush(NULL);
 
     double charge_scaling = sqrt(COULOMB * scaling * dielectric_1);
 
@@ -1983,6 +2006,9 @@ void ComputeNonbondedMIC::doWork() {
     //  maxAtomMovement, maxPatchTolerance,
     //  flags.savePairlists, flags.usePairlists);
 
+    //// DMK - DEBUG
+    //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 2.3\n", CkMyPe()); fflush(NULL);
+
     savePairlists = 0;
     usePairlists = 0;
     if ( flags.savePairlists ) {
@@ -2011,6 +2037,9 @@ void ComputeNonbondedMIC::doWork() {
     //  plcutoff, pairlistTolerance, savePairlists, usePairlists);
 
   } // !GBISOn || gbisPhase == 1
+
+  //// DMK - DEBUG
+  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 3.0\n", CkMyPe()); fflush(NULL);
 
   //// Do GBIS
   //if (simParams->GBISOn) {
@@ -2045,16 +2074,12 @@ void ComputeNonbondedMIC::doWork() {
   //  } // end for patches
   //} // if GBISOn
 
-  #if MIC_TRACING != 0
-    MIC_TRACING_RECORD(MIC_EVENT_FUNC_DOWORK, doWork_start, CmiWallTimer());
-  #endif
+  //#if MIC_TRACING != 0
+  //  MIC_TRACING_RECORD(MIC_EVENT_FUNC_DOWORK, doWork_start, CmiWallTimer());
+  //#endif
 
   kernel_time = CkWallTimer();
-  #if MIC_MULTIPLE_KERNELS != 0
-    kernel_launch_state = 1;
-  #else
-    kernel_launch_state = 2;
-  #endif
+  kernel_launch_state = ((singleKernelFlag != 0) ? (2) : (1));
   if ( mic_is_mine ) recvYieldDevice(-1);
 }
 
@@ -2098,48 +2123,44 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
     // Remote
     case 1:
 
-      #if MIC_MULTIPLE_KERNELS != 0
+      GBISP("C.N.MIC[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
+      ++kernel_launch_state;
+      mic_is_mine = 0;
+      remote_submit_time = CkWallTimer();
 
-        GBISP("C.N.MIC[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
-        ++kernel_launch_state;
-        mic_is_mine = 0;
-        remote_submit_time = CkWallTimer();
+      if (!simParams->GBISOn || gbisPhase == 1) {
 
-        if (!simParams->GBISOn || gbisPhase == 1) {
-
-          // DMK - NOTE : GBIS is not supported in this port yet, so cause a runtime error
-          //   if it has been enabled and execution has made it this far.
-          if (simParams->GBISOn) {
-            NAMD_die("Unsupported feature (DMK33949330)");
-          }
-
-          #if MIC_TRACING != 0
-            mic_tracing_offload_start_remote = CmiWallTimer();
-          #endif
-
-          // Issue the remote kernel
-          mic_nonbonded_forces(myDevice, 1,
-                               num_local_atom_records,
-                               num_local_compute_records,
-                               num_local_patch_records,
-                               lata, latb, latc,
-                               doSlow, doEnergy,
-                               usePairlists, savePairlists,
-                               atomsChanged
-                              );
-          #if (MIC_MULTIPLE_KERNELS != 0) && (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
-     	    mic_first_kernel_submit_time = CmiWallTimer();
-          #endif
-
-          // Start the polling check for the completion of the remote kernel
-          #if MIC_TRACING != 0
-            mic_tracing_polling_start = CmiWallTimer();
-            mic_tracing_polling_count = 0;
-          #endif
-          MIC_POLL(mic_check_remote_progress, this);
+        // DMK - NOTE : GBIS is not supported in this port yet, so cause a runtime error
+        //   if it has been enabled and execution has made it this far.
+        if (simParams->GBISOn) {
+          NAMD_die("Unsupported feature (DMK33949330)");
         }
 
-      #endif
+        //#if MIC_TRACING != 0
+        //  mic_tracing_offload_start_remote = CmiWallTimer();
+        //#endif
+
+        // Issue the remote kernel
+        mic_nonbonded_forces(myDevice, 1,
+                             num_local_atom_records,
+                             num_local_compute_records,
+                             num_local_patch_records,
+                             lata, latb, latc,
+                             doSlow, doEnergy,
+                             usePairlists, savePairlists,
+                             atomsChanged
+                            );
+        #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
+          mic_first_kernel_submit_time = CmiWallTimer();
+        #endif
+
+	// Start the polling check for the completion of the remote kernel
+        //#if MIC_TRACING != 0
+        //  mic_tracing_polling_start = CmiWallTimer();
+        //  mic_tracing_polling_count = 0;
+        //#endif
+        MIC_POLL(mic_check_remote_progress, this);
+      }
 
       // NOTE : Fall through to next case (i.e. break not missing)
 
@@ -2163,9 +2184,9 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
         //   take the local time now
         local_submit_time = CkWallTimer();
 
-        #if MIC_TRACING != 0
-          mic_tracing_offload_start_local = CmiWallTimer();
-        #endif
+        //#if MIC_TRACING != 0
+        //  mic_tracing_offload_start_local = CmiWallTimer();
+        //#endif
 
         // Issue the local kernel
         mic_nonbonded_forces(myDevice, 0,
@@ -2178,16 +2199,16 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
                              atomsChanged
                             );
 
-        #if (MIC_MULTIPLE_KERNELS == 0) && (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
-          mic_first_kernel_submit_time = CmiWallTimer();
+        #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
+          if (singleKernelFlag) { mic_first_kernel_submit_time = CmiWallTimer(); }
         #endif
 
         if ( workStarted == 2 ) {
           // Start the polling check for the completion of the local kernel
-          #if MIC_TRACING != 0
-            mic_tracing_polling_start = CmiWallTimer();
-            mic_tracing_polling_count = 0;
-          #endif
+          //#if MIC_TRACING != 0
+          //  mic_tracing_polling_start = CmiWallTimer();
+          //  mic_tracing_polling_count = 0;
+          //#endif
           MIC_POLL(mic_check_local_progress, this);
         }
 
@@ -2223,9 +2244,9 @@ void ComputeNonbondedMIC::messageFinishWork() {
 //dtanner
 int ComputeNonbondedMIC::finishWork() {
 
-  #if MIC_TRACING != 0
-    double finishWork_start = CmiWallTimer();
-  #endif
+  //#if MIC_TRACING != 0
+  //  double finishWork_start = CmiWallTimer();
+  //#endif
 
   GBISP("C.N.MIC[%d]::fnWork: workStarted %d, phase %d\n", \
   CkMyPe(), workStarted, gbisPhase)
@@ -2233,13 +2254,10 @@ int ComputeNonbondedMIC::finishWork() {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
 
-  #if MIC_MULTIPLE_KERNELS != 0
-    ResizeArray<int> &patches( workStarted == 1 ? remoteHostedPatches : localHostedPatches );
-    mic_kernel_data* &kernel_data = (workStarted == 1) ? (host__remote_kernel_data) : (host__local_kernel_data);
-  #else
-    ResizeArray<int> &patches( localHostedPatches );
-    mic_kernel_data* &kernel_data = host__local_kernel_data;
-  #endif
+  ResizeArray<int> &patches( workStarted == 1 ? remoteHostedPatches : localHostedPatches );
+  mic_kernel_data * host__local_kernel_data = host__kernel_data;
+  mic_kernel_data * host__remote_kernel_data = host__kernel_data + 1;
+  mic_kernel_data* &kernel_data = (workStarted == 1) ? (host__remote_kernel_data) : (host__local_kernel_data);
 
   // DMK - NOTE : Open the force boxes for the patches so forces can be contributed
   if ( !simParams->GBISOn || gbisPhase == 1 ) {
@@ -2321,36 +2339,6 @@ int ComputeNonbondedMIC::finishWork() {
 
       #endif
 
-      // Verify exclusion counts on 1 PE (reported as force's 'w' value)
-      #if MIC_EXCL_CHECKSUM != 0
-        if ( CkNumPes() == 1 ) {
-          for (int k = 0; k < nAtoms; ++k) {
-            int j = aExt[k].sortOrder;
-            #ifdef MEM_OPT_VERSION
-              int excl_expected = mol->exclSigPool[aExt[j].exclId].fullExclCnt; // DMK : Don't count self? + 1;
-              excl_expected += mol->exclSigPool[aExt[j].exclId].modExclCnt; // DMK : and count modified
-            #else
-              int excl_expected = mol->get_full_exclusions_for_atom(aExt[j].id)[0]; // DMK : Don't count self? + 1;
-              excl_expected += mol->get_mod_exclusions_for_atom(aExt[j].id)[0]; // DMK : and count modified
-            #endif
-            #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-              int excl_actual = (int)(af[k].w);
-            #else
-              int excl_actual = (int)(af_w[k]);
-            #endif
-            if (excl_actual != excl_expected) {
-              static int __limit = 20;
-              static int __count = 0;
-              if (++__count <= __limit) {
-                CkPrintf("%d:%d(%d) atom %d found %d exclusions but expected %d\n",
-                         i, j, k, aExt[j].id, excl_actual, excl_expected );
-                if (__count == __limit) { CkPrintf("  Limit reached (not printing remaining exclusion check failures).\n"); }
-              }
-            } // end if excl check fail
-          } // end for (j < nAtoms)
-	} // end if ( CkNumPes() == 1 )
-      #endif  // MIC_EXCL_CHECKSUM != 0
-
     } // !GBISOn || gbisPhase == 3
 
     #if 0
@@ -2424,7 +2412,7 @@ int ComputeNonbondedMIC::finishWork() {
     double vdwEnergy = host__local_kernel_data->vdwEnergy;
     double electEnergy = host__local_kernel_data->electEnergy;
     double fullElectEnergy = host__local_kernel_data->fullElectEnergy;
-    #if MIC_MULTIPLE_KERNELS != 0
+    if (singleKernelFlag == 0) {
       virial_xx += host__remote_kernel_data->virial_xx;
       virial_xy += host__remote_kernel_data->virial_xy;
       virial_xz += host__remote_kernel_data->virial_xz;
@@ -2440,7 +2428,7 @@ int ComputeNonbondedMIC::finishWork() {
       vdwEnergy += host__remote_kernel_data->vdwEnergy;
       electEnergy += host__remote_kernel_data->electEnergy;
       fullElectEnergy += host__remote_kernel_data->fullElectEnergy;
-    #endif
+    }
 
     // DMK - NOTE : Contribute virial
     Tensor virial_tensor;
@@ -2477,10 +2465,7 @@ int ComputeNonbondedMIC::finishWork() {
     // Contribute to the exclusion checksum
     #if MIC_EXCL_CHECKSUM_FULL != 0
       int exclusionSum = host__local_kernel_data->exclusionSum;
-      #if MIC_MULTIPLE_KERNELS != 0
-        exclusionSum += host__remote_kernel_data->exclusionSum;
-      #endif
-
+      if (singleKernelFlag == 0) { exclusionSum += host__remote_kernel_data->exclusionSum; }
       reduction->item(REDUCTION_EXCLUSION_CHECKSUM) += exclusionSum;
     #endif
 
@@ -2488,6 +2473,8 @@ int ComputeNonbondedMIC::finishWork() {
     //   performance data from the MIC device in Projections output
     #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
     {
+      double timeBase = host__device_times_start[((singleKernelFlag) ? (1) : (0))];
+
       #if MIC_DEVICE_TRACING_DETAILED != 0
 
         // Create compute user events
@@ -2520,13 +2507,8 @@ int ComputeNonbondedMIC::finishWork() {
           // Retrieve the start and end times for the "compute's task"
           double ueStart = host__device_times_computes[i * 2];
           double ueEnd = host__device_times_computes[i * 2 + 1];
-          #if MIC_MULTIPLE_KERNELS != 0
-            ueStart += mic_first_kernel_submit_time - host__device_times_start[0];
-            ueEnd += mic_first_kernel_submit_time - host__device_times_start[0];
-          #else
-            ueStart += mic_first_kernel_submit_time - host__device_times_start[1];
-            ueEnd += mic_first_kernel_submit_time - host__device_times_start[1];
-          #endif
+          ueStart += mic_first_kernel_submit_time - timeBase;
+          ueEnd += mic_first_kernel_submit_time - timeBase;
 
           if (dist > 7) { dist = 7; }  // NOTE: Make sure that the distance is put in the "7+" category if it is >7
           traceUserBracketEvent(MIC_EVENT_DEVICE_COMPUTE + dist, ueStart, ueEnd);
@@ -2536,13 +2518,8 @@ int ComputeNonbondedMIC::finishWork() {
         for (int i = 0; i < host__force_lists_size; i++) {
           double ueStart = host__device_times_patches[i * 2];
           double ueEnd = host__device_times_patches[i * 2 + 1];
-          #if MIC_MULTIPLE_KERNELS != 0
-            ueStart += mic_first_kernel_submit_time - host__device_times_start[0];
-            ueEnd += mic_first_kernel_submit_time - host__device_times_start[0];
-          #else
-            ueStart += mic_first_kernel_submit_time - host__device_times_start[1];
-            ueEnd += mic_first_kernel_submit_time - host__device_times_start[1];
-          #endif
+          ueStart += mic_first_kernel_submit_time - timeBase;
+          ueEnd += mic_first_kernel_submit_time - timeBase;
           traceUserBracketEvent(MIC_EVENT_DEVICE_PATCH, ueStart, ueEnd);
         }
 
@@ -2553,31 +2530,26 @@ int ComputeNonbondedMIC::finishWork() {
       double lPTime1 = host__device_times_start[5];
       double lPTime2 = host__device_times_start[7];
       double lPTime3 = host__device_times_start[9];
-      #if MIC_MULTIPLE_KERNELS != 0
+      lPTime0 += mic_first_kernel_submit_time - timeBase;
+      lPTime1 += mic_first_kernel_submit_time - timeBase;
+      lPTime2 += mic_first_kernel_submit_time - timeBase;
+      lPTime3 += mic_first_kernel_submit_time - timeBase;
+      traceUserBracketEvent(MIC_EVENT_DEVICE_COMPUTES, lPTime0, lPTime1);
+      //traceUserBracketEvent(MIC_EVENT_DEVICE_VIRIALS, lPTime1, lPTime2);
+      traceUserBracketEvent(MIC_EVENT_DEVICE_PATCHES, lPTime2, lPTime3);
+      if (singleKernelFlag == 0) {
         double rPTime0 = host__device_times_start[2];
         double rPTime1 = host__device_times_start[4];
         double rPTime2 = host__device_times_start[6];
         double rPTime3 = host__device_times_start[8];
-        rPTime0 += mic_first_kernel_submit_time - host__device_times_start[0];
-        lPTime0 += mic_first_kernel_submit_time - host__device_times_start[0];
-        rPTime1 += mic_first_kernel_submit_time - host__device_times_start[0];
-        lPTime1 += mic_first_kernel_submit_time - host__device_times_start[0];
-        rPTime2 += mic_first_kernel_submit_time - host__device_times_start[0];
-        lPTime2 += mic_first_kernel_submit_time - host__device_times_start[0];
-        rPTime3 += mic_first_kernel_submit_time - host__device_times_start[0];
-        lPTime3 += mic_first_kernel_submit_time - host__device_times_start[0];
+        rPTime0 += mic_first_kernel_submit_time - timeBase;
+        rPTime1 += mic_first_kernel_submit_time - timeBase;
+        rPTime2 += mic_first_kernel_submit_time - timeBase;
+        rPTime3 += mic_first_kernel_submit_time - timeBase;
         traceUserBracketEvent(MIC_EVENT_DEVICE_COMPUTES, rPTime0, rPTime1);
-        traceUserBracketEvent(MIC_EVENT_DEVICE_VIRIALS, rPTime1, rPTime2);
+        //traceUserBracketEvent(MIC_EVENT_DEVICE_VIRIALS, rPTime1, rPTime2);
         traceUserBracketEvent(MIC_EVENT_DEVICE_PATCHES, rPTime2, rPTime3);
-      #else
-        lPTime0 += mic_first_kernel_submit_time - host__device_times_start[1];
-        lPTime1 += mic_first_kernel_submit_time - host__device_times_start[1];
-        lPTime2 += mic_first_kernel_submit_time - host__device_times_start[1];
-        lPTime3 += mic_first_kernel_submit_time - host__device_times_start[1];
-      #endif
-      traceUserBracketEvent(MIC_EVENT_DEVICE_COMPUTES, lPTime0, lPTime1);
-      traceUserBracketEvent(MIC_EVENT_DEVICE_VIRIALS, lPTime1, lPTime2);
-      traceUserBracketEvent(MIC_EVENT_DEVICE_PATCHES, lPTime2, lPTime3);
+      }
     }
     #endif  // MIC_DEVICE_TRACING
   }
@@ -2594,9 +2566,9 @@ int ComputeNonbondedMIC::finishWork() {
     if (simParams->GBISOn) gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
     atomsChanged = 0;
 
-    #if MIC_TRACING != 0
-      MIC_TRACING_RECORD(MIC_EVENT_FUNC_FINISHWORK, finishWork_start, CmiWallTimer());
-    #endif
+    //#if MIC_TRACING != 0
+    //  MIC_TRACING_RECORD(MIC_EVENT_FUNC_FINISHWORK, finishWork_start, CmiWallTimer());
+    //#endif
 
     return 1;
   }
@@ -2660,9 +2632,9 @@ int ComputeNonbondedMIC::finishWork() {
 
   GBISP("C.N.MIC[%d] finished ready for next step\n",CkMyPe());
 
-  #if MIC_TRACING != 0
-    MIC_TRACING_RECORD(MIC_EVENT_FUNC_FINISHWORK, finishWork_start, CmiWallTimer());
-  #endif
+  //#if MIC_TRACING != 0
+  //  MIC_TRACING_RECORD(MIC_EVENT_FUNC_FINISHWORK, finishWork_start, CmiWallTimer());
+  //#endif
 
   return 1;  // finished and ready for next step
 }
@@ -2670,6 +2642,13 @@ int ComputeNonbondedMIC::finishWork() {
 
 __thread FILE* mic_output = NULL;
 __thread int mic_output_set = 0;
+
+
+void mic_initproc() {
+  #if MIC_DEBUG > 0
+    debugInit(NULL);
+  #endif
+}
 
 
 void debugInit(FILE* fout) {
@@ -2688,6 +2667,399 @@ void debugInit(FILE* fout) {
 
 void debugClose() {
   if (mic_output_set == 0) { fclose(mic_output); mic_output = NULL; }
+}
+
+void mic_assignComputes() {
+
+  const SimParameters * simParams = Node::Object()->simParameters;
+  ComputeMap *computeMap = ComputeMap::Object();
+  PatchMap *patchMap = PatchMap::Object();
+  int nComputes = computeMap->numComputes();
+
+  int deviceThreshold = simParams->mic_deviceThreshold;
+  int hostSplit = simParams->mic_hostSplit;
+  if (deviceThreshold < 0) {  // I.e. If not set or negative in the config file, auto-calculate a threshold
+    int dt_base = ((int)(0.5f * (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) + 1.5f) - 2); 
+    int dt_procs = mic_get_device_count() - 1;
+    deviceThreshold = dt_base + dt_procs;
+  }
+
+  // Display the device threshold that is used
+  if (CkMyPe() == 0) {
+    iout << iINFO << "MIC DEVICE THRESHOLD: " << deviceThreshold << " (" << simParams->mic_deviceThreshold << ")\n" << endi;
+    // DMK - NOTE : Leave out mic_hostSplit (reserved for now), only print if set
+    if (hostSplit > 0) {
+      iout << iINFO << "MIC HOST SPLIT: " << hostSplit << "\n" << endi;
+    }
+  }
+
+  if (hostSplit > 0) {
+
+    // Setup and initialize data structures
+    int nPEs = CkNumPes();
+    int *numSelfs = new int[nPEs];
+    int *numPairs = new int[nPEs];
+    int maxPid = 0;
+    for (int i = 0; i < nPEs; i++) { numSelfs[i] = 0; numPairs[i] = 0; }
+
+    // Start by assigning all computes to the host cores and figuring out what the
+    //   maximum pid is in this run
+    for (int i = 0; i < nComputes; i++) {
+      if (computeMap->type(i) == computeNonbondedSelfType) {
+        numSelfs[computeMap->node(i)]++;
+        int pid = computeMap->pid(i, 0);
+        if (pid > maxPid) { maxPid = pid; }
+        computeMap->setDirectToDevice(i, 0);
+      }
+      if (computeMap->type(i) == computeNonbondedPairType) {
+        numPairs[computeMap->node(i)]++;
+        int pid0 = computeMap->pid(i, 0);
+        if (pid0 > maxPid) { maxPid = pid0; }
+        int pid1 = computeMap->pid(i, 1);
+        if (pid1 > maxPid) { maxPid = pid1; }
+        computeMap->setDirectToDevice(i, 0);
+      }
+    }
+
+    // Setup an initialize data structures
+    char *pidUsed = new char[maxPid];
+    for (int i = 0; i < maxPid; i++) { pidUsed[i] = 0; }
+
+    // For each PE, calculate a target number of computes to offload
+    for (int i = 0; i < nPEs; i++) {
+      int target = (int)((numSelfs[i] + numPairs[i]) * hostSplit / 100.0f);
+      numPairs[i] = target;
+    }
+
+    // Setup data structures
+    int selfTotal = 0;
+    int pairTotal = 0;
+    std::queue<int> *c0 = new std::queue<int>();
+    std::queue<int> *c1 = new std::queue<int>();
+    std::queue<int> *p = new std::queue<int>();
+
+    // For each PE...
+    for (int pe = 0; pe < nPEs; pe++) {
+
+      // Reset data structures
+      while (c0->size() > 0) { c0->pop(); }
+      while (c1->size() > 0) { c1->pop(); }
+      while (p->size() > 0) { p->pop(); }
+      for (int i = 0; i < maxPid; i++) { pidUsed[i] = 0; }
+
+      // Setup peLo and peHi to be the range of PEs on this PE's node (work on a node at a time)
+      int target = numPairs[pe];
+      int peLo = pe;
+      while (pe+1 < CkNumPes() && CkNodeOf(pe) == CkNodeOf(pe+1)) {
+        pe++;
+        target += numPairs[pe];
+      }
+      int peHi = pe;
+      int targetTotal = target;
+
+      #define COMPUTE_DISTANCE(cid) \
+      int manDist = -1; { \
+        int aSize = patchMap->gridsize_a(); \
+        int bSize = patchMap->gridsize_b(); \
+        int cSize = patchMap->gridsize_c(); \
+        int pid0 = computeMap->pid(cid, 0); \
+        int pid1 = computeMap->pid(cid, 1); \
+        int trans0 = computeMap->trans(cid, 0); \
+        int trans1 = computeMap->trans(cid, 1); \
+        int index_a0 = patchMap->index_a(pid0) + aSize * Lattice::offset_a(trans0); \
+        int index_b0 = patchMap->index_b(pid0) + bSize * Lattice::offset_b(trans0); \
+        int index_c0 = patchMap->index_c(pid0) + cSize * Lattice::offset_c(trans0); \
+        int index_a1 = patchMap->index_a(pid1) + aSize * Lattice::offset_a(trans1); \
+        int index_b1 = patchMap->index_b(pid1) + bSize * Lattice::offset_b(trans1); \
+        int index_c1 = patchMap->index_c(pid1) + cSize * Lattice::offset_c(trans1); \
+        int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1)); \
+        int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1)); \
+        int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1)); \
+        manDist = da + db + dc; \
+      }
+
+      // Scan through the computes, placing all computes on this node in the list of available
+      //   computes, starting with selfs and then pairs
+      for (int i = 0; i < nComputes; i++) {
+        COMPUTE_DISTANCE(i);
+        if (computeMap->node(i) >= peLo && computeMap->node(i) <= peHi &&
+            computeMap->type(i) == computeNonbondedPairType) {
+          COMPUTE_DISTANCE(i);
+          if (simParams->mic_deviceThreshold < 0 || manDist <= simParams->mic_deviceThreshold) {
+            c0->push(i);
+          }
+        }
+      }
+      for (int i = 0; i < nComputes; i++) {
+        if (computeMap->node(i) >= peLo && computeMap->node(i) <= peHi &&
+            computeMap->type(i) == computeNonbondedSelfType) {
+          c0->push(i);
+        }
+      }
+
+      #if 1
+
+      // The code in ComputeNonbondedMIC::noWork() and ::doWork() assumes that there is at least one
+      //   'hosted' patch on each PE.  However, since this code load balances between the host and the
+      //   device, that may or may not be true unless it is enforced.  The code below enforces that
+      //   assumption.  Look through the list of computes, and for each PE on this node, ensure that at
+      //   least one compute is offloaded to the MIC device for at least one patch on the given PE.
+      // NOTE: There are two assumptions this method relies on.  First, that there is at least one
+      //   patch per PE.  Second, that each PE has at least 1 patch and 1 compute such that the compute
+      //   is associated with that patch (self or pair compute).  By default (at the time this comment
+      //   was written) all self computes are mapped to the PE their patch is on, so that is true.  Also,
+      //   both the CUDA and MIC ports require at least 1 patch per PE (again, was true with this
+      //   comment was written).
+
+      int numPEsRemaining = peHi - peLo + 1;
+      int * peFlag = new int[numPEsRemaining];
+      __ASSERT(peFlag != NULL);
+      for (int i = 0; i < numPEsRemaining; i++) { peFlag[i] = 0; }
+
+      #define TEST_PID(c, p) \
+        if (patchMap->node(p) >= peLo && patchMap->node(p) <= peHi) { \
+          if (peFlag[patchMap->node(p) - peLo] == 0) { \
+            if (used == 0) { \
+              computeMap->setDirectToDevice(c, 1); \
+              target--; \
+            } \
+            pidUsed[p] = 1; \
+            peFlag[patchMap->node(p) - peLo] = 1; \
+            numPEsRemaining--; \
+            used = 1; \
+	  } \
+	}
+
+      // First, start by checking the list of computes objects already selected (within device threshold)
+      while (c0->size() > 0 && numPEsRemaining > 0) {
+
+        int cid = c0->front(); c0->pop();
+        int used = 0;
+
+        int pid0 = computeMap->pid(cid, 0);
+        TEST_PID(cid, pid0);
+
+        if (computeMap->type(cid) == computeNonbondedPairType) {
+          int pid1 = computeMap->pid(cid, 1);
+          TEST_PID(cid, pid1);
+	}
+
+        if (used == 0) { c1->push(cid); } // If not used add to c1 (and eventually back to c0)
+      }
+      while (c1->size() > 0) { c0->push(c1->front()); c1->pop(); }
+
+      // Second, if not all PEs were taken care of, search the entire list of computes
+      for (int cid = 0; cid < nComputes && numPEsRemaining > 0; cid++) {
+        if ((computeMap->type(cid) == computeNonbondedSelfType || computeMap->type(cid) == computeNonbondedPairType) &&
+            (computeMap->node(cid) >= peLo && computeMap->node(cid) <= peHi)
+           ) {
+
+          int used = 0;
+
+          int pid0 = computeMap->pid(cid, 0);
+          TEST_PID(cid, pid0);
+
+          if (computeMap->type(cid) == computeNonbondedPairType) {
+            int pid1 = computeMap->pid(cid, 1);
+            TEST_PID(cid, pid1);
+	  }
+	}
+      }
+
+      #undef TEST_PID
+
+      delete [] peFlag; peFlag = NULL;
+
+      #else
+
+      // Look through the list of selected computes, and add the first compute found for each pe
+      // NOTE: Found need for this later, so tacked this loop on after queue data structure already selected,
+      //   resulting in less than ideal code for this loop (TODO: revisit this to clean it up, but for now
+      //   is in startup and doesn't seem to cost too much... may for larger inputs though).
+      for (int pe = peLo; pe <= peHi; pe++) {
+
+        int computeFound = -1;
+
+        //// First, look for a compute in the set of considered computes
+        //while (c0->size() > 0 && computeFound < 0) {
+        //  int cid = c0->front(); c0->pop();
+        //  if (computeMap->node(cid) == pe) {
+        //    computeFound = cid;
+        //    //if (CkMyPe() == 0) { printf("[DEBUG] :: Adding considered compute %d for PE %d\n", computeFound, pe); }
+	//  } else {
+        //    c1->push(cid);
+	//  }
+	//}
+        //while (c1->size() > 0) { c0->push(c1->front()); c1->pop(); } // Drain c1 back into c0
+
+        // Second, if a considered compute was not found, look for any compute
+        if (computeFound < 0) {
+          for (int i = 0; i < nComputes; i++) {
+            if (computeMap->node(i) == pe &&
+                (computeMap->type(i) == computeNonbondedSelfType ||
+                 computeMap->type(i) == computeNonbondedPairType
+               )) {
+              computeFound = i;
+              //if (CkMyPe() == 0) { printf("[DEBUG] :: Adding arbitrary compute %d for PE %d\n", computeFound, pe); }
+              break;
+            }
+	  }
+	}
+
+        // Add the compute to the device and mark the associated patches as used
+        if (computeFound >= 0) {
+          computeMap->setDirectToDevice(computeFound, 1);
+          int pid0 = computeMap->pid(computeFound, 0);
+          p->push(pid0); pidUsed[pid0] = 1;
+	  if (computeMap->type(computeFound) == computeNonbondedPairType) {
+            int pid1 = computeMap->pid(computeFound, 1);
+            p->push(pid1); pidUsed[pid1] = 1;
+          }
+          target--;
+	} else {
+          CkAbort("compute not found for offload on PE");
+	}
+      }
+
+      #endif // 0|1
+
+      //#undef COMPUTE_DISTANCE
+
+      // While we have not reached our target and there are still computes that can be moved to
+      //   the MIC device...
+      while (target > 0 && c0->size() > 0) {
+
+        // If there are no patches in the list of patches to consider, grab a computes from the
+        //   list of available computes and add it's associated patches to the list of patches
+        //   to consider
+        if (p->size() <= 0) {
+          int cid = c0->front();
+          int pid = computeMap->pid(cid, 0);
+          p->push(pid); pidUsed[pid] = 1;
+          if (computeMap->type(cid) == computeNonbondedPairType) {
+            pid = computeMap->pid(cid, 1);
+            p->push(pid); pidUsed[pid] = 1;
+          }
+	}
+
+        // Grab the first pid from the list of pids to consider
+        int pid = p->front(); p->pop();
+
+        // While there are still computes to consider and we don't yet have enough computes (target number)...
+        while (c0->size() > 0 && target > 0) {
+
+          // Grab a compute from list of available computes
+          int cid = c0->front(); c0->pop();
+
+          // If all of the patches associated with the compute have been marked as being considered for
+          //   use on the MIC card, then mark the compute for execution on the MIC card
+          if (computeMap->type(cid) == computeNonbondedSelfType && pidUsed[computeMap->pid(cid, 0)] != 0) {
+            target--;
+            computeMap->setDirectToDevice(cid, 1);
+
+            // DMK - DEBUG
+            selfTotal++;
+
+	  } else if (computeMap->type(cid) == computeNonbondedPairType && (pidUsed[computeMap->pid(cid, 0)] != 0 && pidUsed[computeMap->pid(cid, 1)] != 0)) {
+            target--;
+            computeMap->setDirectToDevice(cid, 1);
+
+            // DMK - DEBUG
+            pairTotal++;
+
+	  } else {  // If the compute isn't pushed to the MIC now, place it in a temp queue so it will be considered again in the next round
+            c1->push(cid);
+	  }
+	}
+
+        // Swap the queues holding computes for the next loop iteration
+	std::queue<int> *t = c0; c0 = c1; c1 = t;
+      }
+
+      //if (CkMyPe() == 0 && target > 0) {
+      if (CkMyPe() == 0) {
+        printf("[MIC-Warning] :: Target compute count not reached (%f%% of target(%d) pushed to MIC, PEs %d to %d)\n",
+               ((float)(targetTotal - target)) / ((float)(targetTotal)), targetTotal, peLo, peHi
+              );
+      }
+
+      // DMK - DEBUG
+      int numPidsUsed = 0;
+      for (int i = 0; i < maxPid; i++) { if (pidUsed[i] != 0) { numPidsUsed++; } }
+      if (CkMyPe() == 0) { printf("[DEBUG] :: PE %d->%d :: selfs:%d, pairs:%d, host:%ld, pids:%d/%d\n", peLo, peHi, selfTotal, pairTotal, c0->size(), numPidsUsed, maxPid); }
+      selfTotal = 0; pairTotal = 0;
+    }
+
+    // Free temp data structures
+    delete [] numSelfs;
+    delete [] numPairs;
+    delete [] pidUsed;
+
+  } else {
+
+    for (int i = 0; i < nComputes; i++) {
+      switch (computeMap->type(i)) {
+
+        case computeNonbondedSelfType:
+          // Direct all non-bonded self computes to the device
+          if (hostSplit > 0) { // Apply patch selection heuristic
+            computeMap->setDirectToDevice(i, ((computeMap->pid(i, 0) < hostSplit) ? (0) : (1)));
+            //computeMap->setDirectToDevice(i, 1);
+          } else {
+            computeMap->setDirectToDevice(i, 1);
+          }
+          break;
+
+        case computeNonbondedPairType:
+          if (hostSplit > 0) {
+            int pid0 = computeMap->pid(i, 0);
+            int pid1 = computeMap->pid(i, 1);
+            computeMap->setDirectToDevice(i , ((pid0 < hostSplit || pid1 < hostSplit) ? (0) : (1)));
+          } else {
+            int aSize = patchMap->gridsize_a();
+            int bSize = patchMap->gridsize_b();
+            int cSize = patchMap->gridsize_c();
+            int pid0 = computeMap->pid(i, 0);
+            int pid1 = computeMap->pid(i, 1);
+            int trans0 = computeMap->trans(i, 0);
+            int trans1 = computeMap->trans(i, 1);
+            int index_a0 = patchMap->index_a(pid0) + aSize * Lattice::offset_a(trans0);
+            int index_b0 = patchMap->index_b(pid0) + bSize * Lattice::offset_b(trans0);
+            int index_c0 = patchMap->index_c(pid0) + cSize * Lattice::offset_c(trans0);
+            int index_a1 = patchMap->index_a(pid1) + aSize * Lattice::offset_a(trans1);
+            int index_b1 = patchMap->index_b(pid1) + bSize * Lattice::offset_b(trans1);
+            int index_c1 = patchMap->index_c(pid1) + cSize * Lattice::offset_c(trans1);
+            int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1));
+            int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1));
+            int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1));
+            int manDist = da + db + dc;
+            computeMap->setDirectToDevice(i, ((manDist <= deviceThreshold) ? (1) : (0)));
+          }
+          break;
+
+        default:
+          // All other computes should be directed to the host (flag is ignored, but set it)
+          computeMap->setDirectToDevice(i, 0);
+          break;
+
+      } // end switch (map->type(i))
+    } // end for (i < map->nComputes)
+  } // end if (hostSplit > 0)
+
+  // DMK - DEBUG
+  if (0 && CkMyPe() == 0) {
+    for (int i = 0; i < nComputes; i++) {
+      if (computeMap->type(i) == computeNonbondedSelfType || computeMap->type(i) == computeNonbondedPairType) {
+        COMPUTE_DISTANCE(i);
+        printf("[COMPUTE-MAP] :: cid:%d (%s,%d) directToDevice:%d\n",
+               i,
+               computeMap->type(i) == computeNonbondedSelfType ? "self" : "pair",
+               computeMap->type(i) == computeNonbondedSelfType ? 0 : manDist,
+               computeMap->directToDevice(i)
+              );
+      }
+    }
+  }
 }
 
 

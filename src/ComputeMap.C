@@ -171,7 +171,7 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids,
 
   computeData[cid].numPids = 0;
 
-  #if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+  #if defined(NAMD_MIC)
     // By default, pass all non-bonded selfs and pairs to the device
     if (type == computeNonbondedSelfType || type == computeNonbondedPairType) {
       computeData[cid].directToDevice = 1;
@@ -293,7 +293,7 @@ void ComputeMap::loadComputeMap(const char *fname)
 }
 
 //----------------------------------------------------------------------
-#if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+#if defined(NAMD_MIC)
 
 void ComputeMap::setDirectToDevice(const ComputeID cid, const int d) {
   if (cid < 0 || cid >= nComputes) {
@@ -309,4 +309,4 @@ int ComputeMap::directToDevice(const ComputeID cid) const {
   return computeData[cid].directToDevice;
 }
 
-#endif // defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+#endif // defined(NAMD_MIC)

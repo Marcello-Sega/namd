@@ -1,4 +1,3 @@
-#ifdef NAMD_MIC
 
 ////////////////////////////////////////////////////////////////////////////////
 ///// Begin Macro Definition Region
@@ -249,13 +248,13 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   const CALC_TYPE * RESTRICT const table_noshort = (CALC_TYPE*)(params.table_four_base_ptr)                       ; __ASSUME_ALIGNED(table_noshort);
   const CALC_TYPE * RESTRICT const   table_short = (CALC_TYPE*)(params.table_four_base_ptr) + 16 * table_four_n_16; __ASSUME_ALIGNED(table_short);
   const CALC_TYPE * RESTRICT const    slow_table = (CALC_TYPE*)(params.table_four_base_ptr) + 32 * table_four_n_16; __ASSUME_ALIGNED(slow_table);
-  const CALC_TYPE * RESTRICT const    fast_table = (CALC_TYPE*)(params.table_four_base_ptr) + 36 * table_four_n_16; __ASSUME_ALIGNED(fast_table);
-  const CALC_TYPE * RESTRICT const    scor_table = (CALC_TYPE*)(params.table_four_base_ptr) + 40 * table_four_n_16; __ASSUME_ALIGNED(scor_table);
-  const CALC_TYPE * RESTRICT const    corr_table = (CALC_TYPE*)(params.table_four_base_ptr) + 44 * table_four_n_16; __ASSUME_ALIGNED(corr_table);
-  const CALC_TYPE * RESTRICT const    full_table = (CALC_TYPE*)(params.table_four_base_ptr) + 48 * table_four_n_16; __ASSUME_ALIGNED(full_table);
-  const CALC_TYPE * RESTRICT const    vdwa_table = (CALC_TYPE*)(params.table_four_base_ptr) + 52 * table_four_n_16; __ASSUME_ALIGNED(vdwa_table);
-  const CALC_TYPE * RESTRICT const    vdwb_table = (CALC_TYPE*)(params.table_four_base_ptr) + 56 * table_four_n_16; __ASSUME_ALIGNED(vdwb_table);
-  const CALC_TYPE * RESTRICT const      r2_table = (CALC_TYPE*)(params.table_four_base_ptr) + 60 * table_four_n_16; __ASSUME_ALIGNED(r2_table);
+  //const CALC_TYPE * RESTRICT const    fast_table = (CALC_TYPE*)(params.table_four_base_ptr) + 36 * table_four_n_16; __ASSUME_ALIGNED(fast_table);
+  //const CALC_TYPE * RESTRICT const    scor_table = (CALC_TYPE*)(params.table_four_base_ptr) + 40 * table_four_n_16; __ASSUME_ALIGNED(scor_table);
+  //const CALC_TYPE * RESTRICT const    corr_table = (CALC_TYPE*)(params.table_four_base_ptr) + 44 * table_four_n_16; __ASSUME_ALIGNED(corr_table);
+  //const CALC_TYPE * RESTRICT const    full_table = (CALC_TYPE*)(params.table_four_base_ptr) + 48 * table_four_n_16; __ASSUME_ALIGNED(full_table);
+  //const CALC_TYPE * RESTRICT const    vdwa_table = (CALC_TYPE*)(params.table_four_base_ptr) + 52 * table_four_n_16; __ASSUME_ALIGNED(vdwa_table);
+  //const CALC_TYPE * RESTRICT const    vdwb_table = (CALC_TYPE*)(params.table_four_base_ptr) + 56 * table_four_n_16; __ASSUME_ALIGNED(vdwb_table);
+  //const CALC_TYPE * RESTRICT const      r2_table = (CALC_TYPE*)(params.table_four_base_ptr) + 60 * table_four_n_16; __ASSUME_ALIGNED(r2_table);
   // DMK - NOTE : Other table pointers will be useful as this code grows in scope, so including them all now
 
   // Setup LJ table pointers
@@ -480,7 +479,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
     int plOffset_mod = 2;   // Current length of the modified pairlist
     int plOffset_excl = 2;  // Current length of the excluded pairlist
     #if MIC_CONDITION_NORMAL != 0
-      double normhi_split = (0.2 * cutoff2) + (0.8 * plcutoff2);
+      double normhi_split = (0.25 * cutoff2) + (0.75 * plcutoff2);
       int plOffset_normhi = 2;  // Current length of the "normal high" pairlist (entires
                                 //   that belong in the normal pairlist, but that are
                                 //   further than the normhi_split distance, such that
@@ -792,14 +791,18 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
       // Do the distance checks for all possible pairs of atoms between the
       //   two input atom arrays
       // The "i" loop, iterating over the first list of atoms
-      #if MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
 
-        int numParts = params.pp->numParts;
-        int part = params.pp->part;
+      int numParts = params.pp->numParts;
+      int part = params.pp->part;
 
-        // Generate plGenILo and plGenHi values (the portion of the "i" atoms that will be processed by this "part").
-        //   Note that this is done differently for self computes, because of the unequal work per "i" atom.  For
-        //   pair computes, the "i" iteration space is just divided up evenly.
+      // Generate plGenILo and plGenHi values (the portion of the "i" atoms that will be processed by this "part").
+      //   Note that this is done differently for self computes, because of the unequal work per "i" atom.  For
+      //   pair computes, the "i" iteration space is just divided up evenly.
+      #if 0
+      int plGenILo = 0;
+      int plGenIHi = i_upper SELF(-1);
+      if (numParts > 1) {
+
         #if (0 SELF(+1))
 
           // For self computes where the iteration space forms a triangle, divide the rows in the
@@ -813,9 +816,9 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
           //   index X (i.e. 0 <= i < X), we can calculate indexes for each part.
           //     A = X(X-1)/2 where A = area "before" X
           //     solving for X we get X^2 - X - 2A = 0, or via the quadradic equation, X = (1 +- sqrt(1+8A))/2
-          // NOTE: This calculation might be a little messy, double check the border cases
-          int plGenILo = ((part==0)?(0) : ((int)((1.0f+sqrtf(1+8*(areaPerPart*part)))/2.0f)) );
-          int plGenIHi = ((part==numParts-1)?(i_upper-1) : ((int)((1.0f+sqrtf(1+8*(areaPerPart*(part+1))))/2.0f)) );
+          // NOTE: This calculation might be a little messy, so double check the border cases
+          plGenILo = ((part==0)?(0) : ((int)((1.0f+sqrtf(1+8*(areaPerPart*part)))/2.0f)) );
+          plGenIHi = ((part==numParts-1)?(i_upper-1) : ((int)((1.0f+sqrtf(1+8*(areaPerPart*(part+1))))/2.0f)) );
           // Reverse the indexes since this calculation assumes i=0 has little work i=i_upper-1 has lots of
           //   work (i.e. upper triangular versus lower triangular)
           int plGenTmp = plGenILo;
@@ -826,8 +829,8 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
 
           // For pair computes where the iteration space forms a square, divide the rows in the
           //   iteration space evenly since they all have the same area
-          int plGenILo = (int)(((float)(i_upper)) * ((float)(part    )) / ((float)(numParts)));
-          int plGenIHi = (int)(((float)(i_upper)) * ((float)(part + 1)) / ((float)(numParts)));
+          plGenILo = (int)(((float)(i_upper)) * ((float)(part    )) / ((float)(numParts)));
+          plGenIHi = (int)(((float)(i_upper)) * ((float)(part + 1)) / ((float)(numParts)));
 
         #endif  // SELF
 
@@ -836,16 +839,17 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
         plGenILo = (plGenILo + 15) & (~15);
         plGenIHi = (plGenIHi + 15) & (~15);
         if (plGenIHi > i_upper SELF(-1)) { plGenIHi = i_upper SELF(-1); }
+      }
 
-        #pragma loop_count (500)
-        for (int i = plGenILo; i < plGenIHi; i++) {
+      #pragma loop_count (300)
+      for (int i = plGenILo; i < plGenIHi; i++) {
 
-      #else  // MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
+      #else
 
-        #pragma loop_count (500)
-        for (int i = 0; i < i_upper SELF(-1); i++) {
+      #pragma loop_count (300)
+      for (int i = part; i < i_upper SELF(-1); i += numParts) {
 
-      #endif  // MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING != 0
+      #endif
 
         // If the pairlist is not long enough, grow the pairlist
         PAIRLIST_GROW_CHECK(pairlist_norm, plOffset_norm, 50);
@@ -1260,49 +1264,28 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   #else  // defined(FULLELECT)
 
     // If we are not executing the excluded loop, then we need to count exclusive
-    //   interactions per atom
-
-    // If we are doing the full exclusion checksum (global across all cores, host and MIC alike), then
-    //   contribute the number of entries in the EXCLUDED pairlist (valid only if padding pairlists)
+    //   interactions per atom.  Contribute the number of entries in the EXCLUDED
+    //   pairlist (valid only if padding pairlists)
     #if MIC_EXCL_CHECKSUM_FULL != 0
-      {
-        #if __MIC_PAD_PLGEN_CTRL != 0
-          // NOTE: If using padding, the pairlist will have 'invalid' entries mixed in with the
-          //   valid entries, so we need to scan through and only count the valid entries
-          const int * const pairlist_excl_base = pairlist_excl + 2;
-          const int pairlist_excl_len = pairlist_excl[1] - 2;
-          int exclSum = 0;
-          __ASSUME_ALIGNED(pairlist_excl_base);
-          #pragma simd reduction(+ : exclSum)
-          for (int plI = 0; plI < pairlist_excl_len; plI++) {
-            if ((pairlist_excl_base[plI] & 0xFFFF) != 0xFFFF) {
-              exclSum += 1;
-	    }
-          }
-          params.exclusionSum += exclSum;
-        #else
-          params.exclusionSum += pairlist_excl[1] - 2; // NOTE: Size includes first two elements (alloc size and size), don't count those
-        #endif
-      }
-    #endif
-
-    // Contribute to device-specific exclusion checksum    
-    #if MIC_EXCL_CHECKSUM != 0
-      #pragma novector
-      for (int plI = 2; plI < pairlist_excl[1]; plI++) {
-        #if __MIC_PAD_PLGEN_CTRL != 0
-          if ((pairlist_excl[plI] & 0xFFFF) == 0xFFFF) { continue; }
-        #endif
-        const int i = (pairlist_excl[plI] >> 16) & 0xFFFF;
-        const int j = (pairlist_excl[plI]      ) & 0xFFFF;
-        #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
-          f_0[i].w += 1.0;
-          f_1[j].w += 1.0;
-        #else
-          f_0_w[i] += 1.0;
-          f_1_w[j] += 1.0;
-        #endif
-      }
+    {
+      #if __MIC_PAD_PLGEN_CTRL != 0
+        // NOTE: If using padding, the pairlist will have 'invalid' entries mixed in with the
+        //   valid entries, so we need to scan through and only count the valid entries
+        const int * const pairlist_excl_base = pairlist_excl + 2;
+        const int pairlist_excl_len = pairlist_excl[1] - 2;
+        int exclSum = 0;
+        __ASSUME_ALIGNED(pairlist_excl_base);
+        #pragma simd reduction(+ : exclSum)
+        for (int plI = 0; plI < pairlist_excl_len; plI++) {
+          if ((pairlist_excl_base[plI] & 0xFFFF) != 0xFFFF) {
+            exclSum += 1;
+	  }
+        }
+        params.exclusionSum += exclSum;
+      #else
+        params.exclusionSum += pairlist_excl[1] - 2; // NOTE: Size includes first two elements (alloc size and size), don't count those
+      #endif
+    }
     #endif
 
   #endif  // defined(FULLELECT)
@@ -1399,9 +1382,3 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
 #endif
 
 #undef __MIC_PAD_PLGEN_CTRL
-
-#else
-
-#include "ComputeNonbondedMICKernelBase2.h"
-
-#endif  // NAMD_MIC

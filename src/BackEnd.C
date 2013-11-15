@@ -83,7 +83,7 @@ void NAMD_new_handler() {
 void cuda_getargs(char**);
 // void cuda_initialize();
 void mic_getargs(char**);
-// void mic_initialize();
+void mic_initialize();
 
 // called on all procs
 void all_init(int argc, char **argv)
@@ -108,14 +108,14 @@ void all_init(int argc, char **argv)
   
   _initCharm(argc, argv);  // message main Chare
 
-#if 0  // moved to WorkDistrib
-#ifdef NAMD_CUDA
-  if ( CkMyPe() < CkNumPes() ) cuda_initialize();
-#endif
+//#if 0  // moved to WorkDistrib
+//#ifdef NAMD_CUDA
+//  if ( CkMyPe() < CkNumPes() ) cuda_initialize();
+//#endif
 #ifdef NAMD_MIC
   if ( CkMyPe() < CkNumPes() ) mic_initialize();
 #endif
-#endif
+//#endif
 }
 
 extern void after_backend_init(int argc, char **argv);

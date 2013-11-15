@@ -71,6 +71,8 @@ __thread int host__node = -1;
 __attribute__((target(mic))) int device__pe = -1;
 __attribute__((target(mic))) int device__node = -1;
 
+__thread int singleKernelFlag = 0;
+
 __thread patch_pair * host__patch_pairs = NULL;
 __thread int host__patch_pairs_size = 0;
 __thread int host__patch_pairs_bufSize = 0;
@@ -112,8 +114,7 @@ __attribute__((target(mic))) mic_position3_t device__lata;
 __attribute__((target(mic))) mic_position3_t device__latb;
 __attribute__((target(mic))) mic_position3_t device__latc;
 
-__thread mic_kernel_data * host__remote_kernel_data;
-__thread mic_kernel_data * host__local_kernel_data;
+__thread mic_kernel_data * host__kernel_data = NULL;
 
 __attribute__((target(mic))) int device__numOMPThreads = -1;
 
@@ -196,8 +197,6 @@ void mic_print_config() {
     printf("device :: MIC_HANDCODE_FORCE_CALCR2TABLE       (%d)\n", MIC_HANDCODE_FORCE_CALCR2TABLE);
     printf("device :: MIC_HANDCODE_FORCE_SOA_VS_AOS        (%d)\n", MIC_HANDCODE_FORCE_SOA_VS_AOS);
 
-    printf("device :: MIC_SPLIT_WITH_HOST  (%d)\n", MIC_SPLIT_WITH_HOST);
-
     printf("device :: MIC_SORT_ATOMS  (%d)\n", MIC_SORT_ATOMS);
     printf("device :: MIC_SORT_LISTS  (%d)\n", MIC_SORT_LISTS);
 
@@ -205,13 +204,6 @@ void mic_print_config() {
     printf("device :: MIC_TILE_PLGEN        (%d)\n", MIC_TILE_PLGEN);
     printf("device :: MIC_CONDITION_NORMAL  (%d)\n", MIC_CONDITION_NORMAL);
     printf("device :: MIC_PAD_PLGEN         (%d)\n", MIC_PAD_PLGEN);
-
-    printf("device :: MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING  (%d)\n", MIC_ENABLE_MIC_SPECIFIC_COMPUTE_PARTITIONING);
-    printf("device ::   MIC_SPECIFIC_COMPUTE_PARTITIONING__SELF_P1  (%d)\n", MIC_SPECIFIC_COMPUTE_PARTITIONING__SELF_P1);
-    printf("device ::   MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P1  (%d)\n", MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P1);
-    printf("device ::   MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P2  (%d)\n", MIC_SPECIFIC_COMPUTE_PARTITIONING__PAIR_P2);
-
-    printf("device :: MIC_MULTIPLE_KERNELS  (%d)\n", MIC_MULTIPLE_KERNELS);
 
     printf("device :: MIC_SORT_COMPUTES  (%d)\n", MIC_SORT_COMPUTES);
 
@@ -221,8 +213,8 @@ void mic_print_config() {
     printf("device ::   REFINE_PAIRLIST_HANDCODE  (%d)\n", REFINE_PAIRLIST_HANDCODE);
     printf("device ::   REFINE_PAIRLISTS_XYZ      (%d)\n", REFINE_PAIRLISTS_XYZ);
 
-    printf("device :: MIC_FULL_CHECK     (%d)\n", MIC_FULL_CHECK);
-    printf("device :: MIC_EXCL_CHECKSUM  (%d)\n", MIC_EXCL_CHECKSUM);
+    printf("device :: MIC_FULL_CHECK          (%d)\n", MIC_FULL_CHECK);
+    printf("device :: MIC_EXCL_CHECKSUM_FULL  (%d)\n", MIC_EXCL_CHECKSUM_FULL);
 
     printf("device :: MIC_ALIGN  (%d)\n", MIC_ALIGN);
 
@@ -244,11 +236,9 @@ void mic_init_device(const int pe, const int node, const int deviceNum) {
   host__node = node;
 
   // Initialize various variables
-  host__remote_kernel_data = new mic_kernel_data[1];
-  host__local_kernel_data = new mic_kernel_data[1];
-  __ASSERT(host__remote_kernel_data != NULL && host__local_kernel_data != NULL);
-  mic_kernel_data * remote_kernel_data = host__remote_kernel_data;
-  mic_kernel_data * local_kernel_data = host__local_kernel_data;
+  host__kernel_data = new mic_kernel_data[2];
+  __ASSERT(host__kernel_data != NULL);
+  mic_kernel_data * kernel_data = host__kernel_data;
 
   // Initialize flags for offload buffers that are not copied every timestep
   patch_pairs_copySize = 0;
@@ -269,8 +259,7 @@ void mic_init_device(const int pe, const int node, const int deviceNum) {
   // Initialize the device itself via an offload pragma section
   #pragma offload target(mic:deviceNum) \
     in(pe) in(node) nocopy(device__pe) nocopy(device__node) \
-    in(remote_kernel_data[0:1] : alloc_if(1) free_if(0) align(16)) \
-    in(local_kernel_data[0:1] : alloc_if(1) free_if(0) align(16)) \
+    in(kernel_data[0:2] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
     nocopy(device__pl_array) nocopy(device__pl_size) nocopy(device__r2_array) \
     nocopy(device__numOMPThreads) \
     DEVICE_TIMES_CLAUSE
@@ -494,14 +483,6 @@ int _verify_forces(const int pe, const int timestep, const int isRemote, const i
   for (int i = 0; i < 4 * fl.patch_stride * fl.force_list_size; i++) {
     if (fabsf(f[i]) > 2.2e2) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: Large %sforce detected (1) !!! f[%d]:%le\n", pe, timestep, isRemote, phase, typeStr, i, f[i]); } // NOTE: Want to print them all, so don't return here
   }
-  //for (int i = 0; i < fl.force_list_size; i++) {
-  //  double *ff = f + (4 * i * fl.patch_stride);
-  //  int nonZeroFound = 0;
-  //  for (int j = 0; j < 4 * fl.patch_stride; j++) {
-  //    if (ff[j] != 0.0) { nonZeroFound = 1; break; }
-  //  }
-  //  if (!nonZeroFound) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: Compute contributed no %sforces (index:%d, i:%d)\n", pe, timestep, isRemote, phase, typeStr, index, i); } // NOTE: Want to print them all, so don't return here
-  //}
 
   // Check final list for large forces
   f = (double*)(forces + fl.force_output_start);
@@ -890,6 +871,7 @@ void mic_bind_constants(const int deviceNum,
   constants.r2_delta_exp = r2_delta_exp;
   constants.r2_delta_expc = 64 * (r2_delta_exp - 1023);
   constants.commOnly = commOnly;
+  constants.singleKernelFlag = singleKernelFlag;
 
   // Transfer the constants to the given device
   #pragma offload target(mic:deviceNum) \
@@ -1350,15 +1332,14 @@ void mic_nonbonded_forces(const int deviceNum,
   *tag_kernel = 1;
 
   // Setup the kernel data structures
-  mic_kernel_data * remote_kernel_data = host__remote_kernel_data;
-  mic_kernel_data * local_kernel_data = host__local_kernel_data;
+  mic_kernel_data * remote_kernel_data = host__kernel_data + 1; //host__remote_kernel_data;
+  mic_kernel_data * local_kernel_data = host__kernel_data; //host__local_kernel_data;
   mic_kernel_data * kernel_data = ((isRemote) ? (remote_kernel_data) : (local_kernel_data));
+  mic_kernel_data * _kernel_data = host__kernel_data;
   #if MIC_SYNC_INPUT != 0
     // NOTE: With MIC_SYNC_INPUT, all input is pushed before either of the "local" or "remote" kernels
     //   are executed, so setup both kernel_data structs as the "remote" kernel is being issued
-    #if MIC_MULTIPLE_KERNELS != 0
-      if (isRemote) {
-    #endif
+    if (singleKernelFlag != 0 || isRemote) {
       remote_kernel_data->isRemote = 1;
       local_kernel_data->isRemote = 0;
       remote_kernel_data->numLocalAtoms = local_kernel_data->numLocalAtoms = numLocalAtoms;
@@ -1368,9 +1349,19 @@ void mic_nonbonded_forces(const int deviceNum,
       remote_kernel_data->doEnergy = local_kernel_data->doEnergy = doEnergy;
       remote_kernel_data->usePairlists = local_kernel_data->usePairlists = usePairlists;
       remote_kernel_data->savePairlists = local_kernel_data->savePairlists = savePairlists;
-    #if MIC_MULTIPLE_KERNELS != 0
-      }
-    #endif
+      remote_kernel_data->lata.x = local_kernel_data->lata.x = lata.x;
+      remote_kernel_data->lata.y = local_kernel_data->lata.y = lata.y;
+      remote_kernel_data->lata.z = local_kernel_data->lata.z = lata.z;
+      remote_kernel_data->latb.x = local_kernel_data->latb.x = latb.x;
+      remote_kernel_data->latb.y = local_kernel_data->latb.y = latb.y;
+      remote_kernel_data->latb.z = local_kernel_data->latb.z = latb.z;
+      remote_kernel_data->latc.x = local_kernel_data->latc.x = latc.x;
+      remote_kernel_data->latc.y = local_kernel_data->latc.y = latc.y;
+      remote_kernel_data->latc.z = local_kernel_data->latc.z = latc.z;
+      remote_kernel_data->numAtoms = local_kernel_data->numAtoms = numAtoms;
+      remote_kernel_data->numPatchPairs = local_kernel_data->numPatchPairs = numPatchPairs;
+      remote_kernel_data->numForceLists = local_kernel_data->numForceLists = numForceLists;
+    }
   #else
     kernel_data->isRemote = isRemote;
     kernel_data->numLocalAtoms = numLocalAtoms;
@@ -1380,6 +1371,18 @@ void mic_nonbonded_forces(const int deviceNum,
     kernel_data->doEnergy = doEnergy;
     kernel_data->usePairlists = usePairlists;
     kernel_data->savePairlists = savePairlists;
+    kernel_data->lata.x = lata.x;
+    kernel_data->lata.y = lata.y;
+    kernel_data->lata.z = lata.z;
+    kernel_data->latb.x = latb.x;
+    kernel_data->latb.y = latb.y;
+    kernel_data->latb.z = latb.z;
+    kernel_data->latc.x = latc.x;
+    kernel_data->latc.y = latc.y;
+    kernel_data->latc.z = latc.z;
+    kernel_data->numAtoms = numAtoms;
+    kernel_data->numPatchPairs = numPatchPairs;
+    kernel_data->numForceLists = numForceLists;
   #endif
 
   // For buffers that are only periodically copied/updated, get the
@@ -1395,45 +1398,47 @@ void mic_nonbonded_forces(const int deviceNum,
 
   // Calculate the start/size of any data buffers that need to be copied to the device this timestep
   // NOTE: Some "remote" computes still need "local patch" data, so copy all patch data before/during "remote."
-  #if MIC_MULTIPLE_KERNELS != 0
-    int toCopySize_atoms = (isRemote) ? (numAtoms) : (0);  // The remote kernel will copy in all atoms
-    int toCopySize_atom_params = (isRemote) ? (_atom_params_copySize) : (0);  // If there are atom_params to copy, the remote kernel will copy in all atom_params
-    int toCopySize_patch_pairs = (isRemote) ? (_patch_pairs_copySize) : (0);  // This could potentially be split between kernels (but is relatively rare, so don't worry about it for now)
-    int toCopySize_force_lists = (isRemote) ? (_force_lists_copySize) : (0);  // This could potentially be split between kernels (but is relatively rare, so don't worry about it for now)
-    int toCopyStart_forces = (isRemote) ? (numLocalAtoms) : (0);
-    int toCopySize_forces = (isRemote) ? (numAtoms - numLocalAtoms) : (numLocalAtoms);
-    int toCopyStart_slow_forces = (doSlow) ? (toCopyStart_forces) : (0);
-    int toCopySize_slow_forces = (doSlow) ? (toCopySize_forces) : (0);
-  #else
-    int toCopySize_atoms = numAtoms;
-    int toCopySize_atom_params = _atom_params_copySize;
-    int toCopySize_patch_pairs = _patch_pairs_copySize;
-    int toCopySize_force_lists = _force_lists_copySize;
-    int toCopyStart_forces = 0;
-    int toCopySize_forces = numAtoms;
-    int toCopyStart_slow_forces = 0;
-    int toCopySize_slow_forces = slowForcesNumAtoms;
-  #endif
+  int toCopySize_atoms = (singleKernelFlag != 0 || isRemote) ? (numAtoms) : (0);  // The remote kernel will copy in all atoms
+  int toCopySize_atom_params = (singleKernelFlag != 0 || isRemote) ? (_atom_params_copySize) : (0);  // If there are atom_params to copy, the remote kernel will copy in all atom_params
+  int toCopySize_patch_pairs = (singleKernelFlag != 0 || isRemote) ? (_patch_pairs_copySize) : (0);  // This could potentially be split between kernels (but is relatively rare, so don't worry about it for now)
+  int toCopySize_force_lists = (singleKernelFlag != 0 || isRemote) ? (_force_lists_copySize) : (0);  // This could potentially be split between kernels (but is relatively rare, so don't worry about it for now)
+  int toCopyStart_forces = (singleKernelFlag != 0) ? (0) : ((isRemote) ? (numLocalAtoms) : (0));
+  int toCopySize_forces = (singleKernelFlag != 0) ? (numAtoms) : ((isRemote) ? (numAtoms - numLocalAtoms) : (numLocalAtoms));
+  int toCopyStart_slow_forces = (doSlow) ? (toCopyStart_forces) : (0);
+  int toCopySize_slow_forces = (doSlow) ? (toCopySize_forces) : (0);
 
   // If tracing data is to be recorded, setup local variables to the host buffers that will
   //   receive the data and setup the clauses that will be used to transfer the data
   #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
+    double * device_times_start = host__device_times_start;
+    int toCopySize_device_times_start = ((isRemote) ? (0) : (10));
     #if MIC_DEVICE_TRACING_DETAILED != 0
       double * device_times_computes = host__device_times_computes;
       double * device_times_patches = host__device_times_patches;
       int toCopySize_device_times_computes = ((isRemote) ? (0) : (2 * numPatchPairs));
       int toCopySize_device_times_patches = ((isRemote) ? (0) : (2 * numForceLists));
+      #if MIC_SYNC_OUTPUT != 0
+        #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED \
+          in(device_times_computes[0:0] : alloc_if(0) free_if(0)) \
+          in(device_times_patches[0:0] : alloc_if(0) free_if(0)) \
+          nocopy(device__device_times_computes) nocopy(device__device_times_patches)
+      #else
+        #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED \
+          out(device_times_computes[0:toCopySize_device_times_computes] : alloc_if(0) free_if(0)) \
+          out(device_times_patches[0:toCopySize_device_times_patches] : alloc_if(0) free_if(0)) \
+          nocopy(device__device_times_computes) nocopy(device__device_times_patches)
+      #endif
+    #else
+      #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED
     #endif
-    double * device_times_start = host__device_times_start;
-    int toCopySize_device_times_start = ((isRemote) ? (0) : (10));
-    #if MIC_DEVICE_TRACING_DETAILED != 0
+    #if MIC_SYNC_OUTPUT != 0
       #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE \
-        out(device_times_computes[0:toCopySize_device_times_computes] : alloc_if(0) free_if(0)) \
-        out(device_times_patches[0:toCopySize_device_times_patches] : alloc_if(0) free_if(0)) \
-        out(device_times_start[0:toCopySize_device_times_start] : alloc_if(0) free_if(0)) \
-        nocopy(device__device_times_start) nocopy(device__device_times_computes) nocopy(device__device_times_patches)
+        MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED \
+        in(device_times_start[0:0] : alloc_if(0) free_if(0)) \
+        nocopy(device__device_times_start)
     #else
       #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE \
+        MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED \
         out(device_times_start[0:toCopySize_device_times_start] : alloc_if(0) free_if(0)) \
         nocopy(device__device_times_start)
     #endif
@@ -1450,8 +1455,8 @@ void mic_nonbonded_forces(const int deviceNum,
     #define MIC_DEVICE_ATOMS_CLAUSE
   #else
     #define MIC_DEVICE_ATOMS_CLAUSE \
-      in(atoms[0:toCopySize_atoms] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
-      in(atom_params[0:toCopySize_atom_params] : alloc_if(0) free_if(0) align(MIC_ALIGN))
+      in(atoms[0:toCopySize_atoms] : alloc_if(0) free_if(0)) \
+      in(atom_params[0:toCopySize_atom_params] : alloc_if(0) free_if(0))
   #endif
 
   // If kernel data transfer stats are being collected, calculate and print the amount of data
@@ -1490,70 +1495,103 @@ void mic_nonbonded_forces(const int deviceNum,
   #if MIC_SYNC_INPUT != 0
 
     // Push the data to the device
-    #if MIC_MULTIPLE_KERNELS != 0
-      if (isRemote != 0) {
-    #endif
+    if (singleKernelFlag != 0 || isRemote != 0) {
       MICP("<< pushing input data >>\n"); MICPF;
       #if MIC_TRACING != 0
         double input_start = CmiWallTimer();
       #endif
       #pragma offload_transfer target(mic:deviceNum) \
-        in(lata : into(device__lata)) \
-        in(latb : into(device__latb)) \
-        in(latc : into(device__latc)) \
         in(force_buffers_req_size : into(device__force_buffers_req_size))  \
         in(patch_pairs[0:toCopySize_patch_pairs] : alloc_if(0) free_if(0)) \
         in(force_lists[0:toCopySize_force_lists] : alloc_if(0) free_if(0)) \
-        in(remote_kernel_data[0:1] : alloc_if(0) free_if(0)) \
-        in(local_kernel_data[0:1] : alloc_if(0) free_if(0)) \
-        in(numAtoms : into(device__atoms_size)) \
-        in(numPatchPairs : into(device__patch_pairs_size)) \
-        in(numForceLists : into(device__force_lists_size)) \
-        nocopy(device__pe) \
+        in(_kernel_data[0:2] : alloc_if(0) free_if(0)) \
         MIC_DEVICE_ATOMS_CLAUSE
       { }
       #if MIC_TRACING != 0
         double input_end = CmiWallTimer();
         MIC_TRACING_RECORD(MIC_EVENT_SYNC_INPUT_PRAGMA, input_start, input_end);
       #endif
-    #if MIC_MULTIPLE_KERNELS != 0
-      }
-    #endif
+    }
 
     // Setup the clauses for the actual kernel offload pragma (so that data is not transfered)
     #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
       #define TMP_SYNC_ATOMS_CLAUSE
     #else
-      #define TMP_SYNC_ATOMS_CLAUSE  in(atoms[0:0] : alloc_if(0) free_if(0)) in(atom_params[0:0] : alloc_if(0) free_if(0))
+      #define TMP_SYNC_ATOMS_CLAUSE \
+        in(atoms[0:0] : alloc_if(0) free_if(0)) \
+        in(atom_params[0:0] : alloc_if(0) free_if(0))
     #endif
+
+    #if MIC_SYNC_OUTPUT != 0
+      #define TMP_SYNC_KERNEL_DATA_CLAUSE \
+        in(_kernel_data[0:0] : alloc_if(0) free_if(0))
+    #else
+      #define TMP_SYNC_KERNEL_DATA_CLAUSE \
+        out(_kernel_data[isRemote:1] : alloc_if(0) free_if(0))
+    #endif
+
     #define MIC_DEVICE_SYNC_INPUT_CLAUSE \
       nocopy(device__lata) nocopy(device__latb) nocopy(device__latc) \
       nocopy(device__force_buffers_req_size) \
       nocopy(device__atoms_size) \
       in(patch_pairs[0:0] : alloc_if(0) free_if(0)) nocopy(device__patch_pairs_size) \
-      in(force_lists[0:0] : alloc_if(0) free_if(0)) nocopy(device__force_lists_size)	      \
-      out(kernel_data[0:1] : alloc_if(0) free_if(0) align(MIC_ALIGN)) \
+      in(force_lists[0:0] : alloc_if(0) free_if(0)) nocopy(device__force_lists_size) \
+      TMP_SYNC_KERNEL_DATA_CLAUSE \
       TMP_SYNC_ATOMS_CLAUSE
 
   #else
 
+    #if MIC_SYNC_OUTPUT != 0
+      #define TMP_SYNC_KERNEL_DATA_CLAUSE \
+        in(_kernel_data[isRemote:1] : alloc_if(0) free_if(0))
+    #else
+      #define TMP_SYNC_KERNEL_DATA_CLAUSE \
+        inout(_kernel_data[isRemote:1] : alloc_if(0) free_if(0))
+    #endif
+
     // Setup the clauses for the actual kernel offload pragma (so that data is transfered)
     #define MIC_DEVICE_SYNC_INPUT_CLAUSE \
-      in(lata : into(device__lata)) \
-      in(latb : into(device__latb)) \
-      in(latc : into(device__latc)) \
+      nocopy(device__lata) nocopy(device__latb) nocopy(device__latc) \
       in(force_buffers_req_size : into(device__force_buffers_req_size)) \
       in(patch_pairs[0:toCopySize_patch_pairs] : alloc_if(0) free_if(0)) \
       in(force_lists[0:toCopySize_force_lists] : alloc_if(0) free_if(0)) \
-      in(numAtoms : into(device__atoms_size)) \
-      in(numPatchPairs : into(device__patch_pairs_size)) \
-      in(numForceLists : into(device__force_lists_size)) \
-      inout(kernel_data[0:1] : alloc_if(0) free_if(0)) \
+      nocopy(device__atoms_size) nocopy(device__patch_pairs_size) nocopy(device__force_lists_size) \
+      TMP_SYNC_KERNEL_DATA_CLAUSE \
       MIC_DEVICE_ATOMS_CLAUSE
 
   #endif
 
   MICP("<< issuing %s kernel >>\n", (isRemote) ? ("remote") : ("local")); MICPF;
+
+  #if MIC_SYNC_OUTPUT != 0
+    #define MIC_DEVICE_SYNC_OUTPUT_CLAUSE \
+      in(forces[0:0] : alloc_if(0) free_if(0)) \
+      in(slow_forces[0:0] : alloc_if(0) free_if(0)) \
+      nocopy(device__timestep)
+  #else
+    #define MIC_DEVICE_SYNC_OUTPUT_CLAUSE \
+      out(forces[toCopyStart_forces:toCopySize_forces] : alloc_if(0) free_if(0)) \
+      out(slow_forces[toCopyStart_slow_forces:toCopySize_slow_forces] : alloc_if(0) free_if(0)) \
+      out(device__timestep : into(host__timestep))
+  #endif
+
+  #if MIC_DATA_STRUCT_VERIFY != 0
+    #define MIC_DEVICE_DATA_STRUCT_VERIFY_CLAUSE \
+      nocopy(device__exclusion_bits_copy) nocopy(device__constants_copy) \
+      nocopy(device__table_four_copy) nocopy(device__table_four_float_copy) \
+      nocopy(device__lj_table_copy) nocopy(device__lj_table_float_copy)
+  #else
+    #define MIC_DEVICE_DATA_STRUCT_VERIFY_CLAUSE
+  #endif
+
+  #if REFINE_PAIRLISTS != 0
+    #define MIC_DEVICE_REFINE_PAIRLISTS_CLAUSE \
+      nocopy(device__r2_array) \
+      nocopy(device__pl_array) \
+      nocopy(device__pl_size)
+  #else
+    #define MIC_DEVICE_REFINE_PAIRLISTS_CLAUSE
+  #endif
 
   #if MIC_TRACING != 0
     double pragma_start = CmiWallTimer();
@@ -1563,28 +1601,25 @@ void mic_nonbonded_forces(const int deviceNum,
   #pragma offload target(mic:deviceNum) \
     in(isRemote) \
     MIC_DEVICE_SYNC_INPUT_CLAUSE \
+    MIC_DEVICE_SYNC_OUTPUT_CLAUSE \
     MIC_DEVICE_TIMING_PRAGMA_CLAUSE \
-    out(forces[toCopyStart_forces:toCopySize_forces] : alloc_if(0) free_if(0)) \
-    out(slow_forces[toCopyStart_slow_forces:toCopySize_slow_forces] : alloc_if(0) free_if(0)) \
-    out(device__timestep : into(host__timestep)) \
     nocopy(device__force_buffers) nocopy(device__slow_force_buffers) nocopy(device__force_buffers_alloc_size) \
     nocopy(device__pairlists) nocopy(device__pairlists_alloc_size) \
     nocopy(device__table_four) nocopy(device__table_four_float) nocopy(device__table_four_n_16) \
     nocopy(device__lj_table) nocopy(device__lj_table_float) nocopy(device__lj_table_dim) \
     nocopy(device__exclusion_bits) \
     nocopy(device__constants) \
-    nocopy(device__pl_array) nocopy(device__pl_size) nocopy(device__r2_array) \
-    nocopy(device__pe) \
     nocopy(device__atoms) nocopy(device__atom_params) \
     nocopy(device__forces) nocopy(device__slow_forces) \
     nocopy(device__patch_pairs) nocopy(device__force_lists) \
     nocopy(device__numOMPThreads) \
-    nocopy(device__exclusion_bits_copy) nocopy(device__constants_copy) \
-    nocopy(device__table_four_copy) nocopy(device__table_four_float_copy) \
-    nocopy(device__lj_table_copy) nocopy(device__lj_table_float_copy) \
+    MIC_DEVICE_REFINE_PAIRLISTS_CLAUSE \
+    MIC_DEVICE_DATA_STRUCT_VERIFY_CLAUSE \
+    nocopy(device__pe) \
     signal(tag_kernel)
   {
     __MUST_BE_MIC;
+    mic_kernel_data * kernel_data = _kernel_data + isRemote;
     __FULL_CHECK(__ASSERT(kernel_data != NULL));
     __FULL_CHECK(__ASSERT(device__numOMPThreads > 0));
 
@@ -1612,6 +1647,18 @@ void mic_nonbonded_forces(const int deviceNum,
         __ASSERT(device__device_times_patches);
       #endif
     #endif
+    device__lata.x = kernel_data->lata.x;
+    device__lata.y = kernel_data->lata.y;
+    device__lata.z = kernel_data->lata.z;
+    device__latb.x = kernel_data->latb.x;
+    device__latb.y = kernel_data->latb.y;
+    device__latb.z = kernel_data->latb.z;
+    device__latc.x = kernel_data->latc.x;
+    device__latc.y = kernel_data->latc.y;
+    device__latc.z = kernel_data->latc.z;
+    device__atoms_size = kernel_data->numAtoms;
+    device__patch_pairs_size = kernel_data->numPatchPairs;
+    device__force_lists_size = kernel_data->numForceLists;
 
     // TRACING - Record the start time of the kernel
     #if (MIC_TRACING != 0 && MIC_DEVICE_TRACING != 0)
@@ -1669,13 +1716,8 @@ void mic_nonbonded_forces(const int deviceNum,
     #endif
 
     // Calculate the lower and upper bounds for the patch pairs that will be computed within this kernel
-    #if MIC_MULTIPLE_KERNELS != 0
-      const int ppI_start = (isRemote) ? (kernel_data->numLocalComputes) : (0);
-      const int ppI_end = (isRemote) ? (device__patch_pairs_size) : (kernel_data->numLocalComputes);
-    #else
-      const int ppI_start = 0;
-      const int ppI_end = device__patch_pairs_size;
-    #endif
+    const int ppI_start = (isRemote) ? (kernel_data->numLocalComputes) : (0);
+    const int ppI_end = (device__constants->singleKernelFlag != 0 || isRemote) ? (device__patch_pairs_size) : (kernel_data->numLocalComputes);
     __FULL_CHECK(__ASSERT(ppI_start >= 0 && ppI_start <= device__patch_pairs_size));
     __FULL_CHECK(__ASSERT(ppI_end >= 0 && ppI_end <= device__patch_pairs_size));
     __FULL_CHECK(__ASSERT(ppI_start <= ppI_end));
@@ -2037,13 +2079,8 @@ void mic_nonbonded_forces(const int deviceNum,
     #endif
 
     // Calculate the upper and lower bounds for the force lists to be processed by this kernel
-    #if MIC_MULTIPLE_KERNELS != 0
-      int flI_start = (isRemote) ? (kernel_data->numLocalPatches) : (0);
-      int flI_end = (isRemote) ? (device__force_lists_size) : (kernel_data->numLocalPatches);
-    #else
-      int flI_start = 0;
-      int flI_end = device__force_lists_size;
-    #endif
+    int flI_start = (isRemote) ? (kernel_data->numLocalPatches) : (0);
+    int flI_end = (device__constants->singleKernelFlag != 0 || isRemote) ? (device__force_lists_size) : (kernel_data->numLocalPatches);
     __FULL_CHECK(__ASSERT(flI_start >= 0 && flI_start <= device__force_lists_size));
     __FULL_CHECK(__ASSERT(flI_end >= 0 && flI_start <= device__force_lists_size));
     __FULL_CHECK(__ASSERT(flI_start <= flI_end));
@@ -2195,11 +2232,71 @@ void mic_nonbonded_forces(const int deviceNum,
   #if MIC_SYNC_INPUT != 0
     #undef TMP_SYNC_ATOMS_CLAUSE
   #endif
+  #undef TMP_SYNC_KERNEL_DATA_CLAUSE
   #undef MIC_DEVICE_SYNC_INPUT_CLAUSE
 
-  #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
-    #undef MIC_DEVICE_TIMING_PRAGMA_CLAUSE
+  #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)  
+    #undef MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED
   #endif
+  #undef MIC_DEVICE_TIMING_PRAGMA_CLAUSE
+
+  #undef MIC_DEVICE_DATA_STRUCT_VERIFY_CLAUSE
+  #undef MIC_DEVICE_REFINE_PAIRLISTS_CLAUSE
+}
+
+void mic_transfer_output(const int deviceNum,
+                         const int isRemote,
+                         const int numLocalAtoms,
+                         const int doSlow
+                        ) {
+
+  const int numAtoms = host__atoms_size;
+
+  mic_kernel_data * kernel_data = host__kernel_data; //((isRemote) ? (host__remote_kernel_data) : (host__local_kernel_data));
+
+  int toCopyStart_forces = (singleKernelFlag != 0) ? (0) : ((isRemote) ? (numLocalAtoms) : (0));
+  int toCopySize_forces = (singleKernelFlag != 0) ? (numAtoms) : ((isRemote) ? (numAtoms - numLocalAtoms) : (numLocalAtoms));
+  int toCopyStart_slow_forces = (doSlow) ? (toCopyStart_forces) : (0);
+  int toCopySize_slow_forces = (doSlow) ? (toCopySize_forces) : (0);
+
+  double4 * forces = host__forces;
+  double4 * slow_forces = host__slow_forces;
+
+  #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
+    const int numPatchPairs = host__patch_pairs_size;
+    const int numForceLists = host__force_lists_size;
+    double * device_times_start = host__device_times_start;
+    int toCopySize_device_times_start = ((isRemote) ? (0) : (10));
+    #if MIC_DEVICE_TRACING_DETAILED != 0
+      double * device_times_computes = host__device_times_computes;
+      double * device_times_patches = host__device_times_patches;
+      int toCopySize_device_times_computes = ((isRemote) ? (0) : (2 * numPatchPairs));
+      int toCopySize_device_times_patches = ((isRemote) ? (0) : (2 * numForceLists));
+      #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED \
+        out(device_times_computes[0:toCopySize_device_times_computes] : alloc_if(0) free_if(0)) \
+        out(device_times_patches[0:toCopySize_device_times_patches] : alloc_if(0) free_if(0))
+    #else
+      #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED
+    #endif
+    #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE \
+      MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED \
+      out(device_times_start[0:toCopySize_device_times_start] : alloc_if(0) free_if(0))
+  #else
+    #define MIC_DEVICE_TIMING_PRAGMA_CLAUSE
+  #endif
+
+  #pragma offload_transfer target(mic:deviceNum) \
+    out(forces[toCopyStart_forces:toCopySize_forces] : alloc_if(0) free_if(0)) \
+    out(slow_forces[toCopyStart_slow_forces:toCopySize_slow_forces] : alloc_if(0) free_if(0)) \
+    out(kernel_data[isRemote:1] : alloc_if(0) free_if(0)) \
+    MIC_DEVICE_TIMING_PRAGMA_CLAUSE \
+    out(device__timestep : into(host__timestep))
+  { }
+
+  #if (MIC_TRACING != 0) && (MIC_DEVICE_TRACING != 0)
+    #undef MIC_DEVICE_TIMING_PRAGMA_CLAUSE_DETAILED
+  #endif
+  #undef MIC_DEVICE_TIMING_PRAGMA_CLAUSE
 }
 
 int mic_check_remote_kernel_complete(const int deviceNum) {
@@ -2227,13 +2324,11 @@ int mic_check_local_kernel_complete(const int deviceNum) {
 
 void mic_free_device(const int deviceNum) {
 
-  mic_kernel_data * remote_kernel_data = host__remote_kernel_data;
-  mic_kernel_data * local_kernel_data = host__local_kernel_data;
+  mic_kernel_data * kernel_data = host__kernel_data;
 
   // Cleanup kernel data (for buffers allocated via offload pragmas, use "free_if(1)")
   #pragma offload target(mic:deviceNum) \
-    nocopy(remote_kernel_data : alloc_if(0) free_if(1)) \
-    nocopy(local_kernel_data : alloc_if(0) free_if(1)) \
+    nocopy(kernel_data : alloc_if(0) free_if(1)) \
     nocopy(device__table_four) nocopy(device__table_four_float) \
     nocopy(device__lj_table) nocopy(device__lj_table_float) \
     nocopy(device__exclusion_bits) nocopy(device__exclusion_bits_copy) \
@@ -2283,14 +2378,8 @@ void mic_free_device(const int deviceNum) {
     if (device__slow_force_buffers != NULL) { _MM_FREE_WRAPPER(device__slow_force_buffers); device__slow_force_buffers = NULL; }
   }
 
-  if (host__remote_kernel_data != NULL) { delete [] host__remote_kernel_data; host__remote_kernel_data = NULL; }
-  if (host__local_kernel_data != NULL) { delete [] host__local_kernel_data; host__local_kernel_data = NULL; }
+  if (host__kernel_data != NULL) { delete [] host__kernel_data; host__kernel_data = NULL; }
 }
 
-#else  // NAMD_MIC
-
-// for make depends
-#include "ComputeNonbondedMICKernel.h"
-#include "ComputeNonbondedMICKernelBase.h"
 
 #endif  // NAMD_MIC

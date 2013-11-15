@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2013/08/30 21:50:04 $
- * $Revision: 1.123 $
+ * $Date: 2013/11/15 22:05:56 $
+ * $Revision: 1.124 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -279,7 +279,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     if ( (computeMap->node(i) == Node::Object()->myid())
 	 && ( 0
               #if (defined(NAMD_CUDA) || defined(NAMD_MIC))
-                #if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+                #if defined(NAMD_MIC)
                   || ((computeMap->type(i) == computeNonbondedSelfType) && (computeMap->directToDevice(i) == 0))
                   || ((computeMap->type(i) == computeNonbondedPairType) && (computeMap->directToDevice(i) == 0))
                 #endif
@@ -355,14 +355,14 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
         {
 	  if ( 0
                #if (defined(NAMD_CUDA) || defined(NAMD_MIC))
-                 #if defined(NAMD_MIC) && (MIC_SPLIT_WITH_HOST != 0)
+                 #if defined(NAMD_MIC)
                    || ((computeMap->type(i) == computeNonbondedSelfType) && (computeMap->directToDevice(i) == 0))
                    || ((computeMap->type(i) == computeNonbondedPairType) && (computeMap->directToDevice(i) == 0))
                  #endif
                #else
 	          || (computeMap->type(i) == computeNonbondedSelfType)
 	          || (computeMap->type(i) == computeNonbondedPairType)
-#endif
+               #endif
 	          || (computeMap->type(i) == computeLCPOType)
 	          || (computeMap->type(i) == computeSelfExclsType)
 	          || (computeMap->type(i) == computeSelfBondsType)
