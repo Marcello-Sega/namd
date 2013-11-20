@@ -2785,6 +2785,7 @@ void HomePatch::recvExchangeReq(int req) {
 
 void HomePatch::recvExchangeMsg(ExchangeAtomsMsg *msg) {
   // CkPrintf("recvExchangeMsg %d %d\n", CmiMyPartition(), exchange_src);
+  atomMapper->unregisterIDsFullAtom(atom.begin(),atom.end());
   lattice = msg->lattice;
   numAtoms = msg->numAtoms;
   atom.resize(numAtoms);
