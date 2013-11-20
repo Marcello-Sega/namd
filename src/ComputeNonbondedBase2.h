@@ -363,6 +363,12 @@ MODIFIED(
 #if    ( NORMAL (1+) 0)
 #if    ( GO (1+) 0)
 
+
+// JLai
+#ifndef CODE_REDUNDANT
+#define CODE_REDUNDANT 0
+#endif
+#if CODE_REDUNDANT
        if (ComputeNonbondedUtil::goGroPair) {
 	 // Explicit goGroPair calculation; only calculates goGroPair if goGroPair is turned on
 	 //
@@ -378,6 +384,7 @@ MODIFIED(
 	 BigReal groGausse = 0.0;
 	 const CompAtomExt *pExt_z = pExt_1 + j;
              BigReal groForce = mol->get_gro_force2(p_ij_x, p_ij_y, p_ij_z,pExt_i.id,pExt_z->id,&groLJe,&groGausse);
+	     NAMD_die("Failsafe.  This line should never be reached\n");
 #ifndef A2_QPX
              fast_b += groForce;
 #else 
@@ -391,6 +398,7 @@ MODIFIED(
 		 )
 	     ) //ENERGY
        }
+#endif 
        BigReal goNative = 0;
        BigReal goNonnative = 0;
        BigReal goForce = 0;

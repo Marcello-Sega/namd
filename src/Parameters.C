@@ -207,6 +207,9 @@ void Parameters::initialize() {
   dihedral_array=NULL;
   improper_array=NULL;
   crossterm_array=NULL;
+  // JLai
+  gromacsPair_array=NULL;
+  // End of JLai
   vdw_array=NULL;
   vdw_pair_tree=NULL;
   nbthole_pair_tree=NULL;
@@ -221,6 +224,9 @@ void Parameters::initialize() {
   NumDihedralParams=0;
   NumImproperParams=0;
   NumCrosstermParams=0;
+  // JLai
+  NumGromacsPairParams=0;
+  // End of JLai
   NumVdwParams=0;
   NumVdwPairParams=0;
   NumNbtholePairParams=0;
@@ -348,6 +354,11 @@ Parameters::~Parameters()
 
   if (crossterm_array != NULL)
     delete [] crossterm_array;
+
+  // JLai
+  if (gromacsPair_array != NULL)
+    delete [] gromacsPair_array;
+  // End of JLai
 
   if (vdw_array != NULL)
     delete [] vdw_array;
@@ -3008,6 +3019,14 @@ void Parameters::done_reading_files()
     memset(crossterm_array, 0, NumCrosstermParams*sizeof(CrosstermValue));
   }
 
+  // JLai
+  if (NumGromacsPairParams)
+  {
+    gromacsPair_array = new GromacsPairValue[NumGromacsPairParams];
+    memset(gromacsPair_array, 0, NumGromacsPairParams*sizeof(GromacsPairValue)); 
+  }
+  // End of JLai
+
   if (NumVdwParams)
   {
           atomTypeNames = new char[NumVdwParams*(MAX_ATOMTYPE_CHARS+1)];
@@ -5010,6 +5029,7 @@ void Parameters::send_Parameters(MOStream *msg)
   Real **kvals;      //  Force constant values for dihedrals and impropers
   int **nvals;      //  Periodicity values for  dihedrals and impropers
   Real **deltavals;    //  Phase shift values for  dihedrals and impropers
+  BigReal *pairC6, *pairC12; // JLai
   /*MOStream *msg=comm_obj->newOutputStream(ALLBUTME, STATICPARAMSTAG, BUFSIZE);
   if ( msg == NULL )
   {
@@ -5206,6 +5226,31 @@ void Parameters::send_Parameters(MOStream *msg)
       msg->put(nvals,&crossterm_array[i].c[0][0].d00);
     }
   }
+  //  Send the GromacsPairs parameters
+  // JLai
+  msg->put(NumGromacsPairParams);
+ 
+  if(NumGromacsPairParams) 
+  {
+      pairC6 = new BigReal[NumGromacsPairParams];
+      pairC12 = new BigReal[NumGromacsPairParams];
+      if ( (pairC6 == NULL) || (pairC12 == NULL) ) {
+	  NAMD_die("memory allocation failed in Parameters::send_Parameters");
+      }
+
+      for (i=0; i<NumGromacsPairParams; i++) {
+	  pairC6[i] = gromacsPair_array[i].pairC6;
+	  pairC12[i] = gromacsPair_array[i].pairC12;
+      }
+
+      msg->put(NumGromacsPairParams,pairC6);
+      msg->put(NumGromacsPairParams,pairC12);
+
+      delete [] pairC6;
+      delete [] pairC12;
+  }
+  // End of JLai
+  
   //
   //Send the energy table parameters
   msg->put(numenerentries);
@@ -5363,6 +5408,7 @@ void Parameters::receive_Parameters(MIStream *msg)
   Real **kvals;      //  Force constant values for dihedrals and impropers
   int **nvals;      //  Periodicity values for dihedrals and impropers
   Real **deltavals;    //  Phase shift values for dihedrals and impropers
+  BigReal *pairC6, *pairC12;  // JLai
 
   //  Get the bonded parameters
   msg->get(NumBondParams);
@@ -5571,6 +5617,33 @@ void Parameters::receive_Parameters(MIStream *msg)
     }
   }
   
+  // Get GromacsPairs parameters
+  // JLai
+  msg->get(NumGromacsPairParams);
+  
+  if (NumGromacsPairParams)
+  {
+      gromacsPair_array = new GromacsPairValue[NumGromacsPairParams];
+      pairC6 = new BigReal[NumGromacsPairParams];
+      pairC12 = new BigReal[NumGromacsPairParams];
+      
+      if ( (pairC6 == NULL) || (pairC12 == NULL) ) {
+	  NAMD_die("memory allocation failed in Parameters::receive_Parameters");
+      }
+    
+      msg->get(NumGromacsPairParams,pairC6);
+      msg->get(NumGromacsPairParams,pairC12);
+      
+      for (i=0; i<NumGromacsPairParams; ++i) {
+	  gromacsPair_array[i].pairC6 = pairC6[i];
+	  gromacsPair_array[i].pairC12 = pairC12[i];
+      }
+
+      delete [] pairC6;
+      delete [] pairC12;
+  }
+  // JLai
+
   //Get the energy table
   msg->get(numenerentries);
   if (numenerentries > 0) {
@@ -6584,6 +6657,36 @@ void Parameters::read_parm(const GromacsTopFile *gf, Bool min)
       vdw_pair_tree = add_to_indexed_vdw_pairs(new_node, vdw_pair_tree);
     }
   }
+
+  // JLai
+  // Allocate space for all of the GromacsPair arrays first
+  int numPair, numLJPair, numGaussPair;
+  Real *pairC6,*pairC12; // constants to define LJ potential
+  int *atom1,*atom2; // atom indices for LJ code
+  atom1 = 0;
+  atom2 = 0;
+  pairC6 = 0;
+  pairC12 = 0;
+  numPair = gf->getNumPair();
+  NumGromacsPairParams = numLJPair = gf->getNumLJPair();
+  if (numLJPair) {
+      atom1   = new int[numLJPair];
+      atom2   = new int[numLJPair];
+      pairC6  = new Real[numLJPair];
+      pairC12 = new Real[numLJPair];
+      gromacsPair_array = new GromacsPairValue[numLJPair];
+  }
+ 
+  // Copy GromacsPair data into gromacsPair array structures
+  const_cast<GromacsTopFile*>(gf)->getPairLJArrays2(atom1, atom2, pairC6, pairC12);
+  for (i=0;i<numLJPair;i++) {
+      gromacsPair_array[i].pairC6  = pairC6[i];
+      gromacsPair_array[i].pairC12 = pairC12[i];
+  }
+  delete [] atom1;
+  delete [] atom2;
+  delete [] pairC6;
+  delete [] pairC12;
 }
 /*      END OF FUNCTION read_parm    */
 

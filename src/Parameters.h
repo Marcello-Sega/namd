@@ -120,6 +120,21 @@ public:
 	CrosstermData c[dim][dim];  // bicubic interpolation coefficients
 };
 
+// JLai
+class GromacsPairValue {
+public:
+    BigReal pairC6;
+    BigReal pairC12;
+/*    BigReal A;
+    BigReal B;
+    BigReal A14;
+    BigReal B14;
+    BigReal sqrt26;
+    BigReal expo;*/
+};
+// End of JLai
+
+
 class NonbondedExclValue {
 public:
 	// need to put parameters here...
@@ -226,6 +241,9 @@ public:
 	DihedralValue *dihedral_array;		//  Array of dihedral params
 	ImproperValue *improper_array;		//  Array of improper params
 	CrosstermValue *crossterm_array;	//  Array of crossterm params
+	// JLai
+	GromacsPairValue *gromacsPair_array;    //  Array of gromacsPair params
+	// End of JLai
 	VdwValue *vdw_array;			//  Array of vdw params
 	NbtholePairValue *nbthole_array;        //  Array of nbthole params
 	int numenerentries;			//  Number of entries for enertable
@@ -242,6 +260,9 @@ public:
 	int NumDihedralParams;			//  Number of dihedral params
 	int NumImproperParams;			//  Number of improper params
 	int NumCrosstermParams;			//  Number of cross-term params
+	// JLai
+	int NumGromacsPairParams;               //  Number of gromacsPair params
+	// End of JLai
 	int NumVdwParams;			//  Number of vdw parameters
 	int NumTableParams;			//  Number of table parameters
   int NumVdwParamsAssigned;               //  Number actually assigned

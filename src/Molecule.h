@@ -56,6 +56,9 @@ class ImproperElem;
 class TholeElem;  // Drude model
 class AnisoElem;  // Drude model
 class CrosstermElem;
+// JLai
+class GromacsPairElem;
+// End of JLai
 class ResidueLookupElem;
 
 struct OutputAtomRecord;
@@ -199,6 +202,9 @@ friend class ImproperElem;
 friend class TholeElem;  // Drude model
 friend class AnisoElem;  // Drude model
 friend class CrosstermElem;
+// JLai
+friend class GromacsPairElem;
+// End of JLai
 friend class WorkDistrib;
 
 private:
@@ -213,6 +219,7 @@ private:
 	Dihedral *dihedrals;  //  Array of dihedral structures
 	Improper *impropers;  //  Array of improper structures                          
 	Crossterm *crossterms;  //  Array of cross-term structures
+        GromacsPair *gromacsPair; //  Array of gromacs-pair structures
 
 	//These will be replaced by exclusion signatures
 	Exclusion *exclusions;  //  Array of exclusion structures
@@ -234,6 +241,10 @@ private:
 	int32 **exclusionsByAtom; //  List of exclusions owned by each atom
 	int32 **fullExclusionsByAtom; //  List of atoms excluded for each atom
 	int32 **modExclusionsByAtom; //  List of atoms modified for each atom
+// JLai
+	int32 **gromacsPairByAtom; // gromacsPair exclusion list which by definition should not have any exclusions (still not sure if it should be empty or zeroed out)
+// End of JLai
+
 	ObjectArena<char> *exclArena;
 	ExclusionCheck *all_exclusions;
 
@@ -606,12 +617,14 @@ public:
   // Gromacs LJ Pair list calculation code
   int numPair;            //  Integer storing the total number of explicit pairs (LJ + Gaussian)
   int numLJPair;          //  Integer storing the number of explicit LJ pairs
+  int numCalcLJPair;         //  Number of explicit LJ pairs requiring calculation
   int *pointerToLJBeg;       //  Array of pointers to array 
   int *pointerToLJEnd;       //  Array of pointers to array B
   int *indxLJA;           //  Pointer to the array of atom indices for LJ atom A
   int *indxLJB;           //  Pointer to the array of atom indices for LJ atom B
   Real *pairC6;           //  Pointer to the array of C6 LJ parameters
   Real *pairC12;          //  Pointer to the array of C12 LJ parameters
+  int *gromacsPair_type;   //  
   // Gromacs Gauss Pair list calculation code
   int *pointerToGaussBeg;    //  Array of pointers to array B
   int *pointerToGaussEnd;    //  Array of pointers to array B

@@ -34,6 +34,8 @@
 #include "ComputeThole.h"
 #include "ComputeAniso.h"
 #include "ComputeCrossterms.h"
+// JLai
+#include "ComputeGromacsPair.h"
 #include "ComputeBonds.h"
 #include "ComputeNonbondedCUDAExcl.h"
 #include "ComputeFullDirect.h"
@@ -479,6 +481,19 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         map->registerCompute(i,c);
         c->initialize();
         break;
+	// JLai
+    case computeGromacsPairType:
+	PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+	c = new ComputeGromacsPair(i,pids); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+  case computeSelfGromacsPairType:
+        c = new ComputeSelfGromacsPair(i,map->computeData[i].pids[0].pid); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+	// End of JLai
     case computeSelfExclsType:
         c = new ComputeSelfExcls(i,map->computeData[i].pids[0].pid);
         map->registerCompute(i,c);

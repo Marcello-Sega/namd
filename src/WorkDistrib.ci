@@ -36,6 +36,9 @@ module WorkDistrib {
     entry void enqueueThole(LocalWorkMsg *);  // Drude model
     entry void enqueueAniso(LocalWorkMsg *);  // Drude model
     entry void enqueueCrossterms(LocalWorkMsg *);
+    // JLai
+    entry void enqueueGromacsPair(LocalWorkMsg *);
+    // End of JLai
     entry void enqueueCUDA(LocalWorkMsg *);
     entry void enqueueCUDAP2(LocalWorkMsg *);
     entry void enqueueCUDAP3(LocalWorkMsg *);

@@ -45,6 +45,8 @@ public:
     int numCalcCrossterms;
     int numExclusions;
     int numCalcExclusions;
+    int numLJPairs;
+    int numCalcLJPairs;
     
     int numRigidBonds;
 

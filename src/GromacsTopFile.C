@@ -525,6 +525,13 @@ GromacsTopFile::GromacsTopFile(char *filename) {
       indexA--;
       indexB--;
 
+      // Make sure that the indexA is less than indexB
+      /*if ( indexA > indexB ) {
+	  int tmpIndex = indexA;
+	  indexB = indexA;
+	  indexA = tmpIndex;
+	  }*/
+
       if (pairFunction == 1) {
 	
 	// LJ code
@@ -1429,10 +1436,11 @@ void GromacsTopFile::getVDWParams(int numa, int numb,
   i = vdwTable.getParams(typea,typeb,c6,c12,c6pair,c12pair);
 
   if(i==-1) {
-    if ( !genPairs && numa != numb ) {
+    // QQ151069
+    /*if ( !genPairs && numa != numb ) {
       iout << iWARN << "VDW table using combining rule for types "
       << typea << " " << typeb << "\n" << endi;
-    }
+      }*/
 
     /* fallback - use the individual atom's parameters */
     ret = atomTable.getParams(typea, &mjunk, &qjunk, &c6a, &c12a);
@@ -1466,7 +1474,7 @@ int PairTable::addPairLJType2(int indexA, int indexB, Real pairC6, Real pairC12)
   glp.c12pair = pairC12;
   pairlistLJ.add(glp);
   numLJPair++;
-
+  return 0;
 
   // Insert the second copy
   GroLJPair glp2;

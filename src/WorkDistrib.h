@@ -52,6 +52,9 @@ public:
   void enqueueThole(LocalWorkMsg *msg);  // Drude model
   void enqueueAniso(LocalWorkMsg *msg);  // Drude model
   void enqueueCrossterms(LocalWorkMsg *msg);
+  // JLai
+  void enqueueGromacsPair(LocalWorkMsg *msg);
+  // End of JLai
   void enqueuePme(LocalWorkMsg *msg);
   void enqueueSelfA1(LocalWorkMsg *msg);
   void enqueueSelfA2(LocalWorkMsg *msg);

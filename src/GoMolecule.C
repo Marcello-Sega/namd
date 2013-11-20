@@ -1169,14 +1169,6 @@ void Molecule::print_go_sigmas()
 }
 /*      END OF FUNCTION print_go_sigmas     */
 
-/*
-int globalCounter = 0;
-int histogramNum = 0;
-int *globalArrayCounter;
-double *globalArrayCounterREF;
-bool globalFlag = false;
-*/
-
 // JLai
 BigReal Molecule::get_gro_force2(BigReal x,
 				 BigReal y,

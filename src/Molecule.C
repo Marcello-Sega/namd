@@ -257,6 +257,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   dihedralsByAtom=NULL;
   impropersByAtom=NULL;
   crosstermsByAtom=NULL;
+  // JLai
+  gromacsPairByAtom=NULL;
+  // End of JLai
   // DRUDE
   tholesByAtom=NULL;
   anisosByAtom=NULL;
@@ -331,6 +334,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numTholes=0;
   numAnisos=0;
   numCrossterms=0;
+  // JLai
+  numLJPair=0;
+  // End of JLai
   numDonors=0;
   numAcceptors=0;
   numExclusions=0;
@@ -363,6 +369,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numCalcAnisos=0;
   numCalcCrossterms=0;
   numCalcExclusions=0;
+  // JLai
+  numCalcLJPair=0;
+  // End of JLai
 
 //fepb
   numFepInitial = 0;
@@ -606,6 +615,11 @@ Molecule::~Molecule()
   if (all_exclusions != NULL)
        delete [] all_exclusions;
 
+  // JLai
+  if (gromacsPairByAtom != NULL)
+      delete [] gromacsPairByAtom;
+  // End of JLai
+
   // DRUDE
   if (tholesByAtom != NULL)
        delete [] tholesByAtom;
@@ -677,7 +691,6 @@ Molecule::~Molecule()
 /************************************************************************/
 
 void Molecule::read_psf_file(char *fname, Parameters *params)
-
 {
   char err_msg[512];  //  Error message for NAMD_die
   char buffer[512];  //  Buffer for file reading
@@ -2884,6 +2897,10 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
        fullExclusionsByAtom = new int32 *[numAtoms];
        modExclusionsByAtom = new int32 *[numAtoms];
 
+       // JLai
+       gromacsPairByAtom = new int32 *[numAtoms];
+       // End of JLai
+
        int32 *byAtomSize = new int32[numAtoms];
 
        const int pair_self = 
@@ -3182,6 +3199,40 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
        }
        // DRUDE
     
+       // JLai
+       DebugM(3,"Building gromacsPair lists.\n");
+    
+       //  Build the gromacsPair lists
+       for (i=0; i<numAtoms; i++)
+       {
+         byAtomSize[i] = 0;
+       }
+       numCalcLJPair = 0;
+       for (i=0; i<numLJPair; i++)
+       {
+         if ( numFixedAtoms && fixedAtomFlags[gromacsPair[i].atom1]
+                            && fixedAtomFlags[gromacsPair[i].atom2] ) continue;
+         if ( pair_self && fepAtomFlags[gromacsPair[i].atom1] != 1) continue;
+         byAtomSize[gromacsPair[i].atom1]++;
+         numCalcLJPair++;
+       }
+       for (i=0; i<numAtoms; i++)
+       {
+         gromacsPairByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
+         gromacsPairByAtom[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
+       }
+       for (i=0; i<numLJPair; i++)
+       {
+	   if ( numFixedAtoms && fixedAtomFlags[gromacsPair[i].atom1]
+		&& fixedAtomFlags[gromacsPair[i].atom2] ) continue;
+	   if ( pair_self && fepAtomFlags[gromacsPair[i].atom1] != 1) continue;
+	   int a1 = gromacsPair[i].atom1;
+	   gromacsPairByAtom[a1][byAtomSize[a1]++] = i;
+	   }
+
+       // End of JLai
+
        DebugM(3,"Building exclusion data.\n");
     
        //  Build the arrays of exclusions for each atom
@@ -5028,6 +5079,9 @@ void Molecule::send_Molecule(MOStream *msg){
   numImpropers = numCalcImpropers = 0;
   numCrossterms = numCalcCrossterms = 0;
   numTotalExclusions = numCalcExclusions = 0;  
+  // JLai
+  numLJPair = numCalcLJPair = 0;
+  // End of JLai
 
 #else
   msg->put(numAtoms);
@@ -5238,6 +5292,7 @@ void Molecule::send_Molecule(MOStream *msg){
     msg->put(numLJPair,indxLJB);
     msg->put(numLJPair,pairC6);
     msg->put(numLJPair,pairC12);
+    msg->put(numLJPair,gromacsPair_type);
     msg->put((numAtoms),pointerToLJBeg);
     msg->put((numAtoms),pointerToLJEnd);
     msg->put(numGaussPair);
@@ -5635,6 +5690,8 @@ void Molecule::receive_Molecule(MIStream *msg){
     msg->get(numAtoms, (int*)lcpoParamType);
   }
 
+  //Receive GromacsPairStuff -- JLai
+
   if (simParams->goGroPair) {
     msg->get(numLJPair);
     delete [] indxLJA;
@@ -5649,12 +5706,25 @@ void Molecule::receive_Molecule(MIStream *msg){
     delete [] pairC12;
     pairC12 = new Real[numLJPair];
     msg->get(numLJPair,pairC12);
+    delete [] gromacsPair_type;
+    gromacsPair_type = new int[numLJPair];
+    msg->get(numLJPair,gromacsPair_type);
     delete [] pointerToLJBeg;
     pointerToLJBeg = new int[numAtoms];
     msg->get((numAtoms),pointerToLJBeg);
     delete [] pointerToLJEnd;
     pointerToLJEnd = new int[numAtoms];
     msg->get((numAtoms),pointerToLJEnd);
+    // JLai
+    delete [] gromacsPair;
+    gromacsPair = new GromacsPair[numLJPair];
+    for(int i=0; i < numLJPair; i++) {
+	gromacsPair[i].atom1 = indxLJA[i];
+	gromacsPair[i].atom2 = indxLJB[i];
+	gromacsPair[i].pairC6  = pairC6[i];
+	gromacsPair[i].pairC12 = pairC12[i];
+	gromacsPair[i].gromacsPair_type = gromacsPair_type[i];
+    }
     //
     msg->get(numGaussPair);
     delete [] indxGaussA;
@@ -7834,6 +7904,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
   ResizeArray<AngleValue> angle_params;
   ResizeArray<DihedralValue> dihedral_params;
   ResizeArray<ImproperValue> improper_params;
+  ResizeArray<GromacsPairValue> gromacsPair_params;
 
   if ( ! file ) {
     NAMD_die("NO EXTRA BONDS FILES SPECIFIED");
@@ -9865,11 +9936,23 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
   // JLai modifications on August 16th, 2012
   numPair = gf->getNumPair();
   numLJPair = gf->getNumLJPair();
+  //std::cout << "Number of LJ pairs defined: " << numLJPair << "\n";
   indxLJA = new int[numLJPair];
   indxLJB = new int[numLJPair];
   pairC6 = new Real[numLJPair];
   pairC12 = new Real[numLJPair];
+  gromacsPair_type = new int[numLJPair];
   const_cast<GromacsTopFile*>(gf)->getPairLJArrays2(indxLJA, indxLJB, pairC6, pairC12);
+  gromacsPair = new GromacsPair[numLJPair];
+  for(int i=0; i < numLJPair; i++) {
+      gromacsPair_type[i] = i;
+      gromacsPair[i].atom1 = indxLJA[i];
+      gromacsPair[i].atom2 = indxLJB[i];
+      gromacsPair[i].pairC6  = pairC6[i];
+      gromacsPair[i].pairC12 = pairC12[i];
+      //std::cout << "GromacsPairInitialization: " << gromacsPair[i].atom1 << " " << gromacsPair[i].atom2 << " " << gromacsPair[i].pairC6 << " " << gromacsPair[i].pairC12 << "\n";
+      gromacsPair[i].gromacsPair_type = gromacsPair_type[i];
+  }
   
   pointerToLJBeg = new int[numAtoms];
   pointerToLJEnd = new int[numAtoms];
@@ -9914,10 +9997,10 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
     pointerToGaussEnd[oldIndex] = i;
   }
   
-  iout << "Finished reading explicit pair from Gromacs file:\n" << 
-    "Found a total of: " << numPair << " explicit pairs--of which: " <<
+  iout << iINFO << "Finished reading explicit pair from Gromacs file:\n" << 
+    iINFO << "Found a total of: " << numPair << " explicit pairs--of which: " <<
     numLJPair << " are LJ style pairs and " << numGaussPair << 
-    " are Gaussian style pairs. (Note: A->B is counted twice as A->B and B->A)\n" << endi;
+    " are Gaussian style pairs.\n" << endi; //(Note: A->B is counted twice as A->B and B->A)\n" << endi;
 #endif
 
   // Start of JLai Modifications August 16th, 2012 
@@ -10087,6 +10170,11 @@ void AtomSignature::pack(MOStream *msg){
     msg->put(crosstermCnt);
     for(int i=0; i<crosstermCnt; i++)
         crosstermSigs[i].pack(msg);
+    
+    // JLai
+    msg->put(gromacsPairCnt);
+    for(int i=0; i<gromacsPairCnt; i++)
+	gromacsPairSigs[i].pack(msg);
 }
 
 void AtomSignature::unpack(MIStream *msg){
@@ -10129,6 +10217,19 @@ void AtomSignature::unpack(MIStream *msg){
         for(int i=0; i<crosstermCnt; i++)
             crosstermSigs[i].unpack(msg);
     } else crosstermSigs = NULL;
+
+    // JLai
+
+    msg->get(gromacsPairCnt);
+    delete [] gromacsPairSigs;
+    if(gromacsPairCnt>0){
+	gromacsPairSigs = new TupleSignature[gromacsPairCnt];
+	for(int i=0; i<gromacsPairCnt; i++)
+	    gromacsPairSigs[i].unpack(msg);
+    } else gromacsPairSigs = NULL;
+
+    // End of JLai
+
 }
 
 void AtomSignature::removeEmptyTupleSigs(){
@@ -10262,6 +10363,35 @@ void AtomSignature::removeEmptyTupleSigs(){
         crosstermSigs = newTupleSigs;
     }    
   }
+
+  // JLai
+  // gromacs pair force
+  {
+    origTupleCnt = gromacsPairCnt;
+    tupleSigs = gromacsPairSigs;
+    for(int i=0; i<origTupleCnt; i++){
+        if(tupleSigs[i].isEmpty())
+            gromacsPairCnt--;
+    }
+    if(gromacsPairCnt==0){
+        delete [] tupleSigs;
+        gromacsPairSigs = NULL;
+    }else if(gromacsPairCnt!=origTupleCnt){
+        newTupleSigs = new TupleSignature[gromacsPairCnt];
+        idx=0;
+        for(int i=0; i<origTupleCnt; i++){
+            if(!tupleSigs[i].isEmpty()){
+                newTupleSigs[idx] = tupleSigs[i];
+                idx++;
+            }
+        }
+        delete [] tupleSigs;
+        gromacsPairSigs = newTupleSigs;
+    }    
+  }
+
+  // End of JLai
+
 }
 
 void ExclusionSignature::removeEmptyOffset(){

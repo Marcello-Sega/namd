@@ -29,6 +29,10 @@ enum ComputeType
   computeTholeType,
   computeAnisoType,
   computeCrosstermsType,
+  // JLai
+  computeGromacsPairType,
+  computeSelfGromacsPairType,
+  // End of JLai entry
   computeSelfExclsType,
   computeSelfBondsType,
   computeSelfAnglesType,

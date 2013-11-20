@@ -752,6 +752,9 @@ void ParallelIOMgr::updateMolInfo()
     msg->numImpropers = msg->numCalcImpropers = 0;
     msg->numCrossterms = msg->numCalcCrossterms = 0;
     msg->numExclusions = msg->numCalcExclusions = 0;    
+    // JLai
+    msg->numLJPairs = msg->numCalcLJPairs = 0;
+    // End of JLai
     msg->numRigidBonds = 0;
     msg->totalMass = 0.0;
     msg->totalCharge = 0.0;
@@ -766,6 +769,9 @@ void ParallelIOMgr::updateMolInfo()
         msg->numDihedrals += thisSig->dihedralCnt;
         msg->numImpropers += thisSig->improperCnt;
         msg->numCrossterms += thisSig->crosstermCnt;
+	// JLai
+	msg->numLJPairs += thisSig->gromacsPairCnt;
+	// End of JLai
 
         ExclusionSignature *exclSig = &exclSigPool[initAtoms[i].exclId];
         msg->numExclusions += (exclSig->fullExclCnt + exclSig->modExclCnt);
@@ -872,6 +878,16 @@ void ParallelIOMgr::updateMolInfo()
                 int thisAId = exclSig->modOffset[j]+myAId;
                 if(!isAtomFixed(sAId, thisAId)) msg->numCalcExclusions++;
             }
+
+	    //7: GromacsPair
+	    for(int j=0; j<thisSig->gromacsPairCnt; j++) {
+		TupleSignature *bsig = &(thisSig->gromacsPairSigs[j]);
+		int a1 = myAId + bsig->offset[0];
+		int a2 = myAId + bsig->offset[1];
+                if(!isAtomFixed(sAId, a1) || 
+                   !isAtomFixed(sAId, a2))
+                    msg->numCalcLJPairs++;
+	    }
         }
 #if COLLECT_PERFORMANCE_DATA
         printf("Num fixedAtom lookup on proc %d is %d\n", CkMyPe(), numFixedAtomLookup);

@@ -89,6 +89,15 @@ typedef struct crossterm
 	Index crossterm_type;
 } Crossterm;
 
+typedef struct gromacsPair
+{
+    int32 atom1;
+    int32 atom2;
+    Real pairC12;
+    Real pairC6;
+    Index gromacsPair_type;
+} GromacsPair;
+
 
 // DRUDE: data read from PSF
 typedef struct drude_constants  // supplement Atom data
@@ -268,7 +277,6 @@ public:
 		    }
 		}
 	}*/
-
     }
     void setEmpty(){
         delete [] offset;
@@ -309,20 +317,28 @@ public:
     int dihedralCnt;
     int improperCnt;
     int crosstermCnt;
+    // JLai
+    int gromacsPairCnt;
 
     TupleSignature *bondSigs;
     TupleSignature *angleSigs;
     TupleSignature *dihedralSigs;
     TupleSignature *improperSigs;
     TupleSignature *crosstermSigs;
+    // JLai
+    TupleSignature *gromacsPairSigs;
 
     AtomSignature(){
         bondCnt=angleCnt=dihedralCnt=improperCnt=crosstermCnt=0;
+	// JLai
+	gromacsPairCnt=0;
         bondSigs = NULL;
         angleSigs = NULL;
         dihedralSigs = NULL;
         improperSigs = NULL;
         crosstermSigs = NULL;
+	// JLai
+	gromacsPairSigs = NULL;
     }
     AtomSignature(const AtomSignature &sig){
         bondSigs = NULL;
@@ -330,6 +346,8 @@ public:
         dihedralSigs = NULL;
         improperSigs = NULL;
         crosstermSigs = NULL;
+	// JLai
+	gromacsPairSigs = NULL;
 
         bondCnt = sig.bondCnt;
         if(bondCnt>0){            
@@ -365,6 +383,15 @@ public:
             for(int i=0; i<crosstermCnt; i++)
                 crosstermSigs[i] = sig.crosstermSigs[i];
         }        
+
+	// JLai
+	gromacsPairCnt = sig.gromacsPairCnt;
+	if(gromacsPairCnt>0){
+	    gromacsPairSigs = new TupleSignature[gromacsPairCnt];
+	    for(int i=0; i<gromacsPairCnt; i++) {
+		gromacsPairSigs[i] = sig.gromacsPairSigs[i];
+	    }
+	}
     }
     AtomSignature& operator=(const AtomSignature& sig){        
         bondCnt = sig.bondCnt;
@@ -412,6 +439,16 @@ public:
         }else
             crosstermSigs = NULL;
 
+	// JLai
+	gromacsPairCnt = sig.gromacsPairCnt;
+	if(gromacsPairSigs) delete [] gromacsPairSigs;
+	if(gromacsPairCnt>0){
+	    gromacsPairSigs = new TupleSignature[gromacsPairCnt];
+	    for(int i=0; i<gromacsPairCnt; i++)
+		gromacsPairSigs[i] = sig.gromacsPairSigs[i];
+	}else
+	    gromacsPairSigs = NULL;
+
         return *this;
     }
     int operator==(const AtomSignature& sig) const{
@@ -420,6 +457,8 @@ public:
 	    if(dihedralCnt!=sig.dihedralCnt) return 0;
 	    if(improperCnt!=sig.improperCnt) return 0;
 	    if(crosstermCnt!=sig.crosstermCnt) return 0;
+	    //JLai
+	    if(gromacsPairCnt!=sig.gromacsPairCnt) return 0;
 	
 	#define CMPSIGS(TUPLE) \
 	for(int i=0; i<sig.TUPLE##Cnt; i++){ \
@@ -431,6 +470,8 @@ public:
 	    CMPSIGS(dihedral)
 	    CMPSIGS(improper)
 	    CMPSIGS(crossterm)
+	    // JLai
+	    CMPSIGS(gromacsPair)
 	
 	    return 1;
 	}
@@ -440,6 +481,8 @@ public:
         if(dihedralSigs) delete[] dihedralSigs;
         if(improperSigs) delete[] improperSigs;
         if(crosstermSigs) delete[] crosstermSigs;
+	// JLai
+	if(gromacsPairSigs) delete[] gromacsPairSigs;
     }    
 
     void removeEmptyTupleSigs();

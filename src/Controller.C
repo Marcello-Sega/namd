@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/11/14 20:33:30 $
- * $Revision: 1.1302 $
+ * $Date: 2013/11/20 21:50:15 $
+ * $Revision: 1.1303 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2009,7 +2009,7 @@ void Controller::compareChecksums(int step, int forgiving) {
       }
     }
 
-    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions ) {
+    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions && ! simParams->goGroPair ) {
       if ( forgiving || ! simParams->fullElectFrequency ) {
         iout << iWARN << "Low global exclusion count!  ("
           << ((int)checksum) << " vs " << molecule->numCalcExclusions << ")";

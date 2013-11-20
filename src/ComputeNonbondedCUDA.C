@@ -1949,7 +1949,7 @@ GBISP("GBIS[%d] fnWork() P0[%d] force.open()\n",CkMyPe(), pr.patchID);
 
 #if 1
     // check exclusions reported as w
-    if ( CkNumPes() == 1 ) {
+    if ( CkNumPes() == 1 && ! simParams->goGroPair ) {
       const CompAtomExt *aExt = pr.xExt;
       for ( int k=0; k<nfree; ++k ) {
         int j = aExt[k].sortOrder;

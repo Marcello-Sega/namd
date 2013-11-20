@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2013/11/15 22:05:56 $
- * $Revision: 1.124 $
+ * $Date: 2013/11/20 21:50:15 $
+ * $Revision: 1.125 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -305,6 +305,9 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
                  || (computeMap->type(i) == computeTholeType)
                  || (computeMap->type(i) == computeAnisoType)
                  || (computeMap->type(i) == computeCrosstermsType)
+	      // JLai
+	         || (computeMap->type(i) == computeGromacsPairType)
+	         || (computeMap->type(i) == computeSelfGromacsPairType)
 	) ) {
       nLocalComputes++;
     }
@@ -372,6 +375,9 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	          || (computeMap->type(i) == computeSelfTholeType)
 	          || (computeMap->type(i) == computeSelfAnisoType)
 	          || (computeMap->type(i) == computeSelfCrosstermsType)
+	       // JLai
+	          || (computeMap->type(i) == computeSelfGromacsPairType)
+	       // End of JLai
 		)  {
 	  // Register the object with the load balancer
 	  // Store the depended patch IDs in the rest of the element ID
@@ -403,6 +409,9 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
                  || (computeMap->type(i) == computeTholeType)
                  || (computeMap->type(i) == computeAnisoType)
                  || (computeMap->type(i) == computeCrosstermsType)
+		 // JLai
+		 || (computeMap->type(i) == computeGromacsPairType)
+                 // End of JLai
                ) {
 	  // Register the object with the load balancer
 	  // Store the depended patch IDs in the rest of the element ID

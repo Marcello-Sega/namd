@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/11/15 22:05:58 $
- * $Revision: 1.1272 $
+ * $Date: 2013/11/20 21:50:17 $
+ * $Revision: 1.1273 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -2309,6 +2309,13 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeSelfCrosstermsType);
   }
 
+  if ( node->simParameters->goGroPair ) {
+      // JLai
+      mapComputeHomeTuples(computeGromacsPairType);
+      mapComputePatch(computeSelfGromacsPairType);
+    // End of JLai
+  }
+
   if ( node->simParameters->drudeOn ) {
     mapComputeHomeTuples(computeTholeType);
     mapComputePatch(computeSelfTholeType);
@@ -2697,6 +2704,12 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   case computeSelfCrosstermsType:
     wdProxy[CkMyPe()].enqueueCrossterms(msg);
     break;
+  // JLai
+  case computeGromacsPairType:
+  case computeSelfGromacsPairType:
+    wdProxy[CkMyPe()].enqueueGromacsPair(msg);
+    break;    
+  // End of JLai
   case computeLCPOType:
     wdProxy[CkMyPe()].enqueueLCPO(msg);
     break;
@@ -2865,6 +2878,16 @@ void WorkDistrib::enqueueCrossterms(LocalWorkMsg *msg) {
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
+
+// JLai
+void WorkDistrib::enqueueGromacsPair(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  traceUserEvent(eventMachineProgress);
+  CmiMachineProgressImpl();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("\nWorkDistrib LocalWorkMsg recycling failed! Check enqueueGromacsPair from WorkDistrib.C\n");
+}
+// End of JLai
 
 void WorkDistrib::enqueuePme(LocalWorkMsg *msg) {
   msg->compute->doWork();  traceUserEvent(eventMachineProgress);  CmiMachineProgressImpl();
