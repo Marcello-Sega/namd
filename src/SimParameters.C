@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2013/11/15 22:05:57 $
- * $Revision: 1.1431 $
+ * $Author: dhardy $
+ * $Date: 2013/12/05 18:18:03 $
+ * $Revision: 1.1432 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -810,6 +810,12 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
        &MSMGridSpacing, 2.5);
    opts.optional("MSM", "MSMPadding", "MSM padding (Angstroms)",
        &MSMPadding, 2.5);
+   opts.optional("MSM", "MSMxmin", "MSM x minimum (Angstroms)", &MSMxmin, 0);
+   opts.optional("MSM", "MSMxmax", "MSM x maximum (Angstroms)", &MSMxmax, 0);
+   opts.optional("MSM", "MSMymin", "MSM y minimum (Angstroms)", &MSMymin, 0);
+   opts.optional("MSM", "MSMymax", "MSM y maximum (Angstroms)", &MSMymax, 0);
+   opts.optional("MSM", "MSMzmin", "MSM z minimum (Angstroms)", &MSMzmin, 0);
+   opts.optional("MSM", "MSMzmax", "MSM z maximum (Angstroms)", &MSMzmax, 0);
    opts.optional("MSM", "MSMBlockSizeX",
        "MSM grid block size along X direction (for decomposing parallel work)",
        &MSMBlockSizeX, 8);

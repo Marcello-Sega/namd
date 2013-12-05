@@ -3952,15 +3952,38 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   smax = msg->smax;
   delete msg;
 
-#ifdef DEBUG_MSM_VERBOSE
-  printf("smin = %g %g %g  smax = %g %g %g\n",
-      smin.x, smin.y, smin.z, smax.x, smax.y, smax.z);
-#endif
-
   SimParameters *simParams = Node::Object()->simParameters;
 
   // get required sim params, check validity
   lattice = simParams->lattice;
+
+  // set user-defined extent of system
+  Vector rmin(simParams->MSMxmin, simParams->MSMymin, simParams->MSMzmin);
+  Vector rmax(simParams->MSMxmax, simParams->MSMymax, simParams->MSMzmax);
+  Vector sdmin(lattice.a_r()*rmin, lattice.b_r()*rmin, lattice.c_r()*rmin);
+  Vector sdmax(lattice.a_r()*rmax, lattice.b_r()*rmax, lattice.c_r()*rmax);
+  // swap coordinates between min and max to correct for possible rotation
+  if (sdmin.x > sdmax.x) { double t=sdmin.x; sdmin.x=sdmax.x; sdmax.x=t; }
+  if (sdmin.y > sdmax.y) { double t=sdmin.y; sdmin.y=sdmax.y; sdmax.y=t; }
+  if (sdmin.z > sdmax.z) { double t=sdmin.z; sdmin.z=sdmax.z; sdmax.z=t; }
+  // extend smin, smax by user-defined extent, where appropriate
+  if (sdmin.x < sdmax.x) {
+    if (sdmin.x < smin.x)  smin.x = sdmin.x;
+    if (sdmax.x > smax.x)  smax.x = sdmax.x;
+  }
+  if (sdmin.y < sdmax.y) {
+    if (sdmin.y < smin.y)  smin.y = sdmin.y;
+    if (sdmax.y > smax.y)  smax.y = sdmax.y;
+  }
+  if (sdmin.z < sdmax.z) {
+    if (sdmin.z < smin.z)  smin.z = sdmin.z;
+    if (sdmax.z > smax.z)  smax.z = sdmax.z;
+  }
+
+#ifdef DEBUG_MSM_VERBOSE
+  printf("smin = %g %g %g  smax = %g %g %g\n",
+      smin.x, smin.y, smin.z, smax.x, smax.y, smax.z);
+#endif
 
   approx = simParams->MSMApprox;
   if (approx < 0 || approx >= NUM_APPROX) {

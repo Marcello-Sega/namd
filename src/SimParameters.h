@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2013/11/15 22:05:57 $
- * $Revision: 1.1231 $
+ * $Author: dhardy $
+ * $Date: 2013/12/05 18:18:03 $
+ * $Revision: 1.1232 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -614,6 +614,13 @@ public:
                                  // increase if atoms are drifting beyond
                                  // edge of grid, which will terminate 
                                  // simulation prematurely
+
+        BigReal MSMxmin;  // define extent of non-periodic boundaries
+        BigReal MSMxmax;
+        BigReal MSMymin;
+        BigReal MSMymax;
+        BigReal MSMzmin;
+        BigReal MSMzmax;
 
         Bool MsmSerialOn;   // use serial MSM solver for testing
 
