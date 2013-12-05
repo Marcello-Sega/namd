@@ -765,7 +765,7 @@ void Node::startup() {
 
 #ifdef NAMD_TCL
     // TclInitSubsystems() has a race condition so we create one interp per node here
-    if (CkMyPe() && ! CkMyRank()) Tcl_DeleteInterp(Tcl_CreateInterp());
+    if (CkMyPe() && CkMyNodeSize() > 1 && ! CkMyRank()) Tcl_DeleteInterp(Tcl_CreateInterp());
 #endif
 
 #ifdef USE_NODEPATCHMGR
