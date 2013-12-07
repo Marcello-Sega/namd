@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dhardy $
- * $Date: 2013/12/05 18:18:03 $
- * $Revision: 1.1432 $
+ * $Date: 2013/12/07 22:10:33 $
+ * $Revision: 1.1433 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -5264,7 +5264,7 @@ if ( openatomOn )
    if (MSMOn)
    {
      // check MSMQuality
-     enum { LO=0, MED, MEDHI, HI };
+     enum { LO=0, MEDLO, MED, MEDHI, HI };
 
      // MSMApprox
      enum { CUBIC=0, QUINTIC, QUINTIC2,
@@ -5287,6 +5287,10 @@ if ( openatomOn )
          case LO:
            MSMApprox = CUBIC;
            MSMSplit = TAYLOR2;
+           break;
+         case MEDLO:
+           MSMApprox = C1HERMITE;
+           MSMSplit = TAYLOR3;
            break;
          case MED:
            MSMApprox = QUINTIC;
@@ -5320,6 +5324,7 @@ if ( openatomOn )
        case SEPTIC3:  approx_str = "C3 SEPTIC";  break;
        case NONIC:    approx_str = "C1 NONIC";   break;
        case NONIC4:   approx_str = "C4 NONIC";   break;
+       case C1HERMITE:approx_str = "C1 HERMITE"; break;
        default:       approx_str = "UNKNOWN";    break;
      }
      switch (MSMSplit) {
