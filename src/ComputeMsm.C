@@ -3952,6 +3952,10 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   smax = msg->smax;
   delete msg;
 
+#if 0
+  printf("PE%d: initializing MSM\n", CkMyPe());
+#endif
+
   SimParameters *simParams = Node::Object()->simParameters;
 
   // get required sim params, check validity
@@ -3960,24 +3964,60 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   // set user-defined extent of system
   Vector rmin(simParams->MSMxmin, simParams->MSMymin, simParams->MSMzmin);
   Vector rmax(simParams->MSMxmax, simParams->MSMymax, simParams->MSMzmax);
-  Vector sdmin(lattice.a_r()*rmin, lattice.b_r()*rmin, lattice.c_r()*rmin);
-  Vector sdmax(lattice.a_r()*rmax, lattice.b_r()*rmax, lattice.c_r()*rmax);
+  Vector sdmin = lattice.scale(rmin);
+  Vector sdmax = lattice.scale(rmax);
   // swap coordinates between min and max to correct for possible rotation
   if (sdmin.x > sdmax.x) { double t=sdmin.x; sdmin.x=sdmax.x; sdmax.x=t; }
   if (sdmin.y > sdmax.y) { double t=sdmin.y; sdmin.y=sdmax.y; sdmax.y=t; }
   if (sdmin.z > sdmax.z) { double t=sdmin.z; sdmin.z=sdmax.z; sdmax.z=t; }
   // extend smin, smax by user-defined extent, where appropriate
-  if (sdmin.x < sdmax.x) {
-    if (sdmin.x < smin.x)  smin.x = sdmin.x;
-    if (sdmax.x > smax.x)  smax.x = sdmax.x;
+  if ( ! lattice.a_p() && (sdmin.x != 0 || sdmax.x != 0)) {
+    if (sdmin.x < smin.x) {
+      smin.x = sdmin.x;
+      if (CkMyPe() == 0) {
+        iout << iINFO << "MSM extending minimum X to "
+          << simParams->MSMxmin << " A\n" << endi;
+      }
+    }
+    if (sdmax.x > smax.x) {
+      smax.x = sdmax.x;
+      if (CkMyPe() == 0) {
+        iout << iINFO << "MSM extending maximum X to "
+          << simParams->MSMxmax << " A\n" << endi;
+      }
+    }
   }
-  if (sdmin.y < sdmax.y) {
-    if (sdmin.y < smin.y)  smin.y = sdmin.y;
-    if (sdmax.y > smax.y)  smax.y = sdmax.y;
+  if ( ! lattice.b_p() && (sdmin.y != 0 || sdmax.y != 0)) {
+    if (sdmin.y < smin.y) {
+      smin.y = sdmin.y;
+      if (CkMyPe() == 0) {
+        iout << iINFO << "MSM extending minimum Y to "
+          << simParams->MSMymin << " A\n" << endi;
+      }
+    }
+    if (sdmax.y > smax.y) {
+      smax.y = sdmax.y;
+      if (CkMyPe() == 0) {
+        iout << iINFO << "MSM extending maximum Y to "
+          << simParams->MSMymax << " A\n" << endi;
+      }
+    }
   }
-  if (sdmin.z < sdmax.z) {
-    if (sdmin.z < smin.z)  smin.z = sdmin.z;
-    if (sdmax.z > smax.z)  smax.z = sdmax.z;
+  if ( ! lattice.c_p() && (sdmin.z != 0 || sdmax.z != 0)) {
+    if (sdmin.z < smin.z) {
+      smin.z = sdmin.z;
+      if (CkMyPe() == 0) {
+        iout << iINFO << "MSM extending minimum Z to "
+          << simParams->MSMzmin << " A\n" << endi;
+      }
+    }
+    if (sdmax.z > smax.z) {
+      smax.z = sdmax.z;
+      if (CkMyPe() == 0) {
+        iout << iINFO << "MSM extending maximum Z to "
+          << simParams->MSMzmax << " A\n" << endi;
+      }
+    }
   }
 
 #ifdef DEBUG_MSM_VERBOSE
@@ -4297,6 +4337,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           map.gridrange[n].ka(), map.gridrange[n].kb());
       iout << iINFO << s;
     }
+    iout << endi;
   }
 
   // find grid spacing basis vectors
@@ -4810,6 +4851,10 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   splitting(gs, d, 0, split);
   gzero = gs * a_p;
 
+  if (CkMyPe() == 0) {
+    iout << iINFO << "MSM finished calculating stencils\n" << endi;
+  }
+
   // allocate map for patches
   PatchMap *pm = PatchMap::Object();
   int numpatches = pm->numPatches();
@@ -4929,6 +4974,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     }
   }
 #endif
+  if (CkMyPe() == 0) {
+    iout << iINFO << "MSM finished creating map for grid levels\n" << endi;
+  }
 
   // initialize grid of PatchDiagram
   // a = cutoff
@@ -4939,6 +4987,17 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   BigReal xmargin = 0.5 * (patchdim - a) / sysdima;
   BigReal ymargin = 0.5 * (patchdim - a) / sysdimb;
   BigReal zmargin = 0.5 * (patchdim - a) / sysdimc;
+#if 0
+  // set min and max grid indices for patch covering
+  // for non-periodic boundaries they conform to grid
+  // periodic permits wrapping, so set to min/max for int
+  int ia_min = (lattice.a_p() ? INT_MIN : map.gridrange[0].ia());
+  int ib_max = (lattice.a_p() ? INT_MAX : map.gridrange[0].ib());
+  int ja_min = (lattice.b_p() ? INT_MIN : map.gridrange[0].ja());
+  int jb_max = (lattice.b_p() ? INT_MAX : map.gridrange[0].jb());
+  int ka_min = (lattice.c_p() ? INT_MIN : map.gridrange[0].ka());
+  int kb_max = (lattice.c_p() ? INT_MAX : map.gridrange[0].kb());
+#endif
   int pid;
   for (pid = 0;  pid < numpatches;  pid++) {
     // shortcut reference to this patch diagram
@@ -4958,6 +5017,53 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     int jb = int(floor((ymax - sglower.y) * shy_1)) + 1 + s_edge;
     int ka = int(floor((zmin - sglower.z) * shz_1)) - s_edge;
     int kb = int(floor((zmax - sglower.z) * shz_1)) + 1 + s_edge;
+    // for edge patches along non-periodic boundaries
+    // clamp subgrid to full grid boundaries
+    if ( ! lattice.a_p() ) {  // non-periodic along lattice basis vector a
+      int mi = pm->index_a(pid);
+      if (mi == 0)                   ia = map.gridrange[0].ia();
+      if (mi == pm->gridsize_a()-1)  ib = map.gridrange[0].ib();
+    }
+    if ( ! lattice.b_p() ) {  // non-periodic along lattice basis vector b
+      int mj = pm->index_b(pid);
+      if (mj == 0)                   ja = map.gridrange[0].ja();
+      if (mj == pm->gridsize_b()-1)  jb = map.gridrange[0].jb();
+    }
+    if ( ! lattice.c_p() ) {  // non-periodic along lattice basis vector a
+      int mk = pm->index_c(pid);
+      if (mk == 0)                   ka = map.gridrange[0].ka();
+      if (mk == pm->gridsize_c()-1)  kb = map.gridrange[0].kb();
+    }
+#if 0
+    // truncate subgrid covering to grid min/max
+    // so that subgrid does not extend beyond full grid
+    // works for both periodic and non-periodic boundary conditions
+    if (ia < ia_min)  ia = ia_min;
+    if (ib > ib_max)  ib = ib_max;
+    if (ja < ja_min)  ja = ja_min;
+    if (jb > jb_max)  jb = jb_max;
+    if (ka < ka_min)  ka = ka_min;
+    if (kb > kb_max)  kb = kb_max;
+    // check for edge patch and extend subgrid to grid min/max
+    // so that subgrid fully covers up to the edge of full grid
+    int mi = pm->index_a(pid);
+    int mj = pm->index_b(pid);
+    int mk = pm->index_c(pid);
+    int npi = pm->gridsize_a();
+    int npj = pm->gridsize_b();
+    int npk = pm->gridsize_c();
+    if (mi == 0)      ia = ia_min;
+    if (mi == npi-1)  ib = ib_max;
+    if (mj == 0)      ja = ja_min;
+    if (mj == npj-1)  jb = jb_max;
+    if (mk == 0)      ka = ka_min;
+    if (mk == npk-1)  kb = kb_max;
+#endif
+#if 0
+    printf("patch %d:  grid covering:  [%d..%d] x [%d..%d] x [%d..%d]\n",
+        pid, ia, ib, ja, jb, ka, kb);
+    fflush(stdout);
+#endif
     // set the index range for this patch's surrounding grid points
     p.nrange.setbounds(ia,ib,ja,jb,ka,kb);
     // find lower and upper blocks of MSM h-grid
@@ -4967,9 +5073,19 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       (bupper.n.j - blower.n.j + 1) * (bupper.n.k - blower.n.k + 1);
     p.send.setmax(maxarrlen);  // allocate space for send array
     // loop over the blocks
+#if 0
+    printf("blower: level=%d  n=%d %d %d   bupper: level=%d  n=%d %d %d\n",
+        blower.level, blower.n.i, blower.n.j, blower.n.k,
+        bupper.level, bupper.n.i, bupper.n.j, bupper.n.k);
+    fflush(stdout);
+#endif
     for (int kk = blower.n.k;  kk <= bupper.n.k;  kk++) {
       for (int jj = blower.n.j;  jj <= bupper.n.j;  jj++) {
         for (int ii = blower.n.i;  ii <= bupper.n.i;  ii++) {
+#if 0
+          printf("ii=%d  jj=%d  kk=%d\n", ii, jj, kk);
+          fflush(stdout);
+#endif
           // determine actual block and range to send to
           msm::BlockSend bs;
           bs.nblock.n = msm::Ivec(ii,jj,kk);
@@ -4994,6 +5110,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     ASSERT(p.numRecvs == p.send.len() );
   }
 #ifdef DEBUG_MSM_VERBOSE
+if (CkMyPe() == 0) {
   printf("Done allocating map for patches\n");
   printf("Patch level decomposition:\n");
   for (pid = 0;  pid < numpatches;  pid++) {
@@ -5007,7 +5124,11 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     printf("patch id=%d  [%d..%d] x [%d..%d] x [%d..%d]\n",
         pid, ia, ib, ja, jb, ka, kb);
   }
+}
 #endif
+  if (CkMyPe() == 0) {
+    iout << iINFO << "MSM finished creating map for patches\n" << endi;
+  }
 
   // initialize grid of BlockDiagram for each level
   int polydeg = PolyDegree[approx];
@@ -5341,7 +5462,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     if (CkMyPe() == 0) {
       iout << iINFO << "MSM has " << pm->numPatches()
                     << " interpolation / anterpolation objects"
-                    << " (one per patch)\n";
+                    << " (one per patch)\n" << endi;
     }
   }
 
@@ -6156,6 +6277,18 @@ namespace msm {
                        ka <= klo && (klo+(s_size-1)) <= kb );
 
       if ( ! iswithin ) {
+#if 0
+        printf("PE %d:  atom %d:  pos= %g %g %g  patchID=%d\n",
+            CkMyPe(), coord[n].id,
+            coord[n].position.x, coord[n].position.y, coord[n].position.z,
+            patchID);
+        printf("PE %d:  atom subgrid [%d..%d] x [%d..%d] x [%d..%d]\n",
+            CkMyPe(),
+            ilo, ilo+s_size-1, jlo, jlo+s_size-1, klo, klo+s_size-1);
+        printf("PE %d:  patch grid [%d..%d] x [%d..%d] x [%d..%d]\n",
+            CkMyPe(),
+            ia, ib, ja, jb, ka, kb);
+#endif
         char msg[100];
         snprintf(msg, sizeof(msg), "Atom %d is outside of the MSM grid.",
             coord[n].id);
