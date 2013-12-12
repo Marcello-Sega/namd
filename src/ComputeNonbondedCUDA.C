@@ -160,6 +160,8 @@ void cuda_initialize() {
 
   if ( 0 == CkMyPe() ) cuda_register_user_events();
 
+  if ( 0 == CkMyPe() ) CkPrintf("Info: Built with CUDA version %d\n", CUDA_VERSION);
+
   char host[128];
 #ifdef NOHOSTNAME
   sprintf(host,"physical node %d", CmiPhysicalNodeID(CkMyPe()));
