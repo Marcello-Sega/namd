@@ -1,5 +1,5 @@
 NAMD_ARCH = CRAY-XT
-CHARMARCH = gemini_gni-crayxe-hugepages-smp-craycc
+CHARMARCH = gemini_gni-crayxe-smp-craycc
 
 # CrayCC doesn't handle NAMD's SSE2 scheme.
 # Disable SSE results in it being about 10% slower than Gnu.

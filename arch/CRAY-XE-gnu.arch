@@ -1,5 +1,5 @@
 NAMD_ARCH = CRAY-XE
-CHARMARCH = gemini_gni-crayxe-hugepages-persistent-smp
+CHARMARCH = gemini_gni-crayxe-persistent-smp
 
 # 
 # The GNU compilers produce significantly faster NAMD binaries than PGI.
