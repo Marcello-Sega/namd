@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2013/12/07 22:10:33 $
- * $Revision: 1.1433 $
+ * $Author: jim $
+ * $Date: 2013/12/13 21:59:24 $
+ * $Revision: 1.1434 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -5882,16 +5882,6 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
       sprintf(errmsg,"Value undefined for gridforceCol for key %s\n",
               params->gridforceKey);
          NAMD_die(errmsg);
-    }
-    if (params->gridforceLite) {
-	for (int i = 0; i < 3; i++) {
-	    if (params->gridforceCont[i]) {
-		char errmsg[255];
-		sprintf(errmsg, "Cannot use gridforceCont and gridforceLite together for key %s\n",
-			params->gridforceKey);
-		NAMD_die(errmsg);
-	    }
-	}
     }
     params = params->next;
   }

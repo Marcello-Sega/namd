@@ -73,12 +73,52 @@ inline int GridforceLiteGrid::compute_VdV(Position pos, float &V, Vector &dV) co
 	return -1;
     }
     
-    float wts[8];
+    float wts[4][8];
     float results[4];
     
-    compute_wts(wts, dg);
-    for (int i = 0; i < 4; i++) {
-	results[i] = linear_interpolate(inds[0], inds[1], inds[2], i, wts);
+    // compute_wts(wts, dg);
+    // wts[0][0] = (1-dg.x) * (1-dg.y) * (1-dg.z);
+    // wts[0][1] = (1-dg.x) * (1-dg.y) *   dg.z;
+    // wts[0][2] = (1-dg.x) *   dg.y   * (1-dg.z);
+    // wts[0][3] = (1-dg.x) *   dg.y   *   dg.z;
+    // wts[0][4] =   dg.x   * (1-dg.y) * (1-dg.z);
+    // wts[0][5] =   dg.x   * (1-dg.y) *   dg.z;
+    // wts[0][6] =   dg.x   *   dg.y   * (1-dg.z);
+    // wts[0][7] =   dg.x   *   dg.y   *   dg.z;
+
+    int i = 1;
+    wts[i][0] = -(1-dg.y) * (1-dg.z);
+    wts[i][1] = -(1-dg.y) *   dg.z;
+    wts[i][2] = -  dg.y   * (1-dg.z);
+    wts[i][3] = -  dg.y   *   dg.z;
+    for (int j=0; j<4; j++) wts[i][j+4] = -wts[i][j];
+
+    i = 2;
+    wts[i][0] = -(1-dg.x) * (1-dg.z);
+    wts[i][1] = -(1-dg.x) *   dg.z;
+    wts[i][2] = -wts[i][0];
+    wts[i][3] = -wts[i][1];
+    wts[i][4] =   - dg.x  * (1-dg.z);
+    wts[i][5] =   - dg.x  *   dg.z;
+    wts[i][6] = -wts[i][4];
+    wts[i][7] = -wts[i][5];
+
+    i = 3;
+    wts[i][0] = - (1-dg.x) * (1-dg.y);
+    wts[i][1] = -wts[i][0];
+    wts[i][2] = - (1-dg.x) *   dg.y  ;
+    wts[i][3] = -wts[i][2];
+    wts[i][4] = - dg.x     * (1-dg.y);
+    wts[i][5] = -wts[i][4];
+    wts[i][6] = - dg.x     *   dg.y  ;
+    wts[i][7] = -wts[i][6];
+
+    i = 0;
+    for (int j=0; j<4; j++) wts[i][j]   = (1-dg.x) * wts[i+1][j+4];
+    for (int j=0; j<4; j++) wts[i][j+4] =   dg.x   * wts[i+1][j+4];    
+
+    for (i = 0; i < 4; i++) {
+	results[i] = linear_interpolate(inds[0], inds[1], inds[2], 0, wts[i]);
     }
     
     V = results[0];
@@ -120,7 +160,7 @@ inline int GridforceFullBaseGrid::get_inds(Position pos, int *inds, Vector &dg, 
 inline float GridforceFullBaseGrid::compute_V(float *a, float *x, float *y, float *z) const
 {
     float V = 0.0;
-    int ind = 0;
+    long int ind = 0;
     for (int l = 0; l < 4; l++) {
 	for (int k = 0; k < 4; k++) {
 	    for (int j = 0; j < 4; j++) {
@@ -136,7 +176,7 @@ inline float GridforceFullBaseGrid::compute_V(float *a, float *x, float *y, floa
 inline Vector GridforceFullBaseGrid::compute_dV(float *a, float *x, float *y, float *z) const
 {
     Vector dV = 0;
-    int ind = 0;
+    long int ind = 0;
     for (int l = 0; l < 4; l++) {
 	for (int k = 0; k < 4; k++) {
 	    for (int j = 0; j < 4; j++) {
@@ -172,7 +212,7 @@ inline Vector GridforceFullBaseGrid::compute_d2V(float *a, float *x, float *y, f
 inline float GridforceFullBaseGrid::compute_d3V(float *a, float *x, float *y, float *z) const
 {
     float d3V = 0.0;
-    int ind = 0;
+    long int ind = 0;
     for (int l = 0; l < 4; l++) {
 	for (int k = 0; k < 4; k++) {
 	    for (int j = 0; j < 4; j++) {

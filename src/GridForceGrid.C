@@ -161,8 +161,8 @@ void GridforceFullBaseGrid::pack(MOStream *msg) const
     msg->put(3*sizeof(int), (char*)k_nopad);
     msg->put(size);
     msg->put(size_nopad);
-    msg->put(3*sizeof(int), (char*)dk);
-    msg->put(3*sizeof(int), (char*)dk_nopad);
+    msg->put(3*sizeof(long int), (char*)dk);
+    msg->put(3*sizeof(long int), (char*)dk_nopad);
     msg->put(factor);
     
     msg->put(sizeof(Vector), (char*)&origin);
@@ -204,8 +204,8 @@ void GridforceFullBaseGrid::unpack(MIStream *msg)
     msg->get(3*sizeof(int), (char*)k_nopad);
     msg->get(size);
     msg->get(size_nopad);
-    msg->get(3*sizeof(int), (char*)dk);
-    msg->get(3*sizeof(int), (char*)dk_nopad);
+    msg->get(3*sizeof(long int), (char*)dk);
+    msg->get(3*sizeof(long int), (char*)dk_nopad);
     msg->get(factor);
     
     DebugM(3, "size = " << size << "\n" << endi);
@@ -470,7 +470,7 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
     float *grid_nopad = new float[size_nopad];
     
     float tmp2;
-    for (int count = 0; count < size_nopad; count++) {
+    for (long int count = 0; count < size_nopad; count++) {
 	int err = fscanf(poten_fp, "%f", &tmp2);
 	if (err == EOF || err == 0) {
 	    NAMD_die("Grid force potential file incorrectly formatted");
@@ -565,11 +565,11 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
 		// zero for smooth transition across potential
 		// boundary
 		
-		int ind_nopad = i0*dk_nopad[0] + i1*dk_nopad[1] + i2*dk_nopad[2];
+		long int ind_nopad = i0*dk_nopad[0] + i1*dk_nopad[1] + i2*dk_nopad[2];
 		int j0 = (cont[0]) ? i0 : i0 + border;
 		int j1 = (cont[1]) ? i1 : i1 + border;
 		int j2 = (cont[2]) ? i2 : i2 + border;
-		int ind = j0*dk[0] + j1*dk[1] + j2*dk[2];
+		long int ind = j0*dk[0] + j1*dk[1] + j2*dk[2];
 		
 		if (i0 == 0)			n_sum[0] += grid_nopad[ind_nopad];
 		else if (i0 == k_nopad[0]-1)	p_sum[0] += grid_nopad[ind_nopad];
@@ -604,8 +604,8 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
     }
     
     Bool twoPadVals = (cont[0] + cont[1] + cont[2] == 2);
-    float padVal = 0.0;
-    int weight = 0;
+    double padVal = 0.0;
+    long int weight = 0;
     if (!twoPadVals) {
 	// Determine pad value (must average)
 	if (!cont[0]) {
@@ -647,7 +647,7 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
 		    continue;
 		}
 		
-		int ind = i0*dk[0] + i1*dk[1] + i2*dk[2];
+		long int ind = i0*dk[0] + i1*dk[1] + i2*dk[2];
 
 		Position pos = e * Position(i0, i1, i2);
 		int var[3] = {i0, i1, i2};
@@ -702,7 +702,7 @@ void GridforceFullMainGrid::reinitialize(SimParameters *simParams, MGridforcePar
 }
 
 
-int GridforceFullMainGrid::get_all_gridvals(float **all_gridvals) const
+long int GridforceFullMainGrid::get_all_gridvals(float **all_gridvals) const
 {
     // Creates a flat array of all grid values, including subgrids,
     // and puts it in the value pointed to by the 'grids'
@@ -711,7 +711,7 @@ int GridforceFullMainGrid::get_all_gridvals(float **all_gridvals) const
     
     DebugM(4, "get_all_gridvals called\n" << endi);
     
-    int sz = 0;
+    long int sz = 0;
     sz += size;
     for (int i = 0; i < totalGrids-1; i++) {
 	sz += subgrids_flat[i]->size;
@@ -719,12 +719,12 @@ int GridforceFullMainGrid::get_all_gridvals(float **all_gridvals) const
     DebugM(4, "size = " << sz << "\n" << endi);
     
     float *grid_vals = new float[sz];
-    int idx = 0;
-    for (int i = 0; i < size; i++) {
+    long int idx = 0;
+    for (long int i = 0; i < size; i++) {
 	grid_vals[idx++] = grid[i];
     }
     for (int j = 0; j < totalGrids-1; j++) {
-	for (int i = 0; i < subgrids_flat[j]->size; i++) {
+	for (long int i = 0; i < subgrids_flat[j]->size; i++) {
 	    grid_vals[idx++] = subgrids_flat[j]->grid[i];
 	}
     }
@@ -738,24 +738,24 @@ int GridforceFullMainGrid::get_all_gridvals(float **all_gridvals) const
 }
 
 
-void GridforceFullMainGrid::set_all_gridvals(float *all_gridvals, int sz)
+void GridforceFullMainGrid::set_all_gridvals(float *all_gridvals, long int sz)
 {
     DebugM(4, "set_all_gridvals called\n" << endi);
     
-    int sz_calc = 0;
+    long int sz_calc = 0;
     sz_calc += size;
     for (int i = 0; i < totalGrids-1; i++) {
 	sz_calc += subgrids_flat[i]->size;
     }
     CmiAssert(sz == sz_calc);
     
-    int idx = 0;
-    for (int i = 0; i < size; i++) {
+    long int idx = 0;
+    for (long int i = 0; i < size; i++) {
 	DebugM(1, "all_gridvals[" << idx << "] = " << all_gridvals[idx] << "\n" << endi);
 	grid[i] = all_gridvals[idx++];
     }
     for (int j = 0; j < totalGrids-1; j++) {
-	for (int i = 0; i < subgrids_flat[j]->size; i++) {
+	for (long int i = 0; i < subgrids_flat[j]->size; i++) {
 	    DebugM(1, "all_gridvals[" << idx << "] = " << all_gridvals[idx] << "\n" << endi);
 	    subgrids_flat[j]->grid[i] = all_gridvals[idx++];
 	}
@@ -1048,7 +1048,7 @@ void GridforceFullSubGrid::initialize(SimParameters *simParams, MGridforceParams
     
     float tmp2;
     DebugM(3, "size_nopad = " << size_nopad << "\n");
-    for (int count = 0; count < size_nopad; count++) {
+    for (long int count = 0; count < size_nopad; count++) {
 // 	poten_offset = ftell(poten_fp);
 // 	fscanf(poten_fp, "%s", str);
 // 	fgets(line, 256, poten_fp);
@@ -1070,7 +1070,7 @@ void GridforceFullSubGrid::initialize(SimParameters *simParams, MGridforceParams
     for (int i0 = 0; i0 < k_nopad[0]; i0++) {
 	for (int i1 = 0; i1 < k_nopad[1]; i1++) {
 	    for (int i2 = 0; i2 < k_nopad[2]; i2++) {
-		int ind = i0*dk[0] + i1*dk[1] + i2*dk[2];
+		long int ind = i0*dk[0] + i1*dk[1] + i2*dk[2];
 		set_grid(i0, i1, i2, grid_tmp[ind]);
 	    }
 	}
@@ -1392,7 +1392,7 @@ void GridforceLiteGrid::pack(MOStream *msg) const
 {
     msg->put(4*sizeof(int), (char*)k);
     msg->put(size);
-    msg->put(4*sizeof(int), (char*)dk);
+    msg->put(4*sizeof(long int), (char*)dk);
     
     msg->put(sizeof(Vector), (char*)&origin);
     msg->put(sizeof(Vector), (char*)&center);
@@ -1410,7 +1410,7 @@ void GridforceLiteGrid::unpack(MIStream *msg)
 {
     msg->get(4*sizeof(int), (char*)k);
     msg->get(size);
-    msg->get(4*sizeof(int), (char*)dk);
+    msg->get(4*sizeof(long int), (char*)dk);
     
     msg->get(sizeof(Vector), (char*)&origin);
     msg->get(sizeof(Vector), (char*)&center);
@@ -1428,7 +1428,7 @@ void GridforceLiteGrid::unpack(MIStream *msg)
 }
 
 
-int GridforceLiteGrid::get_all_gridvals(float** all_gridvals) const
+long int GridforceLiteGrid::get_all_gridvals(float** all_gridvals) const
 {
     // Creates a flat array of all grid values and puts it in the
     // value pointed to by the 'all_gridvals' argument. Returns the
@@ -1437,12 +1437,12 @@ int GridforceLiteGrid::get_all_gridvals(float** all_gridvals) const
     
     DebugM(4, "GridforceLiteGrid::get_all_gridvals called\n" << endi);
     
-    int sz = size;
+    long int sz = size;
     DebugM(4, "size = " << sz << "\n" << endi);
     
     float *grid_vals = new float[sz];
-    int idx = 0;
-    for (int i = 0; i < size; i++) {
+    long int idx = 0;
+    for (long int i = 0; i < size; i++) {
 	grid_vals[idx++] = grid[i];
     }
     CmiAssert(idx == sz);
@@ -1455,15 +1455,15 @@ int GridforceLiteGrid::get_all_gridvals(float** all_gridvals) const
 }
 
 
-void GridforceLiteGrid::set_all_gridvals(float* all_gridvals, int sz)
+void GridforceLiteGrid::set_all_gridvals(float* all_gridvals, long int sz)
 {
     DebugM(4, "GridforceLiteGrid::set_all_gridvals called\n" << endi);
     
-    int sz_calc = size;
+    long int sz_calc = size;
     CmiAssert(sz == sz_calc);
     
-    int idx = 0;
-    for (int i = 0; i < size; i++) {
+    long int idx = 0;
+    for (long int i = 0; i < size; i++) {
 	grid[i] = all_gridvals[idx++];
     }
     CmiAssert(idx == sz);

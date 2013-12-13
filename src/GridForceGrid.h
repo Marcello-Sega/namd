@@ -42,8 +42,8 @@ public:
     virtual int get_k2(void) const = 0;
     virtual int get_total_grids(void) const = 0;
     
-    virtual int get_all_gridvals(float** all_gridvals) const = 0;
-    virtual void set_all_gridvals(float* all_gridvals, int sz) = 0;
+    virtual long int get_all_gridvals(float** all_gridvals) const = 0;
+    virtual void set_all_gridvals(float* all_gridvals, long int sz) = 0;
     
     Position wrap_position(const Position &pos, const Lattice &lattice);
     bool fits_lattice(const Lattice &lattice);
@@ -123,7 +123,7 @@ protected:
     // Utility functions
     void readHeader(SimParameters *simParams, MGridforceParams *mgridParams);
     
-    inline int grid_index(int i0, int i1, int i2) const {
+    inline long int grid_index(int i0, int i1, int i2) const {
 	register int inds[3] = {i0, i1, i2};
 #ifdef DEBUGM
 	if (i0 < 0 || i0 >= k[0] || i1 < 0 || i1 >= k[1] || i2 < 0 || i2 >= k[2]) {
@@ -156,10 +156,10 @@ protected:
     // should move 'nopad' versions to maingrid only ... or not have them as ivars at all, why are they here?
     int k[3];		// Grid dimensions
     int k_nopad[3];	// Grid dimensions
-    int size;
-    int size_nopad;
-    int dk[3];
-    int dk_nopad[3];
+    long int size;
+    long int size_nopad;
+    long int dk[3];
+    long int dk_nopad[3];
     float factor;
     
     Position origin;	// Grid origin
@@ -167,10 +167,10 @@ protected:
     Tensor e;		// Grid unit vectors
     Tensor inv;		// Inverse of unit vectors
     
-    float p_sum[3];     // Accumulators for sums
-    float n_sum[3];
-    float pad_p[3];	// Pad values (p = positive side, n = negative side) for each dimension
-    float pad_n[3];
+    double p_sum[3];     // Accumulators for sums
+    double n_sum[3];
+    double pad_p[3];	// Pad values (p = positive side, n = negative side) for each dimension
+    double pad_n[3];
     Bool cont[3];	// Whether grid is continuous in each dimension
     float offset[3];	// Potential offset in each dimension
     float gap[3];	// Gap between images of grid in grid units for each dimension
@@ -212,8 +212,8 @@ protected:
     void pack(MOStream *msg) const;
     void unpack(MIStream *msg);
     
-    int get_all_gridvals(float **all_gridvals) const;
-    void set_all_gridvals(float *all_gridvals, int sz);
+    long int get_all_gridvals(float **all_gridvals) const;
+    void set_all_gridvals(float *all_gridvals, long int sz);
     
     //int get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const;
     void compute_b(float *b, int *inds, Vector gapscale)  const;
@@ -302,8 +302,8 @@ public:
 	grid[grid_index(i0, i1, i2, i3)] = V;
     }
     
-    int get_all_gridvals(float** all_gridvals) const;
-    void set_all_gridvals(float* all_gridvals, int sz);
+    long int get_all_gridvals(float** all_gridvals) const;
+    void set_all_gridvals(float* all_gridvals, long int sz);
     
     int compute_VdV(Position pos, float &V, Vector &dV) const;
     
@@ -316,7 +316,7 @@ protected:
     void pack(MOStream *msg) const;
     void unpack(MIStream *msg);
     
-    inline int grid_index(int i0, int i1, int i2, int i3) const {
+    inline long int grid_index(int i0, int i1, int i2, int i3) const {
 	// 'i3' is an index for the grid itself (0=V, 1=dV/dx, 2=dV/dy, 3=dV/dz)
 	register int inds[4] = {i0, i1, i2, i3};
 	return inds[0]*dk[0] + inds[1]*dk[1] + inds[2]*dk[2] + inds[3]*dk[3];
@@ -325,8 +325,8 @@ protected:
     float *grid;
     
     int k[4];		// Grid dimensions ... 4th is always 4, for the different grid types
-    int size;
-    int dk[4];
+    long int size;
+    long int dk[4];
     
     Position origin;	// Grid origin
     Position center;	// Center of grid (for wrapping)
