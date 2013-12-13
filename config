@@ -258,6 +258,10 @@ begin:
         set use_cuda = 0
       breaksw
       case --cuda-prefix:
+        if ( $?CRAY_CUDATOOLKIT_DIR ) then
+          echo "ERROR: Do not specify --cuda-prefix when CRAY cudatoolkit module is loaded"
+          goto syntax
+        endif
         shift
         if ( ! -d $1 ) then
           echo "ERROR: No such directory $1"
