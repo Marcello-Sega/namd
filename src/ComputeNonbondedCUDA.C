@@ -1126,6 +1126,22 @@ struct cr_sortop {
   }
 };
 
+void ComputeNonbondedCUDA::skip() {
+  SimParameters *simParams = Node::Object()->simParameters;
+  for ( int i=0; i<hostedPatches.size(); ++i ) {
+    patch_record &pr = master->patchRecords[hostedPatches[i]];
+    pr.positionBox->skip();
+    pr.forceBox->skip();
+    if (simParams->GBISOn) {
+      pr.intRadBox->skip();
+      pr.psiSumBox->skip();
+      pr.bornRadBox->skip();
+      pr.dEdaSumBox->skip();
+      pr.dHdrPrefixBox->skip();
+    }
+  }
+}
+
 int ComputeNonbondedCUDA::noWork() {
 
   SimParameters *simParams = Node::Object()->simParameters;
@@ -1137,21 +1153,14 @@ int ComputeNonbondedCUDA::noWork() {
 
   if ( ! flags.doNonbonded ) {
 GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
-    for ( int i=0; i<hostedPatches.size(); ++i ) {
-      patch_record &pr = master->patchRecords[hostedPatches[i]];
-      pr.positionBox->skip();
-      pr.forceBox->skip();
-      if (simParams->GBISOn) {
-        pr.intRadBox->skip();
-        pr.psiSumBox->skip();
-        pr.bornRadBox->skip();
-        pr.dEdaSumBox->skip();
-        pr.dHdrPrefixBox->skip();
-      }
-    }
     if ( master != this ) {
       computeMgr->sendNonbondedCUDASlaveReady(masterPe,
 			hostedPatches.size(),atomsChanged,sequence());
+    } else {
+      for ( int i = 0; i < numSlaves; ++i ) {
+        computeMgr->sendNonbondedCUDASlaveSkip(slaves[i],slavePes[i]);
+      }
+      skip();
     }
     if ( reduction ) {
        reduction->submit();

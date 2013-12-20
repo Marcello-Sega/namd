@@ -1219,6 +1219,22 @@ void ComputeMgr::recvNonbondedCUDASlaveReady(int np, int ac, int seq) {
   }
 }
 
+class NonbondedCUDASkipMsg : public CMessage_NonbondedCUDASkipMsg {
+public:
+  ComputeNonbondedCUDA *compute;
+};
+
+void ComputeMgr::sendNonbondedCUDASlaveSkip(ComputeNonbondedCUDA *c, int pe) {
+  NonbondedCUDASkipMsg *msg = new NonbondedCUDASkipMsg;
+  msg->compute = c;
+  thisProxy[pe].recvNonbondedCUDASlaveSkip(msg);
+}
+
+void ComputeMgr::recvNonbondedCUDASlaveSkip(NonbondedCUDASkipMsg *msg) {
+  msg->compute->skip();
+  delete msg;
+}
+
 void ComputeMgr::sendNonbondedCUDASlaveEnqueue(ComputeNonbondedCUDA *c, int pe, int seq, int prio, int ws) {
   if ( ws == 2 && c->localHostedPatches.size() == 0 ) return;
   LocalWorkMsg *msg = ( ws == 1 ? c->localWorkMsg : c->localWorkMsg2 );

@@ -58,6 +58,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     void atomUpdate();
     void doWork();
     int noWork();
+    void skip();
 
     void recvYieldDevice(int pe);
     LocalWorkMsg *localWorkMsg2;
