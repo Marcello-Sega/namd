@@ -1231,7 +1231,9 @@ void ComputeMgr::sendNonbondedCUDASlaveSkip(ComputeNonbondedCUDA *c, int pe) {
 }
 
 void ComputeMgr::recvNonbondedCUDASlaveSkip(NonbondedCUDASkipMsg *msg) {
+#ifdef NAMD_CUDA
   msg->compute->skip();
+#endif
   delete msg;
 }
 
