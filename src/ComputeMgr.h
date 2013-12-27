@@ -43,6 +43,7 @@ class NonbondedCUDASkipMsg;
 
 class ComputeNonbondedMIC;
 class NonbondedMICSlaveMsg;
+class NonbondedMICSkipMsg;
 
 class ComputeNonbondedWorkArrays;
 
@@ -111,6 +112,8 @@ public:
   void recvCreateNonbondedMICSlave(NonbondedMICSlaveMsg *);
   void sendNonbondedMICSlaveReady(int,int,int,int);
   void recvNonbondedMICSlaveReady(int,int,int);
+  void sendNonbondedMICSlaveSkip(ComputeNonbondedMIC *c, int);
+  void recvNonbondedMICSlaveSkip(NonbondedMICSkipMsg *);
   void sendNonbondedMICSlaveEnqueue(ComputeNonbondedMIC *c, int,int,int,int);
   void sendMICPEData(int,int);
   void recvMICPEData(int,int);

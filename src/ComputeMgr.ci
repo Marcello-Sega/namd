@@ -21,6 +21,7 @@ module ComputeMgr {
   message NonbondedCUDASlaveMsg;
   message NonbondedCUDASkipMsg;
   message NonbondedMICSlaveMsg;
+  message NonbondedMICSkipMsg;
 
   group ComputeMgr
   {
@@ -56,6 +57,7 @@ module ComputeMgr {
     entry void recvNonbondedCUDASlaveSkip(NonbondedCUDASkipMsg *);
     entry void recvCreateNonbondedMICSlave(NonbondedMICSlaveMsg *);
     entry void recvNonbondedMICSlaveReady(int, int, int);
+    entry void recvNonbondedMICSlaveSkip(NonbondedMICSkipMsg *);
     entry void recvMICPEData(int, int);
   } ;
 }

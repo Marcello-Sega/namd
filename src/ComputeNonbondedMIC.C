@@ -1443,6 +1443,21 @@ void ComputeNonbondedMIC::patchReady(PatchID patchID, int doneMigration, int seq
 }
 #endif // MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
 
+void ComputeNonbondedMIC::skip() {
+  //SimParameters *simParams = Node::Object()->simParameters;
+  for ( int i=0; i<hostedPatches.size(); ++i ) {
+    patch_record &pr = master->patchRecords[hostedPatches[i]];
+    pr.positionBox->skip();
+    pr.forceBox->skip();
+    //if (simParams->GBISOn) {
+    //  pr.intRadBox->skip();
+    //  pr.psiSumBox->skip();
+    //  pr.bornRadBox->skip();
+    //  pr.dEdaSumBox->skip();
+    //  pr.dHdrPrefixBox->skip();
+    //}
+  }
+}
 
 int ComputeNonbondedMIC::noWork() {
 
@@ -1463,6 +1478,21 @@ int ComputeNonbondedMIC::noWork() {
 
   //// DMK - DEBUG
   //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 2.0\n", CkMyPe()); fflush(NULL);
+
+  if ( ! flags.doNonbonded ) {
+    GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
+    if ( master != this ) {
+      computeMgr->sendNonbondedMICSlaveReady(masterPe,
+			hostedPatches.size(),atomsChanged,sequence());
+    } else {
+      for ( int i = 0; i < numSlaves; ++i ) {
+        computeMgr->sendNonbondedMICSlaveSkip(slaves[i],slavePes[i]);
+      }
+      skip();
+    }
+    if ( reduction ) reduction->submit();
+    return 1;
+  }
 
   // Wait for pending input buffers here
   // DMK - NOTE | TODO : For now this is blocking, but setup polling at some point.  May be possible to
@@ -1496,28 +1526,6 @@ int ComputeNonbondedMIC::noWork() {
     #endif
   }
   #endif
-
-  if ( ! flags.doNonbonded ) {
-    GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
-    for ( int i=0; i<hostedPatches.size(); ++i ) {
-      patch_record &pr = master->patchRecords[hostedPatches[i]];
-      pr.positionBox->skip();
-      pr.forceBox->skip();
-      //if (simParams->GBISOn) {
-      //  pr.intRadBox->skip();
-      //  pr.psiSumBox->skip();
-      //  pr.bornRadBox->skip();
-      //  pr.dEdaSumBox->skip();
-      //  pr.dHdrPrefixBox->skip();
-      //}
-    }
-    if ( master != this ) {
-      computeMgr->sendNonbondedMICSlaveReady(masterPe,
-			hostedPatches.size(),atomsChanged,sequence());
-    }
-    if ( reduction ) reduction->submit();
-    return 1;
-  }
 
   //// DMK - DEBUG
   //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 3.0\n", CkMyPe()); fflush(NULL);

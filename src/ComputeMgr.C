@@ -1279,6 +1279,24 @@ void ComputeMgr::recvNonbondedMICSlaveReady(int np, int ac, int seq) {
   }
 }
 
+class NonbondedMICSkipMsg : public CMessage_NonbondedMICSkipMsg {
+public:
+  ComputeNonbondedMIC *compute;
+};
+
+void ComputeMgr::sendNonbondedMICSlaveSkip(ComputeNonbondedMIC *c, int pe) {
+  NonbondedMICSkipMsg *msg = new NonbondedMICSkipMsg;
+  msg->compute = c;
+  thisProxy[pe].recvNonbondedMICSlaveSkip(msg);
+}
+
+void ComputeMgr::recvNonbondedMICSlaveSkip(NonbondedMICSkipMsg *msg) {
+#ifdef NAMD_MIC
+  msg->compute->skip();
+#endif
+  delete msg;
+}
+
 void ComputeMgr::sendNonbondedMICSlaveEnqueue(ComputeNonbondedMIC *c, int pe, int seq, int prio, int ws) {
   if ( ws == 2 && c->localHostedPatches.size() == 0 ) return;
   LocalWorkMsg *msg = ( ws == 1 ? c->localWorkMsg : c->localWorkMsg2 );
