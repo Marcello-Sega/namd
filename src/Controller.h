@@ -155,7 +155,7 @@ protected:
       // int berendsenPressure_count;
     void langevinPiston1(int);
     void langevinPiston2(int);
-      // Tensor langevinPiston_strainRate;
+      Tensor langevinPiston_origStrainRate;
       Tensor strainRate_old;  // for langevinPistonBarrier no
       Tensor positionRescaleFactor;  // for langevinPistonBarrier no
 
@@ -209,6 +209,8 @@ protected:
     int checkpoint_stored;
     Lattice checkpoint_lattice;
     ControllerState checkpoint_state;
+
+    Lattice origLattice;
 
 //for accelMD
    void rescaleaccelMD (int step, int minimize = 0);

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/11/20 21:50:17 $
- * $Revision: 1.1273 $
+ * $Date: 2014/01/09 20:20:07 $
+ * $Revision: 1.1274 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -563,7 +563,7 @@ void WorkDistrib::random_velocities_parallel(BigReal Temp,InputAtomList &inAtoms
 //----------------------------------------------------------------------
 // This should only be called on node 0.
 //----------------------------------------------------------------------
-FullAtomList *WorkDistrib::createAtomLists(void)
+FullAtomList *WorkDistrib::createAtomLists(const char *basename)
 {
   int i;
   StringList *current;	//  Pointer used to retrieve configuration items
@@ -580,9 +580,22 @@ FullAtomList *WorkDistrib::createAtomLists(void)
   int numAtoms = pdb->num_atoms();
 
   Vector *positions = new Position[numAtoms];
-  pdb->get_all_positions(positions);
-
   Vector *velocities = new Velocity[numAtoms];
+
+ if ( basename ) {
+  if ( params->binaryOutput ) {
+    read_binary_file((std::string(basename)+".coor").c_str(), positions, numAtoms);
+    read_binary_file((std::string(basename)+".vel").c_str(), velocities, numAtoms);
+  } else {
+    PDB coorpdb((std::string(basename)+".coor").c_str());
+    if ( coorpdb.num_atoms() != numAtoms ) {
+      NAMD_die("Incorrect atom count in coordinate pdb file");
+    }
+    coorpdb.get_all_positions(positions);
+    velocities_from_PDB((std::string(basename)+".vel").c_str(), velocities, numAtoms);
+  }
+ } else {
+  pdb->get_all_positions(positions);
 
   if ( params->initialTemp < 0.0 ) {
     Bool binvels=FALSE;
@@ -606,6 +619,7 @@ FullAtomList *WorkDistrib::createAtomLists(void)
     // Random velocities for a given temperature
     random_velocities(params->initialTemp, molecule, velocities, numAtoms);
   }
+ }
 
   //  If COMMotion == no, remove center of mass motion
   if (!(params->comMove)) {
@@ -882,7 +896,7 @@ void WorkDistrib::distributeHomePatches() {
   patchMgr->sendMovePatches();
 }
 
-void WorkDistrib::reinitAtoms() {
+void WorkDistrib::reinitAtoms(const char *basename) {
 
   PatchMap *patchMap = PatchMap::Object();
   CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
@@ -890,7 +904,7 @@ void WorkDistrib::reinitAtoms() {
 
   int numPatches = patchMap->numPatches();
 
-  FullAtomList *atoms = createAtomLists();
+  FullAtomList *atoms = createAtomLists(basename);
 
   for(int i=0; i < numPatches; i++) {
     patchMgr->sendAtoms(i,atoms[i]);
@@ -3003,7 +3017,7 @@ void WorkDistrib::enqueueMIC(LocalWorkMsg *msg) {
 //
 //***********************************************************************/
 
-void WorkDistrib::velocities_from_PDB(char *filename, 
+void WorkDistrib::velocities_from_PDB(const char *filename, 
 				      Vector *v, int totalAtoms)
 {
   PDB *v_pdb;		//  PDB info from velocity PDB
@@ -3057,7 +3071,7 @@ void WorkDistrib::velocities_from_PDB(char *filename,
 //
 //**********************************************************************
 
-void WorkDistrib::velocities_from_binfile(char *fname, Vector *vels, int n)
+void WorkDistrib::velocities_from_binfile(const char *fname, Vector *vels, int n)
 {
   read_binary_file(fname,vels,n);
 }

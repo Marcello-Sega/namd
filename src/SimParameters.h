@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dhardy $
- * $Date: 2013/12/05 18:18:03 $
- * $Revision: 1.1232 $
+ * $Author: jim $
+ * $Date: 2014/01/09 20:20:07 $
+ * $Revision: 1.1233 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -910,6 +910,8 @@ public:
         char* getfromparseopts(const char* name, char *outbuf);
         int istrueinparseopts(const char* name);
         int issetinparseopts(const char* name);
+
+       	void readExtendedSystem(const char *filename, Lattice *latptr=0);
 private:
         ParseOptions *parseopts;
 
@@ -936,7 +938,7 @@ private:
      	                              const char *fieldname, char** dest);
      	void parse_mgrid_params(ConfigList *config);
        	void print_mgrid_params();
-  
+
 	void check_config(ParseOptions &opts, ConfigList *config, char *&cwd);
 
 	void print_config(ParseOptions &opts, ConfigList *config, char *&cwd);

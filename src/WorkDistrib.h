@@ -82,11 +82,11 @@ public:
   void recvComputeMapChanges(ComputeMapChangeMsg *);
   void doneSaveComputeMap(CkReductionMsg *);
 
-  FullAtomList *createAtomLists(void);
+  FullAtomList *createAtomLists(const char *basename=0);
   void createHomePatches(void);
   void distributeHomePatches(void);
 
-  void reinitAtoms(void);
+  void reinitAtoms(const char *basename=0);
   void patchMapInit(void);
   void assignNodeToPatch(void);
 
@@ -138,9 +138,9 @@ private:
   int  assignPatchesTopoGridRecBisection();
 
   void sortNodesAndAssign(int *assignedNode, int baseNodes = 0);
-  void velocities_from_PDB(char *filename, 
+  void velocities_from_PDB(const char *filename, 
 			   Vector *v, int totalAtoms);
-  void velocities_from_binfile(char *fname, Vector *vels, int n);
+  void velocities_from_binfile(const char *fname, Vector *vels, int n);
   void random_velocities(BigReal Temp, Molecule *structure,
 			 Vector *v, int totalAtoms);
   void remove_com_motion(Vector *vel, Molecule *structure, int n);

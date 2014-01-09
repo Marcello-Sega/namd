@@ -44,7 +44,7 @@ private:
   int initWasCalled;
   void barrier();
   void initcheck();
-  void reinitAtoms();
+  void reinitAtoms(const char *basename=0);
   SimpleBroadcastObject<int> scriptBarrier;
   int barrierStep;
   void runController(int task);

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2013/11/20 21:50:15 $
- * $Revision: 1.1303 $
+ * $Date: 2014/01/09 20:20:06 $
+ * $Revision: 1.1304 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -194,6 +194,8 @@ Controller::Controller(NamdState *s) :
       AVGXY(langevinPiston_strainRate);
 #undef AVGXY
     }
+    langevinPiston_origStrainRate = langevinPiston_strainRate;
+    origLattice = state->lattice;
     smooth2_avg = XXXBIGREAL;
     temp_avg = 0;
     pressure_avg = 0;
@@ -2583,6 +2585,7 @@ void Controller::writeExtendedSystemLabels(std::ofstream &file) {
 
 void Controller::writeExtendedSystemData(int step, std::ofstream &file) {
   Lattice &lattice = state->lattice;
+  file.precision(12);
   file << step;
     if ( lattice.a_p() ) file << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z;
     if ( lattice.b_p() ) file << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z;

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2013/12/13 21:59:24 $
- * $Revision: 1.1434 $
+ * $Date: 2014/01/09 20:20:07 $
+ * $Revision: 1.1435 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2048,6 +2048,109 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optional("main", "mic_singleKernel", "Set to non-zero to have all MIC work to be placed in a single kernel", &mic_singleKernel, 0);
 }
 
+void SimParameters::readExtendedSystem(const char *filename, Lattice *latptr) {
+
+     if ( ! latptr ) {
+       iout << iINFO << "EXTENDED SYSTEM FILE   " << filename << "\n" << endi;
+     }
+
+     ifstream xscFile(filename);
+     if ( ! xscFile ) NAMD_die("Unable to open extended system file.\n");
+
+     char labels[1024];
+     do {
+       if ( ! xscFile ) NAMD_die("Error reading extended system file.\n");
+       xscFile.getline(labels,1023);
+     } while ( strncmp(labels,"#$LABELS ",9) );
+
+     int a_x, a_y, a_z, b_x, b_y, b_z, c_x, c_y, c_z;
+     a_x = a_y = a_z = b_x = b_y = b_z = c_x = c_y = c_z = -1;
+     int o_x, o_y, o_z, s_u, s_v, s_w, s_x, s_y, s_z;
+     o_x = o_y = o_z = s_u = s_v = s_w = s_x = s_y = s_z = -1;
+
+     int pos = 0;
+     char *l_i = labels + 8;
+     while ( *l_i ) {
+       if ( *l_i == ' ' ) { ++l_i; continue; }
+       char *l_i2;
+       for ( l_i2 = l_i; *l_i2 && *l_i2 != ' '; ++l_i2 );
+       if ( (l_i2 - l_i) == 3 && (l_i[1] == '_') ) {
+	 if (l_i[0] == 'a' && l_i[2] == 'x') a_x = pos;
+	 if (l_i[0] == 'a' && l_i[2] == 'y') a_y = pos;
+	 if (l_i[0] == 'a' && l_i[2] == 'z') a_z = pos;
+	 if (l_i[0] == 'b' && l_i[2] == 'x') b_x = pos;
+	 if (l_i[0] == 'b' && l_i[2] == 'y') b_y = pos;
+	 if (l_i[0] == 'b' && l_i[2] == 'z') b_z = pos;
+	 if (l_i[0] == 'c' && l_i[2] == 'x') c_x = pos;
+	 if (l_i[0] == 'c' && l_i[2] == 'y') c_y = pos;
+	 if (l_i[0] == 'c' && l_i[2] == 'z') c_z = pos;
+	 if (l_i[0] == 'o' && l_i[2] == 'x') o_x = pos;
+	 if (l_i[0] == 'o' && l_i[2] == 'y') o_y = pos;
+	 if (l_i[0] == 'o' && l_i[2] == 'z') o_z = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'u') s_u = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'v') s_v = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'w') s_w = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'x') s_x = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'y') s_y = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'z') s_z = pos;
+       }
+       ++pos;
+       l_i = l_i2;
+     }
+     int numpos = pos;
+
+     for ( pos = 0; pos < numpos; ++pos ) {
+       double tmp;
+       xscFile >> tmp;
+       if ( ! xscFile ) NAMD_die("Error reading extended system file.\n");
+       if ( pos == a_x ) cellBasisVector1.x = tmp;
+       if ( pos == a_y ) cellBasisVector1.y = tmp;
+       if ( pos == a_z ) cellBasisVector1.z = tmp;
+       if ( pos == b_x ) cellBasisVector2.x = tmp;
+       if ( pos == b_y ) cellBasisVector2.y = tmp;
+       if ( pos == b_z ) cellBasisVector2.z = tmp;
+       if ( pos == c_x ) cellBasisVector3.x = tmp;
+       if ( pos == c_y ) cellBasisVector3.y = tmp;
+       if ( pos == c_z ) cellBasisVector3.z = tmp;
+       if ( pos == o_x ) cellOrigin.x = tmp;
+       if ( pos == o_y ) cellOrigin.y = tmp;
+       if ( pos == o_z ) cellOrigin.z = tmp;
+       if ( pos == s_u ) strainRate2.x = tmp;
+       if ( pos == s_v ) strainRate2.y = tmp;
+       if ( pos == s_w ) strainRate2.z = tmp;
+       if ( pos == s_x ) strainRate.x = tmp;
+       if ( pos == s_y ) strainRate.y = tmp;
+       if ( pos == s_z ) strainRate.z = tmp;
+     }
+
+   if ( latptr ) {
+     Lattice test;
+     test.set(cellBasisVector1,cellBasisVector2,cellBasisVector3,cellOrigin);
+    
+     if ( test.a_p() && ! lattice.a_p() ) {
+       NAMD_die("cellBasisVector1 added during atom reinitialization");
+     }
+     if ( lattice.a_p() && ! test.a_p() ) {
+       NAMD_die("cellBasisVector1 dropped during atom reinitialization");
+     }
+     if ( test.b_p() && ! lattice.b_p() ) {
+       NAMD_die("cellBasisVector2 added during atom reinitialization");
+     }
+     if ( lattice.b_p() && ! test.b_p() ) {
+       NAMD_die("cellBasisVector2 dropped during atom reinitialization");
+     }
+     if ( test.c_p() && ! lattice.c_p() ) {
+       NAMD_die("cellBasisVector3 added during atom reinitialization");
+     }
+     if ( lattice.c_p() && ! test.c_p() ) {
+       NAMD_die("cellBasisVector3 dropped during atom reinitialization");
+     }
+
+     latptr->set(cellBasisVector1,cellBasisVector2,cellBasisVector3,cellOrigin);
+   }
+
+}
+
 #ifdef MEM_OPT_VERSION
 //This global var is defined in mainfunc.C
 extern char *gWorkDir;
@@ -2428,83 +2531,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    ///// periodic cell parameters
 
-   if ( opts.defined("extendedSystem") )
-   {
-     current = config->find("extendedSystem");
-
-     iout << iINFO << "EXTENDED SYSTEM FILE   "
-        << current->data << "\n" << endi;
-
-     ifstream xscFile(current->data);
-     if ( ! xscFile ) NAMD_die("Unable to open extended system file.\n");
-
-     char labels[1024];
-     do {
-       if ( ! xscFile ) NAMD_die("Error reading extended system file.\n");
-       xscFile.getline(labels,1023);
-     } while ( strncmp(labels,"#$LABELS ",9) );
-
-     int a_x, a_y, a_z, b_x, b_y, b_z, c_x, c_y, c_z;
-     a_x = a_y = a_z = b_x = b_y = b_z = c_x = c_y = c_z = -1;
-     int o_x, o_y, o_z, s_u, s_v, s_w, s_x, s_y, s_z;
-     o_x = o_y = o_z = s_u = s_v = s_w = s_x = s_y = s_z = -1;
-
-     int pos = 0;
-     char *l_i = labels + 8;
-     while ( *l_i ) {
-       if ( *l_i == ' ' ) { ++l_i; continue; }
-       char *l_i2;
-       for ( l_i2 = l_i; *l_i2 && *l_i2 != ' '; ++l_i2 );
-       if ( (l_i2 - l_i) == 3 && (l_i[1] == '_') ) {
-	 if (l_i[0] == 'a' && l_i[2] == 'x') a_x = pos;
-	 if (l_i[0] == 'a' && l_i[2] == 'y') a_y = pos;
-	 if (l_i[0] == 'a' && l_i[2] == 'z') a_z = pos;
-	 if (l_i[0] == 'b' && l_i[2] == 'x') b_x = pos;
-	 if (l_i[0] == 'b' && l_i[2] == 'y') b_y = pos;
-	 if (l_i[0] == 'b' && l_i[2] == 'z') b_z = pos;
-	 if (l_i[0] == 'c' && l_i[2] == 'x') c_x = pos;
-	 if (l_i[0] == 'c' && l_i[2] == 'y') c_y = pos;
-	 if (l_i[0] == 'c' && l_i[2] == 'z') c_z = pos;
-	 if (l_i[0] == 'o' && l_i[2] == 'x') o_x = pos;
-	 if (l_i[0] == 'o' && l_i[2] == 'y') o_y = pos;
-	 if (l_i[0] == 'o' && l_i[2] == 'z') o_z = pos;
-	 if (l_i[0] == 's' && l_i[2] == 'u') s_u = pos;
-	 if (l_i[0] == 's' && l_i[2] == 'v') s_v = pos;
-	 if (l_i[0] == 's' && l_i[2] == 'w') s_w = pos;
-	 if (l_i[0] == 's' && l_i[2] == 'x') s_x = pos;
-	 if (l_i[0] == 's' && l_i[2] == 'y') s_y = pos;
-	 if (l_i[0] == 's' && l_i[2] == 'z') s_z = pos;
-       }
-       ++pos;
-       l_i = l_i2;
-     }
-     int numpos = pos;
-
-     for ( pos = 0; pos < numpos; ++pos ) {
-       double tmp;
-       xscFile >> tmp;
-       if ( ! xscFile ) NAMD_die("Error reading extended system file.\n");
-       if ( pos == a_x ) cellBasisVector1.x = tmp;
-       if ( pos == a_y ) cellBasisVector1.y = tmp;
-       if ( pos == a_z ) cellBasisVector1.z = tmp;
-       if ( pos == b_x ) cellBasisVector2.x = tmp;
-       if ( pos == b_y ) cellBasisVector2.y = tmp;
-       if ( pos == b_z ) cellBasisVector2.z = tmp;
-       if ( pos == c_x ) cellBasisVector3.x = tmp;
-       if ( pos == c_y ) cellBasisVector3.y = tmp;
-       if ( pos == c_z ) cellBasisVector3.z = tmp;
-       if ( pos == o_x ) cellOrigin.x = tmp;
-       if ( pos == o_y ) cellOrigin.y = tmp;
-       if ( pos == o_z ) cellOrigin.z = tmp;
-       if ( pos == s_u ) strainRate2.x = tmp;
-       if ( pos == s_v ) strainRate2.y = tmp;
-       if ( pos == s_w ) strainRate2.z = tmp;
-       if ( pos == s_x ) strainRate.x = tmp;
-       if ( pos == s_y ) strainRate.y = tmp;
-       if ( pos == s_z ) strainRate.z = tmp;
-     }
-
-   }
+   if ( opts.defined("extendedSystem") ) readExtendedSystem(config->find("extendedSystem")->data);
 
    if ( LJcorrection && ! cellBasisVector3.length2() ) {
      NAMD_die("Can't use LJ tail corrections without periodic boundary conditions!");

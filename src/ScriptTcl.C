@@ -127,8 +127,8 @@ void ScriptTcl::setParameter(const char* param, int value) {
   barrier();
 }
 
-void ScriptTcl::reinitAtoms(void) {
-  Node::Object()->workDistrib->reinitAtoms();
+void ScriptTcl::reinitAtoms(const char *basename) {
+  Node::Object()->workDistrib->reinitAtoms(basename);
   barrier();
 }
 
@@ -1104,17 +1104,63 @@ void ScriptTcl::doCallback(const char *labels, const char *data) {
   }
 }
 
+extern void read_binary_coors(char *fname, PDB *pdbobj);
+
 int ScriptTcl::Tcl_reinitatoms(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
-  if (argc != 1) {
+  if (argc > 2) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
 
-  iout << "TCL: Reinitializing atom data\n" << endi;
-  script->reinitAtoms();
+  if (argc == 1 ) {
+    iout << "TCL: Reinitializing atom data\n" << endi;
+    SimParameters *simParams = Node::Object()->simParameters;
+    Controller *c = script->state->controller;
+    script->state->lattice = c->origLattice;
+    c->langevinPiston_strainRate = c->langevinPiston_origStrainRate;
+    c->rescaleVelocities_sumTemps = 0;  c->rescaleVelocities_numTemps = 0;
+    c->berendsenPressure_avg = 0; c->berendsenPressure_count = 0;
+    SetLatticeMsg *msg = new SetLatticeMsg;
+    msg->lattice = script->state->lattice;
+    (CProxy_PatchMgr(CkpvAccess(BOCclass_group).patchMgr)).setLattice(msg);
+    script->barrier();
+    if ( ! simParams->binaryOutput ) {  // output may have overwritten data in PDB
+      StringList *coordinateFilename = script->state->configList->find("bincoordinates");
+      if ( coordinateFilename ) {
+        read_binary_coors(coordinateFilename->data, script->state->pdb);
+      } else if (coordinateFilename = script->state->configList->find("coordinates")) {
+        PDB coordpdb(coordinateFilename->data);
+        if ( coordpdb.num_atoms() != script->state->pdb->num_atoms() ) {
+          NAMD_die("inconsistent atom count on re-reading coordinates pdb file");
+        }
+        Vector *positions = new Position[coordpdb.num_atoms()];
+        coordpdb.get_all_positions(positions);
+        script->state->pdb->set_all_positions(positions);
+        delete [] positions;
+      } else {
+        iout << iWARN << "reinitatoms may fail if pdb-format output has occurred\n" << endi;
+      }
+    }
+    script->reinitAtoms();
+    return TCL_OK;
+  }
+
+  iout << "TCL: Reinitializing atom data from files with basename " << argv[1] << "\n" << endi;
+  SimParameters *simParams = Node::Object()->simParameters;
+  simParams->readExtendedSystem((std::string(argv[1])+".xsc").c_str(), &(script->state->lattice));
+  Controller *c = script->state->controller;
+  c->langevinPiston_strainRate =
+      Tensor::symmetric(simParams->strainRate,simParams->strainRate2);
+  c->rescaleVelocities_sumTemps = 0;  c->rescaleVelocities_numTemps = 0;
+  c->berendsenPressure_avg = 0; c->berendsenPressure_count = 0;
+  SetLatticeMsg *msg = new SetLatticeMsg;
+  msg->lattice = script->state->lattice;
+  (CProxy_PatchMgr(CkpvAccess(BOCclass_group).patchMgr)).setLattice(msg);
+  script->barrier();
+  script->reinitAtoms(argv[1]);
 
   return TCL_OK;
 }
