@@ -84,7 +84,7 @@ proc save_array {} {
   }
 }
 
-seed [expr int(0*srand(int(100000*rand()) + 100*$replica_id) + 100000*rand())]
+seed [expr int(0*srand(int(100000*rand()) + 100*$replica_id) + 100000*rand() + 1)]
 outputname [format $job_output_root.$replica_id $replica_id]
 
 if {$i_run} { #restart
