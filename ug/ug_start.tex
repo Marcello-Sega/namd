@@ -34,6 +34,9 @@ This file specifies what dynamics options and values that
 initial temperature, etc.  
 The options and values in this file control how 
 the system will be simulated.  
+The NAMD configuration file is specified on the NAMD command line,
+either before or after the various parallel execution options described
+in section \ref{section:run}.
 
 A \NAMD\ configuration file contains a set of options and values.  
 The options and values specified determine the exact behavior of
@@ -46,6 +49,24 @@ describes the relation between specific \NAMD\ and X-PLOR dynamics
 options.  Several sample \NAMD\ configuration files are shown
 in section \ref{section:sample}.
 
+During execution NAMD will change to the directory containing the
+configuration file so that all file paths in the configuration file
+are relative to the configuration file directory.
+Multiple configuration files may be specified on the command line
+and the will be read in order, but all file paths will be relative
+to the first configuration file to call a ``run'' command, or
+to the last configuration file if ``run'' is not called.
+
+Commands or parameters may also be specified directly on the
+command line via \verb#--keyword value# argument pairs, for example
+\verb#--outputenergies 100# \verb#--run 100# \verb#-- checkpoint#.
+This may be used to include multiple configuration files without altering the
+working directory via \verb#--source /path/to/second.conf#.
+Note that escaping or quoting of command line parameter values
+containing spaces may be difficult or impossible on some systems due
+to multiple levels of scripts called during the NAMD parallel launch process
+and because the keyword and value are simply merged into a single string
+that is passed to the Tcl interpreter.
 
 \subsubsection{Configuration parameter syntax}
 \label{section:configsyntax}
@@ -114,11 +135,16 @@ Additional features include:
     energy function; this can be avoided with ``\icommand{run norepeat}''.
  \item The ``\icommand{minimize}'' command is similar to ``run'' and performs
     minimization for the specified number of force evaluations.
- \item The ``\icommand{output}'' command takes an output file basename and causes
-    .coor, .vel, and .xsc files to be written with that name.
-    Alternatively, ``\icommand{output withforces}'' and
-    ``\icommand{output onlyforces}'' will write a .force file
-    either in addition to or instead of the regular files.
+ \item Configuration file parameter introspection is supported by
+   invoking a (case-insensitive) parameter keyword with no argument (e.g., ``numsteps'')
+   and by the helper commands ``\icommand{isset}'' and ``\icommand{istrue}''.
+   Note that keywords are not parsed until the first ``run'' command, and
+   before this values are treated as unformatted strings, so for example
+   ``eFieldOn'' and ``eField'' may return ``yes'' and ``1 2 3'' before
+   the first ``run'' command, but ``1'' and ``1.0 2.0 3.0'' after parsing
+   (``istrue eFieldOn'' would return ``1'' in both cases).
+   Similarly, ``isset badparam'' will return ``0'' before parsing
+   but raise an ``unknown parameter'' error after.
  \item Between ``run'' commands the \iparam{reassignTemp},
     \iparam{rescaleTemp}, and
     \iparam{langevinTemp} parameters can be changed to allow simulated
@@ -144,11 +170,23 @@ Additional features include:
     at time-varying electric field that affects all atoms.
     The \iparam{alchLambda} and \iparam{alchLambda2}
     parameters may be changed during alchemical free energy runs.
-    The \iparam{DCDfile} may be changed to write binary coordinate
+    The \iparam{DCDfile} may be changed to write binary coordinate trajectory
     output to separate files.
     The \iparam{restartname} may be changed to write restart output to separate files.
  \item The ``\icommand{checkpoint}'' and ``revert'' commands (no arguments) allow
-    a scripted simulation to save and restore to a prior state.
+    a scripted simulation to save and restore (in memory) to a single prior state.
+    The ``output'' and ``reinitatoms'' commands support multiple saved states using files.
+ \item The ``\icommand{output}'' command takes an output file basename and causes
+    .coor, .vel, and .xsc files to be written with that name.
+    Alternatively, ``\icommand{output withforces}'' and
+    ``\icommand{output onlyforces}'' will write a .force file
+    either in addition to or instead of the regular files.
+ \item The ``\icommand{reinitatoms}'' command reinitializes coordinates,
+    velocities, and periodic cell dimensions to those initially read in
+    (random velocities are generated if they were not read from a file).
+    An optional file basename argument (matching that passed to the \icommand{output} command)
+    causes .coor, .vel, and .xsc files to be read,
+    assuming the format indicated by the \iparam{binaryoutput} parameter.
  \item The ``\icommand{exit}'' command writes output files and exits cleanly.
  \item The ``\icommand{abort}'' command concatenates its arguments into
     an error message and exits immediately without writing output files.
