@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2014/01/09 20:20:07 $
- * $Revision: 1.1435 $
+ * $Date: 2014/01/10 20:51:58 $
+ * $Revision: 1.1436 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3119,7 +3119,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    if (!opts.defined("seed")) 
    {
-      randomSeed = (unsigned int) time(NULL);
+      randomSeed = (unsigned int) time(NULL) + 31530001 * CmiMyPartition();
    }
 
 //Modifications for alchemical fep
