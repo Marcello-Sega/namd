@@ -243,6 +243,7 @@ void mic_initialize() {
       }
     //}
     if ( shared_mic && devicePe == CkMyPe() ) {
+      if ( CmiPhysicalNodeID(CkMyPe()) < 2 )
       CkPrintf("Pe %d sharing MIC device %d\n", CkMyPe(), dev);
     }
   } else {  // in case phys node code is lying
@@ -254,6 +255,7 @@ void mic_initialize() {
   }
 
   if ( devicePe != CkMyPe() ) {
+    if ( CmiPhysicalNodeID(devicePe) < 2 )
     CkPrintf("Pe %d physical rank %d will use MIC device of pe %d\n",
              CkMyPe(), myRankInPhysicalNode, devicePe);
     myDevice = -1;
@@ -274,6 +276,7 @@ void mic_initialize() {
     NAMD_die(buf);
   }
 
+  if ( CmiPhysicalNodeID(devicePe) < 2 )
   CkPrintf("Pe %d physical rank %d binding to MIC device %d on %s: %d procs %d threads \n",
              CkMyPe(), myRankInPhysicalNode, dev, host,
              omp_get_num_procs_target(TARGET_MIC,dev),
@@ -583,7 +586,7 @@ void ComputeNonbondedMIC::bind_exclusions(int deviceNum) {
   long int totalBytes = totalBits / 8;
 
   // If this is PE 0, print some info...
-  if (!CkMyPe()) {
+  if ( ! CmiPhysicalNodeID(CkMyPe()) ) {
     CkPrintf("Info: Found %d unique exclusion lists needed %ld bytes\n",
              unique_lists.size(), totalBytes);
   }
@@ -940,6 +943,7 @@ void ComputeNonbondedMIC::registerPatches() {
   if ( master == this ) setNumPatches(activePatches.size());
   else setNumPatches(hostedPatches.size());
 
+  if ( CmiPhysicalNodeID(CkMyPe()) < 2 )
   CkPrintf("Pe %d hosts %d local and %d remote patches for pe %d\n", CkMyPe(), localHostedPatches.size(), remoteHostedPatches.size(), masterPe);
 }
 
@@ -1733,6 +1737,7 @@ void ComputeNonbondedMIC::doWork() {
 	  }
         }
 
+        if ( CmiPhysicalNodeID(CkMyPe()) < 2 )
         CkPrintf("Pe %d has %d local and %d remote patches and %d local and %d remote computes.\n",
                  CkMyPe(), localActivePatches.size(), remoteActivePatches.size(),
                  localComputeRecords.size(), remoteComputeRecords.size()
