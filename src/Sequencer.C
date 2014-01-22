@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2013/11/13 00:01:34 $
- * $Revision: 1.1218 $
+ * $Date: 2014/01/22 19:52:57 $
+ * $Revision: 1.1219 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -1866,7 +1866,7 @@ void Sequencer::submitCollections(int step, int zeroVel)
 void Sequencer::runComputeObjects(int migration, int pairlists)
 {
   if ( migration ) pairlistsAreValid = 0;
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
   if ( pairlistsAreValid &&
        ( patch->flags.doFullElectrostatics || ! simParams->fullElectFrequency )
                          && ( pairlistsAge > (
