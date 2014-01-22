@@ -64,11 +64,6 @@
 #define GB3_PROXY_DATA_PRIORITY (11<<8)
 
 
-// MIC Computes
-#define COMPUTE_MIC_PRIORITY__LO  PME_UNTRANS2_PRIORITY
-#define COMPUTE_MIC_PRIORITY__HI  PROXY_DATA_PRIORITY
-
-
 // from here on GB computes use normal compute priorities
 //use in Compute::gbisP3PatchReady        DONE
 #define COMPUTE_PROXY_PRIORITY (12<<8)

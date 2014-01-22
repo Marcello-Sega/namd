@@ -810,11 +810,7 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
   atomsChanged = 1;
   computesChanged = 1;
   workStarted = 0;
-  if (CkNumPes() < 4) {
-    basePriority = COMPUTE_MIC_PRIORITY__HI; //PROXY_DATA_PRIORITY;
-  } else {
-    basePriority = COMPUTE_MIC_PRIORITY__LO; //PROXY_DATA_PRIORITY;
-  }
+  basePriority = PROXY_DATA_PRIORITY;
   localWorkMsg2 = new (PRIORITY_SIZE) LocalWorkMsg;
 
   // Master and slaves
@@ -1578,7 +1574,7 @@ int ComputeNonbondedMIC::noWork() {
                                         );
 
   workStarted = ((singleKernelFlag != 0) ? (2) : (1));
-  //basePriority = COMPUTE_MIC_PRIORITY; //COMPUTE_PROXY_PRIORITY;
+  basePriority = COMPUTE_PROXY_PRIORITY;
 
   //// DMK - DEBUG
   //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 6.0\n", CkMyPe()); fflush(NULL);
@@ -1597,7 +1593,7 @@ void ComputeNonbondedMIC::doWork() {
   if ( workStarted ) { //if work already started, check if finished
     if ( finishWork() ) {  // finished
       workStarted = 0;
-      //basePriority = COMPUTE_MIC_PRIORITY; //PROXY_DATA_PRIORITY;  // higher to aid overlap
+      basePriority = PROXY_DATA_PRIORITY;  // higher to aid overlap
 
       // DMK - DEBUG
       timestep++;
@@ -1605,8 +1601,7 @@ void ComputeNonbondedMIC::doWork() {
     } else {  // need to call again
 
       workStarted = 2;
-      //basePriority = PROXY_RESULTS_PRIORITY;  // lower for local
-      //basePriority = COMPUTE_MIC_PRIORITY; //PROXY_DATA_PRIORITY;  // lower for local
+      basePriority = PROXY_RESULTS_PRIORITY;  // lower for local
       if ( master == this && kernel_launch_state > 2 ) {
         //#if MIC_TRACING != 0
         //  mic_tracing_polling_start = CmiWallTimer();
@@ -1623,7 +1618,7 @@ void ComputeNonbondedMIC::doWork() {
   //#endif
 
   workStarted = ((singleKernelFlag != 0) ? (2) : (1));
-  //basePriority = COMPUTE_MIC_PRIORITY; //COMPUTE_PROXY_PRIORITY;
+  basePriority = COMPUTE_PROXY_PRIORITY;
 
   Molecule *mol = Node::Object()->molecule;
   Parameters *params = Node::Object()->parameters;
