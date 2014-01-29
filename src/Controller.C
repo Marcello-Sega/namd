@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2014/01/09 20:20:06 $
- * $Revision: 1.1304 $
+ * $Date: 2014/01/29 20:30:53 $
+ * $Revision: 1.1305 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2199,6 +2199,8 @@ void Controller::printEnergies(int step, int minimize)
       //printf("Volume is %f\n", volume);
       //printf("Applying tail correction of %f to energy\n", molecule->tail_corr_ener / volume);
       ljEnergy += molecule->tail_corr_ener / volume;
+      ljEnergy_f += molecule->tail_corr_ener / volume;
+      ljEnergy_f_left += molecule->tail_corr_ener / volume;
     }
 
 
