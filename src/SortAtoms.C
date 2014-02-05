@@ -94,6 +94,12 @@ static void partition(int *order, const FullAtom *atoms, int begin, int end) {
 
 }
 
+#if defined(NAMD_CUDA) and defined(__GNUC_PATCHLEVEL__)
+#if __GNUC__ == 4 && __GNUC_MINOR__ == 8 && __GNUC_PATCHLEVEL__ == 2
+#error gcc 4.8.2 std::nth_element would segfault (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58800)
+#endif
+#endif
+
 void sortAtomsForCUDA(int *order, const FullAtom *atoms, int nfree, int n) {
 
   // partition free atoms
