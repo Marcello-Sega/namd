@@ -543,7 +543,7 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
     if (!fits_lattice(simParams->lattice)) {
 	char errmsg[512];
 	sprintf(errmsg, "Periodic cell basis too small for Gridforce grid %d\n", mygridnum);
-	NAMD_die(errmsg);
+	iout << iWARN << errmsg << endi;
     }
     
     size = k[0] * k[1] * k[2];

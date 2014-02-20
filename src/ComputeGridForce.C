@@ -17,7 +17,7 @@
 
 //#define GF_FORCE_OUTPUT
 //#define GF_FORCE_OUTPUT_FREQ 100
-#define GF_OVERLAPCHECK_FREQ 100
+#define GF_OVERLAPCHECK_FREQ 1000
 
 
 ComputeGridForce::ComputeGridForce(ComputeID c, PatchID pid)
@@ -124,7 +124,7 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 		if (!grid->fits_lattice(homePatch->lattice)) {
 		    char errmsg[512];
 		    sprintf(errmsg, "Periodic cell basis too small for Gridforce grid %d\n", gridnum);
-		    NAMD_die(errmsg);
+		    iout << iWARN << errmsg << endi;
 		}
 	    }
 	}
