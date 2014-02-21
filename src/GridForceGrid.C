@@ -541,9 +541,11 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
     
     // Check for grid overlap
     if (!fits_lattice(simParams->lattice)) {
-	char errmsg[512];
-	sprintf(errmsg, "Periodic cell basis too small for Gridforce grid %d\n", mygridnum);
-	iout << iWARN << errmsg << endi;
+      char errmsg[512];
+      if (simParams->gridforcechecksize) {
+        sprintf(errmsg, "Warning: Periodic cell basis too small for Gridforce grid %d.  Set gridforcechecksize off in configuration file to ignore.\n", mygridnum);
+        NAMD_die(errmsg);      
+      }
     }
     
     size = k[0] * k[1] * k[2];

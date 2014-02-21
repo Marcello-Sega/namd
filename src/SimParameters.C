@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2014/01/10 20:51:58 $
- * $Revision: 1.1436 $
+ * $Author: ryanmcgreevy $
+ * $Date: 2014/02/21 18:15:56 $
+ * $Revision: 1.1437 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1680,6 +1680,8 @@ void SimParameters::config_parser_gridforce(ParseOptions &opts) {
 		  &gridforceVOffset);
     opts.optionalB("gridforce", "gridforcelite", "Use Gridforce Lite?",
 		   &gridforceLite, FALSE);
+    opts.optionalB("gridforce", "gridforcechecksize", "Check if grid exceeds PBC cell dimensions?",
+		   &gridforcechecksize, TRUE);
 }
 /* END gf */
 

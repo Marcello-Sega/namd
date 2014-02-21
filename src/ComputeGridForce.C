@@ -118,15 +118,17 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 	
 	if (homePatch->flags.step % GF_OVERLAPCHECK_FREQ == 0) {
 	    // only check on node 0 and every GF_OVERLAPCHECK_FREQ steps
-	    if (simParams->langevinPistonOn || simParams->berendsenPressureOn) {
+	  if (simParams->langevinPistonOn || simParams->berendsenPressureOn) {
 		// check for grid overlap if pressure control is on
 		// not needed without pressure control, since the check is also performed on startup
-		if (!grid->fits_lattice(homePatch->lattice)) {
-		    char errmsg[512];
-		    sprintf(errmsg, "Periodic cell basis too small for Gridforce grid %d\n", gridnum);
-		    iout << iWARN << errmsg << endi;
-		}
-	    }
+      if (!grid->fits_lattice(homePatch->lattice)) {
+        char errmsg[512];
+        if (simParams->gridforcechecksize) {
+          sprintf(errmsg, "Warning: Periodic cell basis too small for Gridforce grid %d.  Set gridforcechecksize off in configuration file to ignore.\n", gridnum);
+          NAMD_die(errmsg);      
+        }
+      }
+	 }
 	}
 	
 	Position center = grid->get_center();
