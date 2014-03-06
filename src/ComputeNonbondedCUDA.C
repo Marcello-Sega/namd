@@ -740,6 +740,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   cudaCompute = this;
   computeMgr = mgr;
   patchMap = PatchMap::Object();
+  patchRecords.resize(patchMap->numPatches());
   atomMap = AtomMap::Object();
   reduction = 0;
 
@@ -782,7 +783,7 @@ ComputeNonbondedCUDA::~ComputeNonbondedCUDA() { ; }
 void ComputeNonbondedCUDA::requirePatch(int pid) {
 
   computesChanged = 1;
-  patch_record &pr = patchRecords.item(pid);
+  patch_record &pr = patchRecords[pid];
   if ( pr.refCount == 0 ) {
     if ( mergegrids ) {
       pr.isLocal = 0;

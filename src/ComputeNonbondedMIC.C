@@ -798,6 +798,7 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
   micCompute = this;
   computeMgr = mgr;
   patchMap = PatchMap::Object();
+  patchRecords.resize(patchMap->numPatches());
   atomMap = AtomMap::Object();
   reduction = 0;
 
@@ -871,7 +872,7 @@ ComputeNonbondedMIC::~ComputeNonbondedMIC() {
 void ComputeNonbondedMIC::requirePatch(int pid) {
 
   computesChanged = 1;
-  patch_record &pr = patchRecords.item(pid);
+  patch_record &pr = patchRecords[pid];
   if ( pr.refCount == 0 ) {
     //if ( CkNumNodes() < 2 ) {
     //  pr.isLocal = 1 & ( 1 ^ patchMap->index_a(pid) ^ patchMap->index_b(pid) ^ patchMap->index_c(pid) );
