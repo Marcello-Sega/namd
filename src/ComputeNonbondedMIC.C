@@ -798,7 +798,6 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
   micCompute = this;
   computeMgr = mgr;
   patchMap = PatchMap::Object();
-  patchRecords.resize(patchMap->numPatches());
   atomMap = AtomMap::Object();
   reduction = 0;
 
@@ -842,6 +841,7 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
     return;
   } else {  // I am a master, identify self to ComputeMgr for load balancing data
     computeMgr->sendMICPEData(CkMyPe(), 1);
+    patchRecords.resize(patchMap->numPatches());
   }
   masterPe = CkMyPe();
 

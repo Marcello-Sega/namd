@@ -740,7 +740,6 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   cudaCompute = this;
   computeMgr = mgr;
   patchMap = PatchMap::Object();
-  patchRecords.resize(patchMap->numPatches());
   atomMap = AtomMap::Object();
   reduction = 0;
 
@@ -773,6 +772,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   cudaEventCreateWithFlags(&end_remote_download,cudaEventDisableTiming);
   cudaEventCreateWithFlags(&end_local_download,cudaEventDisableTiming);
 
+  patchRecords.resize(patchMap->numPatches());
   patch_pairs_ptr = new ResizeArray<patch_pair>;
   force_lists_ptr = new ResizeArray<force_list>;
 }
