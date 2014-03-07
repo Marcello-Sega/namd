@@ -371,6 +371,24 @@ begin:
   echo "Creating link: $ROOTDIR to .rootdir"
   ln -s $ROOTDIR .rootdir
 
+  if ( $use_fftw ) then
+    if ( ! $?FFTW_PREFIX ) then
+      if ( -d .rootdir/fftw/lib && -d .rootdir/fftw/include ) then
+        echo "Using FFTW build found in main build directory"
+        set FFTW_PREFIX = .rootdir/fftw
+      else if ( -d $HOME/fftw/lib && -d $HOME/fftw/include ) then
+        echo "Using FFTW build found in $HOME/fftw"
+        set FFTW_PREFIX = $(HOME)/fftw
+      endif
+    endif
+    if ( $?FFTW_PREFIX && ! $use_fftw3 ) then
+      if ( -e $FFTW_PREFIX/include/fftw3.h ) then
+        echo "Using FFTW3 build found in $FFTW_PREFIX"
+        set use_fftw3 = 1
+      endif
+    endif
+  endif
+
   echo "Writing build options to $BUILD_LINK/Make.config"
 
   if ( $?CHARM_BASE ) then
