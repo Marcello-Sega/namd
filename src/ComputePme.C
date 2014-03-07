@@ -1382,7 +1382,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 						     1,
 						     myGrid.dim2 * myGrid.dim3,
 						     (fftwf_complex *) 
-						     qgrid + qgrid_size * g,
+						     (qgrid + qgrid_size * g),
 						     NULL,
 						     1,
 						     myGrid.dim2 * (myGrid.dim3/2),
@@ -1437,7 +1437,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	backward_plan_yz[g] = fftwf_plan_many_dft_c2r(2, n+1, 
 						      localInfo[myGridPe].nx,
 						      (fftwf_complex *)
-						      qgrid + qgrid_size * g,
+						      (qgrid + qgrid_size * g),
 						      NULL,
 						      1,
 						      myGrid.dim2*(myGrid.dim3/2),
