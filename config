@@ -378,7 +378,7 @@ begin:
         set FFTW_PREFIX = .rootdir/fftw
       else if ( -d $HOME/fftw/lib && -d $HOME/fftw/include ) then
         echo "Using FFTW build found in $HOME/fftw"
-        set FFTW_PREFIX = $(HOME)/fftw
+        set FFTW_PREFIX = $HOME/fftw
       endif
     endif
     if ( $?FFTW_PREFIX && ! $use_fftw3 ) then
