@@ -284,8 +284,8 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   const int j_upper = params.numAtoms[1];
   const int i_upper_16 = params.numAtoms_16[0];
   const int j_upper_16 = params.numAtoms_16[1];
-  __ASSERT(i_upper > 0); __ASSERT(j_upper > 0);
-  __ASSERT(i_upper_16 > 0); __ASSERT(j_upper_16 > 0);
+  __ASSERT(i_upper >= 0); __ASSERT(j_upper >= 0);
+  __ASSERT(i_upper_16 >= 0); __ASSERT(j_upper_16 >= 0);
   __ASSUME(i_upper_16 % 16 == 0);
   __ASSUME(j_upper_16 % 16 == 0);
 
@@ -422,6 +422,9 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   // If the commOnly flag has been set, return now (after having zero'd the output forces)
   if (params.constants->commOnly) { return; }
 
+  // If either atom list is size zero, return now (after having zero'd the output forces)
+  if (i_upper <= 0 || j_upper <= 0) { return; }
+
   CALC_TYPE offset_x = (CALC_TYPE)(params.offset.x);
   CALC_TYPE offset_y = (CALC_TYPE)(params.offset.y);
   CALC_TYPE offset_z = (CALC_TYPE)(params.offset.z);
@@ -461,6 +464,8 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
       (pl)[0] = newPlAllocSize; \
     } \
   }
+
+  DEVICE_FPRINTF("P");
 
   // Regenerate the pairlists, if need be
   if ((!(params.usePairlists)) || (params.savePairlists)) {
@@ -1221,6 +1226,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   #endif
 
   // NORMAL LOOP
+  DEVICE_FPRINTF("N");
   #define PAIRLIST pairlist_norm
   #define NORMAL(X) X
   #define EXCLUDED(X)
@@ -1232,6 +1238,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   #undef MODIFIED
 
   // MODIFIED LOOP
+  DEVICE_FPRINTF("M");
   #define PAIRLIST pairlist_mod
   #define NORMAL(X)
   #define EXCLUDED(X)
@@ -1245,6 +1252,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   // EXCLUDED LOOP
   #if defined(FULLELECT)
 
+    DEVICE_FPRINTF("E");
     #define PAIRLIST pairlist_excl
     #undef FAST
     #define FAST(X)
@@ -1268,6 +1276,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
     // If we are not executing the excluded loop, then we need to count exclusive
     //   interactions per atom.  Contribute the number of entries in the EXCLUDED
     //   pairlist (valid only if padding pairlists)
+    DEVICE_FPRINTF("e");
     #if MIC_EXCL_CHECKSUM_FULL != 0
     {
       #if __MIC_PAD_PLGEN_CTRL != 0

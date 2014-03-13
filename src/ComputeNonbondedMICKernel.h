@@ -175,6 +175,8 @@
 #define MIC_EXCL_CHECKSUM_FULL            ( 1 )  // NOTE: Mutually exclusive with MIC_EXCL_CHECKSUM
 #define MIC_DATA_STRUCT_VERIFY            ( 0 )
   #define MIC_DATA_STRUCT_VERIFY_KERNELS  ( 0 )
+#define MIC_DEVICE_FPRINTF                ( 0 )  // Print some debug info from the MICs directly to a device file on the MICs (for debug purposes)
+  #define MIC_DEVICE_FPRINTF_REOPEN_FREQ  ( 0 )  // If >0, will cause the code to periodically reopen (and thus truncate) the device file, helping to limit the amount of memory it takes up
 #define MIC_HEARTBEAT                     ( 0 )
 
 // Alignment used for various buffers, values, etc., in bytes
@@ -182,7 +184,7 @@
 
 #define MIC_MAX_DEVICES_PER_NODE          ( 16 )
 
-#define MIC_PRINT_CONFIG                  ( 1 )  // 0 - disable, !0 - enable the printing of configuration information (macros defined in this file) at the start of a simulation (TODO | NOTE: This is meant as a reference for repeating performance experiments... not required for production use... disable at some point)
+#define MIC_PRINT_CONFIG                  ( 0 )  // 0 - disable, !0 - enable the printing of configuration information (macros defined in this file) at the start of a simulation (TODO | NOTE: This is meant as a reference for repeating performance experiments... not required for production use... disable at some point)
 
 #define MIC_DEBUG                         ( 0 )  // 0 - disable, !0 - enable extra debugging output to be printed to files (1 file per PE) via MICP statements
 
@@ -350,7 +352,28 @@
     MIC_TRACING_REGISTER_EVENT("[MIC] compute (d4)", MIC_EVENT_DEVICE_COMPUTE + 4); \
     MIC_TRACING_REGISTER_EVENT("[MIC] compute (d5)", MIC_EVENT_DEVICE_COMPUTE + 5); \
     MIC_TRACING_REGISTER_EVENT("[MIC] compute (d6)", MIC_EVENT_DEVICE_COMPUTE + 6); \
-    MIC_TRACING_REGISTER_EVENT("[MIC] compute (d7+)", MIC_EVENT_DEVICE_COMPUTE + 7);
+    MIC_TRACING_REGISTER_EVENT("[MIC] compute (d7+)", MIC_EVENT_DEVICE_COMPUTE + 7); \
+    \
+    MIC_TRACING_REGISTER_EVENT("Pair", 11000); \
+    MIC_TRACING_REGISTER_EVENT("Self", 11001); \
+    MIC_TRACING_REGISTER_EVENT("PME", 11002); \
+    MIC_TRACING_REGISTER_EVENT("Tuple", 11003); \
+    MIC_TRACING_REGISTER_EVENT("Box Closing", 11010); \
+    MIC_TRACING_REGISTER_EVENT("Positions Ready", 11020); \
+    MIC_TRACING_REGISTER_EVENT("Post Run Computes", 11021); \
+    MIC_TRACING_REGISTER_EVENT("Pre Run Computes", 11022); \
+    MIC_TRACING_REGISTER_EVENT("Reduction Submit", 11023); \
+    MIC_TRACING_REGISTER_EVENT("MIC Atom Work", 11030); \
+    MIC_TRACING_REGISTER_EVENT("Patch::positionsReady", 11031); \
+    MIC_TRACING_REGISTER_EVENT("Atom send", 11032); \
+    MIC_TRACING_REGISTER_EVENT("DEBUG 0", 11040); \
+    MIC_TRACING_REGISTER_EVENT("DEBUG 1", 11041); \
+    MIC_TRACING_REGISTER_EVENT("DEBUG 2", 11042); \
+    MIC_TRACING_REGISTER_EVENT("DEBUG 3", 11043); \
+    MIC_TRACING_REGISTER_EVENT("DEBUG 4", 11044); \
+    MIC_TRACING_REGISTER_EVENT("recvImmediateProxyData", 11046); \
+    MIC_TRACING_REGISTER_EVENT("msg copy send", 11047); \
+    MIC_TRACING_REGISTER_EVENT("ProxyMgr::sendProxyData", 11048);
 
   #define MIC_TRACING_RECORD(id, start, stop) traceUserBracketEvent(id, start, stop)
 
@@ -384,6 +407,14 @@ extern void debugClose();
 #endif
 // NOTE: The bodies are defined in ComputeNonbondMIC.C and these should only
 //   be used in host code.
+
+#if MIC_DEVICE_FPRINTF != 0
+  #define DEVICE_FPRINTF(fmt, ...) if (device__fout != NULL) { fprintf(device__fout, fmt, ##__VA_ARGS__); fflush(device__fout); }
+  #define DEVICE_FPRINTF_CLAUSE  nocopy(device__fout)
+#else
+  #define DEVICE_FPRINTF(fmt, ...)
+  #define DEVICE_FPRINTF_CLAUSE
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -529,6 +560,7 @@ struct mic_kernel_data {
   int numAtoms;
   int numPatchPairs;
   int numForceLists;
+  int forceBuffersReqSize;
 
   // Outputs
   double virial_xx;
@@ -549,7 +581,7 @@ struct mic_kernel_data {
 
   int exclusionSum;
 
-  double __padding_0__;
+  int __padding_0__;
 };
 
 // Data structure that is setup each time a compute object is about to be processed

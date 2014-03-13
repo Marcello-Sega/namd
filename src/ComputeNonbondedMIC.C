@@ -49,6 +49,14 @@ extern __thread int singleKernelFlag;
 #endif
 
 
+__thread int mic_singleKernel = -1;
+__thread int mic_deviceThreshold = -1;
+__thread int mic_hostSplit = -1;
+__thread int mic_numParts_self_p1 = -1;
+__thread int mic_numParts_pair_p1 = -1;
+__thread int mic_numParts_pair_p2 = -1;
+
+
 // Function used to get the number of devices
 int mic_device_count = 0;
 int mic_get_device_count() { return mic_device_count; }
@@ -89,6 +97,13 @@ void mic_getargs(char **argv) {
 	"comma-delimited list of MIC device numbers such as 0,2,1,2");
   //ignoresharing = CmiGetArgFlag(argv, "+ignoresharing");
   //mergegrids = CmiGetArgFlag(argv, "+mergegrids");
+
+  CmiGetArgInt(argv, "+micSK", &mic_singleKernel);
+  CmiGetArgInt(argv, "+micDT", &mic_deviceThreshold);
+  CmiGetArgInt(argv, "+micHS", &mic_hostSplit);
+  CmiGetArgInt(argv, "+micSP1", &mic_numParts_self_p1);
+  CmiGetArgInt(argv, "+micPP1", &mic_numParts_pair_p1);
+  CmiGetArgInt(argv, "+micPP2", &mic_numParts_pair_p2);
 }
 
 
@@ -652,7 +667,7 @@ void register_mic_compute_self(ComputeID c, PatchID pid, int part, int numParts)
 
   SimParameters *params = Node::Object()->simParameters;
 
-  numParts = params->mic_numParts_self_p1;
+  numParts = mic_numParts_self_p1;
   if (numParts < 1) { numParts = 1; }
   for (int part = 0; part < numParts; part++) {
 
@@ -721,7 +736,7 @@ void register_mic_compute_pair(ComputeID c, PatchID pid[], int t[], int part, in
   int manDist = da + db + dc;
 
   // Create each part
-  numParts = params->mic_numParts_pair_p1 - (params->mic_numParts_pair_p2 * manDist);
+  numParts = mic_numParts_pair_p1 - (mic_numParts_pair_p2 * manDist);
   if (numParts < 1) { numParts = 1; }
   for (int part = 0; part < numParts; part++) {
 
@@ -805,7 +820,11 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
   if (params->pressureProfileOn) {
     NAMD_die("pressure profile not supported in MIC");
   }
-  singleKernelFlag = ((params->mic_singleKernel) ? (1) : (0));
+  if (mic_singleKernel >= 0) {
+    singleKernelFlag = ((mic_singleKernel != 0) ? (1) : (0));
+  } else {
+    singleKernelFlag = ((params->mic_singleKernel) ? (1) : (0));
+  }
 
   atomsChanged = 1;
   computesChanged = 1;
@@ -824,9 +843,9 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
   //   NOTE: Do this before the master/slave check below (so PE 0 will reach here)
   if (CkMyPe() == 0) {
     // NOTE: For now mic_hostSplit is a internal-only/reserved option
-    printf("Info: MIC NUMPARTS SELF P1: %d\n", params->mic_numParts_self_p1);
-    printf("Info: MIC NUMPARTS PAIR P1: %d\n", params->mic_numParts_pair_p1);
-    printf("Info: MIC NUMPARTS PAIR P2: %d\n", params->mic_numParts_pair_p2);
+    printf("Info: MIC NUMPARTS SELF P1: %d\n", mic_numParts_self_p1);
+    printf("Info: MIC NUMPARTS PAIR P1: %d\n", mic_numParts_pair_p1);
+    printf("Info: MIC NUMPARTS PAIR P2: %d\n", mic_numParts_pair_p2);
     printf("Info: MIC UNLOAD MIC PEs: %d\n", params->mic_unloadMICPEs);
     printf("Info: MIC NUM KERNELS: %d\n", (singleKernelFlag != 0) ? (1) : (2));
   }
@@ -2685,24 +2704,28 @@ void mic_assignComputes() {
   PatchMap *patchMap = PatchMap::Object();
   int nComputes = computeMap->numComputes();
 
-  int deviceThreshold = simParams->mic_deviceThreshold;
-  int hostSplit = simParams->mic_hostSplit;
-  if (deviceThreshold < 0) {  // I.e. If not set or negative in the config file, auto-calculate a threshold
+  if (mic_deviceThreshold < 0) { mic_deviceThreshold = simParams->mic_deviceThreshold; }
+  if (mic_hostSplit < 0) { mic_hostSplit = simParams->mic_hostSplit; }
+  if (mic_numParts_self_p1 < 0) { mic_numParts_self_p1 = simParams->mic_numParts_self_p1; }
+  if (mic_numParts_pair_p1 < 0) { mic_numParts_pair_p1 = simParams->mic_numParts_pair_p1; }
+  if (mic_numParts_pair_p2 < 0) { mic_numParts_pair_p2 = simParams->mic_numParts_pair_p2; }
+
+  if (mic_deviceThreshold < 0) {  // I.e. If not set or negative in the config file, auto-calculate a threshold
     int dt_base = ((int)(0.5f * (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) + 1.5f) - 2); 
     int dt_procs = mic_get_device_count() - 1;
-    deviceThreshold = dt_base + dt_procs;
+    mic_deviceThreshold = dt_base + dt_procs;
   }
 
   // Display the device threshold that is used
   if (CkMyPe() == 0) {
-    iout << iINFO << "MIC DEVICE THRESHOLD: " << deviceThreshold << " (" << simParams->mic_deviceThreshold << ")\n" << endi;
+    iout << iINFO << "MIC DEVICE THRESHOLD: " << mic_deviceThreshold << " (" << simParams->mic_deviceThreshold << ")\n" << endi;
     // DMK - NOTE : Leave out mic_hostSplit (reserved for now), only print if set
-    if (hostSplit > 0) {
-      iout << iINFO << "MIC HOST SPLIT: " << hostSplit << "\n" << endi;
+    if (mic_hostSplit > 0) {
+      iout << iINFO << "MIC HOST SPLIT: " << mic_hostSplit << "\n" << endi;
     }
   }
 
-  if (hostSplit > 0) {
+  if (mic_hostSplit > 0) {
 
     // Setup and initialize data structures
     int nPEs = CkNumPes();
@@ -2736,7 +2759,7 @@ void mic_assignComputes() {
 
     // For each PE, calculate a target number of computes to offload
     for (int i = 0; i < nPEs; i++) {
-      int target = (int)((numSelfs[i] + numPairs[i]) * hostSplit / 100.0f);
+      int target = (int)((numSelfs[i] + numPairs[i]) * mic_hostSplit / 100.0f);
       numPairs[i] = target;
     }
 
@@ -2794,7 +2817,7 @@ void mic_assignComputes() {
         if (computeMap->node(i) >= peLo && computeMap->node(i) <= peHi &&
             computeMap->type(i) == computeNonbondedPairType) {
           COMPUTE_DISTANCE(i);
-          if (simParams->mic_deviceThreshold < 0 || manDist <= simParams->mic_deviceThreshold) {
+          if (mic_deviceThreshold < 0 || manDist <= mic_deviceThreshold) {
             c0->push(i);
           }
         }
@@ -2985,17 +3008,18 @@ void mic_assignComputes() {
 	std::queue<int> *t = c0; c0 = c1; c1 = t;
       }
 
-      //if (CkMyPe() == 0 && target > 0) {
-      if (CkMyPe() == 0) {
-        printf("[MIC-Warning] :: Target compute count not reached (%f%% of target(%d) pushed to MIC, PEs %d to %d)\n",
-               ((float)(targetTotal - target)) / ((float)(targetTotal)), targetTotal, peLo, peHi
-              );
-      }
+      ////if (CkMyPe() == 0 && target > 0) {
+      //if (CkMyPe() == 0) {
+      //  printf("[MIC-Warning] :: Target compute count not reached (%f%% of target(%d) pushed to MIC, PEs %d to %d)\n",
+      //         ((float)(targetTotal - target)) / ((float)(targetTotal)), targetTotal, peLo, peHi
+      //        );
+      //}
 
-      // DMK - DEBUG
-      int numPidsUsed = 0;
-      for (int i = 0; i < maxPid; i++) { if (pidUsed[i] != 0) { numPidsUsed++; } }
-      if (CkMyPe() == 0) { printf("[DEBUG] :: PE %d->%d :: selfs:%d, pairs:%d, host:%ld, pids:%d/%d\n", peLo, peHi, selfTotal, pairTotal, c0->size(), numPidsUsed, maxPid); }
+      //// DMK - DEBUG
+      //int numPidsUsed = 0;
+      //for (int i = 0; i < maxPid; i++) { if (pidUsed[i] != 0) { numPidsUsed++; } }
+      //if (CkMyPe() == 0) { printf("[DEBUG] :: PE %d->%d :: selfs:%d, pairs:%d, host:%ld, pids:%d/%d\n", peLo, peHi, selfTotal, pairTotal, c0->size(), numPidsUsed, maxPid); }
+
       selfTotal = 0; pairTotal = 0;
     }
 
@@ -3011,8 +3035,8 @@ void mic_assignComputes() {
 
         case computeNonbondedSelfType:
           // Direct all non-bonded self computes to the device
-          if (hostSplit > 0) { // Apply patch selection heuristic
-            computeMap->setDirectToDevice(i, ((computeMap->pid(i, 0) < hostSplit) ? (0) : (1)));
+          if (mic_hostSplit > 0) { // Apply patch selection heuristic
+            computeMap->setDirectToDevice(i, ((computeMap->pid(i, 0) < mic_hostSplit) ? (0) : (1)));
             //computeMap->setDirectToDevice(i, 1);
           } else {
             computeMap->setDirectToDevice(i, 1);
@@ -3020,10 +3044,10 @@ void mic_assignComputes() {
           break;
 
         case computeNonbondedPairType:
-          if (hostSplit > 0) {
+          if (mic_hostSplit > 0) {
             int pid0 = computeMap->pid(i, 0);
             int pid1 = computeMap->pid(i, 1);
-            computeMap->setDirectToDevice(i , ((pid0 < hostSplit || pid1 < hostSplit) ? (0) : (1)));
+            computeMap->setDirectToDevice(i , ((pid0 < mic_hostSplit || pid1 < mic_hostSplit) ? (0) : (1)));
           } else {
             int aSize = patchMap->gridsize_a();
             int bSize = patchMap->gridsize_b();
@@ -3042,7 +3066,7 @@ void mic_assignComputes() {
             int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1));
             int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1));
             int manDist = da + db + dc;
-            computeMap->setDirectToDevice(i, ((manDist <= deviceThreshold) ? (1) : (0)));
+            computeMap->setDirectToDevice(i, ((manDist <= mic_deviceThreshold) ? (1) : (0)));
           }
           break;
 
