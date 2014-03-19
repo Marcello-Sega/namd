@@ -38,6 +38,32 @@
 
 #define LAST(X) X
 
+#ifdef __CUDA_ARCH__
+#define KEPLER_SHUFFLE
+#if __CUDA_ARCH__ < 300
+#undef KEPLER_SHUFFLE
+#endif
+#endif
+
+#ifdef KEPLER_SHUFFLE
+__device__ __forceinline__ static void NAME(shfl_reduction)(
+		float *reg,
+		float *smem
+		)
+{
+  *reg += __shfl_xor(*reg, 16, 32);
+  *reg += __shfl_xor(*reg, 8, 32);
+  *reg += __shfl_xor(*reg, 4, 32);
+  *reg += __shfl_xor(*reg, 2, 32);
+  *reg += __shfl_xor(*reg, 1, 32);
+
+  if ( threadIdx.x % 32 == 0 ) {
+      atomicAdd(smem,*reg);
+  }
+  return;
+}
+#endif /* KEPLER_SHUFFLE */
+
 __device__ __forceinline__ static void NAME(dev_sum_forces)(
         const int force_list_index,
 	const atom *atoms,
@@ -359,11 +385,18 @@ __global__ static void NAME(dev_nonbonded)(
   __syncthreads();
   if ( threadIdx.x < 24 ) { // reduce forces, warp-synchronous
                             // 3 components, 8 threads per component
+#ifdef KEPLER_SHUFFLE
+    float f;			    
+#endif /* KEPLER_SHUFFLE */
     const int i_out = myPatchPair.virial_start + threadIdx.x;
     {
+#ifndef KEPLER_SHUFFLE
       float f;
       f = sumf.a1d[threadIdx.x] + sumf.a1d[threadIdx.x + 24] + 
           sumf.a1d[threadIdx.x + 48] + sumf.a1d[threadIdx.x + 72];
+#else /* KEPLER_SHUFFLE */
+      f = sumf.a1d[threadIdx.x] + sumf.a1d[threadIdx.x + 24] + sumf.a1d[threadIdx.x + 48] + sumf.a1d[threadIdx.x + 72];
+#endif /* KEPLER_SHUFFLE */
       sumf.a1d[threadIdx.x] = f;
       f += sumf.a1d[threadIdx.x + 12];
       sumf.a1d[threadIdx.x] = f;
@@ -405,9 +438,18 @@ __global__ static void NAME(dev_nonbonded)(
     // accumulate energies to shared memory, warp-synchronous
     const int subwarp = threadIdx.x >> 2;  // 32 entries in table
     const int thread = threadIdx.x & 3;  // 4 threads share each entry
+#ifdef KEPLER_SHUFFLE
+    totalev  += __shfl_xor(totalev, 2, 4);
+    totalev  += __shfl_xor(totalev, 1, 4);
+    totalee  += __shfl_xor(totalee, 2, 4);
+    totalee  += __shfl_xor(totalee, 1, 4);
+    SLOW( totales  += __shfl_xor(totales, 2, 4) );
+    SLOW( totales  += __shfl_xor(totales, 1, 4) );
+#endif /* KEPLER_SHUFFLE */
     if ( thread == 0 ) {
       sumf.a2d[subwarp][0] = totalev;
       sumf.a2d[subwarp][1] = totalee;
+#ifndef KEPLER_SHUFFLE
       sumf.a2d[subwarp][2] = 0.f SLOW( + totales ) ;
     }
     for ( int g = 1; g < 4; ++g ) {
@@ -416,6 +458,9 @@ __global__ static void NAME(dev_nonbonded)(
         sumf.a2d[subwarp][1] += totalee;
         SLOW( sumf.a2d[subwarp][2] += totales; )
       }
+#else /* KEPLER_SHUFFLE */
+      SLOW( sumf.a2d[subwarp][2] = totales );
+#endif /* KEPLER_SHUFFLE */
     }
     __syncthreads();
     if ( threadIdx.x < 24 ) { // reduce energies, warp-synchronous
@@ -496,6 +541,7 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
     fl.i[threadIdx.x] = tmp;
   }
 
+#ifndef KEPLER_SHUFFLE
   __shared__ volatile union {
     float a3d[32][3 ENERGY(+1)][3];
     float a2d[32][9 ENERGY(+3)];
@@ -504,6 +550,11 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
 
   for ( int i = threadIdx.x; i < 32*(9 ENERGY(+3)); i += BLOCK_SIZE ) {
     virial.a1d[i] = 0.f;
+#else /* KEPLER_SHUFFLE */
+  __shared__ float virial[9 ENERGY(+3)];
+  for ( int i = threadIdx.x; i < (9 ENERGY(+3)); i += BLOCK_SIZE ) {
+    virial[i] = 0.f;
+#endif /* KEPLER_SHUFFLE */
   }
 
   __syncthreads();
@@ -518,21 +569,56 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
   float vzy = 0.f;
   float vzz = 0.f;
 
+#ifdef KEPLER_SHUFFLE
+  /*
+  {
+    float tmp = 0.f;
+    const int halfwarp = threadIdx.x >> 4;  // 8 half-warps
+    const int thread = threadIdx.x & 15;
+    for ( int i = halfwarp; i < myForceList.force_list_size; i ++ ) {
+      tmp += virial_buffers[myForceList.virial_list_start + 16*i + thread];
+    }
+  }
+  */
+
+#endif /* KEPLER_SHUFFLE */
   for ( int j = threadIdx.x; j < myForceList.patch_size; j += BLOCK_SIZE ) {
 
     const float4 *fbuf = force_buffers + myForceList.force_list_start + j;
+#ifdef KEPLER_SHUFFLE
+      const float4 *fbuf2 = fbuf + myForceList.patch_stride;
+      int i = 0;
+#endif /* KEPLER_SHUFFLE */
     float4 fout;
     fout.x = 0.f;
     fout.y = 0.f;
     fout.z = 0.f;
     fout.w = 0.f;
+#ifndef KEPLER_SHUFFLE
     for ( int i=0; i < myForceList.force_list_size; ++i ) {
+#else /* KEPLER_SHUFFLE */
+
+      for ( i=0; i < myForceList.force_list_size && i +1 < myForceList.force_list_size ; i = i + 2 ) {
+         float4 f = *fbuf;
+         float4 f2 = *fbuf2;
+         fout.x += (f.x + f2.x);
+         fout.y += (f.y + f2.y);
+         fout.z += (f.z + f2.z);
+         fout.w += (f.w + f2.w);
+         fbuf   = fbuf2 + myForceList.patch_stride;
+         fbuf2  = fbuf  + myForceList.patch_stride;
+      }
+     
+      if (i < myForceList.force_list_size) {
+#endif /* KEPLER_SHUFFLE */
       float4 f = *fbuf;
       fout.x += f.x;
       fout.y += f.y;
       fout.z += f.z;
       fout.w += f.w;
+#ifndef KEPLER_SHUFFLE
       fbuf += myForceList.patch_stride;
+#endif /* ! KEPLER_SHUFFLE */
     }
 
     // compiler will use st.global.f32 instead of st.global.v4.f32
@@ -555,6 +641,7 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
 
   }
 
+#ifndef KEPLER_SHUFFLE
   { // accumulate per-atom virials to shared memory, warp-synchronous
     const int subwarp = threadIdx.x >> 2;  // 32 entries in table
     const int thread = threadIdx.x & 3;  // 4 threads share each entry
@@ -572,18 +659,47 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
       }
     }
   }
+#else /* KEPLER_SHUFFLE */
+  // Patric: To make sure that each thread involves the correct data
+#endif /* KEPLER_SHUFFLE */
   __syncthreads();
+#ifndef KEPLER_SHUFFLE
   { // accumulate per-compute virials to shared memory, data-parallel
+#else /* KEPLER_SHUFFLE */
+
+  //Patric : SHLF reduction 
+  NAME(shfl_reduction)(&vxx,&virial[0]);
+  NAME(shfl_reduction)(&vxy,&virial[1]);
+  NAME(shfl_reduction)(&vxz,&virial[2]);
+  NAME(shfl_reduction)(&vyx,&virial[3]);
+  NAME(shfl_reduction)(&vyy,&virial[4]);
+  NAME(shfl_reduction)(&vyz,&virial[5]);
+  NAME(shfl_reduction)(&vzx,&virial[6]);
+  NAME(shfl_reduction)(&vzy,&virial[7]);
+  NAME(shfl_reduction)(&vzz,&virial[8]);
+  __syncthreads();
+
+  {
+    float tmp = 0.f;
+#endif /* KEPLER_SHUFFLE */
     const int halfwarp = threadIdx.x >> 4;  // 8 half-warps
     const int thread = threadIdx.x & 15;
     if ( thread < (9 ENERGY(+3)) ) {
       for ( int i = halfwarp; i < myForceList.force_list_size; i += 8 ) {
+#ifndef KEPLER_SHUFFLE
         virial.a2d[halfwarp][thread] +=
           virial_buffers[myForceList.virial_list_start + 16*i + thread];
       }
+#else /* KEPLER_SHUFFLE */
+        tmp += virial_buffers[myForceList.virial_list_start + 16*i + thread];
+#endif /* KEPLER_SHUFFLE */
     }
+#ifdef KEPLER_SHUFFLE
+      atomicAdd(&virial[thread],tmp);
+#endif /* KEPLER_SHUFFLE */
   }
   __syncthreads();
+#ifndef KEPLER_SHUFFLE
   { // reduce virials in shared memory, warp-synchronous
     const int subwarp = threadIdx.x >> 3;  // 16 quarter-warps
     const int thread = threadIdx.x & 7;  // 8 threads per component
@@ -599,11 +715,18 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
       v += virial.a2d[thread+1][subwarp];
       virial.a2d[thread][subwarp] = v;
     }
+#else /* KEPLER_SHUFFLE */
+
+    if ( threadIdx.x < (9 ENERGY(+3)) ) {
+      virials[myForceList.virial_output_start + threadIdx.x] = virial[threadIdx.x];
+#endif /* KEPLER_SHUFFLE */
   }
+#ifndef KEPLER_SHUFFLE
   __syncthreads();
   if ( threadIdx.x < (9 ENERGY(+3)) ) {  // 9 components
     virials[myForceList.virial_output_start + threadIdx.x] =
                                               virial.a2d[0][threadIdx.x];
+#endif /* ! KEPLER_SHUFFLE */
   }
 
 }
