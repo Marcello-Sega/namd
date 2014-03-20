@@ -183,10 +183,6 @@ void cuda_init() {
   force_buffers_alloc = 0;
   force_lists_alloc = 0;
   atoms_alloc = 0;
-
-  cudaStreamCreate(&stream);
-  cudaStreamCreate(&stream2);
-  cuda_errcheck("cudaStreamCreate");
 }
 
 void cuda_bind_patch_pairs(const patch_pair *pp, int npp,

@@ -765,6 +765,39 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   }
   masterPe = CkMyPe();
 
+#if CUDA_VERSION >= 5050
+  int leastPriority, greatestPriority;
+  cudaDeviceGetStreamPriorityRange(&leastPriority, &greatestPriority);
+  cuda_errcheck("in cudaDeviceGetStreamPriorityRange");
+  if ( leastPriority != greatestPriority ) {
+    if ( CkMyNode() == 0 ) {
+      int dev;
+      cudaGetDevice(&dev);
+      cuda_errcheck("cudaGetDevice");
+      CkPrintf("CUDA device %d stream priority range %d %d\n", dev, leastPriority, greatestPriority);
+    }
+    cudaStreamCreateWithPriority(&stream,cudaStreamDefault,greatestPriority);
+    cudaStreamCreateWithPriority(&stream2,cudaStreamDefault,leastPriority);
+  } else
+#endif
+  {
+    cudaStreamCreate(&stream);
+    cuda_errcheck("cudaStreamCreate");
+    int dev;
+    cudaGetDevice(&dev);
+    cuda_errcheck("cudaGetDevice");
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, dev);
+    cuda_errcheck("cudaGetDeviceProperties");
+    if ( deviceProp.concurrentKernels ) {
+      if ( CkMyNode() == 0 ) CkPrintf("CUDA device %d supports concurrent kernels.\n", dev);
+      cudaStreamCreate(&stream2);
+    } else {
+      stream2 = stream;
+    }
+  }
+  cuda_errcheck("cudaStreamCreate");
+
   cuda_init();
   build_exclusions();
   // cudaEventCreate(&start_upload);
@@ -1008,6 +1041,8 @@ static __thread int num_atom_records_allocated;
 // static __thread int* atom_order;
 static __thread atom_param* atom_params;
 static __thread atom* atoms;
+static __thread float* dummy_dev;
+static __thread int dummy_size;
 // static __thread float4* forces;
 // static __thread float4* slow_forces;
 static __thread int num_virials;
@@ -1247,6 +1282,12 @@ CkMyPe(), sequence(), gbisPhase, workStarted);
 
   if ( computesChanged ) {
     computesChanged = 0;
+
+    if ( ! dummy_size ) {
+      dummy_size = 1024*1024;
+      cudaMalloc((void**)&dummy_dev,dummy_size);
+      cuda_errcheck("in cudaMalloc dummy_dev");
+    }
 
     num_virials = npatches;
     if ( num_virials > num_virials_allocated ) {
@@ -1809,11 +1850,12 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
     ++kernel_launch_state;
     gpu_is_mine = 0;
 
-#if 0
-    cudaStreamWaitEvent(stream2, start_calc, 0);
-#else
-#define stream2 stream
-#endif
+    if ( stream2 != stream ) {
+      cudaStreamWaitEvent(stream2, start_calc, 0);
+      // priorities do not prevent local from launching ahead
+      // of remote, so delay local stream with a small memset
+      cudaMemsetAsync(dummy_dev, 0, dummy_size, stream2);
+    }
 
     if (!simParams->GBISOn || gbisPhase == 1) {
 
