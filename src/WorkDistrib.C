@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2014/01/09 20:20:07 $
- * $Revision: 1.1274 $
+ * $Date: 2014/04/07 16:44:56 $
+ * $Revision: 1.1275 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1964,6 +1964,7 @@ static void recursive_bisect_with_curve(
   TopoManagerWrapper &tmgr
   ) {
 
+  SimParameters *simParams = Node::Object()->simParameters;
   PatchMap *patchMap = PatchMap::Object();
   int *patches = patch_begin;
   int npatches = patch_end - patch_begin;
@@ -2031,6 +2032,7 @@ static void recursive_bisect_with_curve(
 
   int *node_split = node_begin;
 
+  if ( simParams->disableTopology ) ; else
   if ( a_len >= b_len && a_len >= c_len ) {
     node_split = tmgr.sortAndSplit(node_begin,node_end,0);
   } else if ( b_len >= a_len && b_len >= c_len ) {
@@ -2055,7 +2057,7 @@ static void recursive_bisect_with_curve(
   }
 
   if ( node_split == node_begin ) {
-    if ( 0 ) {
+    if ( simParams->verboseTopology ) {
       int crds[3];
       tmgr.coords(*node_begin, crds);
       CkPrintf("WorkDistrib: physnode %5d pe %5d node %5d at %5d %5d %5d from %5d %5d %5d has %5d patches %5d x %5d x %5d load %7f pes %5d\n",
@@ -2190,6 +2192,10 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
     basenode_begin = node_end;
     basenode_end = basenode_begin + numPatches;
     std::sort(basenode_begin, basenode_end, pe_sortop_compact());
+  }
+
+  if ( simParams->disableTopology ) {
+    iout << iWARN << "IGNORING TORUS TOPOLOGY DURING PATCH PLACEMENT\n" << endi;
   }
 
   recursive_bisect_with_curve(

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: ryanmcgreevy $
- * $Date: 2014/02/21 18:15:56 $
- * $Revision: 1.1437 $
+ * $Author: jim $
+ * $Date: 2014/04/07 16:44:55 $
+ * $Revision: 1.1438 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1902,6 +1902,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("simulatedPEs", POSITIVE);
    opts.optional("main", "simulatedNodeSize", "the node size to be used for studying initial mapping", &simulatedNodeSize);
    opts.range("simulatedNodeSize", POSITIVE);
+   opts.optionalB("main", "disableTopology", "ignore torus information during patch placement", &disableTopology, FALSE);
+   opts.optionalB("main", "verboseTopology", "print torus information during patch placement", &verboseTopology, FALSE);
 
    opts.optionalB("main", "ldbUnloadPME", "no load on PME nodes",
      &ldbUnloadPME, FALSE);

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: ryanmcgreevy $
- * $Date: 2014/02/21 18:15:56 $
- * $Revision: 1.1234 $
+ * $Author: jim $
+ * $Date: 2014/04/07 16:44:56 $
+ * $Revision: 1.1235 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -150,6 +150,8 @@ public:
 	Bool simulateInitialMapping; //if true, the initial mapping during startup is dumped and exit
 	int simulatedPEs;
 	int simulatedNodeSize;
+	Bool disableTopology; // ignore torus information during patch placement
+	Bool verboseTopology; // print torus information during patch placement
 
 	Bool benchTimestep; //only cares about benchmarking the timestep, so no file output to save SUs for large-scale benchmarking
 
