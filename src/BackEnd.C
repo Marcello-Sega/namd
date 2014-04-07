@@ -80,6 +80,7 @@ void NAMD_new_handler() {
 #endif
 }
 
+void topo_getargs(char**);
 void cuda_getargs(char**);
 // void cuda_initialize();
 void mic_getargs(char**);
@@ -96,6 +97,7 @@ void all_init(int argc, char **argv)
   ProcessorPrivateInit();
   register_exit_sched();
   CmiGetArgFlag(argv, "+idlepoll");  // remove +idlepoll if it's still there
+  topo_getargs(argv);
 #ifdef NAMD_CUDA
   cuda_getargs(argv);
   argc = CmiGetArgc(argv);

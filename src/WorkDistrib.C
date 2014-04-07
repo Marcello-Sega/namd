@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2014/04/07 16:44:56 $
- * $Revision: 1.1275 $
+ * $Date: 2014/04/07 21:50:33 $
+ * $Revision: 1.1276 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -71,6 +71,12 @@ VARSIZE_MSG(ComputeMapChangeMsg,
   VARSIZE_ARRAY(newNodes);
 )
 */
+
+static int randtopo;
+
+void topo_getargs(char **argv) {
+  randtopo = CmiGetArgFlag(argv, "+randtopo");
+}
 
 static int eventMachineProgress;
 
@@ -169,6 +175,25 @@ void WorkDistrib::buildNodeAwarePeOrdering() {
     for ( int i=0, j=0; i<npes; i += CmiNodeSize(CmiNodeOf(pes[i])), ++j ) {
       rankInPhysOfNode[CmiNodeOf(pes[i])] = j;
       numNodeInPhys[ph] += 1;
+    }
+  }
+
+  if ( randtopo && numPhys > 2 ) {
+    if ( ! CkMyNode() ) {
+      iout << iWARN << "RANDOMIZING PHYSICAL NODE ORDERING\n" << endi;
+    }
+    ResizeArray<int> randPhysOrder(numPhys);
+    for ( int j=0; j<numPhys; ++j ) {
+      randPhysOrder[j] = j;
+    }
+    Random(31415926535L).reorder(randPhysOrder.begin()+2, numPhys-2);
+    for ( int j=0, k=0; j<numPhys; ++j ) {
+      const int ph = randPhysOrder[j];
+      int *pes, npes;
+      CmiGetPesOnPhysicalNode(ph, &pes, &npes);
+      for ( int i=0; i<npes; ++i, ++k ) {
+        peCompactOrdering[k] = pes[i];
+      }
     }
   }
 
