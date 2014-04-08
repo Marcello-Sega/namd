@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2014/04/07 21:50:33 $
- * $Revision: 1.1276 $
+ * $Date: 2014/04/08 18:08:36 $
+ * $Revision: 1.1277 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -186,7 +186,7 @@ void WorkDistrib::buildNodeAwarePeOrdering() {
     for ( int j=0; j<numPhys; ++j ) {
       randPhysOrder[j] = j;
     }
-    Random(31415926535L).reorder(randPhysOrder.begin()+2, numPhys-2);
+    Random(314159265).reorder(randPhysOrder.begin()+2, numPhys-2);
     for ( int j=0, k=0; j<numPhys; ++j ) {
       const int ph = randPhysOrder[j];
       int *pes, npes;
