@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2014/04/07 16:44:55 $
- * $Revision: 1.1438 $
+ * $Date: 2014/04/14 14:19:22 $
+ * $Revision: 1.1439 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3132,6 +3132,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    alchThermIntOn = FALSE;
 
    if (alchOn) {
+
+     if (alchOn && amberOn) {
+       NAMD_die("Sorry, alchemical free energy calculation is not supported for AMBER parameters.\n");
+     }
 
      if (!opts.defined("alchType")) 
      {
