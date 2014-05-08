@@ -5,9 +5,7 @@
 #ifdef NAMD_CUDA
 
 #ifdef WIN32
-//  not supported by nvcc on Windows
-// #define __thread __declspec(thread)
-#define __thread
+#define __thread __declspec(thread)
 #endif
 
 __constant__ unsigned int const_exclusions[MAX_CONST_EXCLUSIONS];
