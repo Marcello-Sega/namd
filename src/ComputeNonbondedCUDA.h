@@ -11,6 +11,8 @@ int cuda_device_pe();
 
 bool cuda_device_shared_with_pe(int pe);
 
+bool one_cuda_device_per_node();
+
 class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
   public:
 

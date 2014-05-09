@@ -349,7 +349,13 @@ PLUGINOBJS = \
 PLUGINLIB = $(PLUGINOBJS)
 
 CUDAOBJSRAW = \
+	$(DSTDIR)/ComputePmeCUDAKernel.o \
 	$(DSTDIR)/ComputeNonbondedCUDAKernel.o
+
+$(DSTDIR)/ComputePmeCUDAKernel.o: \
+	$(SRCDIR)/ComputePmeCUDAKernel.cu \
+	$(SRCDIR)/ComputePmeCUDAKernel.h
+	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO) "`$(NATIVEPATH) $(DSTDIR)/`ComputePmeCUDAKernel.o" $(COPTC) "`$(NATIVEPATH) $(SRCDIR)/`ComputePmeCUDAKernel.cu"
 
 $(DSTDIR)/ComputeNonbondedCUDAKernel.o: \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.cu \

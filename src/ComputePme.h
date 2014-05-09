@@ -26,12 +26,20 @@ public:
   ComputePme(ComputeID c, PatchID pid);
   virtual ~ComputePme();
   void initialize();
+  void atomUpdate();
   int noWork();
   void doWork();
   void ungridForces();
   void setMgr(ComputePmeMgr *mgr) { myMgr = mgr; }
 
+  friend class ComputePmeMgr;
  private:
+#ifdef NAMD_CUDA
+  int cuda_atoms_offset;
+  float *f_data_host;  // force buffers for CUDA
+  float *f_data_dev;
+#endif
+
   PatchID patchID;
   Patch *patch;
   Box<Patch,CompAtom> *positionBox;
@@ -41,6 +49,7 @@ public:
   PmeGrid myGrid;
   int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
   int alchDecouple;
+  int offload;
   BigReal alchElecLambdaStart;
   
   PmeRealSpace *myRealSpace[PME_MAX_EVALS];
@@ -53,6 +62,8 @@ public:
   int numGridAtoms[PME_MAX_EVALS];
   PmeParticle *localGridData[PME_MAX_EVALS];
   ComputePmeMgr *myMgr;
+
+  int atomsChanged;
 
 };
 

@@ -2985,6 +2985,7 @@ obj/ComputePatchPair.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePatchPair.o $(COPTC) src/ComputePatchPair.C
 obj/ComputePme.o: \
 	src/ComputePme.C \
+	src/ComputePmeCUDAKernel.h \
 	src/InfoStream.h \
 	src/Node.h \
 	src/main.h \

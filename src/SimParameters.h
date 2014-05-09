@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2014/04/07 16:44:56 $
- * $Revision: 1.1235 $
+ * $Date: 2014/05/09 21:39:06 $
+ * $Revision: 1.1236 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -650,6 +650,7 @@ public:
 	int PMEPencilsYLayout;		//  Y pencil layout strategy
 	int PMEPencilsXLayout;		//  X pencil layout strategy
         int PMESendOrder;		//  Message ordering strategy
+        Bool PMEOffload;		//  Offload reciprocal sum to accelerator
 
 	Bool useDPME;			//  Flag TRUE -> old DPME code
 	Bool useOptPME;                 //  Flag TRUE -> use the scalable version of PME

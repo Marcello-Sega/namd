@@ -38,6 +38,8 @@
 #if defined(NAMD_CUDA) || defined(NAMD_MIC)
 // higher priority so offloaded work can overlap
 #define PROXY_DATA_PRIORITY (1<<8)
+#define PME_OFFLOAD_PRIORITY 0
+#define PME_OFFLOAD_UNGRID_PRIORITY (3<<8)
 #else
 #define PROXY_DATA_PRIORITY (3<<8)
 #endif

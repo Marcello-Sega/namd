@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2014/04/14 14:19:22 $
- * $Revision: 1.1439 $
+ * $Date: 2014/05/09 21:39:06 $
+ * $Revision: 1.1440 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -889,6 +889,8 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.range("PMEMinPoints", NOT_NEGATIVE);
    opts.optionalB("main", "PMEBarrier", "Use barrier in PME?",
 	&PMEBarrier, FALSE);
+   opts.optionalB("main", "PMEOffload", "Offload PME to accelerator?",
+	&PMEOffload);
 
    opts.optionalB("PME", "useOptPME", "Use the new scalable PME optimization", &useOptPME, FALSE);
    opts.optionalB("PME", "useManyToMany", "Use the many-to-many PME optimization", &useManyToMany, FALSE);
@@ -3532,6 +3534,14 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        }
      }
      PMEEwaldCoefficient = ewaldcof;
+
+#ifdef NAMD_CUDA
+     if ( ! opts.defined("PMEOffload") ) {
+       PMEOffload = (PMEInterpOrder > 4);
+     }
+#else
+     PMEOffload = 0;
+#endif
    } else {  // initialize anyway
      useDPME = 0;
      PMEGridSizeX = 0;
@@ -3539,6 +3549,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      PMEGridSizeZ = 0;
      PMEGridSpacing = 1000.;
      PMEEwaldCoefficient = 0;
+     PMEOffload = 0;
    }
 
 
@@ -5089,6 +5100,9 @@ if ( openatomOn )
 	<< PMEGridSpacing << "\n";
      if ( PMEBarrier ) {
        iout << iINFO << "PME BARRIER ENABLED\n";
+     }
+     if ( PMEOffload ) {
+       iout << iINFO << "PME RECIPROCAL SUM OFFLOADED TO GPU\n";
      }
      iout << endi;
      if ( useDPME ) iout << iINFO << "USING OLD DPME CODE\n";

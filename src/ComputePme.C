@@ -61,6 +61,16 @@ using namespace std;
 //#define     USE_CKLOOP                1
 //#include "TopoManager.h"
 
+#ifdef NAMD_CUDA
+#include <cuda_runtime.h>
+#include <cuda.h>
+void cuda_errcheck(const char *msg);
+int cuda_device_pe();
+bool one_cuda_device_per_node();
+#endif
+
+#include "ComputePmeCUDAKernel.h"
+
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
@@ -377,6 +387,37 @@ public:
   int isPmeProcessor(int p);  
 
   static CmiNodeLock fftw_plan_lock;
+  CmiNodeLock pmemgr_lock;  // for accessing this object from other threads
+
+#ifdef NAMD_CUDA
+  float *a_data_host;
+  float *a_data_dev;
+  float *f_data_host;
+  float *f_data_dev;
+  int cuda_atoms_count;
+  int cuda_atoms_alloc;
+  static CmiNodeLock cuda_lock;
+  void chargeGridSubmitted(Lattice &lattice, int sequence);
+  cudaEvent_t end_charges;
+  cudaEvent_t *end_forces;
+  int forces_count;
+  int forces_done_count;
+  double charges_time;
+  double forces_time;
+  int check_charges_count;
+  int check_forces_count;
+  int master_pe;
+
+  int chargeGridSubmittedCount;
+  void sendChargeGridReady();
+#endif
+  Lattice *saved_lattice;  // saved by chargeGridSubmitted
+  int saved_sequence;      // saved by chargeGridSubmitted
+  void pollChargeGridReady();
+  void recvChargeGridReady();
+  void chargeGridReady(Lattice &lattice, int sequence);
+
+  ResizeArray<ComputePme*> pmeComputes;
 
 private:
 
@@ -387,6 +428,8 @@ private:
   CProxy_ComputePmeMgr pmeProxy;
   CProxy_ComputePmeMgr pmeProxyDir;
   CProxy_NodePmeMgr pmeNodeProxy;
+  NodePmeMgr *nodePmeMgr;
+  ComputePmeMgr *masterPmeMgr;
   
   void addCompute(ComputePme *c) {
     if ( ! pmeComputes.size() ) initialize_computes();
@@ -394,7 +437,6 @@ private:
     c->setMgr(this);
   }
 
-  ResizeArray<ComputePme*> pmeComputes;
   ResizeArray<ComputePme*> heldComputes;
   PmeGrid myGrid;
   Lattice lattice;
@@ -419,9 +461,11 @@ private:
   int qsize, fsize, bsize;
   int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
   int alchDecouple;
+  int offload;
   BigReal alchElecLambdaStart;
 
   float **q_arr;
+  // q_list and q_count not used for offload
   float **q_list;
   int q_count;
   char *f_arr;
@@ -432,6 +476,31 @@ private:
   int noWorkCount;
   int doWorkCount;
   int ungridForcesCount;
+
+#ifdef NAMD_CUDA
+#define NUM_STREAMS 1
+  cudaStream_t streams[NUM_STREAMS];
+  int stream;
+
+  float **q_arr_dev;
+  float **v_arr_dev;
+  float *q_data_host;
+  float *q_data_dev;
+  float *v_data_dev;
+  int *ffz_host;
+  int *ffz_dev;
+  int q_data_size;
+  int ffz_size;
+
+  int f_data_mgr_alloc;
+  float *f_data_mgr_host;
+  float *f_data_mgr_dev;
+  float **afn_host;
+  float **afn_dev;
+
+  float *bspline_coeffs_dev;
+  float *bspline_dcoeffs_dev;
+#endif
   int recipEvirCount;   // used in compute only
   int recipEvirClients; // used in compute only
   int recipEvirPe;      // used in trans only
@@ -484,6 +553,9 @@ private:
 };
 
   CmiNodeLock ComputePmeMgr::fftw_plan_lock;
+#ifdef NAMD_CUDA
+  CmiNodeLock ComputePmeMgr::cuda_lock;
+#endif
 
 int isPmeProcessor(int p){ 
   return CProxy_ComputePmeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
@@ -497,6 +569,7 @@ int ComputePmeMgr::isPmeProcessor(int p){
 class NodePmeMgr : public CBase_NodePmeMgr {
 public:
   friend class ComputePmeMgr;
+  friend class ComputePme;
   NodePmeMgr();
   ~NodePmeMgr();
   void initialize();
@@ -528,6 +601,12 @@ private:
   CkHashtableT<CkArrayIndex3D,PmeXPencil*> xPencilObj;
   CkHashtableT<CkArrayIndex3D,PmeYPencil*> yPencilObj;
   CkHashtableT<CkArrayIndex3D,PmeZPencil*> zPencilObj;  
+
+#ifdef NAMD_CUDA
+  cudaEvent_t end_charge_memset;
+  cudaEvent_t end_all_pme_kernels;
+  cudaEvent_t end_potential_memcpy;
+#endif
 };
 
 NodePmeMgr::NodePmeMgr() {
@@ -579,12 +658,14 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
 
   CkpvAccess(BOCclass_group).computePmeMgr = thisgroup;
   pmeNodeProxy = CkpvAccess(BOCclass_group).nodePmeMgr;
+  nodePmeMgr = pmeNodeProxy[CkMyNode()].ckLocalBranch();
 
   pmeNodeProxy.ckLocalBranch()->initialize();
 
   if ( CmiMyRank() == 0 ) {
     fftw_plan_lock = CmiCreateLock();
   }
+  pmemgr_lock = CmiCreateLock();
 
   myKSpace = 0;
   kgrid = 0;
@@ -597,6 +678,51 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
   useBarrier = 0;
   sendTransBarrier_received = 0;
   usePencils = 0;
+
+#ifdef NAMD_CUDA
+ // offload has not been set so this happens on every run
+  if ( CmiMyRank() == 0 ) {
+    cuda_lock = CmiCreateLock();
+  }
+
+  stream = 0;
+  for ( int i=0; i<NUM_STREAMS; ++i ) {
+#if 1
+    cudaStreamCreate(&streams[i]);
+    cuda_errcheck("cudaStreamCreate");
+#else
+  streams[i] = 0;  // XXXX Testing!!!
+#endif
+  }
+ 
+  cudaEventCreateWithFlags(&end_charges,cudaEventDisableTiming);
+  end_forces = 0;
+  check_charges_count = 0;
+  check_forces_count = 0;
+  chargeGridSubmittedCount = 0;
+
+  cuda_atoms_count = 0;
+  cuda_atoms_alloc = 0;
+
+  f_data_mgr_alloc = 0;
+  f_data_mgr_host = 0;
+  f_data_mgr_dev = 0;
+  afn_host = 0;
+  afn_dev = 0;
+
+#define CUDA_EVENT_ID_PME_CHARGES 80
+#define CUDA_EVENT_ID_PME_FORCES 81
+#define CUDA_EVENT_ID_PME_TICK 82
+#define CUDA_EVENT_ID_PME_COPY 83
+#define CUDA_EVENT_ID_PME_KERNEL 84
+  if ( 0 == CkMyPe() ) {
+    traceRegisterUserEvent("CUDA PME charges", CUDA_EVENT_ID_PME_CHARGES);
+    traceRegisterUserEvent("CUDA PME forces", CUDA_EVENT_ID_PME_FORCES);
+    traceRegisterUserEvent("CUDA PME tick", CUDA_EVENT_ID_PME_TICK);
+    traceRegisterUserEvent("CUDA PME memcpy", CUDA_EVENT_ID_PME_COPY);
+    traceRegisterUserEvent("CUDA PME kernel", CUDA_EVENT_ID_PME_KERNEL);
+  }
+#endif
   recipEvirCount = 0;
   recipEvirClients = 0;
   recipEvirPe = -999;
@@ -681,6 +807,23 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   SimParameters *simParams = Node::Object()->simParameters;
   PatchMap *patchMap = PatchMap::Object();
+
+  offload = simParams->PMEOffload;
+#ifdef NAMD_CUDA
+  if ( offload && ! one_cuda_device_per_node() ) {
+    NAMD_die("PME offload requires exactly one CUDA device per process.");
+  }
+  if ( offload ) {
+    int dev;
+    cudaGetDevice(&dev);
+    cuda_errcheck("in cudaGetDevice");
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, dev);
+    cuda_errcheck("in cudaGetDeviceProperties");
+    if ( deviceProp.major < 2 )
+      NAMD_die("PME offload requires CUDA device of compute capability 2.0 or higher.");
+  }
+#endif
 
   alchFepOn = simParams->alchFepOn;
   alchThermIntOn = simParams->alchThermIntOn;
@@ -1260,6 +1403,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   for ( int pid=0; pid < numPatches; ++pid ) {
     int pnode = patchMap->node(pid);
+#ifdef NAMD_CUDA
+    if ( offload ) pnode = CkNodeFirst(CkNodeOf(pnode));
+#endif
     int shift1 = (myGrid.K1 + myGrid.order - 1)/2;
     BigReal minx = patchMap->min_a(pid);
     BigReal maxx = patchMap->max_a(pid);
@@ -1277,6 +1423,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
         source_flags[pnode] = 1;
       }
       // set dest_flags[] for node that our patch sends to
+#ifdef NAMD_CUDA
+      if ( offload ) {
+        if ( pnode == CkNodeFirst(CkMyNode()) ) {
+          recipPeDest[ix / myGrid.block1] = 1;
+        }
+      } else
+#endif
       if ( pnode == CkMyPe() ) {
         recipPeDest[ix / myGrid.block1] = 1;
       }
@@ -1518,6 +1671,11 @@ void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
 
   for ( int pid=0; pid < numPatches; ++pid ) {
     int pnode = patchMap->node(pid);
+#ifdef NAMD_CUDA
+    if ( offload ) {
+      if ( CkNodeOf(pnode) != CkMyNode() ) continue;
+    } else
+#endif
     if ( pnode != CkMyPe() ) continue;
 
     int shift1 = (myGrid.K1 + myGrid.order - 1)/2;
@@ -1555,6 +1713,9 @@ void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
     for ( int j=0; j<yBlocks; ++j ) {
       if ( pencilActive[i*yBlocks+j] ) {
         ++numPencilsActive;
+#ifdef NAMD_CUDA
+        if ( CkMyPe() == cuda_device_pe() || ! offload )
+#endif
         zPencil(i,j,0).dummyRecvGrid(CkMyPe(),0);
       }
     }
@@ -1593,6 +1754,7 @@ ComputePmeMgr::~ComputePmeMgr() {
   if ( CmiMyRank() == 0 ) {
     CmiDestroyLock(fftw_plan_lock);
   }
+  CmiDestroyLock(pmemgr_lock);
 
   delete myKSpace;
   delete [] localInfo;
@@ -1610,15 +1772,15 @@ ComputePmeMgr::~ComputePmeMgr() {
   delete [] work;
   delete [] gridmsg_reuse;
 
-  for (int i=0; i<fsize*numGrids; ++i) {
-    if ( q_arr[i] ) {
-      delete [] q_arr[i];
-    }
+ if ( ! offload ) {
+  for (int i=0; i<q_count; ++i) {
+    delete [] q_list[i];
   }
-  delete [] q_arr;
   delete [] q_list;
-  delete [] f_arr;
   delete [] fz_arr;
+ }
+  delete [] f_arr;
+  delete [] q_arr;
 }
 
 void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
@@ -2116,6 +2278,12 @@ void ComputePmeMgr::gridCalc3(void) {
 
 void ComputePmeMgr::sendUngrid(void) {
 
+#ifdef NAMD_CUDA
+  const int UNGRID_PRIORITY = ( offload ? PME_OFFLOAD_UNGRID_PRIORITY : PME_UNGRID_PRIORITY );
+#else
+  const int UNGRID_PRIORITY = PME_UNGRID_PRIORITY ;
+#endif
+
   for ( int j=0; j<numSources; ++j ) {
     // int msglen = qgrid_len;
     PmeGridMsg *newmsg = gridmsg_reuse[j];
@@ -2140,7 +2308,7 @@ void ComputePmeMgr::sendUngrid(void) {
     }
     newmsg->sourceNode = myGridPe;
 
-    SET_PRIORITY(newmsg,grid_sequence,PME_UNGRID_PRIORITY)
+    SET_PRIORITY(newmsg,grid_sequence,UNGRID_PRIORITY)
     CmiEnableUrgentSend(1);
     pmeProxyDir[pe].recvUngrid(newmsg);
     CmiEnableUrgentSend(0);
@@ -2170,27 +2338,202 @@ void ComputePmeMgr::recvAck(PmeAckMsg *msg) {
   }
 }
 
+#ifdef NAMD_CUDA
+#define count_limit 1000000
+#define CUDA_POLL(FN,ARG) CcdCallFnAfter(FN,ARG,0.1)
+#define EVENT_STRIDE 10
+
+void cuda_check_pme_forces(void *arg, double walltime) {
+  ComputePmeMgr *argp = (ComputePmeMgr *) arg;
+
+ while ( 1 ) { // process multiple events per call
+  cudaError_t err = cudaEventQuery(argp->end_forces[argp->forces_done_count/EVENT_STRIDE]);
+  if ( err == cudaSuccess ) {
+    argp->check_forces_count = 0;
+    for ( int i=0; i<EVENT_STRIDE; ++i ) {
+      WorkDistrib::messageEnqueueWork(argp->pmeComputes[argp->forces_done_count]);
+      if ( ++(argp->forces_done_count) == argp->forces_count ) break;
+    }
+    if ( argp->forces_done_count == argp->forces_count ) { // last event
+      traceUserBracketEvent(CUDA_EVENT_ID_PME_FORCES,argp->forces_time,walltime);
+      argp->forces_time = walltime - argp->forces_time;
+      //CkPrintf("cuda_check_pme_forces forces_time == %f\n", argp->forces_time);
+      return;
+    } else { // more events
+      continue; // check next event
+    }
+  } else if ( err != cudaErrorNotReady ) {
+    cuda_errcheck("in cuda_check_pme_forces");
+    NAMD_bug("cuda_errcheck missed error in cuda_check_pme_forces");
+  } else if ( ++(argp->check_forces_count) >= count_limit ) {
+    char errmsg[256];
+    sprintf(errmsg,"cuda_check_pme_forces polled %d times over %f s on seq %d",
+            argp->check_forces_count, walltime - argp->forces_time,
+            argp->saved_sequence);
+    cuda_errcheck(errmsg);
+    NAMD_die(errmsg);
+  } else {
+    break; // call again
+  }
+ } // while ( 1 )
+ CUDA_POLL(cuda_check_pme_forces, arg);
+}
+#endif // NAMD_CUDA
+
 void ComputePmeMgr::ungridCalc(void) {
   // CkPrintf("ungridCalc on Pe(%d)\n",CkMyPe());
 
   // for (int j=0; j<myGrid.order-1; ++j) {
   //   fz_arr[myGrid.K3+j] = fz_arr[j];
   // }
-  for (int i=0; i<q_count; ++i) {
+#ifdef NAMD_CUDA
+  int q_stride;
+ if ( offload ) {
+  q_stride = myGrid.K3+myGrid.order-1;
+  for (int n = q_data_size/(q_stride*sizeof(float)), i=0; i<n; ++i) {
+    float *q_list_i = q_data_host + i * q_stride;
     for (int j=0; j<myGrid.order-1; ++j) {
-      q_list[i][myGrid.K3+j] = q_list[i][j];
+      q_list_i[myGrid.K3+j] = q_list_i[j];
+    }
+  }
+ } else
+#endif // NAMD_CUDA
+ {
+  for (int i=0; i<q_count; ++i) {
+    float *q_list_i = q_list[i];
+    for (int j=0; j<myGrid.order-1; ++j) {
+      q_list_i[myGrid.K3+j] = q_list_i[j];
+    }
+  }
+ }
+
+  ungridForcesCount = pmeComputes.size();
+
+#ifdef NAMD_CUDA
+ if ( offload ) {
+  //CmiLock(cuda_lock);
+
+  if ( this == masterPmeMgr ) {
+    double before = CmiWallTimer();
+    cudaMemcpyAsync(v_data_dev, q_data_host, q_data_size, cudaMemcpyHostToDevice, streams[stream]);
+    cudaEventRecord(nodePmeMgr->end_potential_memcpy, streams[stream]);
+    traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,CmiWallTimer());
+
+    const int first = CkNodeFirst(CkMyNode());
+    const int myrank = CkMyPe() - first;
+    for ( int i=0; i<CkMyNodeSize(); ++i ) {
+      if ( myrank != i && nodePmeMgr->mgrObjects[i]->pmeComputes.size() ) {
+        pmeProxy[first + i].ungridCalc();
+      }
+    }
+    if ( ! pmeComputes.size() ) return;
+  }
+
+  if ( ! end_forces ) {
+    int n=(pmeComputes.size()-1)/EVENT_STRIDE+1;
+    end_forces = new cudaEvent_t[n];
+    for ( int i=0; i<n; ++i ) {
+      cudaEventCreateWithFlags(&end_forces[i],cudaEventDisableTiming);
     }
   }
 
+  const int pcsz = pmeComputes.size();
+  if ( ! afn_host ) {
+    cudaMallocHost((void**) &afn_host, 3*pcsz*sizeof(float*));
+    cudaMalloc((void**) &afn_dev, 3*pcsz*sizeof(float*));
+    cuda_errcheck("malloc params for pme");
+  }
+  int totn = 0;
+  for ( int i=0; i<pcsz; ++i ) {
+    int n = pmeComputes[i]->numGridAtoms[0];
+    totn += n;
+  }
+  if ( totn > f_data_mgr_alloc ) {
+    if ( f_data_mgr_alloc ) {
+      CkPrintf("Expanding CUDA forces allocation because %d > %d\n", totn, f_data_mgr_alloc);
+      cudaFree(f_data_mgr_dev);
+      cudaFreeHost(f_data_mgr_host);
+    }
+    f_data_mgr_alloc = 1.2 * (totn + 100);
+    cudaMalloc((void**) &f_data_mgr_dev, 3*f_data_mgr_alloc*sizeof(float));
+    cudaMallocHost((void**) &f_data_mgr_host, 3*f_data_mgr_alloc*sizeof(float));
+    cuda_errcheck("malloc forces for pme");
+  }
+  // CkPrintf("pe %d pcsz %d totn %d alloc %d\n", CkMyPe(), pcsz, totn, f_data_mgr_alloc);
+  float *f_dev = f_data_mgr_dev;
+  float *f_host = f_data_mgr_host;
+  for ( int i=0; i<pcsz; ++i ) {
+    int n = pmeComputes[i]->numGridAtoms[0];
+    pmeComputes[i]->f_data_dev = f_dev;
+    pmeComputes[i]->f_data_host = f_host;
+    afn_host[3*i  ] = a_data_dev + 7 * pmeComputes[i]->cuda_atoms_offset;
+    afn_host[3*i+1] = f_dev;
+    afn_host[3*i+2] = f_dev + n;  // avoid type conversion issues
+    f_dev += 3*n;
+    f_host += 3*n;
+  }
+  CmiLock(cuda_lock);
+  double before = CmiWallTimer();
+  cudaMemcpyAsync(afn_dev, afn_host, 3*pcsz*sizeof(float*), cudaMemcpyHostToDevice, streams[stream]);
+  traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,CmiWallTimer());
+  cudaStreamWaitEvent(streams[stream], nodePmeMgr->end_potential_memcpy, 0);
+  traceUserEvent(CUDA_EVENT_ID_PME_TICK);
+
+  for ( int i=0; i<pcsz; ++i ) {
+    // cudaMemsetAsync(pmeComputes[i]->f_data_dev, 0, 3*n*sizeof(float), streams[stream]);
+    if ( i%EVENT_STRIDE == 0 ) {
+      int dimy = pcsz - i;
+      if ( dimy > EVENT_STRIDE ) dimy = EVENT_STRIDE;
+      int maxn = 0;
+      int subtotn = 0;
+      for ( int j=0; j<dimy; ++j ) {
+        int n = pmeComputes[i+j]->numGridAtoms[0];
+        subtotn += n;
+        if ( n > maxn ) maxn = n;
+      }
+      // CkPrintf("pe %d dimy %d maxn %d subtotn %d\n", CkMyPe(), dimy, maxn, subtotn);
+      before = CmiWallTimer();
+      cuda_pme_forces(
+        bspline_coeffs_dev,
+        v_arr_dev, afn_dev+3*i, dimy, maxn, /*
+        pmeComputes[i]->a_data_dev,
+        pmeComputes[i]->f_data_dev,
+        n, */ myGrid.K1, myGrid.K2, myGrid.K3, myGrid.order,
+        streams[stream]);
+      traceUserBracketEvent(CUDA_EVENT_ID_PME_KERNEL,before,CmiWallTimer());
+      before = CmiWallTimer();
+      cudaMemcpyAsync(pmeComputes[i]->f_data_host, pmeComputes[i]->f_data_dev, 3*subtotn*sizeof(float),
+        cudaMemcpyDeviceToHost, streams[stream]);
+      traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,CmiWallTimer());
+      cudaEventRecord(end_forces[i/EVENT_STRIDE], streams[stream]);
+      traceUserEvent(CUDA_EVENT_ID_PME_TICK);
+    }
+    // CkPrintf("pe %d c %d natoms %d fdev %lld fhost %lld\n", CkMyPe(), i, (int64)afn_host[3*i+2], pmeComputes[i]->f_data_dev, pmeComputes[i]->f_data_host);
+  }
+  CmiUnlock(cuda_lock);
+ } else
+#endif // NAMD_CUDA
+ {
   for ( int i=0; i<pmeComputes.size(); ++i ) {
     WorkDistrib::messageEnqueueWork(pmeComputes[i]);
     // pmeComputes[i]->ungridForces();
   }
+ }
   // submitReductions();  // must follow all ungridForces()
+
+#ifdef NAMD_CUDA
+ if ( offload ) {
+  forces_time = CmiWallTimer();
+  forces_count = ungridForcesCount;
+  forces_done_count = 0;
+  CUDA_POLL(cuda_check_pme_forces, this);
+ }
+#endif
 
   ungrid_count = (usePencils ? numPencilsActive : numDestRecipPes );
 }
 
+void ComputePme::atomUpdate() { atomsChanged = 1; }
 
 ComputePme::ComputePme(ComputeID c, PatchID pid) : Compute(c), patchID(pid)
 {
@@ -2202,6 +2545,8 @@ ComputePme::ComputePme(ComputeID c, PatchID pid) : Compute(c), patchID(pid)
 	CkpvAccess(BOCclass_group).computePmeMgr)->addCompute(this);
 
   SimParameters *simParams = Node::Object()->simParameters;
+
+  offload = simParams->PMEOffload;
 
   alchFepOn = simParams->alchFepOn;
   alchThermIntOn = simParams->alchThermIntOn;
@@ -2235,7 +2580,17 @@ ComputePme::ComputePme(ComputeID c, PatchID pid) : Compute(c), patchID(pid)
   myGrid.dim2 = myGrid.K2;
   myGrid.dim3 = 2 * (myGrid.K3/2 + 1);
 
+#ifdef NAMD_CUDA
+  cuda_atoms_offset = 0;
+  f_data_host = 0;
+  f_data_dev = 0;
+ if ( ! offload )
+#endif
+ {
   for ( int g=0; g<numGrids; ++g ) myRealSpace[g] = new PmeRealSpace(myGrid);
+ }
+
+  atomsChanged = 0;
 }
 
 void ComputePme::initialize() {
@@ -2245,6 +2600,11 @@ void ComputePme::initialize() {
   positionBox = patch->registerPositionPickup(this);
   avgPositionBox = patch->registerAvgPositionPickup(this);
   forceBox = patch->registerForceDeposit(this);
+#ifdef NAMD_CUDA
+ if ( offload ) {
+  myMgr->cuda_atoms_count += patch->getNumAtoms();
+ }
+#endif
 }
 
 void ComputePmeMgr::initialize_computes() {
@@ -2259,18 +2619,52 @@ void ComputePmeMgr::initialize_computes() {
 
   strayChargeErrors = 0;
 
+#ifdef NAMD_CUDA
+ PatchMap *patchMap = PatchMap::Object();
+ int pe = master_pe = CkNodeFirst(CkMyNode());
+ for ( int i=0; i<CkMyNodeSize(); ++i, ++pe ) {
+   if ( ! patchMap->numPatchesOnNode(master_pe) ) master_pe = pe;
+   if ( ! patchMap->numPatchesOnNode(pe) ) continue;
+   if ( master_pe < 1 && pe != cuda_device_pe() ) master_pe = pe;
+   if ( master_pe == cuda_device_pe() ) master_pe = pe;
+   if ( WorkDistrib::pe_sortop_diffuse()(pe,master_pe)
+        && pe != cuda_device_pe() ) {
+     master_pe = pe;
+   }
+ }
+ if ( ! patchMap->numPatchesOnNode(master_pe) ) {
+   NAMD_bug("ComputePmeMgr::initialize_computes() master_pe has no patches.");
+ }
+
+ masterPmeMgr = nodePmeMgr->mgrObjects[master_pe - CkNodeFirst(CkMyNode())];
+ bool cudaFirst = 1;
+ if ( offload ) {
+  CmiLock(cuda_lock);
+  cudaFirst = ! masterPmeMgr->chargeGridSubmittedCount++;
+ }
+#endif
+
   qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
   fsize = myGrid.K1 * myGrid.dim2;
+  if ( myGrid.K2 != myGrid.dim2 ) NAMD_bug("PME myGrid.K2 != myGrid.dim2");
+#ifdef NAMD_CUDA
+ if ( ! offload )
+#endif
+ {
   q_arr = new float*[fsize*numGrids];
   memset( (void*) q_arr, 0, fsize*numGrids * sizeof(float*) );
   q_list = new float*[fsize*numGrids];
   memset( (void*) q_list, 0, fsize*numGrids * sizeof(float*) );
   q_count = 0;
+ }
+
+#ifdef NAMD_CUDA
+ if ( cudaFirst || ! offload ) {
+#endif
   f_arr = new char[fsize*numGrids];
   // memset to non-zero value has race condition on BlueGene/Q
   // memset( (void*) f_arr, 2, fsize*numGrids * sizeof(char) );
   for ( int n=fsize*numGrids, i=0; i<n; ++i ) f_arr[i] = 2;
-  fz_arr = new char[myGrid.K3+myGrid.order-1];
 
   for ( int g=0; g<numGrids; ++g ) {
     char *f = f_arr + g*fsize;
@@ -2307,9 +2701,120 @@ void ComputePmeMgr::initialize_computes() {
         int fstart = start / zdim;
         int flen = len / zdim;
         memset(f + fstart, 0, flen*sizeof(char));
+        // CkPrintf("pe %d enabled slabs %d to %d\n", CkMyPe(), fstart/myGrid.dim2, (fstart+flen)/myGrid.dim2-1);
       }
     }
   }
+#ifdef NAMD_CUDA
+ }
+ if ( offload ) {
+ if ( cudaFirst ) {
+
+  int f_alloc_count = 0;
+  for ( int n=fsize, i=0; i<n; ++i ) {
+    if ( f_arr[i] == 0 ) {
+      ++f_alloc_count;
+    }
+  }
+  // CkPrintf("pe %d f_alloc_count == %d (%d slabs)\n", CkMyPe(), f_alloc_count, f_alloc_count/myGrid.dim2);
+
+  q_arr = new float*[fsize*numGrids];
+  memset( (void*) q_arr, 0, fsize*numGrids * sizeof(float*) );
+
+  float **q_arr_dev_host = new float*[fsize];
+  cudaMalloc((void**) &q_arr_dev, fsize * sizeof(float*));
+
+  float **v_arr_dev_host = new float*[fsize];
+  cudaMalloc((void**) &v_arr_dev, fsize * sizeof(float*));
+
+  int q_stride = myGrid.K3+myGrid.order-1;
+  q_data_size = f_alloc_count * q_stride * sizeof(float);
+  ffz_size = (fsize + q_stride) * sizeof(int);
+
+  // tack ffz onto end of q_data to allow merged transfer
+  cudaMallocHost((void**) &q_data_host, q_data_size+ffz_size);
+  ffz_host = (int*)(((char*)q_data_host) + q_data_size);
+  cudaMalloc((void**) &q_data_dev, q_data_size+ffz_size);
+  ffz_dev = (int*)(((char*)q_data_dev) + q_data_size);
+  cudaMalloc((void**) &v_data_dev, q_data_size);
+  cuda_errcheck("malloc grid data for pme");
+  cudaMemset(q_data_dev, 0, q_data_size + ffz_size);  // for first time
+  cudaEventCreateWithFlags(&(nodePmeMgr->end_charge_memset),cudaEventDisableTiming);
+  cudaEventRecord(nodePmeMgr->end_charge_memset, 0);
+  cudaEventCreateWithFlags(&(nodePmeMgr->end_all_pme_kernels),cudaEventDisableTiming);
+  cudaEventCreateWithFlags(&(nodePmeMgr->end_potential_memcpy),cudaEventDisableTiming);
+
+  f_alloc_count = 0;
+  for ( int n=fsize, i=0; i<n; ++i ) {
+    if ( f_arr[i] == 0 ) {
+      q_arr[i] = q_data_host + f_alloc_count * q_stride;
+      q_arr_dev_host[i] = q_data_dev + f_alloc_count * q_stride;
+      v_arr_dev_host[i] = v_data_dev + f_alloc_count * q_stride;
+      ++f_alloc_count;
+    } else {
+      q_arr[i] = 0;
+      q_arr_dev_host[i] = 0;
+      v_arr_dev_host[i] = 0;
+    }
+  }
+
+  cudaMemcpy(q_arr_dev, q_arr_dev_host, fsize * sizeof(float*), cudaMemcpyHostToDevice);
+  cudaMemcpy(v_arr_dev, v_arr_dev_host, fsize * sizeof(float*), cudaMemcpyHostToDevice);
+  delete [] q_arr_dev_host;
+  delete [] v_arr_dev_host;
+  delete [] f_arr;
+  f_arr = new char[fsize + q_stride];
+  fz_arr = f_arr + fsize;
+  memset(f_arr, 0, fsize + q_stride);
+  memset(ffz_host, 0, (fsize + q_stride)*sizeof(int));
+
+  cuda_errcheck("initialize grid data for pme");
+
+  cuda_init_bspline_coeffs(&bspline_coeffs_dev, &bspline_dcoeffs_dev, myGrid.order);
+  cuda_errcheck("initialize bspline coefficients for pme");
+
+#define XCOPY(X) masterPmeMgr->X = X;
+  XCOPY(bspline_coeffs_dev)
+  XCOPY(bspline_dcoeffs_dev)
+  XCOPY(q_arr)
+  XCOPY(q_arr_dev)
+  XCOPY(v_arr_dev)
+  XCOPY(q_data_size)
+  XCOPY(q_data_host)
+  XCOPY(q_data_dev)
+  XCOPY(v_data_dev)
+  XCOPY(ffz_size)
+  XCOPY(ffz_host)
+  XCOPY(ffz_dev)
+  XCOPY(f_arr)
+  XCOPY(fz_arr)
+#undef XCOPY
+  //CkPrintf("pe %d init first\n", CkMyPe());
+ } else { // cudaFirst
+  //CkPrintf("pe %d init later\n", CkMyPe());
+#define XCOPY(X) X = masterPmeMgr->X;
+  XCOPY(bspline_coeffs_dev)
+  XCOPY(bspline_dcoeffs_dev)
+  XCOPY(q_arr)
+  XCOPY(q_arr_dev)
+  XCOPY(v_arr_dev)
+  XCOPY(q_data_size)
+  XCOPY(q_data_host)
+  XCOPY(q_data_dev)
+  XCOPY(v_data_dev)
+  XCOPY(ffz_size)
+  XCOPY(ffz_host)
+  XCOPY(ffz_dev)
+  XCOPY(f_arr)
+  XCOPY(fz_arr)
+#undef XCOPY
+ } // cudaFirst
+  CmiUnlock(cuda_lock);
+ } else // offload
+#endif // NAMD_CUDA
+ {
+  fz_arr = new char[myGrid.K3+myGrid.order-1];
+ }
 
 #if 0 && USE_PERSISTENT
   recvGrid_handle = NULL;
@@ -2318,7 +2823,12 @@ void ComputePmeMgr::initialize_computes() {
 
 ComputePme::~ComputePme()
 {
+#ifdef NAMD_CUDA
+  if ( ! offload )
+#endif
+  {
     for ( int g=0; g<numGrids; ++g ) delete myRealSpace[g];
+  }
 }
 
 #if 0 && USE_PERSISTENT 
@@ -2377,9 +2887,17 @@ int ComputePme::noWork() {
   forceBox->skip();
 
   if ( ++(myMgr->noWorkCount) == myMgr->pmeComputes.size() ) {
+#ifdef NAMD_CUDA
+   if ( offload ) {
+    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+    cm[cuda_device_pe()].recvNonbondedCUDASlaveReady(1,atomsChanged,sequence());
+   }
+#endif 
     myMgr->noWorkCount = 0;
     myMgr->reduction->submit();
   }
+
+  atomsChanged = 0;
 
   return 1;  // no work for this step
 }
@@ -2403,7 +2921,11 @@ void ComputePme::doWork()
   DebugM(4,"Entering ComputePme::doWork().\n");
 
   if ( basePriority >= COMPUTE_HOME_PRIORITY ) {
+#ifdef NAMD_CUDA
+    basePriority = ( offload ? PME_OFFLOAD_PRIORITY : PME_PRIORITY );
+#else
     basePriority = PME_PRIORITY;
+#endif
     ungridForces();
     // CkPrintf("doWork 2 pe %d %d %d\n", CkMyPe(), myMgr->ungridForcesCount, myMgr->recipEvirCount);
     if ( ! --(myMgr->ungridForcesCount) && ! myMgr->recipEvirCount ) myMgr->submitReductions();
@@ -2555,11 +3077,16 @@ void ComputePme::doWork()
  if ( ! myMgr->doWorkCount ) {
   myMgr->doWorkCount = myMgr->pmeComputes.size();
 
+#ifdef NAMD_CUDA
+ if ( !  offload )
+#endif // NAMD_CUDA
+ {
   memset( (void*) myMgr->fz_arr, 0, (myGrid.K3+myGrid.order-1) * sizeof(char) );
 
   for (int i=0; i<myMgr->q_count; ++i) {
     memset( (void*) (myMgr->q_list[i]), 0, (myGrid.K3+myGrid.order-1) * sizeof(float) );
   }
+ }
 
   for ( g=0; g<numGrids; ++g ) {
     myMgr->evir[g] = 0;
@@ -2591,9 +3118,69 @@ void ComputePme::doWork()
     float **q = myMgr->q_arr + g*myMgr->fsize;
     char *f = myMgr->f_arr + g*myMgr->fsize;
 
-    myRealSpace[g]->set_num_atoms(numGridAtoms[g]);
     scale_coordinates(localGridData[g], numGridAtoms[g], lattice, myGrid);
+#ifdef NAMD_CUDA
+   if ( offload ) {
+    if ( myMgr->cuda_atoms_alloc == 0 ) {  // first call
+      int na = myMgr->cuda_atoms_alloc = 1.2 * (myMgr->cuda_atoms_count + 1000);
+      cuda_errcheck("before malloc atom data for pme");
+      cudaMallocHost((void**) &(myMgr->a_data_host), 7*na*sizeof(float));
+      cudaMalloc((void**) &(myMgr->a_data_dev), 7*na*sizeof(float));
+      cuda_errcheck("malloc atom data for pme");
+      myMgr->cuda_atoms_count = 0;
+    }
+    cuda_atoms_offset = myMgr->cuda_atoms_count;
+    int n = numGridAtoms[g];
+    myMgr->cuda_atoms_count += n;
+    if ( myMgr->cuda_atoms_count > myMgr->cuda_atoms_alloc ) {
+      CkPrintf("Pe %d expanding CUDA PME atoms allocation because %d > %d\n",
+			CkMyPe(), myMgr->cuda_atoms_count, myMgr->cuda_atoms_alloc);
+      cuda_errcheck("before malloc expanded atom data for pme");
+      int na = myMgr->cuda_atoms_alloc = 1.2 * (myMgr->cuda_atoms_count + 1000);
+      const float *a_data_host_old = myMgr->a_data_host;
+      cudaMallocHost((void**) &(myMgr->a_data_host), 7*na*sizeof(float));
+      cuda_errcheck("malloc expanded host atom data for pme");
+      memcpy(myMgr->a_data_host, a_data_host_old, 7*cuda_atoms_offset*sizeof(float));
+      cudaFreeHost((void*) a_data_host_old);
+      cuda_errcheck("free expanded host atom data for pme");
+      cudaFree(myMgr->a_data_dev);
+      cuda_errcheck("free expanded dev atom data for pme");
+      cudaMalloc((void**) &(myMgr->a_data_dev), 7*na*sizeof(float));
+      cuda_errcheck("malloc expanded dev atom data for pme");
+    }
+    float *a_data_host = myMgr->a_data_host + 7 * cuda_atoms_offset;
+    data_ptr = localGridData[g];
+    double order_1 = myGrid.order - 1;
+    double K1 = myGrid.K1;
+    double K2 = myGrid.K2;
+    double K3 = myGrid.K3;
+    int found_negative = 0;
+    for ( int i=0; i<n; ++i ) {
+      if ( data_ptr[i].x < 0 || data_ptr[i].y < 0 || data_ptr[i].z < 0 ) {
+        found_negative = 1;
+        // CkPrintf("low coord: %f %f %f\n", data_ptr[i].x, data_ptr[i].y, data_ptr[i].z);
+      }
+      double x_int = (int) data_ptr[i].x;
+      double y_int = (int) data_ptr[i].y;
+      double z_int = (int) data_ptr[i].z;
+      a_data_host[7*i  ] = data_ptr[i].x - x_int;  // subtract in double precision
+      a_data_host[7*i+1] = data_ptr[i].y - y_int;
+      a_data_host[7*i+2] = data_ptr[i].z - z_int;
+      a_data_host[7*i+3] = data_ptr[i].cg;
+      x_int -= order_1;  if ( x_int < 0 ) x_int += K1;
+      y_int -= order_1;  if ( y_int < 0 ) y_int += K2;
+      z_int -= order_1;  if ( z_int < 0 ) z_int += K3;
+      a_data_host[7*i+4] = x_int;
+      a_data_host[7*i+5] = y_int;
+      a_data_host[7*i+6] = z_int;
+    }
+    if ( found_negative ) NAMD_bug("found negative atom coordinate in ComputePme::doWork");
+   } else
+#endif // NAMD_CUDA
+   {
+    myRealSpace[g]->set_num_atoms(numGridAtoms[g]);
     myRealSpace[g]->fill_charges(q, myMgr->q_list, myMgr->q_count, strayChargeErrors, f, myMgr->fz_arr, localGridData[g]);
+   }
   }
   myMgr->strayChargeErrors += strayChargeErrors;
 
@@ -2602,25 +3189,173 @@ void ComputePme::doWork()
 #endif
 
  if ( --(myMgr->doWorkCount) == 0 ) {
-  myMgr->recipEvirCount = myMgr->recipEvirClients;
-  myMgr->ungridForcesCount = myMgr->pmeComputes.size();
+// cudaDeviceSynchronize();  // XXXX
+#ifdef NAMD_CUDA
+  if ( offload ) {
+    int n = myMgr->cuda_atoms_count;
+    //CkPrintf("pe %d myMgr->cuda_atoms_count %d\n", CkMyPe(), myMgr->cuda_atoms_count);
+    myMgr->cuda_atoms_count = 0;
 
-  for (int j=0; j<myGrid.order-1; ++j) {
-    myMgr->fz_arr[j] |= myMgr->fz_arr[myGrid.K3+j];
+    CmiLock(myMgr->cuda_lock);
+    const double before = CmiWallTimer();
+    cudaMemcpyAsync(myMgr->a_data_dev, myMgr->a_data_host, 7*n*sizeof(float),
+                          cudaMemcpyHostToDevice, myMgr->streams[myMgr->stream]);
+    const double after = CmiWallTimer();
+
+    cudaStreamWaitEvent(myMgr->streams[myMgr->stream], myMgr->nodePmeMgr->end_charge_memset, 0);
+
+    cuda_pme_charges(
+      myMgr->bspline_coeffs_dev,
+      myMgr->q_arr_dev, myMgr->ffz_dev, myMgr->ffz_dev + myMgr->fsize,
+      myMgr->a_data_dev, n,
+      myGrid.K1, myGrid.K2, myGrid.K3, myGrid.order,
+      myMgr->streams[myMgr->stream]);
+    const double after2 = CmiWallTimer();
+
+    myMgr->chargeGridSubmitted(lattice,sequence());  // must be inside lock
+    CmiUnlock(myMgr->cuda_lock);
+
+    myMgr->masterPmeMgr->charges_time = before;
+    traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,after);
+    traceUserBracketEvent(CUDA_EVENT_ID_PME_KERNEL,after,2);
+
+    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+    cm[cuda_device_pe()].recvNonbondedCUDASlaveReady(1,atomsChanged,sequence());
+  } else
+#endif // NAMD_CUDA
+  {
+    myMgr->chargeGridReady(lattice,sequence());
   }
-  for (int i=0; i<myMgr->q_count; ++i) {
-    for (int j=0; j<myGrid.order-1; ++j) {
-      myMgr->q_list[i][j] += myMgr->q_list[i][myGrid.K3+j];
+ }
+ atomsChanged = 0;
+}
+
+#ifdef NAMD_CUDA
+
+void cuda_check_pme_charges(void *arg, double walltime) {
+  ComputePmeMgr *argp = (ComputePmeMgr *) arg;
+
+  cudaError_t err = cudaEventQuery(argp->end_charges);
+  if ( err == cudaSuccess ) {
+    traceUserBracketEvent(CUDA_EVENT_ID_PME_CHARGES,argp->charges_time,walltime);
+    argp->charges_time = walltime - argp->charges_time;
+    argp->sendChargeGridReady();
+    argp->check_charges_count = 0;
+  } else if ( err != cudaErrorNotReady ) {
+    cuda_errcheck("in cuda_check_pme_charges");
+    NAMD_bug("cuda_errcheck missed error in cuda_check_pme_charges");
+  } else if ( ++(argp->check_charges_count) >= count_limit ) {
+    char errmsg[256];
+    sprintf(errmsg,"cuda_check_pme_charges polled %d times over %f s on seq %d",
+            argp->check_charges_count, walltime - argp->charges_time,
+            argp->saved_sequence);
+    cuda_errcheck(errmsg);
+    NAMD_die(errmsg);
+  } else {
+    CUDA_POLL(cuda_check_pme_charges, arg);
+  }
+}
+
+void ComputePmeMgr::chargeGridSubmitted(Lattice &lattice, int sequence) {
+  saved_lattice = &lattice;
+  saved_sequence = sequence;
+
+  // cudaDeviceSynchronize();  //  XXXX TESTING
+  //int q_stride = myGrid.K3+myGrid.order-1;
+  //for (int n=fsize+q_stride, j=0; j<n; ++j) {
+  //  if ( ffz_host[j] != 0 && ffz_host[j] != 1 ) {
+  //    CkPrintf("pre-memcpy flag %d/%d == %d on pe %d in ComputePmeMgr::chargeGridReady\n", j, n, ffz_host[j], CkMyPe());
+  //  }
+  //}
+  //CmiLock(cuda_lock);
+
+ if ( --(masterPmeMgr->chargeGridSubmittedCount) == 0 ) {
+  double before = CmiWallTimer();
+  cudaEventRecord(nodePmeMgr->end_all_pme_kernels, 0);  // when all streams complete
+  cudaStreamWaitEvent(streams[stream], nodePmeMgr->end_all_pme_kernels, 0);
+  cudaMemcpyAsync(q_data_host, q_data_dev, q_data_size+ffz_size,
+                        cudaMemcpyDeviceToHost, streams[stream]);
+  traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,CmiWallTimer());
+  cudaEventRecord(masterPmeMgr->end_charges, streams[stream]);
+  cudaMemsetAsync(q_data_dev, 0, q_data_size + ffz_size, streams[stream]);  // for next time
+  cudaEventRecord(nodePmeMgr->end_charge_memset, streams[stream]);
+  //CmiUnlock(cuda_lock);
+  // cudaDeviceSynchronize();  //  XXXX TESTING
+  // cuda_errcheck("after memcpy grid to host");
+  pmeProxy[master_pe].pollChargeGridReady();
+ }
+}
+
+void ComputePmeMgr::sendChargeGridReady() {
+  for ( int i=0; i<CkMyNodeSize(); ++i ) {
+    ComputePmeMgr *mgr = nodePmeMgr->mgrObjects[i];
+    int cs = mgr->pmeComputes.size();
+    if ( cs ) {
+      mgr->ungridForcesCount = cs;
+      mgr->recipEvirCount = mgr->recipEvirClients;
+      masterPmeMgr->chargeGridSubmittedCount++;
     }
   }
+  pmeProxy[master_pe].recvChargeGridReady();
+}
+#endif // NAMD_CUDA
 
-  if ( myMgr->usePencils ) {
-    myMgr->sendPencils(lattice,sequence());
-  } else {
-    myMgr->sendData(lattice,sequence());
+void ComputePmeMgr::pollChargeGridReady() {
+#ifdef NAMD_CUDA
+  CUDA_POLL(cuda_check_pme_charges,this);
+#else
+  NAMD_bug("ComputePmeMgr::pollChargeGridReady() called in non-CUDA build.");
+#endif
+}
+
+void ComputePmeMgr::recvChargeGridReady() {
+  chargeGridReady(*saved_lattice,saved_sequence);
+}
+
+void ComputePmeMgr::chargeGridReady(Lattice &lattice, int sequence) {
+
+#ifdef NAMD_CUDA
+ int q_stride;
+ if ( offload ) {
+  q_stride = myGrid.K3+myGrid.order-1;
+  for (int n=fsize+q_stride, j=0; j<n; ++j) {
+    f_arr[j] = ffz_host[j];
+    if ( ffz_host[j] != 0 && ffz_host[j] != 1 ) {
+      CkPrintf("flag %d/%d == %d on pe %d in ComputePmeMgr::chargeGridReady\n", j, n, ffz_host[j], CkMyPe());
+    }
+  }
+ }
+#endif
+  recipEvirCount = recipEvirClients;
+  ungridForcesCount = pmeComputes.size();
+
+  for (int j=0; j<myGrid.order-1; ++j) {
+    fz_arr[j] |= fz_arr[myGrid.K3+j];
+  }
+#ifdef NAMD_CUDA
+ if ( offload ) {
+  for (int n = q_data_size/(q_stride*sizeof(float)), i=0; i<n; ++i) {
+    float *q_list_i = q_data_host + i * q_stride;
+    for (int j=0; j<myGrid.order-1; ++j) {
+      q_list_i[j] += q_list_i[myGrid.K3+j];
+    }
+  }
+ } else
+#endif
+ {
+  for (int i=0; i<q_count; ++i) {
+    float *q_list_i = q_list[i];
+    for (int j=0; j<myGrid.order-1; ++j) {
+      q_list_i[j] += q_list_i[myGrid.K3+j];
+    }
   }
  }
 
+  if ( usePencils ) {
+    sendPencils(lattice,sequence);
+  } else {
+    sendData(lattice,sequence);
+  }
 }
 
 
@@ -2963,7 +3698,18 @@ void ComputePme::ungridForces() {
       CmiNetworkProgress();
 #endif
 
+#ifdef NAMD_CUDA
+     if ( offload ) {
+      for ( int n=numGridAtoms[g], i=0; i<n; ++i ) {
+        gridResults[i].x = f_data_host[3*i];
+        gridResults[i].y = f_data_host[3*i+1];
+        gridResults[i].z = f_data_host[3*i+2];
+      }
+     } else
+#endif // NAMD_CUDA
+     {
       myRealSpace[g]->compute_forces(myMgr->q_arr+g*myMgr->fsize, localGridData[g], gridResults);
+     }
       scale_forces(gridResults, numGridAtoms[g], lattice);
 
       if ( alchFepOn || alchThermIntOn ) {
@@ -3466,6 +4212,7 @@ public:
       rand.reorder(send_order,nBlocks);
     }
     needs_reply = new int[nBlocks];
+    offload = Node::Object()->simParameters->PMEOffload;
   }
   PmePencilInitMsgData initdata;
   Lattice lattice;
@@ -3474,6 +4221,7 @@ public:
   int imsg;  // used in sdag code
   int imsgb;  // Node par uses distinct counter for back path
   int hasData;  // used in message elimination
+  int offload;
   float *data;
   float *work;
   int *send_order;
@@ -5276,11 +6024,18 @@ void PmeZPencil::send_subset_ungrid(int fromIdx, int toIdx, int specialIdx){
 }
 
 void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
+
+#ifdef NAMD_CUDA
+  const int UNGRID_PRIORITY = ( offload ? PME_OFFLOAD_UNGRID_PRIORITY : PME_UNGRID_PRIORITY );
+#else
+  const int UNGRID_PRIORITY = PME_UNGRID_PRIORITY ;
+#endif
+
   int pe = msg->sourceNode;
   if ( ! msg->hasData ) {
     delete msg;
     PmeAckMsg *ackmsg = new (PRIORITY_SIZE) PmeAckMsg;
-    SET_PRIORITY(ackmsg,sequence,PME_UNGRID_PRIORITY)
+    SET_PRIORITY(ackmsg,sequence,UNGRID_PRIORITY)
     CmiEnableUrgentSend(1);
     initdata.pmeProxy[pe].recvAck(ackmsg);
     CmiEnableUrgentSend(0);
@@ -5308,7 +6063,7 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
       }
     }
   }
-  SET_PRIORITY(msg,sequence,PME_UNGRID_PRIORITY)
+  SET_PRIORITY(msg,sequence,UNGRID_PRIORITY)
     CmiEnableUrgentSend(1);
   initdata.pmeProxy[pe].recvUngrid(msg);
     CmiEnableUrgentSend(0);

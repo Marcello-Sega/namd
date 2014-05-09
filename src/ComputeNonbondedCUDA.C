@@ -99,6 +99,17 @@ bool cuda_device_shared_with_pe(int pe) {
   return false;
 }
 
+bool one_cuda_device_per_node() {
+  if ( numPesSharingDevice != CkMyNodeSize() ) return false;
+  int numPesOnNodeSharingDevice = 0;
+  for ( int i=0; i<numPesSharingDevice; ++i ) {
+    if ( CkNodeOf(pesSharingDevice[i]) == CkMyNode() ) {
+      ++numPesOnNodeSharingDevice;
+    }
+  }
+  return ( numPesOnNodeSharingDevice == CkMyNodeSize() );
+}
+
 static inline bool sortop_bitreverse(int a, int b) {
   if ( a == b ) return 0; 
   for ( int bit = 1; bit; bit *= 2 ) {
@@ -297,6 +308,16 @@ void cuda_initialize() {
     if ( CmiPhysicalNodeID(devicePe) < 2 )
     CkPrintf("Pe %d physical rank %d will use CUDA device of pe %d\n",
              CkMyPe(), myRankInPhysicalNode, devicePe);
+
+    // for PME only
+    cudaError_t err = cudaSetDevice(dev);
+    if ( err != cudaSuccess ) {
+      char errmsg[1024];
+      sprintf(errmsg,"CUDA error binding to device %d on pe %d: %s",
+  			dev, CkMyPe(), cudaGetErrorString(err));
+      NAMD_die(errmsg);
+    }
+
     return;
   }
 
@@ -884,7 +905,15 @@ void ComputeNonbondedCUDA::registerPatches() {
       }
     }
   }
-  if ( master == this ) setNumPatches(activePatches.size());
+  if ( master == this ) {
+    int extras = 0;
+    if ( simParams->PMEOn && simParams->PMEOffload ) {
+      for ( int i=0; i<numPesSharingDevice; ++i ) {
+        if ( patchMap->numPatchesOnNode(pesSharingDevice[i]) ) ++extras;
+      }
+    }
+    setNumPatches(activePatches.size() + extras);
+  }
   else setNumPatches(hostedPatches.size());
   if ( CmiPhysicalNodeID(CkMyPe()) < 2 )
   CkPrintf("Pe %d hosts %d local and %d remote patches for pe %d\n", CkMyPe(), localHostedPatches.size(), remoteHostedPatches.size(), masterPe);

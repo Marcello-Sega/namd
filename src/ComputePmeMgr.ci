@@ -192,6 +192,8 @@ module ComputePmeMgr {
     entry void initialize(CkQdMsg *);
     entry void initialize_pencils(CkQdMsg *);
     entry void activate_pencils(CkQdMsg *);
+    entry void pollChargeGridReady(void);  // CUDA
+    entry void recvChargeGridReady(void);  // CUDA
     entry void recvGrid(PmeGridMsg *);
     entry void gridCalc1(void);
     entry void sendTransBarrier(void);
