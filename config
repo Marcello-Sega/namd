@@ -35,6 +35,7 @@ syntax:
   echo '  --without-mic (default)  --with-mic'
   echo '      (do NOT use MIC-enabled Charm++, NAMD does not need it)'
   echo '  --cuda-prefix <directory containing CUDA bin, lib, and include>'
+  echo '  --cuda-gencode arch=<arch>,code=<code> (may be repeated)'
   echo ''
   if ( $?PRINT_ARCH_LIST ) then
     set ARCH_PAT = ''
@@ -201,6 +202,8 @@ begin:
     shift
   endif
 
+  set CUDA_GENCODE = ""
+
   while ( $#argv > 0 )
     if ( $1 !~ --* ) then
       echo "ERROR: Expected an option beginning with -- but found $1"
@@ -268,6 +271,14 @@ begin:
           goto syntax
         endif
         set CUDA_PREFIX=$1
+      breaksw
+      case --cuda-gencode:
+        shift
+        if ( ! $#argv  ) then
+          echo "ERROR: --cuda-gencode requires an argument"
+          goto syntax
+        endif
+        set CUDA_GENCODE = ( $CUDA_GENCODE -gencode $1 )
       breaksw
 
       case --with-memopt:
@@ -471,6 +482,7 @@ begin:
   else if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Make.config
   endif
   if ( $use_cuda ) echo 'include .rootdir/arch/$(NAMD_ARCH).cuda' >> Make.config
+  if ( $use_cuda && "x$CUDA_GENCODE" != x ) echo "CUDAGENCODE = $CUDA_GENCODE" >> Make.config
 
   if ( $use_memopt ) echo 'MEMOPT=-DMEM_OPT_VERSION' >> Make.config
 
