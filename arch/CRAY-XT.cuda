@@ -5,7 +5,8 @@ CUDALIB=-lcudart $(CRAY_CUDATOOLKIT_POST_LINK_OPTS)
 CUDAFLAGS=-DNAMD_CUDA
 CUDAOBJS=$(CUDAOBJSRAW)
 CUDA=$(CUDAFLAGS) -I. $(CUDAINCL)
-CUDACC=$(CUDADIR)/bin/nvcc -O3 -ftz=true --maxrregcount 32 -arch sm_35 -Xcompiler "-m64" $(CUDA)
+CUDACC=$(CUDADIR)/bin/nvcc -O3 -ftz=true --maxrregcount 32 $(CUDAGENCODE) -Xcompiler "-m64" $(CUDA)
+CUDAGENCODE=-arch sm_35
 
 
 loaded_modules := $(subst :, ,$(LOADEDMODULES))
@@ -15,5 +16,10 @@ ifeq (,$(module))
   $(error module cudatoolkit is not loaded)
 else
   $(info found module $(module))
+endif
+
+module := $(filter gcc/%,$(loaded_modules))
+ifeq (gcc/4.8.2,$(module))
+  $(error found module gcc/4.8.2 with bad std::nth_element implementation)
 endif
 

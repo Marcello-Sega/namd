@@ -8,5 +8,6 @@ CUDAFLAGS=-DNAMD_CUDA
 CUDAOBJS=$(CUDAOBJSRAW)
 NATIVEPATH=cygpath -d
 CUDA=$(CUDAFLAGS) -I. $(CUDAINCL)
-CUDACC=$(CUDADIR)/bin/nvcc -DWIN32 -DWIN64 --keep --keep-dir obj -O3 --maxrregcount 32 -gencode arch=compute_11,code=sm_11 -gencode arch=compute_20,code=sm_20 -gencode arch=compute_20,code=compute_20 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_35,code=compute_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50 -m64 $(CUDA)
+CUDACC=$(CUDADIR)/bin/nvcc -DWIN32 -DWIN64 --keep --keep-dir obj -O3 --maxrregcount 32 $(CUDAGENCODE) -m64 $(CUDA)
+CUDAGENCODE=-gencode arch=compute_11,code=sm_11 -gencode arch=compute_20,code=sm_20 -gencode arch=compute_20,code=compute_20 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_35,code=compute_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50
 
