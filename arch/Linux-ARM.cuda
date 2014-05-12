@@ -1,11 +1,11 @@
 
 CUDADIR=/usr/local/cuda-5.5
 CUDAINCL=-I$(CUDADIR)/include
-CUDALIB=-L$(CUDADIR)/lib -lcudart
+CUDALIB=-L$(CUDADIR)/lib -lcudart_static -lrt
 CUDASODIR=$(CUDADIR)/lib
-LIBCUDARTSO=libcudart.so.5.5
+LIBCUDARTSO=
 CUDAFLAGS=-DNAMD_CUDA
 CUDAOBJS=$(CUDAOBJSRAW)
 CUDA=$(CUDAFLAGS) -I. $(CUDAINCL)
-CUDACC=$(CUDADIR)/bin/nvcc -O3 --maxrregcount 32 -gencode arch=compute_20,code=sm_21 -gencode arch=compute_20,code=compute_20 $(CUDA)
+CUDACC=$(CUDADIR)/bin/nvcc -O3 --maxrregcount 32 -gencode arch=compute_20,code=sm_21 -gencode arch=compute_20,code=compute_20 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_35,code=compute_35 $(CUDA)
 
