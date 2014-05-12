@@ -121,6 +121,14 @@ public:
 
   void peOrderingReady();
 
+  // MIC-Specific
+  static void send_initHostDeviceLDB();
+  /* entry */ void initHostDeviceLDB();
+  static void send_contributeHostDeviceLDB(int peSetLen, int * peSet);
+  /* entry */ void contributeHostDeviceLDB(int peSetLen, int * peSet);
+  static void send_setDeviceLDBParams(int dt, int hs, int sp1, int pp1, int pp2);
+  /* entry */ void setDeviceLDBParams(int dt, int hs, int sp1, int pp1, int pp2);
+
 private:
   void buildNodeAwarePeOrdering(void);
 

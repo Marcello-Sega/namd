@@ -445,21 +445,27 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   #define PAIRLIST_ALLOC_CHECK(pl, init_size) { \
     if ((pl) == NULL) { \
       const int plInitSize = (init_size) + (16 * (MIC_HANDCODE_FORCE_PFDIST + 1)); \
-      (pl) = (int*)_mm_malloc(plInitSize * sizeof(int) + 64, 64); \
+      if (device__timestep == 0) { /* NOTE: Avoid all the prints on timestep 0 */ \
+        (pl) = (int*)(_mm_malloc(plInitSize * sizeof(int) + 64, 64)); \
+      } else { \
+        (pl) = (int*)_MM_MALLOC_WRAPPER(plInitSize * sizeof(int) + 64, 64, "pairlist_alloc_check"); \
+      } \
       __ASSERT((pl) != NULL); \
       (pl) += 14; \
       (pl)[0] = plInitSize; \
       (pl)[1] = 2; \
     } \
   }
+
   #define PAIRLIST_GROW_CHECK(pl, offset, mul) { \
     if ((offset) + j_upper + 8 + MIC_PREFETCH_DISTANCE + (16 * (MIC_HANDCODE_FORCE_PFDIST + 1)) > (pl)[0]) { \
-      int newPlAllocSize = (pl)[0] + (mul) * j_upper + (16 * (MIC_HANDCODE_FORCE_PFDIST + 1)); \
-      int* RESTRICT newPl = (int*)_mm_malloc(newPlAllocSize * sizeof(int) + 64, 64); \
+      int newPlAllocSize = (int)(((pl)[0]) * (mul) + j_upper + 64); /* NOTE: add at least j_upper (max that can be added before next check) in case pl[0] is small to begin with */ \
+      newPlAllocSize = (~2047) & (newPlAllocSize + 2047); /* NOTE: round up to 2K, add at least 2K */ \
+      int* RESTRICT newPl = (int*)_MM_MALLOC_WRAPPER(newPlAllocSize * sizeof(int), 64, "pairlist_grow_check"); \
       __ASSERT((newPl) != NULL); \
       newPl += 14; \
       memcpy(newPl, (pl), (offset) * sizeof(int)); \
-      _mm_free((pl) - 14); \
+      _MM_FREE_WRAPPER((pl) - 14); \
       (pl) = newPl; \
       (pl)[0] = newPlAllocSize; \
     } \
@@ -470,13 +476,152 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
   // Regenerate the pairlists, if need be
   if ((!(params.usePairlists)) || (params.savePairlists)) {
 
-    // Create a pairlists if need be by allocating memory for them
-    PAIRLIST_ALLOC_CHECK(pairlist_norm, (int)(0.50 * i_upper * j_upper));  // Init to ~40% of max interaction count
-    PAIRLIST_ALLOC_CHECK(pairlist_mod , (int)(0.10 * i_upper * j_upper));  // Init to  ~5% of max interaction count
-    PAIRLIST_ALLOC_CHECK(pairlist_excl, (int)(0.10 * i_upper * j_upper));  // Init to  ~5% of max interaction count
-    #if MIC_CONDITION_NORMAL != 0
-      PAIRLIST_ALLOC_CHECK(pairlist_normhi, (int)(0.20 * i_upper * j_upper));  // Init to  ~10% of max interaction count
-    #endif
+    // For the sake of getting a good estimate of the virtual memory require for pairlists,
+    //   do an actual count of the interactions within this compute (part).
+    // NOTE: This will only occur during timestep 0.  Later allocations grow the buffer by
+    //   a fixed factor.
+
+    if (pairlist_norm == NULL) { // NOTE: Only checking one pointer, but all will be allocated together
+      // NOTE: This only occurs once when the compute is run for the first time
+
+      int plCount_norm = 16;
+      int plCount_mod = 16;
+      int plCount_excl = 16;
+      #if MIC_CONDITION_NORMAL != 0
+        int plCount_normhi = 16;
+      #endif
+
+      int numParts = params.pp->numParts;
+      int part = params.pp->part;
+      for (int i = part; i < i_upper; i += numParts) {
+
+        // Load position information for the current "i" atom
+        #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
+          CALC_TYPE p_i_x = p_0[i].x + offset_x;
+          CALC_TYPE p_i_y = p_0[i].y + offset_y;
+          CALC_TYPE p_i_z = p_0[i].z + offset_z;
+        #else
+          CALC_TYPE p_i_x = p_0_x[i] + offset_x;
+          CALC_TYPE p_i_y = p_0_y[i] + offset_y;
+          CALC_TYPE p_i_z = p_0_z[i] + offset_z;
+        #endif
+          
+        for (int j = 0 SELF(+i+1); j < j_upper; j++) {
+
+          // Load the "j" atom's position, calculate/check the distance (squared)
+          //   between the "i" and "j" atoms
+          #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
+            CALC_TYPE p_d_x = p_i_x - p_1[j].x;
+            CALC_TYPE p_d_y = p_i_y - p_1[j].y;
+            CALC_TYPE p_d_z = p_i_z - p_1[j].z;
+          #else
+            CALC_TYPE p_d_x = p_i_x - p_1_x[j];
+            CALC_TYPE p_d_y = p_i_y - p_1_y[j];
+            CALC_TYPE p_d_z = p_i_z - p_1_z[j];
+          #endif
+          CALC_TYPE r2 = (p_d_x * p_d_x) + (p_d_y * p_d_y) + (p_d_z * p_d_z);
+          if (r2 <= plcutoff2) {
+
+            // Check the exclusion bits to set the modified and excluded flags
+            // NOTE: This code MUST match the exclusion lists generation code
+            //   on ComputeNonbondedMIC.C, which generates the flags.  In
+            //   particular, the order of the 2 bits must be correct, per the
+            //   pairlist format listed below (i.e. isModified -> MSB).
+            int exclFlags = 0x00;
+            #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
+              const int indexDiff = pExt_0[i].index - pExt_1[j].index;
+              const int maxDiff = pExt_1[j].excl_maxdiff;
+            #else
+              const int indexDiff = pExt_0_index[i] - pExt_1_index[j];
+              const int maxDiff = pExt_1_exclMaxDiff[j];
+            #endif
+            if (indexDiff >= -1 * maxDiff && indexDiff <= maxDiff) {
+              #if MIC_HANDCODE_FORCE_SOA_VS_AOS != 0
+                const int offset = (2 * indexDiff) + pExt_1[j].excl_index;
+              #else
+                const int offset = (2 * indexDiff) + pExt_1_exclIndex[j];
+              #endif
+              const int offset_major = offset / (sizeof(unsigned int) * 8);
+              const int offset_minor = offset % (sizeof(unsigned int) * 8); // NOTE: Reverse indexing direction relative to offset_major
+              exclFlags = ((params.exclusion_bits[offset_major]) >> offset_minor) & 0x03;
+	    }
+
+            // Create the pairlist entry value (i and j value) and store it in to the
+            //   appropriate pairlist based on the type of interaction (exclFlags value)
+            if (exclFlags == 0) {
+              #if MIC_CONDITION_NORMAL != 0
+                if (r2 <= normhi_split) { plCount_norm++; }
+                else { plCount_normhi++; }
+              #else
+                plCount_norm++;
+              #endif
+            } else if (exclFlags == 1) {
+              plCount_excl++;
+            } else if (exclFlags == 2) {
+              plCount_mod++;
+            }
+              
+          } // end if (r2 <= plcutoff2)
+        } // end for (j < j_upper)
+      } // end for (i < i_upper)
+
+      // If padding the pairlists, add some extra room for padding ('vector width * num sub-lists' total)
+      #if __MIC_PAD_PLGEN_CTRL != 0
+        plCount_norm += (16 * i_upper);
+        plCount_mod += (16 * i_upper);
+        plCount_excl += (16 * i_upper);
+        #if MIC_CONDITION_NORMAL != 0
+          plCount_normhi += (16 * i_upper);
+        #endif
+      #endif
+
+      // Add a constant percent and round up to a multiple of 1024
+      const float plPercent = 1.4;
+      const int plRound = 2048;
+      plCount_norm = (int)(plCount_norm * plPercent); plCount_norm = (~(plRound-1)) & (plCount_norm + (plRound-1));
+      plCount_mod = (int)(plCount_mod * plPercent); plCount_mod = (~(plRound-1)) & (plCount_mod + (plRound-1));
+      plCount_excl = (int)(plCount_excl * plPercent); plCount_excl = (~(plRound-1)) & (plCount_excl + (plRound-1));
+      #if MIC_CONDITION_NORMAL != 0
+        plCount_normhi = (int)(plCount_normhi * plPercent); plCount_normhi = (~(plRound-1)) & (plCount_normhi + (plRound-1));
+        plCount_norm += plCount_normhi;
+      #endif
+
+      // DMK - DEBUG - printing allocations, but reduce output by skipping initial pairlist allocations in timestep 0 (lots of them)
+      // NOTE: This check is temporary for debugging, remove (keep wrapper version) when no longer needed
+      if (device__timestep == 0) { /* NOTE: Avoid all the allocation prints during timestep 0 */
+        pairlist_norm = (int*)(_mm_malloc(plCount_norm * sizeof(int), 64)); __ASSERT(pairlist_norm != NULL);
+        pairlist_mod = (int*)(_mm_malloc(plCount_mod * sizeof(int), 64)); __ASSERT(pairlist_mod != NULL);
+        pairlist_excl = (int*)(_mm_malloc(plCount_excl * sizeof(int), 64)); __ASSERT(pairlist_excl != NULL);
+        #if MIC_CONDITION_NORMAL != 0
+          pairlist_normhi = (int*)(_mm_malloc(plCount_normhi * sizeof(int), 64)); __ASSERT(pairlist_normhi != NULL);
+        #endif
+      } else {
+        pairlist_norm = (int*)(_MM_MALLOC_WRAPPER(plCount_norm * sizeof(int), 64, "pairlist_norm")); __ASSERT(pairlist_norm != NULL);
+        pairlist_mod = (int*)(_MM_MALLOC_WRAPPER(plCount_mod * sizeof(int), 64, "pairlist_mod")); __ASSERT(pairlist_mod != NULL);
+        pairlist_excl = (int*)(_MM_MALLOC_WRAPPER(plCount_excl * sizeof(int), 64, "pairlist_excl")); __ASSERT(pairlist_excl != NULL);
+        #if MIC_CONDITION_NORMAL != 0
+          pairlist_normhi = (int*)(_MM_MALLOC_WRAPPER(plCount_normhi * sizeof(int), 64, "pairlist_normhi")); __ASSERT(pairlist_normhi != NULL);
+        #endif
+      }
+
+      pairlist_norm += 14; pairlist_norm[0] = plCount_norm; pairlist_norm[1] = 2;
+      pairlist_mod += 14; pairlist_mod[0] = plCount_mod; pairlist_mod[1] = 2;
+      pairlist_excl += 14; pairlist_excl[0] = plCount_excl; pairlist_excl[1] = 2;
+      #if MIC_CONDITION_NORMAL != 0
+        pairlist_normhi += 14; pairlist_normhi[0] = plCount_normhi; pairlist_normhi[1] = 2;
+      #endif
+
+      // DMK - DEBUG - Pairlist memory stats
+      #if MIC_TRACK_DEVICE_MEM_USAGE != 0
+        pairlist_norm[-1] = 0;
+        pairlist_mod[-1] = 0;
+        pairlist_excl[-1] = 0;
+        #if MIC_CONDITION_NORMAL != 0
+          pairlist_normhi[-1] = 0;
+        #endif
+      #endif
+
+    } // end if (pairlist_norm == NULL)
 
     // Create the pairlists from scratch.  The first two elements in each pairlist
     //   are special values (element 0 is the allocated size of the memory buffer
@@ -486,7 +631,7 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
     int plOffset_mod = 2;   // Current length of the modified pairlist
     int plOffset_excl = 2;  // Current length of the excluded pairlist
     #if MIC_CONDITION_NORMAL != 0
-      double normhi_split = (0.25 * cutoff2) + (0.75 * plcutoff2);
+      double normhi_split = (0.25 * cutoff2) + (0.75 * plcutoff2);  // Weighted average of cutoff2 and plcutoff2
       int plOffset_normhi = 2;  // Current length of the "normal high" pairlist (entires
                                 //   that belong in the normal pairlist, but that are
                                 //   further than the normhi_split distance, such that
@@ -515,11 +660,11 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
           for (int i = i_lo; i < i_hi; i++) {
 
             // If the pairlist is not long enough, grow the pairlist
-            PAIRLIST_GROW_CHECK(pairlist_norm, plOffset_norm, 50);
-            PAIRLIST_GROW_CHECK(pairlist_mod , plOffset_mod,   8);
-            PAIRLIST_GROW_CHECK(pairlist_excl, plOffset_excl,  8);
+            PAIRLIST_GROW_CHECK(pairlist_norm, plOffset_norm, 1.4);
+            PAIRLIST_GROW_CHECK(pairlist_mod , plOffset_mod,  1.2);
+            PAIRLIST_GROW_CHECK(pairlist_excl, plOffset_excl, 1.2);
             #if MIC_CONDITION_NORMAL != 0
-              PAIRLIST_GROW_CHECK(pairlist_normhi, plOffset_normhi, 15);
+              PAIRLIST_GROW_CHECK(pairlist_normhi, plOffset_normhi, 1.3);
             #endif
 
 	    // Load position information for the current "i" atom
@@ -1111,7 +1256,8 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
             const int padLen = 8;
           #endif
           const int padValue = (i << 16) | 0xFFFF;
-          // NOTE: xxx % 8 != 2 because offset includes first two ints (pairlist sizes)
+          // NOTE: xxx % padLen != 2 because offset includes first two ints (pairlist sizes), so 0 entries <-> offset 2, 16 entries <-> offset 18, etc.
+          //   Alignment is setup so that the entries (minus the first two ints) are cacheline aligned.
           while (plOffset_norm % padLen != 2) { pairlist_norm[plOffset_norm++] = padValue; }
           while (plOffset_mod  % padLen != 2) { pairlist_mod [plOffset_mod++ ] = padValue; }
           while (plOffset_excl % padLen != 2) { pairlist_excl[plOffset_excl++] = padValue; }
@@ -1131,11 +1277,11 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
       // Make sure there is enough room in pairlist_norm for the contents of pairlist_normhi
       if (plOffset_norm + plOffset_normhi > pairlist_norm[0]) {
         int newPlAllocSize = pairlist_norm[0] + 2 * plOffset_normhi + 8;
-        int* RESTRICT newPl = (int*)_mm_malloc(newPlAllocSize * sizeof(int) + 64, 64);
+        int* RESTRICT newPl = (int*)_MM_MALLOC_WRAPPER(newPlAllocSize * sizeof(int) + 64, 64, "pairlist_norm grow for conditioning");
         __ASSERT(newPl != NULL);
         newPl += 14; // Align pairlist entries, which start at index 2
         memcpy(newPl, pairlist_norm, plOffset_norm * sizeof(int));
-        _mm_free(pairlist_norm - 14);
+        _MM_FREE_WRAPPER(pairlist_norm - 14);
         pairlist_norm = newPl;
         pairlist_norm[0] = newPlAllocSize;
       }
@@ -1151,10 +1297,20 @@ __attribute__((target(mic))) void NAME (mic_params &params) {
 
     // Store the current offsets (pairlist lengths) in to the pairlist data structure itself
     pairlist_norm[1] = plOffset_norm; // NOTE: The size includes the initial 2 ints
-    pairlist_mod [1] = plOffset_mod;
+    pairlist_mod[1] = plOffset_mod;
     pairlist_excl[1] = plOffset_excl;
     #if MIC_CONDITION_NORMAL != 0
       pairlist_normhi[1] = plOffset_normhi;
+    #endif
+
+    // DMK - DEBUG - Pairlist memory size info
+    #if MIC_TRACK_DEVICE_MEM_USAGE != 0
+      if (plOffset_norm > pairlist_norm[-1]) { pairlist_norm[-1] = plOffset_norm; } // NOTE: Because of alignment of pairlist payload, known to have 14 ints allocated prior to pairlist start
+      if (plOffset_mod > pairlist_mod[-1]) { pairlist_mod[-1] = plOffset_mod; } // NOTE: Because of alignment of pairlist payload, known to have 14 ints allocated prior to pairlist start
+      if (plOffset_excl > pairlist_excl[-1]) { pairlist_excl[-1] = plOffset_excl; } // NOTE: Because of alignment of pairlist payload, known to have 14 ints allocated prior to pairlist start
+      #if MIC_CONDITION_NORMAL != 0
+        if (plOffset_normhi > pairlist_normhi[-1]) { pairlist_normhi[-1] = plOffset_normhi; } // NOTE: Because of alignment of pairlist payload, known to have 14 ints allocated prior to pairlist start
+      #endif
     #endif
 
     // If prefetch is enabled, pad-out some extra (valid) entries in the pairlist

@@ -172,12 +172,9 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids,
   computeData[cid].numPids = 0;
 
   #if defined(NAMD_MIC)
-    // By default, pass all non-bonded selfs and pairs to the device
-    if (type == computeNonbondedSelfType || type == computeNonbondedPairType) {
-      computeData[cid].directToDevice = 1;
-    } else {
-      computeData[cid].directToDevice = 0;
-    }
+    // Initially in MIC runs, all computes are mapped to the host.  The host vs
+    //   device LDB scheme will change this mapping later.
+    computeData[cid].directToDevice = 0;
   #endif
 
   return cid;

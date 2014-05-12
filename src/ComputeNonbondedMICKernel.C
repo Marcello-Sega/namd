@@ -11,6 +11,11 @@
 #include <assert.h>
 #include <math.h>
 
+// DMK - DEBUG
+#if MIC_TRACK_DEVICE_MEM_USAGE != 0
+  #include <sys/types.h>
+  #include <unistd.h>
+#endif
 
 // Setup __ASSUME_ALIGNED macro to take the appropriate action based on macro flags
 #if (CHECK_ASSUME_ALIGNED != 0)
@@ -113,9 +118,9 @@ __attribute__((target(mic))) double4 * device__forces = NULL;
 __attribute__((target(mic))) double4 * device__slow_forces = NULL;
 __attribute__((target(mic))) int device__atoms_size = 0;
 
-__thread int host__force_buffers_req_size = 0;
-__attribute__((target(mic))) int device__force_buffers_req_size = 0;
-__attribute__((target(mic))) int device__force_buffers_alloc_size = 0;
+__thread size_t host__force_buffers_req_size = 0;
+__attribute__((target(mic))) size_t device__force_buffers_req_size = 0;
+__attribute__((target(mic))) size_t device__force_buffers_alloc_size = 0;
 __attribute__((target(mic))) double4 * device__force_buffers = NULL;
 __attribute__((target(mic))) double4 * device__slow_force_buffers = NULL;
 
@@ -247,8 +252,8 @@ void mic_init_device(const int pe, const int node, const int deviceNum) {
   host__pe = pe;
   host__node = node;
 
-  // Initialize various variables
-  host__kernel_data = new mic_kernel_data[2];
+  // Initialize kernel data structures
+  host__kernel_data = (mic_kernel_data*)(_MM_MALLOC_WRAPPER(2 * sizeof(mic_kernel_data), 64, "mic_kernel_data"));
   __ASSERT(host__kernel_data != NULL);
   mic_kernel_data * kernel_data = host__kernel_data;
 
@@ -307,9 +312,9 @@ void mic_init_device(const int pe, const int node, const int deviceNum) {
     // Initialize the r2 arrays (scratch buffers used by computes to refine pairlists
     //   each timestep, when pairlist refinement is enabled)
     #if REFINE_PAIRLISTS != 0
-      device__pl_array = new int*[device__numOMPThreads];     __ASSERT(device__pl_array != NULL);
-      device__pl_size = new int[device__numOMPThreads];       __ASSERT(device__pl_size != NULL);
-      device__r2_array = new double*[device__numOMPThreads];  __ASSERT(device__r2_array != NULL);
+      device__pl_array = (int**)(_MM_MALLOC_WRAPPER(device__numOMPThreads * sizeof(int*), 64, "device__pl_array"));       __ASSERT(device__pl_array != NULL);
+      device__pl_size = (int*)(_MM_MALLOC_WRAPPER(device__numOMPThreads * sizeof(int), 64, "device__pl_size"));           __ASSERT(device__pl_size != NULL);
+      device__r2_array = (double**)(_MM_MALLOC_WRAPPER(device__numOMPThreads * sizeof(double*), 64, "device__r2_array");  __ASSERT(device__r2_array != NULL);
       for (int i = 0; i < device__numOMPThreads; i++) {
         device__pl_array[i] = NULL;
         device__pl_size[i] = 0;
@@ -503,7 +508,6 @@ int _verify_pairlist(const int pe, const int timestep, const int isRemote, const
         for (int _k = lo; _k < hi; _k++) { str += sprintf(str, "%s0x%08x%s ", ((_k==k)?("<<"):("")), pairlist[_k], ((_k==k)?(">>"):(""))); }
         str += sprintf(str, "}, i_upper:%d, j_upper:%d\n", i_upper, j_upper);
         printf(buf);
-        //return 1;
       }
     }
   }
@@ -521,12 +525,12 @@ int _verify_forces(const int pe, const int timestep, const int isRemote, const i
   force_list &fl = device__force_lists[index];
 
   // Verify the indexes / sizes
-  if (fl.force_list_start < 0 || fl.force_list_start >= device__force_buffers_req_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists[%d].force_list_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, index, fl.force_list_start, device__force_buffers_req_size); return 1; }
+  if (fl.force_list_start < 0 || fl.force_list_start >= device__force_buffers_req_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists[%d].force_list_start invalid (%d, size:%lu) !!!\n", pe, timestep, isRemote, phase, index, fl.force_list_start, device__force_buffers_req_size); return 1; }
   if (fl.force_output_start < 0 || fl.force_output_start >= device__atoms_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists[%d].force_output_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, index, fl.force_output_start, device__atoms_size); return 1; }
   if (fl.patch_stride < 0) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists[%d].patch_stride(%d) < 0 !!!\n", pe, timestep, isRemote, phase, index, fl.patch_stride); return 1; }
   if (fl.force_list_size < 0) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__force_lists[%d].force_list_size(%d) < 0 !!!\n", pe, timestep, isRemote, phase, index, fl.force_list_size); return 1; }
   if (fl.force_list_start + (4 * fl.patch_stride * fl.force_list_size) > device__force_buffers_req_size) {
-    printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: fl[%d].force_list_start(%d) + (4 * fl.patch_stride(%d) * fl.force_list_size(%d)) > device__force_buffers_req_size(%d) !!!\n",
+    printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: fl[%d].force_list_start(%d) + (4 * fl.patch_stride(%d) * fl.force_list_size(%d)) > device__force_buffers_req_size(%lu) !!!\n",
            pe, timestep, isRemote, phase, index, fl.force_list_start, fl.patch_stride, fl.force_list_size, device__force_buffers_req_size);
     return 1;
   }
@@ -631,7 +635,6 @@ void _verify_tables(const int pe, const int timestep, const int isRemote, const 
 }
 
 
-
 __declspec(target(mic))
 void _verify_data_structures(const int pe, const int timestep, const int isRemote, const int phase,
                              const int check_lo, const int check_hi, const int doSlow
@@ -664,8 +667,8 @@ void _verify_data_structures(const int pe, const int timestep, const int isRemot
     // Check indexing
     if (pp.patch1_atom_start < 0 || pp.patch1_atom_start >= device__atoms_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch1_atom_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, k, pp.patch1_atom_start, device__atoms_size); }
     if (pp.patch2_atom_start < 0 || pp.patch2_atom_start >= device__atoms_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch2_atom_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, k, pp.patch2_atom_start, device__atoms_size); }
-    if (pp.patch1_force_start < 0 || pp.patch1_force_start >= device__force_buffers_req_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch1_force_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, k, pp.patch1_force_start, device__force_buffers_req_size); }
-    if (pp.patch2_force_start < 0 || pp.patch2_force_start >= device__force_buffers_req_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch2_force_start invalid (%d, size:%d) !!!\n", pe, timestep, isRemote, phase, k, pp.patch2_force_start, device__force_buffers_req_size); }
+    if (pp.patch1_force_start < 0 || pp.patch1_force_start >= device__force_buffers_req_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch1_force_start invalid (%d, size:%lu) !!!\n", pe, timestep, isRemote, phase, k, pp.patch1_force_start, device__force_buffers_req_size); }
+    if (pp.patch2_force_start < 0 || pp.patch2_force_start >= device__force_buffers_req_size) { printf("[VERIFICATION-ERROR] :: PE:%d.%d.%d.%d :: device__patch_pairs[%d].patch2_force_start invalid (%d, size:%lu) !!!\n", pe, timestep, isRemote, phase, k, pp.patch2_force_start, device__force_buffers_req_size); }
 
     // Verify the pairlists
     int i_upper = pp.patch1_size;
@@ -891,7 +894,7 @@ void mic_bind_exclusions(const int deviceNum,
 
     // Create a copy of the table for verification purposes later
     #if MIC_DATA_STRUCT_VERIFY != 0
-      device__exclusion_bits_copy = new unsigned int[device__exclusion_bits_size];
+      device__exclusion_bits_copy = (unsigned int*)(_MM_MALLOC_WRAPPER(device__exclusion_bits_size * sizeof(unsigned int), 64, " device__exclusion_bits_copy"));
       __ASSERT(device__exclusion_bits_copy != NULL);
       memcpy(device__exclusion_bits_copy, device__exclusion_bits, sizeof(unsigned int) * device__exclusion_bits_size);
     #else
@@ -1008,6 +1011,7 @@ void mic_bind_patch_pairs_only(const int deviceNum,
 
     // Free old buffers
     if (host__patch_pairs != NULL) {
+
       const patch_pair * _patch_pairs = host__patch_pairs;
       #pragma offload target(mic:deviceNum) \
         nocopy(_patch_pairs : alloc_if(0) free_if(1)) \
@@ -1048,12 +1052,12 @@ void mic_bind_patch_pairs_only(const int deviceNum,
       // Make sure there are enough pairlists pointers (one per pairlist type per patch_pair)
       const int numPairlists = NUM_PAIRLIST_TYPES * device__patch_pairs_size;
       if (numPairlists > device__pairlists_alloc_size) {
-        int **new_pairlists = new int*[numPairlists];
+        int **new_pairlists = (int**)(_MM_MALLOC_WRAPPER(numPairlists * sizeof(int*), 64, "device__pairlists"));
         int initStart = 0;
         if (device__pairlists != 0) {
           int **old_pairlists = (int**)(device__pairlists);
           memcpy((void*)new_pairlists, (void*)old_pairlists, sizeof(int*) * device__pairlists_alloc_size);
-          delete [] old_pairlists;
+	  _MM_FREE_WRAPPER(old_pairlists);
           initStart = device__pairlists_alloc_size;
         }
         for (int i = initStart; i < numPairlists; i++) { new_pairlists[i] = NULL; }
@@ -1198,6 +1202,7 @@ void mic_bind_atoms_only(const int deviceNum,
       const atom_param * _atom_params = host__atom_params;
       const double4 * _forces = host__forces;
       const double4 * _slow_forces = host__slow_forces;
+
       #pragma offload target(mic:deviceNum) \
         nocopy(_atoms : alloc_if(0) free_if(1)) \
         nocopy(_atom_params : alloc_if(0) free_if(1)) \
@@ -1237,13 +1242,13 @@ void mic_bind_atoms_only(const int deviceNum,
 //   - deviceNum : the device to push the data to (number within node)
 //   - force_buffers_size : the amount of memory to be allocated on the device for the buffer
 void mic_bind_force_buffers_only(const int deviceNum,
-                                 const int force_buffers_size
+                                 const size_t force_buffers_size
                                 ) {
 
   // Check if the requested size is larger than the already allocated size.  If so, flag the buffer
   //   as needing to be reallocated by increasing the request size passed to the device (occurs later).
   if (host__force_buffers_req_size < force_buffers_size) {
-    host__force_buffers_req_size = (int)(force_buffers_size * 1.2f);
+    host__force_buffers_req_size = (int)(force_buffers_size * 1.1f);
     host__force_buffers_req_size = (host__force_buffers_req_size + 4095) & (~4095);  // Round up to 4K
   }
 }
@@ -1291,7 +1296,6 @@ void mic_submit_patch_data(const int deviceNum,
 
     uint64_t __devicePtr = 0;
     allocBytes_device = allocBytes_host;
-
     #pragma offload target(mic:deviceNum) \
       in(__hostPtr[0:allocBytes_host] : alloc_if(1) free_if(0) align(MIC_ALIGN)) \
       out(__devicePtr)
@@ -1530,7 +1534,7 @@ void mic_nonbonded_forces(const int deviceNum,
   #if MIC_KERNEL_DATA_TRANSFER_STATS != 0
     int transfer_in = sizeof(isRemote)
       + (3 * sizeof(lata)) // for lata, latb, and latc
-      + sizeof(int) // for device__force_buffers_req_size
+      + sizeof(size_t) // for device__force_buffers_req_size
       + (sizeof(atom) * toCopySize_atoms)
       + (sizeof(atom_param) * toCopySize_atom_params)
       + (sizeof(patch_pair) * toCopySize_patch_pairs)
@@ -1686,22 +1690,23 @@ void mic_nonbonded_forces(const int deviceNum,
     signal(tag_kernel)
   {
     __MUST_BE_MIC;
+    __FULL_CHECK(__ASSERT(isRemote == 0 || isRemote == 1));
     mic_kernel_data * kernel_data = _kernel_data + isRemote;
     __FULL_CHECK(__ASSERT(kernel_data != NULL));
     __FULL_CHECK(__ASSERT(device__numOMPThreads > 0));
 
     #if (MIC_DEVICE_FPRINTF != 0) && (MIC_DEVICE_FPRINTF_REOPEN_FREQ > 0)
-    if ((device__timestep != 0 && device__timestep % MIC_DEVICE_FPRINTF_REOPEN_FREQ == 0) && (kernel_data->isRemote == 0)) {
-      char filename[128] = { 0 };
-      sprintf(filename, "/tmp/namd_deviceDebugInfo.%d", device__pe);
-      if (device__node <= 0) {
-        printf("[MIC-DEBUG] :: Reopening debug output files on MIC devices (timestep: %d).\n", device__timestep);
-        fflush(NULL);
+      if ((device__timestep != 0 && device__timestep % MIC_DEVICE_FPRINTF_REOPEN_FREQ == 0) && (kernel_data->isRemote == 0)) {
+        char filename[128] = { 0 };
+        sprintf(filename, "/tmp/namd_deviceDebugInfo.%d", device__pe);
+        if (device__node <= 0) {
+          printf("[MIC-DEBUG] :: Reopening debug output files on MIC devices (timestep: %d).\n", device__timestep);
+          fflush(NULL);
+        }
+        fclose(device__fout);
+        device__fout = fopen(filename, "w");
+        DEVICE_FPRINTF("Device file on PE %d (node: %d) - reopen (timestep: %d)...\n", device__pe, device__node, device__timestep);
       }
-      fclose(device__fout);
-      device__fout = fopen(filename, "w");
-      DEVICE_FPRINTF("Device file on PE %d (node: %d) - reopen (timestep: %d)...\n", device__pe, device__node, device__timestep);
-    }
     #endif
 
     DEVICE_FPRINTF("%d %s ", device__timestep, (kernel_data->isRemote != 0 ? "R" : "L"));
@@ -1771,13 +1776,13 @@ void mic_nonbonded_forces(const int deviceNum,
     #endif
 
     // Make sure there is enough memory allocated for the force buffers (reallocate if not)
-    __FULL_CHECK(__ASSERT(device__force_buffers_req_size > 0));
     if (device__force_buffers_req_size > device__force_buffers_alloc_size) {
-      if (device__force_buffers != NULL) { _mm_free(device__force_buffers); }
-      if (device__slow_force_buffers != NULL) { _mm_free(device__slow_force_buffers); }
+      if (device__force_buffers != NULL) { _MM_FREE_WRAPPER(device__force_buffers); }
+      if (device__slow_force_buffers != NULL) { _MM_FREE_WRAPPER(device__slow_force_buffers); }
       device__force_buffers_alloc_size = device__force_buffers_req_size;
-      device__force_buffers = (double4*)(_MM_MALLOC_WRAPPER(sizeof(double) * 4 * device__force_buffers_alloc_size, 64, "device__force_buffers"));
-      device__slow_force_buffers = (double4*)(_MM_MALLOC_WRAPPER(sizeof(double) * 4 * device__force_buffers_alloc_size, 64, "device__slow_force_buffers"));
+      size_t reqSize = sizeof(double) * 4 * device__force_buffers_alloc_size;
+      device__force_buffers = (double4*)(_MM_MALLOC_WRAPPER(reqSize, 64, "device__force_buffers"));
+      device__slow_force_buffers = (double4*)(_MM_MALLOC_WRAPPER(reqSize, 64, "device__slow_force_buffers"));
       __ASSERT(device__force_buffers != NULL && device__slow_force_buffers != NULL);
     }
 
@@ -2314,6 +2319,49 @@ void mic_nonbonded_forces(const int deviceNum,
       _verify_buffers_match(device__pe, device__timestep, isRemote, 2, (char*)device__atom_params, (char*)device__atom_params_copy, sizeof(atom_param) * device__atoms_size, "device__atom_params_copy");
     #endif
 
+    // DMK - DEBUG
+    #if MIC_TRACK_DEVICE_MEM_USAGE != 0
+      if (device__timestep % 100 == 0 && isRemote == 0) {
+
+        uint64_t plTotalMem = sizeof(void*) * device__pairlists_alloc_size;
+        uint64_t plUsedMem = plTotalMem;
+        uint64_t plPeakUsedMem = plTotalMem;
+        if (device__pairlists != NULL) {
+          for (int k = 0; k < device__pairlists_alloc_size; k++) {
+            int * plPtr = ((int**)device__pairlists)[k];
+            if (plPtr != NULL) {
+              plTotalMem += plPtr[0] * sizeof(int) + 64;
+              plUsedMem += plPtr[1] * sizeof(int);
+              plPeakUsedMem += plPtr[-1] * sizeof(int);
+            }
+	  }
+	}
+
+        uint64_t fbsTotalMem = device__force_buffers_alloc_size * 4 * sizeof(double);
+        MemInfo mi;
+        readMemInfo(&mi);
+
+        printf("[MIC-MEMINFO] :: PE %d :: MIC mem usage (MB) -- ts: %d - "
+               "f: %.3lf, t: %.3lf, c: %.3lf, a: %.3lf, i: %.3lf - "
+               "vS: %.3lf, vP: %.3lf - "
+               "plTM: %.3lf, plUM: %.3lf, plUPM: %.3lf, fbsTM(x2): %.3lf\n",
+               ((int)(device__pe)),
+               ((int)(device__timestep)),
+               ((double)(mi.memFree)) * 1.0e-6,
+               ((double)(mi.memTotal)) * 1.0e-6,
+               ((double)(mi.cached)) * 1.0e-6,
+               ((double)(mi.active)) * 1.0e-6,
+               ((double)(mi.inactive)) * 1.0e-6,
+               ((double)(mi.vmSize)) * 1.0e-6,
+               ((double)(mi.vmPeak)) * 1.0e-6,
+               ((double)(plTotalMem)) * 1.0e-6,
+               ((double)(plUsedMem)) * 1.0e-6,
+               ((double)(plPeakUsedMem)) * 1.0e-6,
+               ((double)(fbsTotalMem)) * 1.0e-6
+              ); fflush(NULL);
+      }
+    #endif
+
     // DMK - DEBUG - Increment the timestep counter on the device
     if (kernel_data->isRemote == 0) { device__timestep++; }
 
@@ -2349,7 +2397,7 @@ void mic_transfer_output(const int deviceNum,
 
   const int numAtoms = host__atoms_size;
 
-  mic_kernel_data * kernel_data = host__kernel_data; //((isRemote) ? (host__remote_kernel_data) : (host__local_kernel_data));
+  mic_kernel_data * kernel_data = host__kernel_data;
 
   int toCopyStart_forces = (singleKernelFlag != 0) ? (0) : ((isRemote) ? (numLocalAtoms) : (0));
   int toCopySize_forces = (singleKernelFlag != 0) ? (numAtoms) : ((isRemote) ? (numAtoms - numLocalAtoms) : (numLocalAtoms));
@@ -2442,9 +2490,9 @@ void mic_free_device(const int deviceNum) {
     if (device__pairlists != NULL) {
       int **pairlists = (int**)(device__pairlists);
       for (int i = 0; i < device__pairlists_alloc_size; i++) {
-        if (pairlists[i] != NULL) { delete [] pairlists[i]; }
+        if (pairlists[i] != NULL) { _MM_FREE_WRAPPER(pairlists[i]); }
       }
-      delete [] pairlists;
+      _MM_FREE_WRAPPER(pairlists);
       device__pairlists = 0;
       device__pairlists_alloc_size = 0;
     }
@@ -2452,12 +2500,12 @@ void mic_free_device(const int deviceNum) {
     // Cleanup refined pairlist memory
     #if REFINE_PAIRLISTS != 0
       for (int i = 0; i < device__numOMPThreads; i++) {
-        if (device__pl_array[i] != NULL) { delete [] device__pl_array[i]; }
-        if (device__r2_array[i] != NULL) { delete [] device__r2_array[i]; }
+        if (device__pl_array[i] != NULL) { _MM_FREE_WRAPPER(device__pl_array[i]); }
+        if (device__r2_array[i] != NULL) { _MM_FREE_WRAPPER(device__r2_array[i]); }
       }
-      delete [] device__pl_array; device__pl_array = NULL;
-      delete [] device__r2_array; device__r2_array = NULL;
-      delete [] device__pl_size; device__pl_size = NULL;
+      _MM_FREE_WRAPPER(device__pl_array); device__pl_array = NULL;
+      _MM_FREE_WRAPPER(device__r2_array); device__r2_array = NULL;
+      _MM_FREE_WRAPPER(device__pl_size); device__pl_size = NULL;
     #endif
 
     // Clean up tables
@@ -2480,8 +2528,116 @@ void mic_free_device(const int deviceNum) {
     #endif
   }
 
-  if (host__kernel_data != NULL) { delete [] host__kernel_data; host__kernel_data = NULL; }
+  if (host__kernel_data != NULL) { _MM_FREE_WRAPPER(host__kernel_data); host__kernel_data = NULL; }
 }
+
+
+// DMK - DEBUG
+#if MIC_TRACK_DEVICE_MEM_USAGE != 0
+
+__declspec(target(mic))
+void printMemInfo(int device__pe, int device__timestep, MemInfo * mi) {
+  printf("[MIC-MEMINFO] :: PE %d :: MIC mem usage (MB) -- ts: %d - "
+         "f: %.3lf, t: %.3lf, c: %.3lf, a: %.3lf, i: %.3lf - "
+         "vS: %.3lf, vP: %.3lf\n",
+         ((int)(device__pe)),
+         ((int)(device__timestep)),
+         ((double)(mi->memFree)) * 1.0e-6,
+         ((double)(mi->memTotal)) * 1.0e-6,
+         ((double)(mi->cached)) * 1.0e-6,
+         ((double)(mi->active)) * 1.0e-6,
+         ((double)(mi->inactive)) * 1.0e-6,
+         ((double)(mi->vmSize)) * 1.0e-6,
+         ((double)(mi->vmPeak)) * 1.0e-6
+        ); fflush(NULL);
+}
+
+__declspec(target(mic))
+void readMemInfo_processLine(MemInfo * memInfo, char * n, char * v, char * u) {
+  assert(n != NULL && v != NULL);
+
+  size_t * loc = NULL;
+  if (strcmp(n, "MemTotal:") == 0) { loc = &(memInfo->memTotal); }
+  if (strcmp(n, "MemFree:") == 0) { loc = &(memInfo->memFree); }
+  if (strcmp(n, "Cached:") == 0) { loc = &(memInfo->cached); }
+  if (strcmp(n, "Active:") == 0) { loc = &(memInfo->active); }
+  if (strcmp(n, "Inactive:") == 0) { loc = &(memInfo->inactive); }
+  if (strcmp(n, "VmSize:") == 0) { loc = &(memInfo->vmSize); }
+  if (strcmp(n, "VmPeak:") == 0) { loc = &(memInfo->vmPeak); }
+  if (loc == NULL) { return; }
+
+  *loc = (size_t)(atoi(v));
+  if (u != NULL) {
+    if (strcmp(u, "kB") == 0) { (*loc) *= 1024; }
+  }
+}
+
+__declspec(target(mic))
+bool readMemInfo(MemInfo * memInfo) {
+  if (memInfo == NULL) { return false; }
+  memset(memInfo, 0, sizeof(MemInfo));
+
+  FILE * procMem = fopen("/proc/meminfo", "r");
+  if (procMem == NULL) {
+    printf("[WARNING] :: Unable to read /proc/meminfo\n");
+    return false;
+  }
+  char line[256], n[128], v[128], u[128];
+  while (!feof(procMem)) {
+    int numFilled = fscanf(procMem, "%[^\n]\n", line);
+    if (numFilled == 0) { printf("empty line\n"); break; }
+    numFilled = sscanf(line, "%s%s%s", n, v, u);
+    if (numFilled == 3) {
+      readMemInfo_processLine(memInfo, n, v, u);
+    } else if (numFilled == 2) { // No unit or prev line had name only
+      int vLen = strlen(v);
+      if (v[vLen-1] == ':') { // Prev was name only (correct)
+        memcpy(n, v, vLen + 1);
+      }
+      readMemInfo_processLine(memInfo, n, v, NULL);
+    }
+  }
+  fclose(procMem);
+
+  pid_t pid = getpid();
+  char filename[256];
+  sprintf(filename, "/proc/%d/status", (int)pid);
+  procMem = fopen(filename, "r");
+  if (procMem == NULL) {
+    printf("[WARNING] :: Unable to read %s\n", filename);
+    return false;
+  }
+  while (!feof(procMem)) {
+    int numFilled = fscanf(procMem, "%[^\n]\n", line);
+    if (numFilled == 0) { printf("empty line\n"); break; }
+    numFilled = sscanf(line, "%s%s%s", n, v, u);
+    if (numFilled == 3) {
+      readMemInfo_processLine(memInfo, n, v, u);
+    } else if (numFilled == 2) { // No unit
+      readMemInfo_processLine(memInfo, n, v, NULL);
+    }
+  }
+  fclose(procMem);
+
+  return true;
+}
+
+#endif  // MIC_TRACK_DEVICE_MEM_USAGE != 0
+
+
+__declspec(target(mic))
+void* _mm_malloc_withPrint(size_t s, int a, char * l) {
+  void * ptr = _mm_malloc(s, a);
+  printf("[MIC-MALLOC] :: _mm_malloc - l: \"%s\", s: %lu (%lu), ptr: %p\n", l, s, sizeof(s), ptr);
+  return ptr;
+}
+
+__declspec(target(mic))
+void _mm_free_withPrint(void * ptr) {
+  printf("[MIC-MALLOC] :: _mm_free - ptr: %p\n", ptr);
+  _mm_free(ptr);
+}
+
 
 #else  // NAMD_MIC
 

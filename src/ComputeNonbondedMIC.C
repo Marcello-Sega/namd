@@ -89,14 +89,10 @@ void mic_die(const char *msg) {
 //   global variables to told the content (or flag value) of the parameters.
 char *devicelist;
 static __thread int usedevicelist;
-//static __thread int ignoresharing;
-//static __thread int mergegrids;
 void mic_getargs(char **argv) {
   devicelist = 0;
   usedevicelist = CmiGetArgStringDesc(argv, "+devices", &devicelist,
 	"comma-delimited list of MIC device numbers such as 0,2,1,2");
-  //ignoresharing = CmiGetArgFlag(argv, "+ignoresharing");
-  //mergegrids = CmiGetArgFlag(argv, "+mergegrids");
 
   CmiGetArgInt(argv, "+micSK", &mic_singleKernel);
   CmiGetArgInt(argv, "+micDT", &mic_deviceThreshold);
@@ -237,26 +233,20 @@ void mic_initialize() {
     int myDeviceRank = myRankInPhysicalNode * ndevices / numPesOnPhysicalNode;
     dev = devices[myDeviceRank];
     devicePe = CkMyPe();
-    //if ( ignoresharing ) {
-    //  pesSharingDevice = new int[1];
-    //  pesSharingDevice[0] = CkMyPe();
-    //  numPesSharingDevice = 1;
-    //} else {
-      pesSharingDevice = new int[numPesOnPhysicalNode];
-      devicePe = -1;
-      numPesSharingDevice = 0;
-      for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
-        if ( i * ndevices / numPesOnPhysicalNode == myDeviceRank ) {
-          int thisPe = pesOnPhysicalNode[i];
-          pesSharingDevice[numPesSharingDevice++] = thisPe;
-          if ( devicePe < 1 ) devicePe = thisPe;
-          if ( sortop_bitreverse(thisPe,devicePe) ) devicePe = thisPe;
-        }
+    pesSharingDevice = new int[numPesOnPhysicalNode];
+    devicePe = -1;
+    numPesSharingDevice = 0;
+    for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
+      if ( i * ndevices / numPesOnPhysicalNode == myDeviceRank ) {
+        int thisPe = pesOnPhysicalNode[i];
+        pesSharingDevice[numPesSharingDevice++] = thisPe;
+        if ( devicePe < 1 ) devicePe = thisPe;
+        if ( sortop_bitreverse(thisPe,devicePe) ) devicePe = thisPe;
       }
-      for ( int j = 0; j < ndevices; ++j ) {
-        if ( devices[j] == dev && j != myDeviceRank ) shared_mic = 1;
-      }
-    //}
+    }
+    for ( int j = 0; j < ndevices; ++j ) {
+      if ( devices[j] == dev && j != myDeviceRank ) shared_mic = 1;
+    }
     if ( shared_mic && devicePe == CkMyPe() ) {
       if ( CmiPhysicalNodeID(CkMyPe()) < 2 )
       CkPrintf("Pe %d sharing MIC device %d\n", CkMyPe(), dev);
@@ -823,7 +813,7 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
   if (mic_singleKernel >= 0) {
     singleKernelFlag = ((mic_singleKernel != 0) ? (1) : (0));
   } else {
-    singleKernelFlag = ((params->mic_singleKernel) ? (1) : (0));
+    singleKernelFlag = ((params->mic_singleKernel != 0) ? (1) : (0));
   }
 
   atomsChanged = 1;
@@ -842,12 +832,12 @@ ComputeNonbondedMIC::ComputeNonbondedMIC(ComputeID c,
   // Print some info for the user
   //   NOTE: Do this before the master/slave check below (so PE 0 will reach here)
   if (CkMyPe() == 0) {
-    // NOTE: For now mic_hostSplit is a internal-only/reserved option
-    printf("Info: MIC NUMPARTS SELF P1: %d\n", mic_numParts_self_p1);
-    printf("Info: MIC NUMPARTS PAIR P1: %d\n", mic_numParts_pair_p1);
-    printf("Info: MIC NUMPARTS PAIR P2: %d\n", mic_numParts_pair_p2);
-    printf("Info: MIC UNLOAD MIC PEs: %d\n", params->mic_unloadMICPEs);
-    printf("Info: MIC NUM KERNELS: %d\n", (singleKernelFlag != 0) ? (1) : (2));
+    iout << iINFO << "MIC SINGLE OFFLOAD: " << ((singleKernelFlag != 0) ? ("SET") : ("UNSET")) << "\n" << endi;
+    iout << iINFO << "MIC DEVICE THRESHOLD: " << mic_deviceThreshold << "\n" << endi;
+    iout << iINFO << "MIC HOST SPLIT: " << mic_hostSplit << "\n" << endi;
+    iout << iINFO << "MIC NUM PARTS SELF P1: " << mic_numParts_self_p1 << "\n" << endi;
+    iout << iINFO << "MIC NUM PARTS PAIR P1: " << mic_numParts_pair_p1 << "\n" << endi;
+    iout << iINFO << "MIC NUM PARTS PAIR P2: " << mic_numParts_pair_p2 << "\n" << endi;
   }
 
   if ( master != this ) { // I am slave
@@ -1363,10 +1353,10 @@ void ComputeNonbondedMIC::patchReady(PatchID patchID, int doneMigration, int seq
         // Allocate the memory as needed
         int allocFlag = 0;
         if (numAtoms_16 > allocSize || atomData == NULL) {
-          if (atomData != NULL) { _mm_free(atomData); }
+          if (atomData != NULL) { _MM_FREE_WRAPPER(atomData); }
           int toAllocSize = (int)(numAtoms_16 * 1.1f);
           toAllocSize = ((toAllocSize + 15) & (~15));
-          atomData = (char*)(_mm_malloc((sizeof(atom) + sizeof(atom_param)) * toAllocSize, MIC_ALIGN));
+          atomData = (char*)(_MM_MALLOC_WRAPPER((sizeof(atom) + sizeof(atom_param)) * toAllocSize, MIC_ALIGN, "atomData"));
           __ASSERT(atomData != NULL);
           allocSize = toAllocSize;
           allocFlag = 1;
@@ -1481,23 +1471,15 @@ void ComputeNonbondedMIC::skip() {
 
 int ComputeNonbondedMIC::noWork() {
 
-  //// DMK - DEBUG
-  //if (hostedPatches.size() <= 0) {
-  //  printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 1.0 - hostPatches.size():%d, master->activePatches.size():%d\n",
-  //         CkMyPe(), hostedPatches.size(), master->activePatches.size()
-  //        ); fflush(NULL);
-  //}
-
   SimParameters *simParams = Node::Object()->simParameters;
 
+  __ASSERT(hostedPatches.size() > 0);
   Flags &flags = master->patchRecords[hostedPatches[0]].p->flags;
+
   lattice = flags.lattice;
   doSlow = flags.doFullElectrostatics;
   doEnergy = flags.doEnergy;
   step = flags.step;
-
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 2.0\n", CkMyPe()); fflush(NULL);
 
   if ( ! flags.doNonbonded ) {
     GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
@@ -1547,9 +1529,6 @@ int ComputeNonbondedMIC::noWork() {
   }
   #endif
 
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 3.0\n", CkMyPe()); fflush(NULL);
-
   for ( int i=0; i<hostedPatches.size(); ++i ) {
     patch_record &pr = master->patchRecords[hostedPatches[i]];
     if (!simParams->GBISOn || gbisPhase == 1) {
@@ -1578,13 +1557,7 @@ int ComputeNonbondedMIC::noWork() {
     //}
   }
 
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 4.0\n", CkMyPe()); fflush(NULL);
-
   if ( master == this ) return 0; //work to do, enqueue as usual
-
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 5.0\n", CkMyPe()); fflush(NULL);
 
   // message masterPe
   computeMgr->sendNonbondedMICSlaveReady(masterPe,
@@ -1596,9 +1569,6 @@ int ComputeNonbondedMIC::noWork() {
   workStarted = ((singleKernelFlag != 0) ? (2) : (1));
   basePriority = COMPUTE_PROXY_PRIORITY;
 
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::noWork() - 6.0\n", CkMyPe()); fflush(NULL);
-
   return 1;
 }
 
@@ -1606,9 +1576,6 @@ void ComputeNonbondedMIC::doWork() {
 
   GBISP("C.N.MIC[%d]::doWork: seq %d, phase %d, workStarted %d\n", \
         CkMyPe(), sequence(), gbisPhase, workStarted);
-
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 1.0\n", CkMyPe()); fflush(NULL);
 
   if ( workStarted ) { //if work already started, check if finished
     if ( finishWork() ) {  // finished
@@ -1644,14 +1611,8 @@ void ComputeNonbondedMIC::doWork() {
   Parameters *params = Node::Object()->parameters;
   SimParameters *simParams = Node::Object()->simParameters;
 
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 2.0\n", CkMyPe()); fflush(NULL);
-
   //execute only during GBIS phase 1, or if not using GBIS
   if (!simParams->GBISOn || gbisPhase == 1) {
-
-    //// DMK - DEBUG
-    //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 2.1\n", CkMyPe()); fflush(NULL);
 
     // bind new patches to device
     if ( atomsChanged || computesChanged ) {
@@ -1668,13 +1629,13 @@ void ComputeNonbondedMIC::doWork() {
 	// Merge the local and remote active patch lists into a single list
         num_local_patch_records = localActivePatches.size();
         num_remote_patch_records = remoteActivePatches.size();
-        npatches = num_local_patch_records + num_remote_patch_records;  // DMK
-        activePatches.resize(npatches);                                 // DMK
+        npatches = num_local_patch_records + num_remote_patch_records;
+        activePatches.resize(npatches);
         int *ap = activePatches.begin();
-        for ( int i=0; i<num_local_patch_records; ++i ) {               // DMK
+        for ( int i=0; i<num_local_patch_records; ++i ) {
           *(ap++) = localActivePatches[i];
         }
-        for ( int i=0; i<num_remote_patch_records; ++i ) {              // DMK
+        for ( int i=0; i<num_remote_patch_records; ++i ) {
           *(ap++) = remoteActivePatches[i];
         }
 
@@ -1803,10 +1764,17 @@ void ComputeNonbondedMIC::doWork() {
         nfreeatoms = (nfreeatoms + 15) & (~15);
         force_lists[i].patch_stride = natoms; // DMK - nfreeatoms;
 
+        // DMK - CHECK - Rollover check
+        int _flstart = flstart;
+        int _vlstart = vlstart;
+
         // Update the offsets by the atom counts for this patch record.
         flstart += natoms * force_lists[i].force_list_size; // DMK - nfreeatoms * force_lists[i].force_list_size;
         vlstart += 16 * force_lists[i].force_list_size;
         istart += natoms;  // already rounded up
+
+        // DMK - CHECK - Rollover check
+        __ASSERT(_flstart <= flstart && _vlstart <= vlstart);
 
         force_lists[i].force_list_size = 0;  // rebuild below
       }
@@ -1944,15 +1912,13 @@ void ComputeNonbondedMIC::doWork() {
       mic_bind_patch_pairs_only(myDevice, patch_pairs.begin(), patch_pairs.size(), patch_pairs.bufSize());
       mic_bind_force_lists_only(myDevice, force_lists.begin(), force_lists.size(), force_lists.bufSize());
       mic_bind_atoms_only(myDevice, atoms, atom_params, forces, slow_forces, num_atom_records, num_atom_records_allocated);
-      mic_bind_force_buffers_only(myDevice, num_force_records);
+      mic_bind_force_buffers_only(myDevice, (size_t)num_force_records);
 
     } // atomsChanged || computesChanged
 
-    //// DMK - DEBUG
-    //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 2.2\n", CkMyPe()); fflush(NULL);
-
     double charge_scaling = sqrt(COULOMB * scaling * dielectric_1);
 
+    __ASSERT(hostedPatches.size() > 0);
     Flags &flags = patchRecords[hostedPatches[0]].p->flags;
     float maxAtomMovement = 0.;
     float maxPatchTolerance = 0.;
@@ -2034,9 +2000,6 @@ void ComputeNonbondedMIC::doWork() {
     //  maxAtomMovement, maxPatchTolerance,
     //  flags.savePairlists, flags.usePairlists);
 
-    //// DMK - DEBUG
-    //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 2.3\n", CkMyPe()); fflush(NULL);
-
     savePairlists = 0;
     usePairlists = 0;
     if ( flags.savePairlists ) {
@@ -2065,9 +2028,6 @@ void ComputeNonbondedMIC::doWork() {
     //  plcutoff, pairlistTolerance, savePairlists, usePairlists);
 
   } // !GBISOn || gbisPhase == 1
-
-  //// DMK - DEBUG
-  //printf("[DEBUG] :: PE:%d :: ComputeNonbondedMIC::doWork() - 3.0\n", CkMyPe()); fflush(NULL);
 
   //// Do GBIS
   //if (simParams->GBISOn) {
@@ -2239,10 +2199,6 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
           //#endif
           MIC_POLL(mic_check_local_progress, this);
         }
-
-        //if ( shared_mic && ! mergegrids ) {
-        //  MIC_POLL(mic_check_local_calc, this);
-        //}
 
       } // end if (!simParams->GBISOn || gbisPhase == 1)
 
@@ -2416,8 +2372,16 @@ int ComputeNonbondedMIC::finishWork() {
     //} else { //not GBIS
     //
     //  GBISP("C.N.MIC[%d]::fnWork: pos/force.close()\n", CkMyPe());
+
+    //// DMK - DEBUG
+    //double _start = CmiWallTimer();
+
       pr.positionBox->close(&(pr.x));
       pr.forceBox->close(&(pr.r));
+
+    //// DMK - DEBUG
+    //traceUserBracketEvent(11050, _start, CmiWallTimer());
+
     //}
 
   }  // end for (i<patches.size())
@@ -2583,11 +2547,6 @@ int ComputeNonbondedMIC::finishWork() {
   }
 
   if (workStarted == 1) { return 0; }
-  //if ( workStarted == 1 && ! mergegrids &&
-  //     ( localHostedPatches.size() || master == this ) ) {
-  //  GBISP("not finished, call again\n");
-  //  return 0;  // not finished, call again
-  //}
 
   if ( master != this ) {  // finished
     GBISP("finished\n");
@@ -2610,7 +2569,14 @@ int ComputeNonbondedMIC::finishWork() {
     MICP("submitting reduction...\n"); MICPF;
 
     atomsChanged = 0;
+
+    //// DMK - DEBUG
+    //double __start = CmiWallTimer();
+
     reduction->submit();
+
+    //// DMK - DEBUG
+    //traceUserBracketEvent(11051, __start, CmiWallTimer());
 
     #if 0
     mic_timer_count++;
@@ -2697,402 +2663,518 @@ void debugClose() {
   if (mic_output_set == 0) { fclose(mic_output); mic_output = NULL; }
 }
 
-void mic_assignComputes() {
+
+void mic_initHostDeviceLDB() {
+  assert(!CkMyPe());  // NOTE: Only PE 0 should call this function
+  WorkDistrib::send_initHostDeviceLDB();  // This results in a broadcast causing all
+}                                         //   PEs to call mic_hostDeviceLDB() below
+
+
+#define COMPUTE_DISTANCE(cid) \
+int manDist = -1; { \
+  if (computeMap->type(cid) == computeNonbondedSelfType) { \
+    manDist = 0; \
+  } else if (computeMap->type(cid) == computeNonbondedPairType) { \
+    int aSize = patchMap->gridsize_a(); \
+    int bSize = patchMap->gridsize_b(); \
+    int cSize = patchMap->gridsize_c(); \
+    int pid0 = computeMap->pid(cid, 0); \
+    int pid1 = computeMap->pid(cid, 1); \
+    int trans0 = computeMap->trans(cid, 0); \
+    int trans1 = computeMap->trans(cid, 1); \
+    int index_a0 = patchMap->index_a(pid0) + aSize * Lattice::offset_a(trans0); \
+    int index_b0 = patchMap->index_b(pid0) + bSize * Lattice::offset_b(trans0); \
+    int index_c0 = patchMap->index_c(pid0) + cSize * Lattice::offset_c(trans0); \
+    int index_a1 = patchMap->index_a(pid1) + aSize * Lattice::offset_a(trans1); \
+    int index_b1 = patchMap->index_b(pid1) + bSize * Lattice::offset_b(trans1); \
+    int index_c1 = patchMap->index_c(pid1) + cSize * Lattice::offset_c(trans1); \
+    int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1)); \
+    int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1)); \
+    int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1)); \
+    manDist = da + db + dc; \
+  } \
+}
+
+
+void mic_hostDeviceLDB() {
+  // NOTE: Called by all PEs, whether they drive a MIC or not
 
   const SimParameters * simParams = Node::Object()->simParameters;
-  ComputeMap *computeMap = ComputeMap::Object();
+
+  // If this PE is not driving a MIC, then just return an empty contribution
+  if (devicePe != CkMyPe()) {
+    WorkDistrib::send_contributeHostDeviceLDB(0, NULL);
+    return;
+  }
+
+  // Otherwise send the set of PEs contributing to this PE's MIC
+  WorkDistrib::send_contributeHostDeviceLDB(numPesSharingDevice, pesSharingDevice);
+}
+
+
+void mic_setDeviceLDBParams(int dt, int hs, int sp1, int pp1, int pp2) {
+  if (CkMyPe() != 0) {
+    if (dt >= 0) { mic_deviceThreshold = dt; }
+    if (hs >= 0) { mic_hostSplit = hs; }
+    if (sp1 > 0) { mic_numParts_self_p1 = sp1; }
+    if (pp1 > 0) { mic_numParts_pair_p1 = pp1; }
+    if (pp2 > 0) { mic_numParts_pair_p2 = pp2; }
+  }
+}
+
+
+void mic_contributeHostDeviceLDB(int peSetLen, int * peSet) {
+  assert(!CkMyPe()); // NOTE: This function should only be called on PE 0
+
+  static int numContribs = 0;
+  __ASSERT(numContribs >= 0 && numContribs < CkNumPes());  // Make sure we don't get more messages than expected
+
+  static double hdLDBTime = 0.0;
+  static double hdLDBTime_phase0 = 0.0;
+  static double hdLDBTime_phase1 = 0.0;
+  static double hdLDBTime_phase2a = 0.0;
+  static double hdLDBTime_phase2b = 0.0;
+  double startTime = CmiWallTimer();
+
+  const SimParameters * simParams = Node::Object()->simParameters;
   PatchMap *patchMap = PatchMap::Object();
+  ComputeMap *computeMap = ComputeMap::Object();
+  Molecule *molecule = Node::Object()->molecule;
   int nComputes = computeMap->numComputes();
 
-  if (mic_deviceThreshold < 0) { mic_deviceThreshold = simParams->mic_deviceThreshold; }
-  if (mic_hostSplit < 0) { mic_hostSplit = simParams->mic_hostSplit; }
-  if (mic_numParts_self_p1 < 0) { mic_numParts_self_p1 = simParams->mic_numParts_self_p1; }
-  if (mic_numParts_pair_p1 < 0) { mic_numParts_pair_p1 = simParams->mic_numParts_pair_p1; }
-  if (mic_numParts_pair_p2 < 0) { mic_numParts_pair_p2 = simParams->mic_numParts_pair_p2; }
-
-  if (mic_deviceThreshold < 0) {  // I.e. If not set or negative in the config file, auto-calculate a threshold
-    int dt_base = ((int)(0.5f * (patchMap->numaway_a() + patchMap->numaway_b() + patchMap->numaway_c()) + 1.5f) - 2); 
-    int dt_procs = mic_get_device_count() - 1;
-    mic_deviceThreshold = dt_base + dt_procs;
+  if (numContribs == 0) { // First call
+    // Setup load balancing parameters (pulling from SimParameters if they haven't already been
+    //   set using the command line or PE 0)
+    if (mic_deviceThreshold < 0) { mic_deviceThreshold = simParams->mic_deviceThreshold; }
+    if (mic_hostSplit < 0) { mic_hostSplit = simParams->mic_hostSplit; }
+    if (mic_numParts_self_p1 < 0) { mic_numParts_self_p1 = simParams->mic_numParts_self_p1; }
+    if (mic_numParts_pair_p1 < 0) { mic_numParts_pair_p1 = simParams->mic_numParts_pair_p1; }
+    if (mic_numParts_pair_p2 < 0) { mic_numParts_pair_p2 = simParams->mic_numParts_pair_p2; }
   }
 
-  // Display the device threshold that is used
-  if (CkMyPe() == 0) {
-    iout << iINFO << "MIC DEVICE THRESHOLD: " << mic_deviceThreshold << " (" << simParams->mic_deviceThreshold << ")\n" << endi;
-    // DMK - NOTE : Leave out mic_hostSplit (reserved for now), only print if set
-    if (mic_hostSplit > 0) {
-      iout << iINFO << "MIC HOST SPLIT: " << mic_hostSplit << "\n" << endi;
-    }
-  }
+  // If a PE has checked in with PE 0 with a non-empty peSet, perform the work
+  //   of load balancing the computes within that peSet.
+  if (peSetLen > 0) {
 
-  if (mic_hostSplit > 0) {
+    // DMK - DEBUG
+    #if MIC_VERBOSE_HVD_LDB != 0
+      CkPrintf("[MIC-HvD-LDB] :: PE %d :: offload pe list = {", CkMyPe());
+      for (int i = 0; i < peSetLen; i++) { CkPrintf(" %d", peSet[i]); }
+      CkPrintf(" }\n");
+    #endif
 
-    // Setup and initialize data structures
-    int nPEs = CkNumPes();
-    int *numSelfs = new int[nPEs];
-    int *numPairs = new int[nPEs];
-    int maxPid = 0;
-    for (int i = 0; i < nPEs; i++) { numSelfs[i] = 0; numPairs[i] = 0; }
+    // If the deviceThreshold and/or hostSplit values are unset, default them now
+    // NOTE: By this time, both the command line and config file parameters will have been applied if present
+    if (mic_deviceThreshold < 0 || mic_hostSplit <= 0) {
 
-    // Start by assigning all computes to the host cores and figuring out what the
-    //   maximum pid is in this run
-    for (int i = 0; i < nComputes; i++) {
-      if (computeMap->type(i) == computeNonbondedSelfType) {
-        numSelfs[computeMap->node(i)]++;
-        int pid = computeMap->pid(i, 0);
-        if (pid > maxPid) { maxPid = pid; }
-        computeMap->setDirectToDevice(i, 0);
-      }
-      if (computeMap->type(i) == computeNonbondedPairType) {
-        numPairs[computeMap->node(i)]++;
-        int pid0 = computeMap->pid(i, 0);
-        if (pid0 > maxPid) { maxPid = pid0; }
-        int pid1 = computeMap->pid(i, 1);
-        if (pid1 > maxPid) { maxPid = pid1; }
-        computeMap->setDirectToDevice(i, 0);
-      }
-    }
+      // Collect some parameters for the given problem/input
+      const int ppn = CkNodeSize(0);  // NOTE: For now, assuming all nodes have the same number of host threads
+      const int ppm = ppn / mic_get_device_count();
+      const float atomsPerPE = ((float)(molecule->numAtoms)) / ((float)(CkNumPes()));
+      const int numAway = ((simParams->twoAwayX > 0) ? (1) : (0))
+                        + ((simParams->twoAwayY > 0) ? (1) : (0))
+                        + ((simParams->twoAwayZ > 0) ? (1) : (0));
+      // If the "twoAway" options are being used, backoff/reduce on the hostSplit adjustment by
+      //   prending there are more atoms per PE (i.e. reduce the scaling adjustment below)
+      const float atomsPerPE_adj = atomsPerPE + (atomsPerPE * 0.85f * numAway);
 
-    // Setup an initialize data structures
-    char *pidUsed = new char[maxPid];
-    for (int i = 0; i < maxPid; i++) { pidUsed[i] = 0; }
+      // DMK - DEBUG
+      #if MIC_VERBOSE_HVD_LDB != 0
+        printf("[MIC-HvD-LDB] :: PE %d :: ppn: %d, ppm: %d, atomsPerPe: %f (%f)\n", CkMyPe(), ppn, ppm, atomsPerPE, atomsPerPE_adj);
+      #endif
 
-    // For each PE, calculate a target number of computes to offload
-    for (int i = 0; i < nPEs; i++) {
-      int target = (int)((numSelfs[i] + numPairs[i]) * mic_hostSplit / 100.0f);
-      numPairs[i] = target;
-    }
+      // Set hostSplit
+      // NOTE: This calculation is based on measurements performed on the Stampede cluster at
+      //   TACC (update as necessary: code changes, performance improvements on the MIC, etc.)
+      // NOTE: The calculation has only been tested on Stampede, and breaks down at 2AwayXY because
+      //   of other dynamic load balancing effects that occur at those scales.  TODO: These effects
+      //   need to be corrected/accounted for and then this balancing scheme needs to be revisited.
+      //if (numAway < 1) {
 
-    // Setup data structures
-    int selfTotal = 0;
-    int pairTotal = 0;
-    std::queue<int> *c0 = new std::queue<int>();
-    std::queue<int> *c1 = new std::queue<int>();
-    std::queue<int> *p = new std::queue<int>();
+        // Set deviceThreshold
+        mic_deviceThreshold = 2;
 
-    // For each PE...
-    for (int pe = 0; pe < nPEs; pe++) {
+        // DMK - NOTE : The constants used here are based on measurements and may need to change as the
+        //   the code is modified (change as necessary)
+        float hs_base = 0.714f * 79.0f;
+        float hostVsDevice_adj = 0.714f * ppm / 2.0f;
+        float scaling_adj = 0.714f * 26000.0f / atomsPerPE_adj;  // NOTE: scaling as problem thins out, not hard processor/core count
 
-      // Reset data structures
-      while (c0->size() > 0) { c0->pop(); }
-      while (c1->size() > 0) { c1->pop(); }
-      while (p->size() > 0) { p->pop(); }
-      for (int i = 0; i < maxPid; i++) { pidUsed[i] = 0; }
+        mic_hostSplit = (int)(hs_base - hostVsDevice_adj - scaling_adj);
+        if (mic_hostSplit < 5) { mic_hostSplit = 5; }  // Apply upper and lower bounds (5% - 95%)
+        if (mic_hostSplit > 95) { mic_hostSplit = 95; }
 
-      // Setup peLo and peHi to be the range of PEs on this PE's node (work on a node at a time)
-      int target = numPairs[pe];
-      int peLo = pe;
-      while (pe+1 < CkNumPes() && CkNodeOf(pe) == CkNodeOf(pe+1)) {
-        pe++;
-        target += numPairs[pe];
-      }
-      int peHi = pe;
-      int targetTotal = target;
-
-      #define COMPUTE_DISTANCE(cid) \
-      int manDist = -1; { \
-        int aSize = patchMap->gridsize_a(); \
-        int bSize = patchMap->gridsize_b(); \
-        int cSize = patchMap->gridsize_c(); \
-        int pid0 = computeMap->pid(cid, 0); \
-        int pid1 = computeMap->pid(cid, 1); \
-        int trans0 = computeMap->trans(cid, 0); \
-        int trans1 = computeMap->trans(cid, 1); \
-        int index_a0 = patchMap->index_a(pid0) + aSize * Lattice::offset_a(trans0); \
-        int index_b0 = patchMap->index_b(pid0) + bSize * Lattice::offset_b(trans0); \
-        int index_c0 = patchMap->index_c(pid0) + cSize * Lattice::offset_c(trans0); \
-        int index_a1 = patchMap->index_a(pid1) + aSize * Lattice::offset_a(trans1); \
-        int index_b1 = patchMap->index_b(pid1) + bSize * Lattice::offset_b(trans1); \
-        int index_c1 = patchMap->index_c(pid1) + cSize * Lattice::offset_c(trans1); \
-        int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1)); \
-        int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1)); \
-        int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1)); \
-        manDist = da + db + dc; \
-      }
-
-      // Scan through the computes, placing all computes on this node in the list of available
-      //   computes, starting with selfs and then pairs
-      for (int i = 0; i < nComputes; i++) {
-        COMPUTE_DISTANCE(i);
-        if (computeMap->node(i) >= peLo && computeMap->node(i) <= peHi &&
-            computeMap->type(i) == computeNonbondedPairType) {
-          COMPUTE_DISTANCE(i);
-          if (mic_deviceThreshold < 0 || manDist <= mic_deviceThreshold) {
-            c0->push(i);
-          }
-        }
-      }
-      for (int i = 0; i < nComputes; i++) {
-        if (computeMap->node(i) >= peLo && computeMap->node(i) <= peHi &&
-            computeMap->type(i) == computeNonbondedSelfType) {
-          c0->push(i);
-        }
-      }
-
-      #if 1
-
-      // The code in ComputeNonbondedMIC::noWork() and ::doWork() assumes that there is at least one
-      //   'hosted' patch on each PE.  However, since this code load balances between the host and the
-      //   device, that may or may not be true unless it is enforced.  The code below enforces that
-      //   assumption.  Look through the list of computes, and for each PE on this node, ensure that at
-      //   least one compute is offloaded to the MIC device for at least one patch on the given PE.
-      // NOTE: There are two assumptions this method relies on.  First, that there is at least one
-      //   patch per PE.  Second, that each PE has at least 1 patch and 1 compute such that the compute
-      //   is associated with that patch (self or pair compute).  By default (at the time this comment
-      //   was written) all self computes are mapped to the PE their patch is on, so that is true.  Also,
-      //   both the CUDA and MIC ports require at least 1 patch per PE (again, was true with this
-      //   comment was written).
-
-      int numPEsRemaining = peHi - peLo + 1;
-      int * peFlag = new int[numPEsRemaining];
-      __ASSERT(peFlag != NULL);
-      for (int i = 0; i < numPEsRemaining; i++) { peFlag[i] = 0; }
-
-      #define TEST_PID(c, p) \
-        if (patchMap->node(p) >= peLo && patchMap->node(p) <= peHi) { \
-          if (peFlag[patchMap->node(p) - peLo] == 0) { \
-            if (used == 0) { \
-              computeMap->setDirectToDevice(c, 1); \
-              target--; \
-            } \
-            pidUsed[p] = 1; \
-            peFlag[patchMap->node(p) - peLo] = 1; \
-            numPEsRemaining--; \
-            used = 1; \
-	  } \
-	}
-
-      // First, start by checking the list of computes objects already selected (within device threshold)
-      while (c0->size() > 0 && numPEsRemaining > 0) {
-
-        int cid = c0->front(); c0->pop();
-        int used = 0;
-
-        int pid0 = computeMap->pid(cid, 0);
-        TEST_PID(cid, pid0);
-
-        if (computeMap->type(cid) == computeNonbondedPairType) {
-          int pid1 = computeMap->pid(cid, 1);
-          TEST_PID(cid, pid1);
-	}
-
-        if (used == 0) { c1->push(cid); } // If not used add to c1 (and eventually back to c0)
-      }
-      while (c1->size() > 0) { c0->push(c1->front()); c1->pop(); }
-
-      // Second, if not all PEs were taken care of, search the entire list of computes
-      for (int cid = 0; cid < nComputes && numPEsRemaining > 0; cid++) {
-        if ((computeMap->type(cid) == computeNonbondedSelfType || computeMap->type(cid) == computeNonbondedPairType) &&
-            (computeMap->node(cid) >= peLo && computeMap->node(cid) <= peHi)
-           ) {
-
-          int used = 0;
-
-          int pid0 = computeMap->pid(cid, 0);
-          TEST_PID(cid, pid0);
-
-          if (computeMap->type(cid) == computeNonbondedPairType) {
-            int pid1 = computeMap->pid(cid, 1);
-            TEST_PID(cid, pid1);
-	  }
-	}
-      }
-
-      #undef TEST_PID
-
-      delete [] peFlag; peFlag = NULL;
-
-      #else
-
-      // Look through the list of selected computes, and add the first compute found for each pe
-      // NOTE: Found need for this later, so tacked this loop on after queue data structure already selected,
-      //   resulting in less than ideal code for this loop (TODO: revisit this to clean it up, but for now
-      //   is in startup and doesn't seem to cost too much... may for larger inputs though).
-      for (int pe = peLo; pe <= peHi; pe++) {
-
-        int computeFound = -1;
-
-        //// First, look for a compute in the set of considered computes
-        //while (c0->size() > 0 && computeFound < 0) {
-        //  int cid = c0->front(); c0->pop();
-        //  if (computeMap->node(cid) == pe) {
-        //    computeFound = cid;
-        //    //if (CkMyPe() == 0) { printf("[DEBUG] :: Adding considered compute %d for PE %d\n", computeFound, pe); }
-	//  } else {
-        //    c1->push(cid);
-	//  }
-	//}
-        //while (c1->size() > 0) { c0->push(c1->front()); c1->pop(); } // Drain c1 back into c0
-
-        // Second, if a considered compute was not found, look for any compute
-        if (computeFound < 0) {
-          for (int i = 0; i < nComputes; i++) {
-            if (computeMap->node(i) == pe &&
-                (computeMap->type(i) == computeNonbondedSelfType ||
-                 computeMap->type(i) == computeNonbondedPairType
-               )) {
-              computeFound = i;
-              //if (CkMyPe() == 0) { printf("[DEBUG] :: Adding arbitrary compute %d for PE %d\n", computeFound, pe); }
-              break;
-            }
-	  }
-	}
-
-        // Add the compute to the device and mark the associated patches as used
-        if (computeFound >= 0) {
-          computeMap->setDirectToDevice(computeFound, 1);
-          int pid0 = computeMap->pid(computeFound, 0);
-          p->push(pid0); pidUsed[pid0] = 1;
-	  if (computeMap->type(computeFound) == computeNonbondedPairType) {
-            int pid1 = computeMap->pid(computeFound, 1);
-            p->push(pid1); pidUsed[pid1] = 1;
-          }
-          target--;
-	} else {
-          CkAbort("compute not found for offload on PE");
-	}
-      }
-
-      #endif // 0|1
-
-      //#undef COMPUTE_DISTANCE
-
-      // While we have not reached our target and there are still computes that can be moved to
-      //   the MIC device...
-      while (target > 0 && c0->size() > 0) {
-
-        // If there are no patches in the list of patches to consider, grab a computes from the
-        //   list of available computes and add it's associated patches to the list of patches
-        //   to consider
-        if (p->size() <= 0) {
-          int cid = c0->front();
-          int pid = computeMap->pid(cid, 0);
-          p->push(pid); pidUsed[pid] = 1;
-          if (computeMap->type(cid) == computeNonbondedPairType) {
-            pid = computeMap->pid(cid, 1);
-            p->push(pid); pidUsed[pid] = 1;
-          }
-	}
-
-        // Grab the first pid from the list of pids to consider
-        int pid = p->front(); p->pop();
-
-        // While there are still computes to consider and we don't yet have enough computes (target number)...
-        while (c0->size() > 0 && target > 0) {
-
-          // Grab a compute from list of available computes
-          int cid = c0->front(); c0->pop();
-
-          // If all of the patches associated with the compute have been marked as being considered for
-          //   use on the MIC card, then mark the compute for execution on the MIC card
-          if (computeMap->type(cid) == computeNonbondedSelfType && pidUsed[computeMap->pid(cid, 0)] != 0) {
-            target--;
-            computeMap->setDirectToDevice(cid, 1);
-
-            // DMK - DEBUG
-            selfTotal++;
-
-	  } else if (computeMap->type(cid) == computeNonbondedPairType && (pidUsed[computeMap->pid(cid, 0)] != 0 && pidUsed[computeMap->pid(cid, 1)] != 0)) {
-            target--;
-            computeMap->setDirectToDevice(cid, 1);
-
-            // DMK - DEBUG
-            pairTotal++;
-
-	  } else {  // If the compute isn't pushed to the MIC now, place it in a temp queue so it will be considered again in the next round
-            c1->push(cid);
-	  }
-	}
-
-        // Swap the queues holding computes for the next loop iteration
-	std::queue<int> *t = c0; c0 = c1; c1 = t;
-      }
-
-      ////if (CkMyPe() == 0 && target > 0) {
-      //if (CkMyPe() == 0) {
-      //  printf("[MIC-Warning] :: Target compute count not reached (%f%% of target(%d) pushed to MIC, PEs %d to %d)\n",
-      //         ((float)(targetTotal - target)) / ((float)(targetTotal)), targetTotal, peLo, peHi
-      //        );
+      //} else {
+      //  mic_deviceThreshold = 2; // + numAway;
+      //  mic_hostSplit = 30;
       //}
 
-      //// DMK - DEBUG
-      //int numPidsUsed = 0;
-      //for (int i = 0; i < maxPid; i++) { if (pidUsed[i] != 0) { numPidsUsed++; } }
-      //if (CkMyPe() == 0) { printf("[DEBUG] :: PE %d->%d :: selfs:%d, pairs:%d, host:%ld, pids:%d/%d\n", peLo, peHi, selfTotal, pairTotal, c0->size(), numPidsUsed, maxPid); }
+      //printf("[MIC-HvD-LDB] :: PE %d :: Automated HvD LDB - Setting DT:%d and HS:%d...\n", CkMyPe(), mic_deviceThreshold, mic_hostSplit);
+      iout << iINFO << "MIC-HvD-LDB - Automated HvD LDB Setting DT:" << mic_deviceThreshold << " and HS:" << mic_hostSplit << "\n" << endi;
 
-      selfTotal = 0; pairTotal = 0;
+    } else {
+      if (mic_hostSplit > 100) { mic_hostSplit = 100; }
     }
+    __ASSERT(mic_deviceThreshold >= 0 && mic_hostSplit >= 0);
 
-    // Free temp data structures
-    delete [] numSelfs;
-    delete [] numPairs;
-    delete [] pidUsed;
+    // Create "grab bags" of self and pair computes associated with the peSet that
+    //   can be potentially offloaded to the MIC associated with that peSet
+    std::queue<int> * selfs = new std::queue<int>();
+    std::queue<int> * pairs = new std::queue<int>();
+    std::queue<int> * selfsTmp = new std::queue<int>();
+    std::queue<int> * pairsTmp = new std::queue<int>();
+    __ASSERT(selfs != NULL && pairs != NULL && selfsTmp != NULL && pairsTmp != NULL);
 
-  } else {
+    int minPID = -1;
+    int maxPID = -1;
+    #define WIDEN_PID_RANGE(pid) \
+      if (minPID < 0) { minPID = pid; maxPID = pid; } \
+      if (pid < minPID) { minPID = pid; } \
+      if (pid > maxPID) { maxPID = pid; }
 
+    double startTime_phase0 = CmiWallTimer();
+
+    // NOTE: If a self or pair compute does not meet the requirements set forth by the load
+    //   balancing parameters, place it in pairsTmp ("other" selfs and pairs).  It may be
+    //   required in phase1 below to ensure the one-patch-per-PE requirement in phase 1.
+    int totalNumSelfs = 0;
+    int totalNumPairs = 0;
     for (int i = 0; i < nComputes; i++) {
-      switch (computeMap->type(i)) {
 
-        case computeNonbondedSelfType:
-          // Direct all non-bonded self computes to the device
-          if (mic_hostSplit > 0) { // Apply patch selection heuristic
-            computeMap->setDirectToDevice(i, ((computeMap->pid(i, 0) < mic_hostSplit) ? (0) : (1)));
-            //computeMap->setDirectToDevice(i, 1);
-          } else {
-            computeMap->setDirectToDevice(i, 1);
-          }
-          break;
+      // Skip this compute if it is not on a PE in the given set of PEs
+      int pe = computeMap->node(i);
+      bool peInSet = false;
+      for (int j = 0; !peInSet && j < peSetLen; j++) {
+        if (peSet[j] == pe) { peInSet = true; }
+      }
+      if (!peInSet) { continue; }
 
-        case computeNonbondedPairType:
-          if (mic_hostSplit > 0) {
-            int pid0 = computeMap->pid(i, 0);
-            int pid1 = computeMap->pid(i, 1);
-            computeMap->setDirectToDevice(i , ((pid0 < mic_hostSplit || pid1 < mic_hostSplit) ? (0) : (1)));
-          } else {
-            int aSize = patchMap->gridsize_a();
-            int bSize = patchMap->gridsize_b();
-            int cSize = patchMap->gridsize_c();
-            int pid0 = computeMap->pid(i, 0);
-            int pid1 = computeMap->pid(i, 1);
-            int trans0 = computeMap->trans(i, 0);
-            int trans1 = computeMap->trans(i, 1);
-            int index_a0 = patchMap->index_a(pid0) + aSize * Lattice::offset_a(trans0);
-            int index_b0 = patchMap->index_b(pid0) + bSize * Lattice::offset_b(trans0);
-            int index_c0 = patchMap->index_c(pid0) + cSize * Lattice::offset_c(trans0);
-            int index_a1 = patchMap->index_a(pid1) + aSize * Lattice::offset_a(trans1);
-            int index_b1 = patchMap->index_b(pid1) + bSize * Lattice::offset_b(trans1);
-            int index_c1 = patchMap->index_c(pid1) + cSize * Lattice::offset_c(trans1);
-            int da = index_a0 - index_a1; da *= ((da < 0) ? (-1) : (1));
-            int db = index_b0 - index_b1; db *= ((db < 0) ? (-1) : (1));
-            int dc = index_c0 - index_c1; dc *= ((dc < 0) ? (-1) : (1));
-            int manDist = da + db + dc;
-            computeMap->setDirectToDevice(i, ((manDist <= mic_deviceThreshold) ? (1) : (0)));
-          }
-          break;
+      // Only consider self and pair computes
+      if (computeMap->type(i) == computeNonbondedSelfType) {
+        totalNumSelfs++;
+      } else if (computeMap->type(i) == computeNonbondedPairType) {
+        totalNumPairs++;
+      } else {
+        continue;
+      }
 
-        default:
-          // All other computes should be directed to the host (flag is ignored, but set it)
-          computeMap->setDirectToDevice(i, 0);
-          break;
+      // Check: distance less than device threshold
+      COMPUTE_DISTANCE(i);
+      if (manDist < 0 || manDist > mic_deviceThreshold) {
+        pairsTmp->push(i);  // NOTE: because mic_deviceThreshold >= 0 and the manDist
+        continue;           //   of a self is 0, only pairs can be placed in pairsTmp
+      }
 
-      } // end switch (map->type(i))
-    } // end for (i < map->nComputes)
-  } // end if (hostSplit > 0)
-
-  // DMK - DEBUG
-  if (0 && CkMyPe() == 0) {
-    for (int i = 0; i < nComputes; i++) {
-      if (computeMap->type(i) == computeNonbondedSelfType || computeMap->type(i) == computeNonbondedPairType) {
-        COMPUTE_DISTANCE(i);
-        printf("[COMPUTE-MAP] :: cid:%d (%s,%d) directToDevice:%d\n",
-               i,
-               computeMap->type(i) == computeNonbondedSelfType ? "self" : "pair",
-               computeMap->type(i) == computeNonbondedSelfType ? 0 : manDist,
-               computeMap->directToDevice(i)
-              );
+      // Check: self or pair, place in associated "grab bag" while updating PID range
+      if (computeMap->type(i) == computeNonbondedSelfType) {
+        selfs->push(i);
+        int pid0 = computeMap->pid(i, 0); WIDEN_PID_RANGE(pid0);
+      }
+      if (computeMap->type(i) == computeNonbondedPairType) {
+        pairs->push(i);
+        int pid0 = computeMap->pid(i, 0); WIDEN_PID_RANGE(pid0);
+        int pid1 = computeMap->pid(i, 1); WIDEN_PID_RANGE(pid1);
       }
     }
+    __ASSERT(minPID <= maxPID);
+
+    hdLDBTime_phase0 += CmiWallTimer() - startTime_phase0;
+
+    // Calculate the target percentage of compute objects to offload
+    int total = totalNumSelfs + totalNumPairs;
+    int target = (int)((total * mic_hostSplit) / 100.0f);
+    if (target > total) { target = total; } // Do this check just in case a floating point round issue occurs
+ 
+    // DMK - DEBUG
+    #if MIC_VERBOSE_HVD_LDB != 0
+      printf("[MIC-HvD-LDB] :: PE %d :: Phase 0 Result - selfs:%d, pairs:%d, other:%d, self+pair:%d, target:%d\n",
+             CkMyPe(), (int)(selfs->size()), (int)(pairs->size()), (int)(pairsTmp->size()), total, target
+            ); fflush(NULL);
+    #endif
+
+    // Setup an array of flags (one entry per PID) that indicates whether or not a given
+    //   PID is already being referenced by the MIC compute object (i.e. required by at
+    //   least on compute already mapped to the device).  Also create a list of CIDs that
+    //   are to be mapped to the device.
+    bool * pidFlag = new bool[maxPID - minPID + 1];
+    std::queue<int> * offloads = new std::queue<int>();
+    __ASSERT(offloads != NULL && pidFlag != NULL);
+    int offloads_selfs = 0;
+    int offloads_pairs = 0;
+    for (int i = minPID; i <= maxPID; i++) { pidFlag[i - minPID] = false; }
+
+    // Create an array of flags that indicate if a given PE contributing to this PE's MIC
+    //   has had at least one patch offloaded (required by ::doWork and ::noWork)
+    int peLo = peSet[0];  // NOTE: Have already tested that peSetLen > 0
+    int peHi = peSet[0];
+    for (int i = 0; i < peSetLen; i++) {
+      if (peSet[i] < peLo) { peLo = peSet[i]; }
+      if (peSet[i] > peHi) { peHi = peSet[i]; }
+    }
+    __ASSERT(peLo <= peHi);
+    bool * peSetFlag = new bool[peHi - peLo + 1];  // Inclusive of peLo and peHi
+    __ASSERT(peSetFlag != NULL);
+    for (int i = peLo; i <= peHi; i++) { peSetFlag[i - peLo] = false; }
+
+    ///// Phase 1 /////    
+
+    double startTime_phase1 = CmiWallTimer();
+
+    // Sweep through the computes, adding at least one self compute per contributing PE to
+    //   satisfy assumptions in ::doWork() and ::noWork()... for now, at most one per PE
+    // Start with self computes (favor them)
+    int numSelfs = selfs->size();
+    for (int i = 0; i < numSelfs; i++) {
+      int cid = selfs->front(); selfs->pop();
+      int pid = computeMap->pid(cid, 0);
+      int pe0 = patchMap->node(pid);
+      if (pe0 >= peLo && pe0 <= peHi && !(peSetFlag[pe0 - peLo])) {
+        offloads->push(cid);
+        offloads_selfs++;
+        peSetFlag[pe0 - peLo] = true;  // Mark the PE as having at least one compute offloaded
+        pidFlag[pid - minPID] = true;  // Mark the associated PID as already being required by the MIC card
+      } else {
+        selfs->push(cid);
+      }
+    }
+    // Move on to pair computes
+    int numPairs = pairs->size();
+    for (int i = 0; i < numPairs; i++) {
+      int cid = pairs->front(); pairs->pop();
+      int pid0 = computeMap->pid(cid, 0);
+      int pid1 = computeMap->pid(cid, 1);
+      int pe0 = patchMap->node(pid0);
+      int pe1 = patchMap->node(pid1);
+      if ((pe0 >= peLo && pe0 <= peHi && !(peSetFlag[pe0 - peLo])) ||
+          (pe1 >= peLo && pe1 <= peHi && !(peSetFlag[pe1 - peLo]))
+         ) {
+        offloads->push(cid);
+        offloads_pairs++;
+        if (pe0 >= peLo && pe0 <= peHi) {
+          peSetFlag[pe0 - peLo] = true;
+          pidFlag[pid0 - minPID] = true;
+	}
+        if (pe1 >= peLo && pe1 <= peHi) {
+          peSetFlag[pe1 - peLo] = true;
+          pidFlag[pid1 - minPID] = true;
+	}
+      } else {
+        pairs->push(cid);
+      }
+    }
+    // If need be, "other" computes (pairs that didn't meet LDB requirements, but might be required)
+    // NOTE: By this point, it should be the case that all the peSetFlag values are set.  Just in
+    //   case that is not true, look through the "other" pairs (that didn't fit LDB criteria).
+    //   However, in this case, also empty the queue since these cannot be used in phase 2 below.
+    numPairs = pairsTmp->size();
+    bool usedOther = false;
+    while (!(pairsTmp->empty())) {
+      int cid = pairsTmp->front(); pairsTmp->pop();
+      int pid0 = computeMap->pid(cid, 0);
+      int pid1 = computeMap->pid(cid, 1);
+      int pe0 = patchMap->node(pid0);
+      int pe1 = patchMap->node(pid1);
+      if ((pe0 >= peLo && pe0 <= peHi && !(peSetFlag[pe0 - peLo])) ||
+          (pe1 >= peLo && pe1 <= peHi && !(peSetFlag[pe1 - peLo]))
+         ) {
+        offloads->push(cid);
+        offloads_pairs++;
+        if (pe0 >= peLo && pe0 <= peHi) {
+          peSetFlag[pe0 - peLo] = true;
+          pidFlag[pid0 - minPID] = true;
+	}
+        if (pe1 >= peLo && pe1 <= peHi) {
+          peSetFlag[pe1 - peLo] = true;
+          pidFlag[pid1 - minPID] = true;
+	}
+      }
+    }
+    if (usedOther) { CkPrintf("[MIC-WARNING] :: Offloaded non-bonded compute that didn't meet LDB criteria to satisfy phase 1 requirement (just FYI, not a problem)\n"); }
+
+    hdLDBTime_phase1 += CmiWallTimer() - startTime_phase1;
+
+    // Verify at least one self per PE was selected (assumption is one patch per
+    //   PE and self computes are mapped to same PE as their associated patch)
+    int numPEsSet = 0;
+    for (int i = 0; i < peSetLen; i++) {
+      if (peSetFlag[peSet[i] - peLo]) { numPEsSet++; }
+    }
+    __ASSERT(numPEsSet > 0);  // NOTE: Need at least one per set of PEs (one per master)
+
+    // DMK - DEBUG
+    #if MIC_VERBOSE_HVD_LDB != 0
+      printf("[MIC-HvD-LDB] :: PE %d :: Phase 1 Result - selfs:%d, pairs:%d, offloads:%d, target:%d\n",
+             CkMyPe(), (int)(selfs->size()), (int)(pairs->size()), (int)(offloads->size()), target
+            ); fflush(NULL);
+    #endif
+
+    ///// Phase 2 /////
+
+    // Push compute objects to the device until the target number of computes has been reached
+    while (offloads->size() < target) {
+
+      /// PART 1 ///
+
+      double time_0 = CmiWallTimer();
+
+      // If we haven't reached target yet, grab a compute to add to the mix (along with it's
+      //   referenced PIDs)
+      // NOTE : As a heuristic, if the number of offloaded computes is still far away from the
+      //   overall target number, try to add many at a time (miniTarget).  However, with twoAway
+      //   options enabled, many are likely to be added by part 2 below, so don't add too many
+      //   in part 1 so that part 2 below can do it's job of minimizing data movement across
+      //   the PCIe bus.  This is where the miniTarget divisor comes from (about half of 5*5*5
+      //   from twoAways all being enabled).
+      int miniTarget = (target - offloads->size()) / 50;
+      int cid = -1;
+      if (miniTarget < 1) { miniTarget = 1; }
+      for (int k = 0; k < miniTarget; k++) {
+
+        // Select the compute (prefer selfs)
+        if (selfs->size() > 0) { cid = selfs->front(); selfs->pop(); offloads_selfs++; }
+	else if (pairs->size() > 0) { cid = pairs->front(); pairs->pop(); offloads_pairs++; }
+	else { break; }  // Nothing to grab, so exit
+        __ASSERT(cid >= 0);
+
+        // Add the compute to the list of offloaded computes
+        offloads->push(cid);  // Select this compute and mark it's PIDs as used
+
+        // Mark the PIDs associated with the compute as being referenced by the device
+        //   so computes that use the same PIDs can be selected in part 2 below
+        int pid0 = computeMap->pid(cid, 0);
+        pidFlag[pid0 - minPID] = true;
+        if (computeMap->type(cid) == computeNonbondedPairType) {
+          int pid1 = computeMap->pid(cid, 1);
+          pidFlag[pid1 - minPID] = true;
+	}
+      }
+      if (cid < 0) { break; } // No longer any computes in either list (selfs or pairs)
+
+      /// Part 2 ///
+
+      double time_1 = CmiWallTimer();
+
+      // While we haven't reached the target, add computes that reference PIDs that are
+      //   already referenced by computes already mapped to the device
+      while (offloads->size() < target && selfs->size() > 0) {  // Start with selfs
+        int cid = selfs->front(); selfs->pop();
+        int pid0 = computeMap->pid(cid, 0);
+        if (pidFlag[pid0 - minPID]) {
+          offloads->push(cid);
+          offloads_selfs++;
+	} else {
+          selfsTmp->push(cid);
+	}
+      }
+      { std::queue<int> * t = selfs; selfs = selfsTmp; selfsTmp = t; }
+
+      while (offloads->size() < target && pairs->size() > 0) {
+        int cid = pairs->front(); pairs->pop();
+        int pid0 = computeMap->pid(cid, 0);
+        int pid1 = computeMap->pid(cid, 1);
+        if (pidFlag[pid0 - minPID] && pidFlag[pid1 - minPID]) {
+          offloads->push(cid);
+          offloads_pairs++;
+	} else {
+          pairsTmp->push(cid);
+	}
+      }
+      { std::queue<int> * t = pairs; pairs = pairsTmp; pairsTmp = t; }
+
+      double time_2 = CmiWallTimer();
+      hdLDBTime_phase2a += time_1 - time_0;
+      hdLDBTime_phase2b += time_2 - time_1;
+    }
+
+    // DMK - DEBUG
+    #if MIC_VERBOSE_HVD_LDB != 0
+      printf("[MIC-HvD-LDB] :: PE %d :: Phase 2 Result [%d->%d] -- selfs:%d, pairs:%d, offloads:%d (s:%d, p:%d), target:%d\n",
+             CkMyPe(), peLo, peHi, (int)(selfs->size() + selfsTmp->size()), (int)(pairs->size() + pairsTmp->size()),
+             (int)(offloads->size()), offloads_selfs, offloads_pairs, target
+            ); fflush(NULL);
+    #endif
+
+    // If the numParts parameters have not been set manually, then split up the computes headed
+    //   to the device to (1) split up larger tasks and (2) create more tasks
+    if (mic_numParts_self_p1 <= 0 || mic_numParts_pair_p1 <= 0 || mic_numParts_pair_p2 <= 0) {
+
+      int numDeviceComputes = offloads->size();
+      if (numDeviceComputes > 1000) {  // Enough tasks, no need to break up anything
+        mic_numParts_self_p1 = 1;
+        mic_numParts_pair_p1 = 1;
+        mic_numParts_pair_p2 = 1;
+      } else if (numDeviceComputes <= 1000 && numDeviceComputes > 350) {  // Enough tasks, but some might be too large (granularity)
+        mic_numParts_self_p1 = 3;
+        mic_numParts_pair_p1 = 3;
+        mic_numParts_pair_p2 = 1;
+      } else {  // Starting to be too few tasks, so start splitting them up more and more
+        // Try to get around 250 - 300 self parts and 400 - 500 pair parts (650 - 800 total parts)
+        if (offloads_selfs <= 0) { offloads_selfs = 1; }
+        if (offloads_pairs <= 0) { offloads_pairs = 1; }
+        #define CONFINE_TO_RANGE(v, mi, ma)  (v = (v > ma) ? (ma) : ((v < mi) ? (mi) : (v)))
+        mic_numParts_self_p1 = 300 / offloads_selfs; CONFINE_TO_RANGE(mic_numParts_self_p1, 8, 16);
+        mic_numParts_pair_p1 = 500 / offloads_pairs; CONFINE_TO_RANGE(mic_numParts_pair_p1, 4, 16);
+        #undef CONFINE_TO_RANGE
+        mic_numParts_pair_p2 = mic_numParts_pair_p1 / 2;
+        mic_numParts_pair_p1 += mic_numParts_pair_p2;  // NOTE: 'numParts = p1 - dist * p2' and 'dist > 0' for pairs
+      }
+
+      //printf("[MIC-HvD-LDB] :: PE %d :: Automated HvD LDB - Setting NumParts { %d %d %d }\n", CkMyPe(), mic_numParts_self_p1, mic_numParts_pair_p1, mic_numParts_pair_p2);
+      iout << iINFO << "MIC-HvD-LDB - Automated HvD LDB Setting NumParts { " << mic_numParts_self_p1 << ", " << mic_numParts_pair_p1 << ", " << mic_numParts_pair_p2   << " }\n" << endi;
+    }
+
+    // Update the compute map to refect the load balancing decision
+    while (offloads->size() > 0) {
+      int cid = offloads->front(); offloads->pop();
+      computeMap->setDirectToDevice(cid, 1);
+    }
+
+    // Cleanup temp data
+    delete selfs;
+    delete pairs;
+    delete selfsTmp;
+    delete pairsTmp;
+    delete offloads;
+    delete [] peSetFlag;
+    delete [] pidFlag;
   }
+
+  // Increment the count for the number of contributors (PEs).  If this is the last
+  //   one, attempt to dump the host-deivce-computeMap.
+  numContribs++;
+  hdLDBTime += CmiWallTimer() - startTime;
+  if (numContribs >= CkNumPes()) {
+    mic_dumpHostDeviceComputeMap();
+    WorkDistrib::send_setDeviceLDBParams(mic_deviceThreshold, mic_hostSplit,
+                                         mic_numParts_self_p1, mic_numParts_pair_p1, mic_numParts_pair_p2);
+    #if MIC_VERBOSE_HVD_LDB != 0
+      CkPrintf("[MIC-HvD-LDB] :: PE %d :: Total HvD LDB Time: %lf sec = { %lf, %lf, (%lf, %lf) }\n",
+               CkMyPe(), hdLDBTime, hdLDBTime_phase0, hdLDBTime_phase1, hdLDBTime_phase2a, hdLDBTime_phase2b
+              );
+    #endif
+  }
+}
+
+
+void mic_dumpHostDeviceComputeMap() {
+  #if MIC_DUMP_COMPUTE_MAPPING != 0
+    ComputeMap *computeMap = ComputeMap::Object();
+    int nComputes = computeMap->numComputes();
+    char filename[256] = { 0 };
+    sprintf(filename, "deviceComputeMap.%d", CkMyPe());
+    FILE * fmap = fopen(filename, "w");
+    if (fmap != NULL) {
+      printf("[MIC-INFO] :: PE %d :: Writing device compute map to \"%s\".\n", CkMyPe(), filename);
+      fprintf(fmap, "Device compute map\n");
+      for (int i = 0; i < nComputes; i++) {
+        if (i % 50 == 0) { fprintf(fmap, "\n%d:", i); }
+        fprintf(fmap, "%s%d", ((i % 10 == 0) ? (" ") : ("")), computeMap->directToDevice(i));
+      }
+      fclose(fmap);
+    } else {
+      printf("[MIC-WARNING] :: Unable to dump device compute map to file \"%s\"... skipping.\n", filename);
+    }
+  #endif
 }
 
 

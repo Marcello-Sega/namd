@@ -179,6 +179,9 @@ public:
       node = -1; moveToNode = -1; 
       newNumPartitions = 0;
       numPids = 0;
+      #if defined(NAMD_MIC)
+        directToDevice = 0;
+      #endif
     }
     int node;
     int moveToNode;

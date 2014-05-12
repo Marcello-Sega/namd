@@ -177,6 +177,8 @@
   #define MIC_DATA_STRUCT_VERIFY_KERNELS  ( 0 )
 #define MIC_DEVICE_FPRINTF                ( 0 )  // Print some debug info from the MICs directly to a device file on the MICs (for debug purposes)
   #define MIC_DEVICE_FPRINTF_REOPEN_FREQ  ( 0 )  // If >0, will cause the code to periodically reopen (and thus truncate) the device file, helping to limit the amount of memory it takes up
+#define MIC_DUMP_COMPUTE_MAPPING          ( 0 )  // 0: do nothing, !0: dump directToDevice info from ComputeMap
+#define MIC_TRACK_DEVICE_MEM_USAGE        ( 0 )  // 0: do nothing, !0: print memusage on the device every 100 timesteps
 #define MIC_HEARTBEAT                     ( 0 )
 
 // Alignment used for various buffers, values, etc., in bytes
@@ -185,6 +187,8 @@
 #define MIC_MAX_DEVICES_PER_NODE          ( 16 )
 
 #define MIC_PRINT_CONFIG                  ( 0 )  // 0 - disable, !0 - enable the printing of configuration information (macros defined in this file) at the start of a simulation (TODO | NOTE: This is meant as a reference for repeating performance experiments... not required for production use... disable at some point)
+
+#define MIC_VERBOSE_HVD_LDB               ( 0 )  // 0 - disable, !0 - print extra info about HvD LDB
 
 #define MIC_DEBUG                         ( 0 )  // 0 - disable, !0 - enable extra debugging output to be printed to files (1 file per PE) via MICP statements
 
@@ -221,10 +225,19 @@
 // DMK - DEBUG
 #define MIC_KERNEL_DATA_TRANSFER_STATS    (  0 )
 
+__declspec(target(mic)) void* _mm_malloc_withPrint(size_t s, int a, char * l);
+__declspec(target(mic)) void _mm_free_withPrint(void * prt);
+
 // DMK - NOTE : Leaving these macros in as hooks for now
-#define _MM_MALLOC_WRAPPER(s, a, l) _mm_malloc((s), (a))
-#define _MM_FREE_WRAPPER(p) _mm_free(p)
-#define _MM_MALLOC_VERIFY
+//#ifdef __MIC__
+//  #define _MM_MALLOC_WRAPPER(s, a, l) _mm_malloc_withPrint((s), (a), (l))
+//  #define _MM_FREE_WRAPPER(p) _mm_free_withPrint(p)
+//  #define _MM_MALLOC_VERIFY
+//#else
+  #define _MM_MALLOC_WRAPPER(s, a, l) _mm_malloc((s), (a))
+  #define _MM_FREE_WRAPPER(p) _mm_free(p)
+  #define _MM_MALLOC_VERIFY
+//#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -373,7 +386,12 @@
     MIC_TRACING_REGISTER_EVENT("DEBUG 4", 11044); \
     MIC_TRACING_REGISTER_EVENT("recvImmediateProxyData", 11046); \
     MIC_TRACING_REGISTER_EVENT("msg copy send", 11047); \
-    MIC_TRACING_REGISTER_EVENT("ProxyMgr::sendProxyData", 11048);
+    MIC_TRACING_REGISTER_EVENT("ProxyMgr::sendProxyData", 11048); \
+    MIC_TRACING_REGISTER_EVENT("MIC box close", 11050); \
+    MIC_TRACING_REGISTER_EVENT("MIC reduction submit", 11051); \
+    MIC_TRACING_REGISTER_EVENT("WorkDistrib compute", 11070); \
+    MIC_TRACING_REGISTER_EVENT("doWork::work", 11080); \
+    MIC_TRACING_REGISTER_EVENT("doWork::progress", 11081); 
 
   #define MIC_TRACING_RECORD(id, start, stop) traceUserBracketEvent(id, start, stop)
 
@@ -560,7 +578,7 @@ struct mic_kernel_data {
   int numAtoms;
   int numPatchPairs;
   int numForceLists;
-  int forceBuffersReqSize;
+  size_t forceBuffersReqSize;
 
   // Outputs
   double virial_xx;
@@ -765,7 +783,7 @@ void mic_bind_atoms_only(const int deviceNum,
                          const int atoms_bufSize
 			);
 
-void mic_bind_force_buffers_only(const int deviceNum, const int force_buffers_size);
+void mic_bind_force_buffers_only(const int deviceNum, const size_t force_buffers_size);
 
 
 #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
@@ -812,6 +830,33 @@ int mic_check_local_kernel_complete(const int deviceNum);
 
 // DMK - DEBUG
 void _mic_print_stats(const int deviceNum);
+void mic_dumpHostDeviceComputeMap();
+
+
+// DMK - DEBUG
+#if MIC_TRACK_DEVICE_MEM_USAGE != 0
+
+__declspec(target(mic))
+typedef struct _mem_info {
+  size_t memTotal;
+  size_t memFree;
+  size_t cached;
+  size_t active;
+  size_t inactive;
+  size_t vmSize;
+  size_t vmPeak;
+} MemInfo;
+
+__declspec(target(mic))
+void printMemInfo(int device__pe, int device__timestep, MemInfo * mi);
+
+__declspec(target(mic))
+void readMemInfo_processLine(MemInfo * memInfo, char * n, char * v, char * u);
+
+__declspec(target(mic))
+bool readMemInfo(MemInfo * memInfo);
+
+#endif  // MIC_TRACK_DEVICE_MEM_USAGE != 0
 
 
 #endif  // NAMD_MIC

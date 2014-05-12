@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2014/05/09 21:39:06 $
- * $Revision: 1.1440 $
+ * $Date: 2014/05/12 18:12:26 $
+ * $Revision: 1.1441 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2040,18 +2040,15 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("maxExclusionFlags",POSITIVE);
 
    // MIC specific parameters
-   opts.optional("main", "mic_hostSplit", "DMK - reserved", &mic_hostSplit, 0);
-   opts.range("mic_hostsplit", NOT_NEGATIVE);
-   opts.optional("main", "mic_numParts_self_p1", "MIC-Specific NumParts SELF Parameter 1", &mic_numParts_self_p1, 8);
-   opts.range("mic_numParts_self_p1", POSITIVE);
-   opts.optional("main", "mic_numParts_pair_p1", "MIC-Specific NumParts PAIR Parameter 1", &mic_numParts_pair_p1, 8);
-   opts.range("mic_numParts_pair_p1", POSITIVE);
-   opts.optional("main", "mic_numParts_pair_p2", "MIC-Specific NumParts PAIR Parameter 2", &mic_numParts_pair_p2, 2);
-   opts.range("mic_numParts_pair_p2", NOT_NEGATIVE);
    opts.optional("main", "mic_unloadMICPEs", "Indicates whether or not the load balancer should unload PEs driving Xeon Phi cards", &mic_unloadMICPEs, 1);
-   opts.range("mic_unloadMICPEs", NOT_NEGATIVE);
+   opts.optional("main", "mic_singleKernel", "Set to non-zero to have all MIC work to be placed in a single kernel", &mic_singleKernel, 1);
    opts.optional("main", "mic_deviceThreshold", "Threshold to use for directing computes to Xeon Phi devices", &mic_deviceThreshold, -1);
-   opts.optional("main", "mic_singleKernel", "Set to non-zero to have all MIC work to be placed in a single kernel", &mic_singleKernel, 0);
+   opts.optional("main", "mic_hostSplit", "DMK - reserved", &mic_hostSplit, -1);
+   opts.optional("main", "mic_numParts_self_p1", "MIC-Specific NumParts SELF Parameter 1", &mic_numParts_self_p1, -1);
+   opts.optional("main", "mic_numParts_pair_p1", "MIC-Specific NumParts PAIR Parameter 1", &mic_numParts_pair_p1, -1);
+   opts.optional("main", "mic_numParts_pair_p2", "MIC-Specific NumParts PAIR Parameter 2", &mic_numParts_pair_p2, -1);
+   opts.range("mic_unloadMICPEs", NOT_NEGATIVE);
+   opts.range("mic_singleKernel", NOT_NEGATIVE);
 }
 
 void SimParameters::readExtendedSystem(const char *filename, Lattice *latptr) {

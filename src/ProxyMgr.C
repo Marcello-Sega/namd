@@ -36,11 +36,6 @@
 #include "SimParameters.h"
 #include "Node.h"
 
-#ifdef NAMD_MIC
-  extern int mic_get_device_count();
-  extern void mic_assignComputes();
-#endif
-
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
 #include "Debug.h"
@@ -456,13 +451,6 @@ void ProxyMgr::createProxies(void)
   }
 
   ComputeMap *computeMap = ComputeMap::Object();
-
-  // If there is a MIC device, then assign the compute objects to either the
-  //   host cores or the MIC cores
-  // DMK - TODO : Find a better location for this function call
-  #if defined(NAMD_MIC)
-    mic_assignComputes();
-  #endif
 
   // Check all patch-based compute objects.
   int nc = computeMap->numComputes();

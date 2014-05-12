@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2014/04/08 18:08:36 $
- * $Revision: 1.1277 $
+ * $Date: 2014/05/12 18:12:26 $
+ * $Revision: 1.1278 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -3269,6 +3269,53 @@ int WorkDistrib::assignPatchesTopoGridRecBisection() {
   return rc;
 }
 #endif
+
+
+#if defined(NAMD_MIC)
+  extern void mic_hostDeviceLDB();
+  extern void mic_contributeHostDeviceLDB(int idLen, int * id);
+  extern void mic_setDeviceLDBParams(int dt, int hs, int sp1, int pp1, int pp2);
+#endif
+
+void WorkDistrib::send_initHostDeviceLDB() {
+  #if defined(NAMD_MIC)
+    CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
+    wdProxy.initHostDeviceLDB();
+  #endif
+}
+
+void WorkDistrib::initHostDeviceLDB() {
+  #if defined(NAMD_MIC)
+    mic_hostDeviceLDB();
+  #endif
+}
+
+void WorkDistrib::send_contributeHostDeviceLDB(int peSetLen, int * peSet) {
+  #if defined(NAMD_MIC)
+    CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
+    wdProxy[0].contributeHostDeviceLDB(peSetLen, peSet);
+  #endif
+}
+
+void WorkDistrib::contributeHostDeviceLDB(int peSetLen, int * peSet) {
+  #if defined(NAMD_MIC)
+    mic_contributeHostDeviceLDB(peSetLen, peSet);
+  #endif
+}
+
+void WorkDistrib::send_setDeviceLDBParams(int dt, int hs, int sp1, int pp1, int pp2) {
+  #if defined(NAMD_MIC)
+    CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
+    wdProxy.setDeviceLDBParams(dt, hs, sp1, pp1, pp2);
+  #endif
+}
+
+void WorkDistrib::setDeviceLDBParams(int dt, int hs, int sp1, int pp1, int pp2) {
+  #if defined(NAMD_MIC)
+    mic_setDeviceLDBParams(dt, hs, sp1, pp1, pp2);
+  #endif
+}
+
 
 #include "WorkDistrib.def.h"
 

@@ -92,6 +92,11 @@ extern "C" void HPM_Stop(char *label, int);
 extern "C" void HPM_Print(int, int);
 #endif
 
+#if defined(NAMD_MIC)
+  extern void mic_dumpHostDeviceComputeMap();
+  extern void mic_initHostDeviceLDB();
+#endif
+
 #ifdef MEASURE_NAMD_WITH_PAPI
 #include "papi.h"
 #if CMK_SMP
@@ -594,6 +599,13 @@ void Node::startup() {
       workDistrib->assignNodeToPatch();
       workDistrib->mapComputes();	  
       //ComputeMap::Object()->printComputeMap();
+
+      // For MIC runs, take the additional step after the compute map has been created to
+      //   assign the various computes to either the host or the device.  This info will
+      //   be distributed across the PEs.
+      #if defined(NAMD_MIC)
+        mic_initHostDeviceLDB();
+      #endif
 	  
 	  if(simParameters->simulateInitialMapping) {
     	  iout << iINFO << "Simulating initial mapping with " << simParameters->simulatedPEs
@@ -782,6 +794,13 @@ void Node::startup() {
   break;
 
   case 10:
+
+    // DMK - DEBUG - If, in MIC runs, the debug option to dump all the compute maps to files
+    //   for debugging/verification purposes has been enabled, have each PE do so now.
+    #if defined(NAMD_MIC)
+      mic_dumpHostDeviceComputeMap();
+    #endif
+
     if (!CkMyPe()) {
       iout << iINFO << "CREATING " << ComputeMap::Object()->numComputes()
            << " COMPUTE OBJECTS\n" << endi;

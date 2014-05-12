@@ -58,6 +58,10 @@ module WorkDistrib {
     entry void enqueueWorkB3(LocalWorkMsg *);
     entry void enqueueWorkC(LocalWorkMsg *);
     entry void enqueueLCPO(LocalWorkMsg *);
+
+    // MIC-Specific
+    entry void initHostDeviceLDB();
+    entry void contributeHostDeviceLDB(int peSetLen, int peSet[peSetLen]);
+    entry void setDeviceLDBParams(int dt, int hs, int sp1, int pp1, int pp2);
   } ;
 }
-
