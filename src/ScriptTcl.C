@@ -26,6 +26,7 @@
 #include "Measure.h"
 #include "colvarmodule.h"
 #include "DumpBench.h"
+#include <errno.h>
 #include <stdio.h>
 #include <ctype.h>  // for isspace
 #ifndef WIN32
@@ -420,6 +421,23 @@ int ScriptTcl::Tcl_replicaAtomRecv(ClientData clientData, Tcl_Interp *interp, in
   return TCL_OK;
 }
 
+
+int ScriptTcl::Tcl_stdout(ClientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 2) {
+    Tcl_SetResult(interp, "wrong # args", TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  char *filename= argv[1];
+  CkPrintf("TCL: redirecting stdout to file %s\n", filename);
+
+  if ( ! freopen(filename, "a", stdout) ) {
+    Tcl_SetResult(interp, strerror(errno), TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  return TCL_OK;
+}
 
 int ScriptTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
@@ -1472,6 +1490,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "replicaAtomRecv", Tcl_replicaAtomRecv,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "stdout", Tcl_stdout,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "unknown", Tcl_config,

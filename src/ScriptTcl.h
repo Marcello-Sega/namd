@@ -68,6 +68,7 @@ private:
   static int Tcl_replicaAtomSendrecv(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_replicaAtomSend(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_replicaAtomRecv(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_stdout(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_config(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_isset_config(ClientData, Tcl_Interp *, int, char **);
