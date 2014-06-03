@@ -243,7 +243,7 @@ void colvarproxy_namd::fatal_error (std::string const &message)
   if (!cvm::debug())
     cvm::log ("If this error message is unclear, "
               "try recompiling with -DCOLVARS_DEBUG.\n");
-  NAMD_die ("Error in the collective variables module: exiting.\n");
+  NAMD_err ("Error in the collective variables module: exiting.\n");
 }
 
 
