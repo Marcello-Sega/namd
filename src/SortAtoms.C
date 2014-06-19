@@ -78,12 +78,20 @@ static void partition(int *order, const FullAtom *atoms, int begin, int end) {
   ymax -= ymin;
   zmax -= zmin;
 
+#define NTH_ELEMENT(BEGIN,SPLIT,END,OP) std::nth_element(BEGIN,SPLIT,END,OP)
+#if defined(NAMD_CUDA) && defined(__GNUC_PATCHLEVEL__)
+#if __GNUC__ == 4 && __GNUC_MINOR__ == 8 && __GNUC_PATCHLEVEL__ == 2
+#define NTH_ELEMENT(BEGIN,SPLIT,END,OP) std::sort(BEGIN,END,OP)
+#warning gcc 4.8.2 std::nth_element would segfault (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58800)
+#endif
+#endif
+
   if ( xmax >= ymax && xmax >= zmax ) {
-    std::nth_element(order+begin, order+split, order+end, sortop_x(atoms));
+    NTH_ELEMENT(order+begin, order+split, order+end, sortop_x(atoms));
   } else if ( ymax >= xmax && ymax >= zmax ) {
-    std::nth_element(order+begin, order+split, order+end, sortop_y(atoms));
+    NTH_ELEMENT(order+begin, order+split, order+end, sortop_y(atoms));
   } else {
-    std::nth_element(order+begin, order+split, order+end, sortop_z(atoms));
+    NTH_ELEMENT(order+begin, order+split, order+end, sortop_z(atoms));
   }
 
   if ( split & 16 ) return;
@@ -96,7 +104,7 @@ static void partition(int *order, const FullAtom *atoms, int begin, int end) {
 
 #if defined(NAMD_CUDA) && defined(__GNUC_PATCHLEVEL__)
 #if __GNUC__ == 4 && __GNUC_MINOR__ == 8 && __GNUC_PATCHLEVEL__ == 2
-#error gcc 4.8.2 std::nth_element would segfault (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58800)
+// #error gcc 4.8.2 std::nth_element would segfault (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58800)
 #endif
 #endif
 
