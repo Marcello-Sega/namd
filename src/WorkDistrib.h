@@ -99,6 +99,7 @@ public:
   void random_velocities_parallel(BigReal Temp,InputAtomList &inAtoms);
 #endif
 
+  static int peOrderingInit;           // used during startup
   static int *peDiffuseOrdering;       // pes in diffuse order
   static int *peDiffuseOrderingIndex;  // index of pe in diffuse order
   static int *peCompactOrdering;       // pes in compact order
@@ -119,7 +120,7 @@ public:
 
   static void sortPmePes(int *pmepes, int xdim, int ydim);
 
-  void peOrderingReady();
+  static void peOrderingReady();
 
   // MIC-Specific
   static void send_initHostDeviceLDB();
@@ -129,9 +130,9 @@ public:
   static void send_setDeviceLDBParams(int dt, int hs, int sp1, int pp1, int pp2);
   /* entry */ void setDeviceLDBParams(int dt, int hs, int sp1, int pp1, int pp2);
 
-private:
-  void buildNodeAwarePeOrdering(void);
+  static void buildNodeAwarePeOrdering(void);
 
+private:
   void mapComputeNonbonded(void);
   void mapComputeLCPO(void);
   void mapComputeNode(ComputeType);

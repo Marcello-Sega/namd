@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2014/05/12 18:12:26 $
- * $Revision: 1.1278 $
+ * $Date: 2014/07/25 14:56:51 $
+ * $Revision: 1.1279 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -74,8 +74,14 @@ VARSIZE_MSG(ComputeMapChangeMsg,
 
 static int randtopo;
 
+static void build_ordering(void *) {
+  WorkDistrib::buildNodeAwarePeOrdering();
+}
+
 void topo_getargs(char **argv) {
   randtopo = CmiGetArgFlag(argv, "+randtopo");
+  if ( CkMyPe() >= CkNumPes() ) return;
+  CcdCallOnCondition(CcdTOPOLOGY_AVAIL, (CcdVoidFn)build_ordering, (void*)0);
 }
 
 static int eventMachineProgress;
@@ -89,7 +95,6 @@ WorkDistrib::WorkDistrib()
   patchMapArrived = false;
   computeMapArrived = false;
   eventMachineProgress = traceRegisterUserEvent("CmiMachineProgressImpl",233);
-  buildNodeAwarePeOrdering();
 }
 
 //----------------------------------------------------------------------
@@ -130,6 +135,7 @@ struct pe_sortop_bit_reversed {
   }
 };
 
+int WorkDistrib::peOrderingInit;
 int* WorkDistrib::peDiffuseOrdering;
 int* WorkDistrib::peDiffuseOrderingIndex;
 int* WorkDistrib::peCompactOrdering;
@@ -150,7 +156,8 @@ void WorkDistrib::peOrderingReady() {
 
 void WorkDistrib::buildNodeAwarePeOrdering() {
 
-  if ( CmiMyRank() ) return;
+ CmiMemLock();
+ if ( ! peOrderingInit ) {
   //CkPrintf("WorkDistrib::buildNodeAwarePeOrdering on pe %d\n", CkMyPe());
 
   const int numPhys = CmiNumPhysicalNodes();
@@ -208,7 +215,7 @@ void WorkDistrib::buildNodeAwarePeOrdering() {
     peCompactOrderingIndex[peCompactOrdering[i]] = i;
   }
 
-  if ( 0 && CmiMyPe() == 0 ) for ( int i=0; i<numPe; ++i ) {
+  if ( 0 && CmiMyNode() == 0 ) for ( int i=0; i<numPe; ++i ) {
     CkPrintf("order %5d %5d %5d %5d %5d\n", i,
       peDiffuseOrdering[i],
       peDiffuseOrderingIndex[i],
@@ -216,10 +223,11 @@ void WorkDistrib::buildNodeAwarePeOrdering() {
       peCompactOrderingIndex[i]);
   }
 
-  for ( int i=1; i<CkMyNodeSize(); ++i ) {
-    thisProxy[CkMyPe()+i].peOrderingReady();
-  }
-  peOrderingReady();  // avoid delay
+  peOrderingInit = 1;
+ }
+ CmiMemUnlock();
+ peOrderingReady();
+
 }
 
 struct pe_sortop_coord_x {
