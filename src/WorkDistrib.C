@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2014/07/25 14:56:51 $
- * $Revision: 1.1279 $
+ * $Date: 2014/07/25 18:31:33 $
+ * $Revision: 1.1280 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -149,9 +149,9 @@ void WorkDistrib::peOrderingReady() {
 #ifdef NAMD_CUDA
   cuda_initialize();
 #endif
-//#ifdef NAMD_MIC
-//  mic_initialize();
-//#endif
+#ifdef NAMD_MIC
+  mic_initialize();
+#endif
 }
 
 void WorkDistrib::buildNodeAwarePeOrdering() {

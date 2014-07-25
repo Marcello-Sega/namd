@@ -241,7 +241,7 @@ void mic_initialize() {
         int thisPe = pesOnPhysicalNode[i];
         pesSharingDevice[numPesSharingDevice++] = thisPe;
         if ( devicePe < 1 ) devicePe = thisPe;
-        if ( sortop_bitreverse(thisPe,devicePe) ) devicePe = thisPe;
+        if ( WorkDistrib::pe_sortop_diffuse()(thisPe,devicePe) ) devicePe = thisPe;
       }
     }
     for ( int j = 0; j < ndevices; ++j ) {

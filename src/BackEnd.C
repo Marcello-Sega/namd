@@ -84,7 +84,7 @@ void topo_getargs(char**);
 void cuda_getargs(char**);
 // void cuda_initialize();
 void mic_getargs(char**);
-void mic_initialize();
+// void mic_initialize();
 
 // called on all procs
 void all_init(int argc, char **argv)
@@ -114,9 +114,9 @@ void all_init(int argc, char **argv)
 //#ifdef NAMD_CUDA
 //  if ( CkMyPe() < CkNumPes() ) cuda_initialize();
 //#endif
-#ifdef NAMD_MIC
-  if ( CkMyPe() < CkNumPes() ) mic_initialize();
-#endif
+//#ifdef NAMD_MIC
+//  if ( CkMyPe() < CkNumPes() ) mic_initialize();
+//#endif
 //#endif
 }
 
