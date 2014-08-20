@@ -270,38 +270,56 @@ for the required number of processes and pass +ppn to the NAMD binary as:
 
   mpiexec -np 4 namd2 +ppn 3 <configfile>
 
-See the Cray XT directions below for a more complex example.
+See the Cray XE/XK/XC directions below for a more complex example.
 
--- Cray XT --
+-- Cray XE/XK/XC --
 
-You will need to load the GNU compiler module, build Charm++ for mpi-crayxt
-and NAMD for CRAY-XT-g++, use the following command in your batch script:
+First load modules for the GNU compilers (XE/XK only, XC30 should use Intel),
+topology information, huge page sizes, and the system FFTW 3 library:
 
-  aprun -n $PBS_NNODES -cc cpu namd2
+  module swap PrgEnv-cray PrgEnv-gnu
+  module load rca
+  module load craype-hugepages8M
+  module load fftw
 
-To reduce memory usage, build Charm++ mpi-crayxt-smp instead and use
-(assuming you have 12 cores per node on your machine):
+The CUDA Toolkit module enables dynamic linking, so it should only
+be loaded when building CUDA binaries and never for non-CUDA binaries:
 
-setenv MPICH_PTL_UNEX_EVENTS 100000
-@ NPROC = $PBS_NNODES / 12
-aprun -n $NPROC -N 1 -d 12 namd2 +ppn 11 +setcpuaffinity +pemap 1-11 +commap 0
+  module load cudatoolkit
 
-For two processes per node (for possibly better scaling) use:
+For CUDA or large simulations on XE/XK use gemini_gni-crayxe-persistent-smp
+and for smaller XE simulations use gemini_gni-crayxe-persistent.  For XC30
+the persistent feature is broken so use gni-crayxc-smp or gni-crayxc.
 
-setenv MPICH_PTL_UNEX_EVENTS 100000
-@ NPROC = $PBS_NNODES / 6
-aprun -n $NPROC -N 2 -d 6 namd2 +ppn 5 +setcpuaffinity \
-                                +pemap 1-8,10,11 +commap 0,9 ...
+For XE/XK use CRAY-XE-gnu and (for CUDA) the ``--with-cuda'' config option,
+the appropriate ``--charm-arch'' parameter, and --with-fftw3.  For XC30
+use instead CRAY-XC-intel but all other options the same.
 
-For three processes per node use:
+Your batch job will need to load modules and set environment variables:
 
-setenv MPICH_PTL_UNEX_EVENTS 100000
-@ NPROC = $PBS_NNODES / 4
-aprun -n $NPROC -N 3 -d 4 namd2 +ppn 3 +setcpuaffinity \
-                                +pemap 1-5,7,8,10,11 +commap 0,6,9 ...
+  module swap PrgEnv-cray PrgEnv-gnu
+  module load rca
+  module load craype-hugepages8M
+  setenv HUGETLB_DEFAULT_PAGE_SIZE 8M
+  setenv HUGETLB_MORECORE no
 
-The strange +pemap and +commap settings place the communication threads
-on cores that have been observed to have higher operating system loads.
+To run an SMP build with one process per node on 16 32-core nodes:
+
+  aprun -n 16 -r 1 -N 1 -d 31 /path/to/namd2 +ppn 30 +pemap 1-30 +commap 0 <configfile>
+
+or the same with 4 processes per node:
+
+  aprun -n 64 -N 4 -d 8 /path/to/namd2 +ppn 7 +pemap 1-7,9-15,17-23,25-31 +commap 0,8,16,24 <configfile>
+
+or non-SMP, leaving one core free for the operating system:
+
+  aprun -n 496 -r 1 -N 31 -d 1 /path/to/namd2 +pemap 0-30 <configfile>
+
+The explicit +pemap and +commap settings are necessary to avoid having
+multiple threads assigned to the same core (or potentially all threads
+assigned to the same core).  If the performance of NAMD running on a
+single compute node is much worse than comparable non-Cray host then
+it is very likely that your CPU affinity settings need to be fixed.
 
 -- SGI Altix UV --
 
