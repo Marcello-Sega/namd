@@ -61,7 +61,7 @@ NAMD 2.10b1 has many advantages over NAMD 2.9, among these are:
 
 - Enhanced performance and scalability
 
-Details at http://www.ks.uiuc.edu/Research/namd/2.9/features.html
+Details at http://www.ks.uiuc.edu/Research/namd/2.10/features.html
 
 NAMD is available from http://www.ks.uiuc.edu/Research/namd/
 
