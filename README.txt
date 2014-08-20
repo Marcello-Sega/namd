@@ -31,5 +31,5 @@ tools (with source code) for molecular dynamics studies in structural
 biology.  For more information, see http://www.ks.uiuc.edu/
 
 The NAMD project is funded by the National Institutes of Health
-National Institute of General Medical Sciences (PHS 5 P41 RR05969).
+National Institute of General Medical Sciences (NIH 9P41GM104601).
 
