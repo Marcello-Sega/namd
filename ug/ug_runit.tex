@@ -343,11 +343,12 @@ scalar pressure values than in energies.
 
 To benefit from GPU acceleration you will need a CUDA build of NAMD
 and a recent high-end NVIDIA video card.  CUDA builds will not function
-without a CUDA-capable GPU.  You will also need to be running the
-NVIDIA Linux driver version 270.41.19 or newer (released Linux binaries
-are built with CUDA 4.0, but can be built with newer versions as well).
+without a CUDA-capable GPU and a driver that supports CUDA 6.0.  If the
+installed driver is too old NAMD will exit on startup with the error
+``CUDA driver version is insufficient for CUDA runtime version''.
 
-Finally, the libcudart.so.4 included with the binary (the one copied from
+Finally, if NAMD was not statically linked against the CUDA runtime
+then the libcudart.so file included with the binary (copied from
 the version of CUDA it was built with) must be in a directory in your
 LD\_LIBRARY\_PATH before any other libcudart.so libraries.  For example,
 when running a multicore binary (recommended for a single machine):
@@ -414,6 +415,18 @@ you should use the same Charm++ you would use for a non-CUDA build.
 Do NOT add the cuda option to the Charm++ build command line.  The
 only changes to the build process needed are to add --with-cuda and
 possibly --cuda-prefix ... to the NAMD config command line.
+
+\subsection{Xeon Phi Acceleration}
+
+NAMD supports offloading calculations to Intel Xeon Phi coprocessors.
+This feature is new and should be considered experimental.  Observed
+speedups are around a factor of two, but parallel scaling is degraded.
+
+The Xeon Phi coprocessor is supported in NAMD similar to CUDA GPUs.
+Binaries are not provided, so you will need to build from source code
+(see "Compiling NAMD" below) specifying --with-mic to the config script.
+As with CUDA, multicore or ibverbs-smp builds are strongly recommended.
+A recent Intel compiler is obviously required to compile for Xeon Phi.
 
 \subsection{Memory Usage}
 

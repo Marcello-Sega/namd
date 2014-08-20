@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                    NAMD 2.9 Release Announcement                   |
+|                  NAMD 2.10b1 Release Announcement                  |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                       April 30, 2012
+                                                      August 22, 2014
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
@@ -13,31 +13,51 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Institute of General Medical Sciences.
 
-NAMD 2.9 has many advantages over NAMD 2.8, among these are:
+NAMD 2.10b1 has many advantages over NAMD 2.9, among these are:
 
-- Improved (temperature/Hamiltonian) replica-exchange implementation
+- Network topology adaptation for CRAY XE/XK and IBM Blue Gene/Q
 
-- Replica-based umbrella sampling via collective variables module
+- CRAY XC/30 and IBM Blue Gene/Q native network layers
 
-- Optimized shared-memory single-node and multiple-node CUDA builds
+- Multiple-copy algorithm support for native network layers
 
-- CUDA GPU-accelerated generalized Born implicit solvent (GBIS) model
+- Lambda-exchange multiple-copy alchemical free energy calculations
 
-- CUDA GPU-accelerated energy evaluation and minimization
+- String method with swarms-of-trajectories transition pathways
 
-- Native CRAY XE/XK uGNI network layer implementation
+- Atom coordinate/velocity exchange for multiple-copy algorithms
 
-- Faster grid forces and lower-accuracy "lite" implementation
+- Tcl scripting command to reinitialize atoms from output files
 
-- Hybrid MD with knowledge-based Go forces to drive folding
+- Tcl scripting configuration file parameter introspection
 
-- Linear combination of pairwise overlaps (LCPO) SASA for GBIS model
+- Tcl scripting trajectory and restart output file switching
 
-- Weeks-Chandler-Anderson decomposition for alchemical FEP simulations
+- Multilevel summation method for long-range electrostatics
+
+- Normalized external electric field to avoid pressure artifacts
+
+- Improved scalability for collective variables, Tcl forces, etc.
 
 - Collective variables module improvements
 
-- Updates to CUDA 4.0 and Tcl 8.5.9, plus option to build with FFTW 3
+- Drude polarizable force field improvements
+
+- SMOG structure-based potential support
+
+- Minimizer stability and performance improvements
+
+- Various improvements for 100-million-atom simulations
+
+- Update to CUDA 6.0 with Kepler GPU optimizations
+
+- GPU-accelerated particle-mesh Ewald calculation
+
+- Intel Xeon Phi coprocessor support
+
+- 64-bit Windows shared-memory single-node port with CUDA support
+
+- 32-bit and 64-bit ARM processor support
 
 - Enhanced performance and scalability
 

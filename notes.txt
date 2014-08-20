@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                       NAMD 2.9 Release Notes                       |
+|                     NAMD 2.10b1 Release Notes                      |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -11,6 +11,7 @@ This file contains the following sections:
   - Running NAMD
   - CPU Affinity
   - CUDA GPU Acceleration
+  - Xeon Phi Acceleration
   - Compiling NAMD
   - Memory Usage
   - Improving Parallel Scaling
@@ -389,11 +390,12 @@ scalar pressure values than in energies.
 
 To benefit from GPU acceleration you will need a CUDA build of NAMD
 and a recent high-end NVIDIA video card.  CUDA builds will not function
-without a CUDA-capable GPU.  You will also need to be running the
-NVIDIA Linux driver version 270.41.19 or newer (released Linux binaries
-are built with CUDA 4.0, but can be built with newer versions as well).
+without a CUDA-capable GPU and a driver that supports CUDA 6.0.  If the
+installed driver is too old NAMD will exit on startup with the error
+"CUDA driver version is insufficient for CUDA runtime version".
 
-Finally, the libcudart.so.4 included with the binary (the one copied from
+Finally, if NAMD was not statically linked against the CUDA runtime
+then the libcudart.so file included with the binary (copied from
 the version of CUDA it was built with) must be in a directory in your
 LD_LIBRARY_PATH before any other libcudart.so libraries.  For example,
 when running a multicore binary (recommended for a single machine):
@@ -455,6 +457,20 @@ possibly --cuda-prefix ... to the NAMD config command line.
 
 ----------------------------------------------------------------------
 
+Xeon Phi Acceleration
+
+NAMD supports offloading calculations to Intel Xeon Phi coprocessors.
+This feature is new and should be considered experimental.  Observed
+speedups are around a factor of two, but parallel scaling is degraded.
+
+The Xeon Phi coprocessor is supported in NAMD similar to CUDA GPUs.
+Binaries are not provided, so you will need to build from source code
+(see "Compiling NAMD" below) specifying --with-mic to the config script.
+As with CUDA, multicore or ibverbs-smp builds are strongly recommended.
+A recent Intel compiler is obviously required to compile for Xeon Phi.
+
+----------------------------------------------------------------------
+
 Compiling NAMD
 
 Building a complete NAMD binary from source code requires working
@@ -469,10 +485,10 @@ to set the path to TCL and FFTW libraries correctly.
 As an example, here is the build sequence for 64-bit Linux workstations:
 
 Unpack NAMD and matching Charm++ source code and enter directory:
-  tar xzf NAMD_2.9_Source.tar.gz
-  cd NAMD_2.9_Source
-  tar xf charm-6.5.1.tar
-  cd charm-6.5.1
+  tar xzf NAMD_2.10b1_Source.tar.gz
+  cd NAMD_2.10b1_Source
+  tar xf charm-6.6.0.tar
+  cd charm-6.6.0
 
 Build and test the Charm++/Converse library (multicore version):
   ./build charm++ multicore-linux64 --with-production
@@ -489,7 +505,7 @@ Build and test the Charm++/Converse library (MPI version):
   cd ../../../../..
 
 Download and install TCL and FFTW libraries:
-  (cd to NAMD_2.9_Source if you're not already there)
+  (cd to NAMD_2.10b1_Source if you're not already there)
   wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux-x86_64.tar.gz
   tar xzf fftw-linux-x86_64.tar.gz
   mv linux-x86_64 fftw
@@ -501,7 +517,7 @@ Download and install TCL and FFTW libraries:
   mv tcl8.5.9-linux-x86_64-threaded tcl-threaded
 
 Optionally edit various configuration files:
-  (not needed if charm-6.5.1, fftw, and tcl are in NAMD_2.9_Source)
+  (not needed if charm-6.6.0, fftw, and tcl are in NAMD_2.10b1_Source)
   vi Make.charm  (set CHARMBASE to full path to charm)
   vi arch/Linux-x86_64.fftw     (fix library name and path to files)
   vi arch/Linux-x86_64.tcl      (fix library version and path to TCL files)
@@ -535,10 +551,10 @@ http://www.ks.uiuc.edu/Research/namd/libraries/.  Each tar file
 contains a directory with the name of the platform.  These libraries
 don't change very often, so you should find a permanent home for them.
 
-Unpack the NAMD source code and the enclosed charm-6.5.1.tar archive.  This
+Unpack the NAMD source code and the enclosed charm-6.6.0.tar archive.  This
 version of Charm++ is the same one used to build the released binaries
 and is more likely to work and be bug free than any other we know of.
-Edit Make.charm to point at .rootdir/charm-6.5.1 or the full path to the
+Edit Make.charm to point at .rootdir/charm-6.6.0 or the full path to the
 charm directory if you unpacked outside of the NAMD source directory.
 
 Run the config script without arguments to list the available builds,
