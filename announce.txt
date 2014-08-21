@@ -17,7 +17,7 @@ NAMD 2.10b1 has many advantages over NAMD 2.9, among these are:
 
 - Network topology adaptation for CRAY XE/XK and IBM Blue Gene/Q
 
-- CRAY XC/30 and IBM Blue Gene/Q native network layers
+- CRAY XC30 and IBM Blue Gene/Q native network layers
 
 - Multiple-copy algorithm support for native network layers
 
