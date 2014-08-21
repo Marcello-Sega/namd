@@ -362,8 +362,8 @@ separate NAMD process for every replica used in the simulation.
 
 {\bf A NAMD build based on Charm++ 6.5.0 or later using one of the
 ``LRTS'' (low-level runtime system) machine layers is required!}
-Current LRTS machine layers include
-gemini\_gni-crayxe, pamilrts-bluegeneq, and mpi.
+Current LRTS machine layers include mpi, netlrts, verbs (for InfiniBand),
+gemini\_gni-crayxe, gni-crayxc, and pamilrts-bluegeneq.
 
 Only temperature-exchange simulations are described below.
 To employ replicas for umbrella sampling you will need to understand
