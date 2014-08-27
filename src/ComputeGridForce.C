@@ -112,6 +112,8 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
     Tensor extVirial;
     
     int numAtoms = homePatch->getNumAtoms();
+
+    if ( mol->numGridforceGrids < 1 ) NAMD_bug("No grids loaded in ComputeGridForce::doForce()");
     
     for (int gridnum = 0; gridnum < mol->numGridforceGrids; gridnum++) {
 	GridforceGrid *grid = mol->get_gridfrc_grid(gridnum);
