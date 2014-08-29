@@ -356,6 +356,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
                                              pdb,
                                              NULL);
 	}
+#endif
 	//CkPrintf ("DEBUG--check if StirOn to build stir params..\n");
 
 	if (simParameters->stirOn)
@@ -369,6 +370,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	}
 
 
+#ifndef MEM_OPT_VERSION
 	if (simParameters->fixedAtomsOn)
 	{
 	   molecule->build_fixed_atoms(configList->find("fixedatomsfile"),
@@ -376,6 +378,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 					pdb,
 					NULL);
 	}
+#endif
 	
 	/* BEGIN gf */
 	if (simParameters->mgridforceOn)
@@ -437,6 +440,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 				       NULL);
 	}
 
+#ifndef MEM_OPT_VERSION
 	//  If langevin dynamics or temperature coupling are active, build 
 	//  the parameters necessary
 	if (simParameters->langevinOn)
@@ -490,6 +494,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
                 configList->find("openatomPdbCol"), pdb, NULL, "openatomPdb")
         }
         #endif // OPENATOM_VERSION
+#endif
 
 	// JLai checks to see if Go Forces are turned on
 	if (simParameters->goForcesOn) {
@@ -521,6 +526,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	}
 	// End of Go code -- JLai
 
+#ifndef MEM_OPT_VERSION
 	iout << iINFO << "****************************\n";
 	iout << iINFO << "STRUCTURE SUMMARY:\n";
 	iout << iINFO << molecule->numAtoms << " ATOMS\n";

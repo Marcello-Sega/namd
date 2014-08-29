@@ -5066,23 +5066,6 @@ void Molecule::send_Molecule(MOStream *msg){
     msg->put(numConstrainedAtomsSet*sizeof(AtomSet), (char *)(constrainedAtomsSet->begin()));
   }
     
-  // Broadcast the message to the other nodes
-  msg->end();
-  delete msg;
-
-  build_excl_check_signatures();
-
-  //set num{Calc}Tuples(Bonds,...,Impropers) to 0
-  numBonds = numCalcBonds = 0;
-  numAngles = numCalcAngles = 0;
-  numDihedrals = numCalcDihedrals = 0;
-  numImpropers = numCalcImpropers = 0;
-  numCrossterms = numCalcCrossterms = 0;
-  numTotalExclusions = numCalcExclusions = 0;  
-  // JLai
-  numLJPair = numCalcLJPair = 0;
-  // End of JLai
-
 #else
   msg->put(numAtoms);
   msg->put(numAtoms*sizeof(Atom), (char*)atoms);
@@ -5156,6 +5139,7 @@ void Molecule::send_Molecule(MOStream *msg){
        msg->put(numConstraints*sizeof(ConstraintParams), (char*)consParams);
      }
   }
+#endif
   
   /* BEGIN gf */
   // Send the gridforce information, if used
@@ -5230,6 +5214,12 @@ void Molecule::send_Molecule(MOStream *msg){
       msg->put(numConsForce*sizeof(Vector), (char*)consForce);
   }
   
+  if (simParams->excludeFromPressure) {
+    msg->put(numExPressureAtoms);
+    msg->put(numAtoms, exPressureAtomFlags);
+  }
+  
+#ifndef MEM_OPT_VERSION
   //  Send the langevin parameters, if active
   if (simParams->langevinOn || simParams->tCoupleOn)
   {
@@ -5242,11 +5232,6 @@ void Molecule::send_Molecule(MOStream *msg){
     msg->put(numFixedAtoms);
     msg->put(numAtoms, fixedAtomFlags);
   msg->put(numFixedRigidBonds);
-  }
-  
-  if (simParams->excludeFromPressure) {
-    msg->put(numExPressureAtoms);
-    msg->put(numAtoms, exPressureAtomFlags);
   }
   
   //fepb
@@ -5307,13 +5292,32 @@ void Molecule::send_Molecule(MOStream *msg){
     msg->put((numAtoms),pointerToGaussBeg);
     msg->put((numAtoms),pointerToGaussEnd);
   }
+#endif
 
   // Broadcast the message to the other nodes
   msg->end();
   delete msg;
 
+#ifdef MEM_OPT_VERSION
+
+  build_excl_check_signatures();
+
+  //set num{Calc}Tuples(Bonds,...,Impropers) to 0
+  numBonds = numCalcBonds = 0;
+  numAngles = numCalcAngles = 0;
+  numDihedrals = numCalcDihedrals = 0;
+  numImpropers = numCalcImpropers = 0;
+  numCrossterms = numCalcCrossterms = 0;
+  numTotalExclusions = numCalcExclusions = 0;  
+  // JLai
+  numLJPair = numCalcLJPair = 0;
+  // End of JLai
+
+#else
+
   //  Now build arrays of indexes into these arrays by atom      
   build_lists_by_atom();
+
 #endif
 }
  /*      END OF FUNCTION send_Molecule      */
@@ -5393,18 +5397,6 @@ void Molecule::receive_Molecule(MIStream *msg){
     msg->get(numConstrainedAtomsSet*sizeof(AtomSet), (char *)(constrainedAtomsSet->begin()));
   } 
 
-      //  Now free the message 
-      delete msg;
-
-      build_excl_check_signatures();
-
-    //set num{Calc}Tuples(Bonds,...,Impropers) to 0
-    numBonds = numCalcBonds = 0;
-    numAngles = numCalcAngles = 0;
-    numDihedrals = numCalcDihedrals = 0;
-    numImpropers = numCalcImpropers = 0;
-    numCrossterms = numCalcCrossterms = 0;
-    numTotalExclusions = numCalcExclusions = 0;  
 #else
   delete [] atoms;
   atoms= new Atom[numAtoms];  
@@ -5501,6 +5493,7 @@ void Molecule::receive_Molecule(MIStream *msg){
            msg->get(numConstraints*sizeof(ConstraintParams), (char*)consParams);
          }
       }
+#endif
 
       /* BEGIN gf */
       if (simParams->mgridforceOn)
@@ -5615,6 +5608,13 @@ void Molecule::receive_Molecule(MIStream *msg){
         }
       }
 
+      if (simParams->excludeFromPressure) {
+        exPressureAtomFlags = new int32[numAtoms];
+        msg->get(numExPressureAtoms);
+        msg->get(numAtoms, exPressureAtomFlags);
+      }
+
+#ifndef MEM_OPT_VERSION
       //  Get the langevin parameters, if they are active
       if (simParams->langevinOn || simParams->tCoupleOn)
       {
@@ -5633,12 +5633,6 @@ void Molecule::receive_Molecule(MIStream *msg){
         msg->get(numFixedAtoms);
         msg->get(numAtoms, fixedAtomFlags);
         msg->get(numFixedRigidBonds);
-      }
-
-      if (simParams->excludeFromPressure) {
-        exPressureAtomFlags = new int32[numAtoms];
-        msg->get(numExPressureAtoms);
-        msg->get(numAtoms, exPressureAtomFlags);
       }
 
 //fepb
@@ -5759,13 +5753,32 @@ void Molecule::receive_Molecule(MIStream *msg){
     msg->get((numAtoms),pointerToGaussEnd);
     //
   }
+#endif
 
       //  Now free the message 
       delete msg;
 
+#ifdef MEM_OPT_VERSION
+
+      build_excl_check_signatures();
+
+    //set num{Calc}Tuples(Bonds,...,Impropers) to 0
+    numBonds = numCalcBonds = 0;
+    numAngles = numCalcAngles = 0;
+    numDihedrals = numCalcDihedrals = 0;
+    numImpropers = numCalcImpropers = 0;
+    numCrossterms = numCalcCrossterms = 0;
+    numTotalExclusions = numCalcExclusions = 0;  
+    // JLai
+    numLJPair = numCalcLJPair = 0;
+    // End of JLai
+
+#else
+
       //  analyze the data and find the status of each atom
       build_atom_status();
       build_lists_by_atom();      
+
 #endif
 }
  /*      END OF FUNCTION receive_Molecule    */
@@ -5837,6 +5850,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	// Now load values from mgridforcelist object
 	if (mgridParams->gridforceFile == NULL)
 	{
+	    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, gridforceFile required.");
 	    kPDB = initial_pdb;
 	}
 	else
@@ -6138,6 +6152,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
        //  case anyway
        if (consref == NULL)
        {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, consref required.");
     refPDB = initial_pdb;
        }
        else
@@ -6174,6 +6189,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
        //  the PDB with the initial coordinates
        if (conskfile == NULL)
        {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, conskfile required.");
     kPDB = initial_pdb;
        }
        else
@@ -6409,6 +6425,7 @@ void Molecule::build_movdrag_params(StringList *movDragFile,
   //  user gave us another file name, open that one.  Otherwise, just
   //  use the PDB with the initial coordinates
   if (movDragFile == NULL) {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, movDragFile required.");
     tPDB = initial_pdb;
     
   } else {
@@ -6618,6 +6635,7 @@ void Molecule::build_rotdrag_params(StringList *rotDragFile,
   //  user gave us another file name, open that one.  Otherwise, just
   //  use the PDB with the initial coordinates
   if (rotDragFile == NULL) {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, rotDragFile required.");
     tPDB = initial_pdb;
     
   } else {
@@ -6952,6 +6970,7 @@ void Molecule::build_constorque_params(StringList *consTorqueFile,
   //  user gave us another file name, open that one.  Otherwise, just
   //  use the PDB with the initial coordinates
   if (consTorqueFile == NULL) {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, consTorqueFile required.");
     tPDB = initial_pdb;
     
   } else {
@@ -7371,6 +7390,7 @@ void Molecule::build_langevin_params(BigReal coupling,
        //  the PDB file that has the initial coordinates.  
        if (langfile == NULL)
        {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, langevinFile required.");
     bPDB = initial_pdb;
        }
        else
@@ -7521,6 +7541,7 @@ void Molecule::build_langevin_params(BigReal coupling,
        //  the PDB file that has the initial coordinates.  
        if (fixedfile == NULL)
        {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, fixedAtomsFile required.");
     bPDB = initial_pdb;
        }
        else
@@ -7727,6 +7748,7 @@ void Molecule::build_langevin_params(BigReal coupling,
        // dangerous, since restarted simulations will be different
        if (stirredfile == NULL)
        {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, stirFilename required.");
     sPDB = initial_pdb;
     // dangerous, since restarted simulations will be different, so warn
         iout << iWARN << "STIRRING USING INITIAL POSITION FILE FOR REFERENCE POSITIONS" << endi;
@@ -8173,6 +8195,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
      // if the user gave another filename, use it, else
      // use the pdb file with the initial coordinates
      if (alchfile == NULL) {
+       if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, alchfile required.");
        bPDB = initial_pdb;
        strcpy(filename, "coordinate pdb file (default)");
      }
@@ -8475,6 +8498,7 @@ void Molecule::build_exPressure_atoms(StringList *fixedfile,
   //  the user gave another file name, use it.  Otherwise, just use
   //  the PDB file that has the initial coordinates.
   if (fixedfile == NULL) {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, excludeFromPressureFile required.");
     bPDB = initial_pdb;
   } else {
     if (fixedfile->next != NULL) {
