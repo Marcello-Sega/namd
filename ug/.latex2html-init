@@ -12,4 +12,14 @@ sub pre_pre_process {
     s/((^|\n)[^%\n]*)\\begin\s*{cvrefman}([^\001]*)\001/$1/gom;
 }
 
+sub custom_TITLE_hook {
+    local($title, $toc_sec_title) = @_;
+    if ( $DOCUMENT_TITLE ) {
+      return($title." (".$DOCUMENT_TITLE.")");
+    } else {
+      $DOCUMENT_TITLE = $title unless ($title eq "Footnotes");
+      return($title);
+    }
+}
+
 1;  # this must be the last line
