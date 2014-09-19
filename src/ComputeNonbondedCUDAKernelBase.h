@@ -385,18 +385,11 @@ __global__ static void NAME(dev_nonbonded)(
   __syncthreads();
   if ( threadIdx.x < 24 ) { // reduce forces, warp-synchronous
                             // 3 components, 8 threads per component
-#ifdef KEPLER_SHUFFLE
-    float f;			    
-#endif /* KEPLER_SHUFFLE */
     const int i_out = myPatchPair.virial_start + threadIdx.x;
     {
-#ifndef KEPLER_SHUFFLE
       float f;
       f = sumf.a1d[threadIdx.x] + sumf.a1d[threadIdx.x + 24] + 
           sumf.a1d[threadIdx.x + 48] + sumf.a1d[threadIdx.x + 72];
-#else /* KEPLER_SHUFFLE */
-      f = sumf.a1d[threadIdx.x] + sumf.a1d[threadIdx.x + 24] + sumf.a1d[threadIdx.x + 48] + sumf.a1d[threadIdx.x + 72];
-#endif /* KEPLER_SHUFFLE */
       sumf.a1d[threadIdx.x] = f;
       f += sumf.a1d[threadIdx.x + 12];
       sumf.a1d[threadIdx.x] = f;
@@ -449,19 +442,17 @@ __global__ static void NAME(dev_nonbonded)(
     if ( thread == 0 ) {
       sumf.a2d[subwarp][0] = totalev;
       sumf.a2d[subwarp][1] = totalee;
-#ifndef KEPLER_SHUFFLE
       sumf.a2d[subwarp][2] = 0.f SLOW( + totales ) ;
     }
+#ifndef KEPLER_SHUFFLE
     for ( int g = 1; g < 4; ++g ) {
       if ( thread == g ) {
         sumf.a2d[subwarp][0] += totalev;
         sumf.a2d[subwarp][1] += totalee;
         SLOW( sumf.a2d[subwarp][2] += totales; )
       }
-#else /* KEPLER_SHUFFLE */
-      SLOW( sumf.a2d[subwarp][2] = totales );
-#endif /* KEPLER_SHUFFLE */
     }
+#endif /* KEPLER_SHUFFLE */
     __syncthreads();
     if ( threadIdx.x < 24 ) { // reduce energies, warp-synchronous
                              // 3 components, 8 threads per component
