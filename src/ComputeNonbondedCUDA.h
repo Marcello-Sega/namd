@@ -108,6 +108,15 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     ComputeNonbondedCUDA **slaves;
     int *slavePes;
     int numSlaves;
+
+    int atomsChanged;
+    int computesChanged;
+
+    int pairlistsValid;
+    float pairlistTolerance;
+    int usePairlists;
+    int savePairlists;
+    float plcutoff2;
 };
 
 

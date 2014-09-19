@@ -731,15 +731,6 @@ void unregister_cuda_compute(ComputeID c) {  // static
 
 }
 
-static __thread int atomsChanged = 0;
-static __thread int computesChanged = 0;
-
-static __thread int pairlistsValid = 0;
-static __thread float pairlistTolerance = 0.;
-static __thread int usePairlists = 0;
-static __thread int savePairlists = 0;
-static __thread float plcutoff2 = 0;
-
 // static __thread cudaEvent_t start_upload;
 static __thread cudaEvent_t start_calc;
 static __thread cudaEvent_t end_remote_download;
@@ -771,6 +762,13 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
 
   atomsChanged = 1;
   computesChanged = 1;
+
+  pairlistsValid = 0;
+  pairlistTolerance = 0.;
+  usePairlists = 0;
+  savePairlists = 0;
+  plcutoff2 = 0.;
+
   workStarted = 0;
   basePriority = PROXY_DATA_PRIORITY;
   localWorkMsg2 = new (PRIORITY_SIZE) LocalWorkMsg;

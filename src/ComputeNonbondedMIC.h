@@ -120,6 +120,15 @@ class ComputeNonbondedMIC : public Compute, private ComputeNonbondedUtil {
     int *slavePes;
     int numSlaves;
 
+    int atomsChanged;
+    int computesChanged;
+
+    int pairlistsValid;
+    float pairlistTolerance;
+    int usePairlists;
+    int savePairlists;
+    float plcutoff2;
+
     #if MIC_SUBMIT_ATOMS_ON_ARRIVAL != 0
       int micDevice;
       int2 *exclusionsByAtom_ptr;
