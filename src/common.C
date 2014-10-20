@@ -158,6 +158,31 @@ void NAMD_backup_file(const char *filename, const char *extension)
   }
 }
 
+// same as open, only does error checking internally
+int NAMD_open(const char *fname) {
+  int fd;
+
+  //  open the file and die if the open fails
+#ifdef WIN32
+  while ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,_S_IREAD|_S_IWRITE)) < 0) {
+#else
+#ifdef NAMD_NO_O_EXCL
+  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE,
+#else
+  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_LARGEFILE,
+#endif
+                           S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
+#endif
+    if ( errno != EINTR ) {
+      char errmsg[1024];
+      sprintf(errmsg, "Unable to open binary file %s", fname);
+      NAMD_err(errmsg);
+    }
+  }
+
+  return fd;
+}
+
 // same as write, only does error checking internally
 void NAMD_write(int fd, const char *buf, size_t count) {
   while ( count ) {
@@ -171,6 +196,21 @@ void NAMD_write(int fd, const char *buf, size_t count) {
     if ( retval > count ) NAMD_bug("extra bytes written in NAMD_write()");
     buf += retval;
     count -= retval;
+  }
+}
+
+// same as close, only does error checking internally
+void NAMD_close(int fd, const char *fname) {
+#ifdef WIN32
+  while ( _close(fd) ) {
+#else
+  while ( close(fd) ) {
+#endif
+    if ( errno != EINTR ) {
+      char errmsg[1024];
+      sprintf(errmsg, "Error on closing file %s", fname);
+      NAMD_err(errmsg);
+    }
   }
 }
 

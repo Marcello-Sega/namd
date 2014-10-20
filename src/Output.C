@@ -46,7 +46,35 @@
 #define MKDIR(X) mkdir(X,0777)
 #endif
 
+#define NAMD_open NAMD_open64
 #define NAMD_write NAMD_write64
+#define NAMD_close NAMD_close64
+
+// same as open, only does error checking internally
+int NAMD_open(const char *fname) {
+  int fd;
+
+  //  open the file and die if the open fails
+#ifdef WIN32
+  while ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,_S_IREAD|_S_IWRITE)) < 0) {
+#else
+#ifdef NAMD_NO_O_EXCL
+  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE,
+#else
+  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_LARGEFILE,
+#endif
+                           S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
+#endif
+    if ( errno != EINTR ) {
+      char errmsg[1024];
+      sprintf(errmsg, "Unable to open binary file %s", fname);
+      NAMD_err(errmsg);
+    }
+  }
+
+  return fd;
+}
+
 // same as write, only does error checking internally
 void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg="NAMD_write64") {
   while ( count ) {
@@ -62,6 +90,22 @@ void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg="NAMD_
     count -= retval;
   }
 }
+
+// same as close, only does error checking internally
+void NAMD_close(int fd, const char *fname) {
+#ifdef WIN32
+  while ( _close(fd) ) {
+#else
+  while ( close(fd) ) {
+#endif
+    if ( errno != EINTR ) {
+      char errmsg[1024];
+      sprintf(errmsg, "Error on closing file %s", fname);
+      NAMD_err(errmsg);
+    }
+  }
+}
+
 
 #define seek_dcdfile NAMD_seek
 
@@ -1125,21 +1169,7 @@ void Output::write_binary_file(char *fname, int n, Vector *vecs)
   int fd;    //  File descriptor
   int32 n32 = n;
 
-  //  open the file and die if the open fails
-#ifdef WIN32
-  if ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,_S_IREAD|_S_IWRITE)) < 0)
-#else
-#ifdef NAMD_NO_O_EXCL
-  if ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE,
-#else
-  if ( (fd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_LARGEFILE,
-#endif
-                           S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
-#endif
-  {
-    sprintf(errmsg, "Unable to open binary file %s", fname);
-    NAMD_err(errmsg);
-  }
+  fd = NAMD_open(fname);
 
   sprintf(errmsg, "Error on write to binary file %s", fname);
 
@@ -1147,15 +1177,7 @@ void Output::write_binary_file(char *fname, int n, Vector *vecs)
   NAMD_write(fd, (char *) &n32, sizeof(int32), errmsg);
   NAMD_write(fd, (char *) vecs, sizeof(Vector)*n, errmsg);
 
-#ifdef WIN32
-  if ( _close(fd) )
-#else
-  if ( close(fd) )
-#endif
-  {
-    sprintf(errmsg, "Error on closing binary file %s", fname);
-    NAMD_err(errmsg);
-  }
+  NAMD_close(fd, fname);
 }
 /*      END OF FUNCTION write_binary_file    */
 
@@ -1562,21 +1584,9 @@ void ParOutput::write_binary_file_master(char *fname, int n){
     int fd;    //  File descriptor
     int32 n32 = n;
 
-    //  open the file and die if the open fails
-  #ifdef WIN32
-    if ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,_S_IREAD|_S_IWRITE)) < 0)
-  #else
-  #ifdef NAMD_NO_O_EXCL
-    if ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE,
-  #else
-    if ( (fd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_LARGEFILE,
-  #endif
-                             S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
-  #endif
-    {
-      sprintf(errmsg, "Unable to open binary file %s", fname);
-      NAMD_err(errmsg);
-    }
+    fd = NAMD_open(fname);
+
+    sprintf(errmsg, "Error on write to binary file %s", fname);
 
   #if !OUTPUT_SINGLE_FILE
 	// Write out extra fields as MAGIC number etc.
@@ -1591,15 +1601,7 @@ void ParOutput::write_binary_file_master(char *fname, int n){
     //  Write out the number of atoms and the vectors
     NAMD_write(fd, (char *) &n32, sizeof(int32), errmsg);
 
-  #ifdef WIN32
-    if ( _close(fd) )
-  #else
-    if ( close(fd) )
-  #endif
-    {
-      sprintf(errmsg, "Error on closing binary file %s", fname);
-      NAMD_err(errmsg);
-    }
+    NAMD_close(fd, fname);
 }
 
 void ParOutput::write_binary_file_slave(char *fname, int fID, int tID, Vector *vecs, int64 offset){
