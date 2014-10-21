@@ -520,6 +520,175 @@ The default is likely sufficient, as it is version and platform specific.}
 
 \end{itemize}
 
+
+\subsubsection{MSM parameters}
+
+The multilevel summation method (MSM) 
+is an alternative to PME for calculating full electrostatic interactions.
+The use of the FFT in PME has two drawbacks:
+(1) it generally requires the use of periodic boundary conditions, 
+in which the simulation describes an infinite three-dimensional lattice,
+with each lattice cell containing a copy of the simulated system, and
+(2) calculation of the FFT becomes a considerable performance bottleneck
+to the parallel scalability of MD simulations, due to the many-to-many
+communication pattern employed.
+MSM avoids the use of the FFT in its calculation,
+instead employing the nested interpolation in real space
+of softened pair potentials, 
+which permits in addition to periodic boundary conditions 
+the use of
+semi-periodic boundaries, in which there is periodicity along 
+just one or two basis vectors, 
+or non-periodic boundaries, in which the simulation is 
+performed in a vacuum. 
+Also, better parallel scaling has been observed with MSM 
+when scaling a sufficiently large system to a large number of processors. 
+See the MSM research web page (http://www.ks.uiuc.edu/Research/msm/) 
+for more information. 
+
+For now, \NAMD's implementation of the MSM
+does not calculate the long-range electrostatic 
+contribution to the virial, so use with a barostat for 
+constant pressure simulation is inappropriate. 
+The performance of PME is generally still better for smaller systems 
+with smaller processor counts. 
+MSM is the only efficient method in \NAMD\ for calculating 
+full electrostatics for simulations with semi-periodic or
+non-periodic boundaries. 
+
+The periodicity is defined through setting the cell basis vectors 
+appropriately, as discussed in Sec.~\ref{section:dynamics}. 
+The cutoff distance, discussed earlier in this section, 
+also determines the splitting distance between the 
+MSM short-range part, calculated exactly, and long-range part, 
+interpolated from the grid hierarchy; 
+this splitting distance is the primary control for 
+accuracy for a given interpolation and splitting, 
+although most simulations will likely want to keep the 
+cutoff set to the CHARMM-prescribed value of 12~\AA. 
+
+The configuration options specific to MSM are listed below. 
+A simulation employing non-periodic boundaries in one or more 
+dimensions might have atoms that attempt to drift beyond
+the predetermined extent of the grid. 
+In the case that an atom does drift beyond the grid, 
+the simulation will be halted prematurely with an error message. 
+Several options listed below deal with defining the extent of the 
+grid along non-periodic dimensions beyond what can be automatically 
+determined by the initial coordinates. 
+It is also recommended for non-periodic simulation to 
+configure boundary restraints to contain the atoms, for instance,
+through Tcl boundary forces in Sec.~\ref{section:tclBC}. 
+
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{MSM}{Use multilevel summation method for electrostatics?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Turns on multilevel summation method.}
+
+\item
+\NAMDCONFWDEF{MSMGridSpacing}{spacing between finest level grid points (\AA)}{positive real}{2.5}
+{The grid spacing determines in part the accuracy and efficiency of MSM. 
+An error versus cost analysis shows that the best tradeoff is setting 
+the grid spacing to a value close to the inter-particle spacing. 
+The default value works well in practice for atomic scale simulation.
+This value will be exact along non-periodic dimensions. 
+For periodic dimensions, the grid spacing must evenly divide the 
+basis vector length; the actual spacing for a desired grid spacing $h$ 
+is guaranteed to be within the interval
+$\bigl[ \frac{4}{5} h, \frac{6}{5} h \bigr)$.}
+
+\item
+\NAMDCONFWDEF{MSMQuality}{select the approximation quality}{$0,1,2,3,4$}{0}
+{This parameter offers a simplified way to select higher order
+interpolation and splitting for MSM.  The available choices are: 
+\begin{itemize}
+\item 0 sets $C^1$ cubic ($p=3$) interpolation with $C^2$ Taylor splitting,
+\item 1 sets $C^1$ Hermite ($p=4$) interpolation with $C^3$ Taylor splitting,
+\item 2 sets $C^1$ quintic ($p=5$) interpolation with $C^3$ Taylor splitting,
+\item 3 sets $C^1$ septic ($p=7$) interpolation with $C^4$ Taylor splitting,
+\item 4 sets $C^1$ nonic ($p=9$) interpolation with $C^5$ Taylor splitting.
+\end{itemize}
+There is generally a tradeoff between quality and performance. 
+Empirical results show that the $C^1$ interpolation schemes offer a little
+better accuracy than the alternative
+interpolation schemes that have greater continuity. 
+Also, better accuracy has been observed by using 
+a splitting function with $C^{\lceil (p+1) / 2 \rceil}$ continuity 
+where $p$ is the order of the interpolant. 
+}
+
+\item
+\NAMDCONFWDEF{MSMApprox}{select the interpolant}{$0,1,\dots,7$}{0}
+{Select the interpolation scheme:
+\begin{itemize}
+\item 0 sets $C^1$ cubic ($p=3$) interpolation,
+\item 1 sets $C^1$ quintic ($p=5$) interpolation,
+\item 2 sets $C^2$ quintic ($p=5$) interpolation,
+\item 3 sets $C^1$ septic ($p=7$) interpolation,
+\item 4 sets $C^3$ septic ($p=7$) interpolation,
+\item 5 sets $C^1$ nonic ($p=9$) interpolation,
+\item 6 sets $C^4$ nonic ($p=9$) interpolation,
+\item 7 sets $C^1$ Hermite ($p=4$) interpolation.
+\end{itemize}
+}
+
+\item
+\NAMDCONFWDEF{MSMSplit}{select the splitting}{$0,1,\dots,6$}{0}
+{Select the splitting function: 
+\begin{itemize}
+\item 0 sets $C^2$ Taylor splitting,
+\item 1 sets $C^3$ Taylor splitting,
+\item 2 sets $C^4$ Taylor splitting,
+\item 3 sets $C^5$ Taylor splitting,
+\item 4 sets $C^6$ Taylor splitting,
+\item 5 sets $C^7$ Taylor splitting,
+\item 6 sets $C^8$ Taylor splitting.
+\end{itemize}
+}
+
+\item
+\NAMDCONFWDEF{MSMLevels}{maximum number of levels}{non-negative integer}{0}
+{Set the maximum number of levels to use in the grid hierarchy. 
+Although setting slightly lower than the default might (or might not) 
+improve performance and/or accuracy for non-periodic simulation, 
+it is generally best to leave this at the default value "0" which will
+then automatically adjust the levels to the size of the given system.}
+
+\item
+\NAMDCONFWDEF{MSMPadding}{grid padding (\AA)}{non-negative real}{2.5}
+{The grid padding applies only to non-periodic dimensions, for which 
+the extent of the grid is automatically determined by the 
+maximum and minimum of the initial coordinates plus the padding value.}
+
+\item
+\NAMDCONF{MSMxmin, MSMymin, MSMzmin}{minimum x-, y-, z-coordinate (\AA)}{real}
+{Set independently the minimum x-, y-, or z-coordinates of 
+the simulation.  This parameter is applicable only to non-periodic dimensions. 
+It is useful in conjunction with setting a boundary restraining force 
+with Tcl boundary forces in Sec.~\ref{section:tclBC}.}
+
+\item
+\NAMDCONF{MSMxmax, MSMymax, MSMzmax}{maximum x-, y-, z-coordinate (\AA)}{real}
+{Set independently the maximum x-, y-, or z-coordinates of 
+the simulation.  This parameter is applicable only to non-periodic dimensions. 
+It is useful in conjunction with setting a boundary restraining force 
+with Tcl boundary forces in Sec.~\ref{section:tclBC}.}
+
+\item
+\NAMDCONFWDEF{MSMBlockSizeX, MSMBlockSizeY, MSMBlockSizeZ}{block size for grid decomposition}{positive integer}{8}
+{Tune parallel performance by adjusting the block size used for parallel 
+domain decomposition of the grid.  Recommended to keep the default.}
+
+\item
+\NAMDCONFWDEF{MSMSerial}{Use serial long-range solver?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Enable instead the slow serial long-range solver. 
+Intended to be used only for testing and diagnostic purposes.}
+
+\end{itemize}
+
+
 \subsubsection{Full direct parameters}
 
 The direct computation of electrostatics 
@@ -528,7 +697,7 @@ real calculations, but rather as a testing or
 comparison measure.  Because of the ${\mathcal O}(N^2)$ 
 computational complexity for performing 
 direct calculations, this is {\it much} 
-slower than using PME to compute full 
+slower than using PME or MSM to compute full 
 electrostatics for large systems.
 In the case of periodic boundary conditions,
 the nearest image convention is used rather than a
