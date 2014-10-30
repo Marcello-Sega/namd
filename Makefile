@@ -199,22 +199,26 @@ OBJS = \
 	$(DSTDIR)/GlobalMasterFreeEnergy.o \
 	$(DSTDIR)/GlobalMasterEasy.o \
 	$(DSTDIR)/GlobalMasterMisc.o \
-	$(DSTDIR)/colvarmodule.o \
-	$(DSTDIR)/colvarparse.o \
 	$(DSTDIR)/colvar.o \
-	$(DSTDIR)/colvarvalue.o \
+	$(DSTDIR)/colvaratoms.o \
 	$(DSTDIR)/colvarbias.o \
 	$(DSTDIR)/colvarbias_abf.o \
+	$(DSTDIR)/colvarbias_alb.o \
 	$(DSTDIR)/colvarbias_meta.o \
-	$(DSTDIR)/colvaratoms.o \
+	$(DSTDIR)/colvarbias_restraint.o \
 	$(DSTDIR)/colvarcomp.o \
 	$(DSTDIR)/colvarcomp_angles.o \
 	$(DSTDIR)/colvarcomp_coordnums.o \
 	$(DSTDIR)/colvarcomp_distances.o \
 	$(DSTDIR)/colvarcomp_protein.o \
 	$(DSTDIR)/colvarcomp_rotations.o \
-	$(DSTDIR)/colvarproxy_namd.o \
 	$(DSTDIR)/colvargrid.o \
+	$(DSTDIR)/colvarmodule.o \
+	$(DSTDIR)/colvarparse.o \
+	$(DSTDIR)/colvarproxy_namd.o \
+	$(DSTDIR)/colvarscript.o \
+	$(DSTDIR)/colvartypes.o \
+	$(DSTDIR)/colvarvalue.o \
 	$(DSTDIR)/GridForceGrid.o \
         $(DSTDIR)/GromacsTopFile.o \
 	$(DSTDIR)/heap.o \

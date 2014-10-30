@@ -53,6 +53,7 @@ private:
 #ifdef NAMD_TCL
   friend class Controller;
   friend class GlobalMasterTcl;
+  friend class colvarproxy_namd;
   Tcl_Interp *interp;
   static int Tcl_exit(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_abort(ClientData, Tcl_Interp *, int, char **);
@@ -86,6 +87,7 @@ private:
   static int Tcl_measure(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_colvarbias(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_colvarvalue(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_colvars(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_colvarfreq(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_checkpoint(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_revert(ClientData, Tcl_Interp *, int, char **);

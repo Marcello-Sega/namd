@@ -1,4 +1,4 @@
-// -*- c++ -*-
+/// -*- c++ -*-
 
 #ifndef COLVARATOMS_H
 #define COLVARATOMS_H
@@ -57,8 +57,8 @@ public:
   /// implementation
   cvm::rvector   grad;
 
-  /// \brief Default constructor, setting id and index to invalid numbers
-  atom() : id (-1), index (-1) { reset_data(); }
+  /// \brief Default constructor, setting index and id to invalid numbers
+  atom() : index (-1), id (-1) { reset_data(); }
 
   /// \brief Initialize an atom for collective variable calculation
   /// and get its internal identifier \param atom_number Atom index in
@@ -137,7 +137,7 @@ public:
   std::vector<int> sorted_ids;
 
   /// Allocates and populates the sorted list of atom ids
-  void create_sorted_ids (void);
+  int create_sorted_ids (void);
 
 
   /// \brief When updating atomic coordinates, translate them to align with the
@@ -193,7 +193,7 @@ public:
 
   /// \brief Initialize the group by looking up its configuration
   /// string in conf and parsing it
-  void parse (std::string const &conf,
+  int parse (std::string const &conf,
               char const        *key);
 
   /// \brief Initialize the group after a temporary vector of atoms

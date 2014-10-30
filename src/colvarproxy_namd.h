@@ -1,3 +1,5 @@
+/// -*- c++ -*-
+
 #ifndef COLVARPROXY_NAMD_H
 #define COLVARPROXY_NAMD_H
 
@@ -11,7 +13,11 @@
 
 #include "colvarmodule.h"
 #include "colvarproxy.h"
+#include "colvarvalue.h"
 
+// For replica exchange
+#include "converse.h"
+#include "DataExchanger.h"
 
 /// \brief Communication between colvars and NAMD (implementation of
 /// \link colvarproxy \endlink)
@@ -29,7 +35,7 @@ protected:
   /// NAMD-style PRNG object
   Random random;
 
-  std::string input_prefix_str, output_prefix_str, restart_output_prefix_str;
+
   size_t      restart_frequency_s;
   size_t      previous_NAMD_step;
   bool        first_timestep;
@@ -44,6 +50,11 @@ protected:
   size_t init_namd_atom (AtomID const &aid);
 
   SubmitReduction *reduction;
+
+#ifdef NAMD_TCL
+  Tcl_Interp *interp; // Tcl interpreter embedded in NAMD
+#endif
+
 public:
 
   friend class cvm::atom;
@@ -58,8 +69,18 @@ public:
   void add_energy (cvm::real energy);
   void request_system_force (bool yesno);
   void log (std::string const &message);
+  void error (std::string const &message);
   void fatal_error (std::string const &message);
   void exit (std::string const &message);
+
+  // Callback functions
+  int run_force_callback();
+  int run_colvar_callback(std::string const &name,
+                      std::vector<const colvarvalue *> const &cvcs,
+                      colvarvalue &value);
+  int run_colvar_gradient_callback(std::string const &name,
+                               std::vector<const colvarvalue *> const &cvcs,
+                               std::vector<colvarvalue> &gradient);
 
   inline cvm::real unit_angstrom()
   {
@@ -81,18 +102,46 @@ public:
     return simparams->dt;
   }
 
-  inline std::string input_prefix()
-  {
-    return input_prefix_str;
+  // Replica communication functions.
+  bool replica_enabled() {
+#if CMK_HAS_PARTITION
+    return true;
+#else
+    return false;
+#endif
   }
-  inline std::string restart_output_prefix()
-  {
-    return restart_output_prefix_str;
+
+  int replica_index() {
+    return CmiMyPartition();
   }
-  inline std::string output_prefix()
-  {
-    return output_prefix_str;
+
+  int replica_num() {
+    return CmiNumPartitions();
   }
+
+  void replica_comm_barrier() {
+    replica_barrier();
+  }
+
+  int replica_comm_recv(char* msg_data, int buf_len, int src_rep) {
+    DataMessage *recvMsg = NULL;
+    replica_recv(&recvMsg, src_rep, CkMyPe());
+    CmiAssert(recvMsg != NULL);
+    int retval = recvMsg->size;
+    if (buf_len >= retval) {
+      memcpy(msg_data,recvMsg->data,retval);
+    } else {
+      retval = 0;
+    }
+    CmiFree(recvMsg);
+    return retval;
+  }
+
+  int replica_comm_send(char* msg_data, int msg_len, int dest_rep) {
+    replica_send(msg_data, msg_len, dest_rep, CkMyPe());
+    return msg_len;
+  }
+
   inline size_t restart_frequency()
   {
     return restart_frequency_s;
@@ -107,18 +156,18 @@ public:
                              cvm::atom_pos const &ref_pos);
 
 
-  void load_atoms (char const *filename,
+  int load_atoms (char const *filename,
                    std::vector<cvm::atom> &atoms,
-                   std::string const pdb_field,
+                   std::string const &pdb_field,
                    double const pdb_field_value = 0.0);
 
-  void load_coords (char const *filename,
+  int load_coords (char const *filename,
                     std::vector<cvm::atom_pos> &pos,
                     const std::vector<int> &indices,
-                    std::string const pdb_field,
+                    std::string const &pdb_field,
                     double const pdb_field_value = 0.0);
 
-  void backup_file (char const *filename);
+  int backup_file (char const *filename);
 
   cvm::real rand_gaussian (void)
   {
@@ -164,9 +213,3 @@ inline cvm::real colvarproxy_namd::position_dist2 (cvm::atom_pos const &pos1,
 
 
 #endif
-
-
-// Emacs
-// Local Variables:
-// mode: C++
-// End:

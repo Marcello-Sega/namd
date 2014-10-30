@@ -6,10 +6,14 @@
 % define missing macros
 \newcommand{\MDENGINE}{NAMD}
 \newcommand{\cvrefmanonly}[1]{}
+\newcommand{\cvvmdonly}[1]{}
+\newcommand{\cvvmdugonly}[1]{}
 \newcommand{\cvnamdonly}[1]{#1}
+\newcommand{\cvnamdugonly}[1]{#1}
 \newcommand{\cvnamebasedonly}[1]{#1}
 \newcommand{\cvlammpsonly}[1]{}
-\newcommand{\cvnamdugonly}[1]{#1}
+\newcommand{\cvscriptonly}[1]{}
+\newcommand{\cvcommand}{cv}
 
 % use the NAMD UG macros to document keywords
 \newcommand{\key}[5]{\NAMDCOLVARCONF{#1}{#2}{#3}{#4}{#5}}

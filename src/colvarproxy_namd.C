@@ -1,3 +1,5 @@
+/// -*- c++ -*-
+
 #include "common.h"
 #include "BackEnd.h"
 #include "InfoStream.h"
@@ -6,12 +8,17 @@
 #include "PDB.h"
 #include "PDBData.h"
 #include "ReductionMgr.h"
+#include "ScriptTcl.h"
+
+#ifdef NAMD_TCL
+#include <tcl.h>
+#endif
 
 #include "colvarmodule.h"
 #include "colvaratoms.h"
 #include "colvarproxy.h"
 #include "colvarproxy_namd.h"
-
+#include "colvarscript.h"
 
 colvarproxy_namd::colvarproxy_namd()
 {
@@ -50,7 +57,7 @@ colvarproxy_namd::colvarproxy_namd()
     thermostat_temperature = simparams->tCoupleTemp;
   //else if (simparams->loweAndersenOn)
   //  thermostat_temperature = simparams->loweAndersenTemp;
-  else 
+  else
     thermostat_temperature = 0.0;
 
   random = Random (simparams->randomSeed);
@@ -60,11 +67,45 @@ colvarproxy_namd::colvarproxy_namd()
   restart_output_prefix_str = std::string (simparams->restartFilename);
   restart_frequency_s = simparams->restartFrequency;
 
-  // initiate the colvarmodule, this object will be the communication
-  // proxy
-  colvars = new colvarmodule (config->data, this);
+  // check if it is possible to save output configuration
+  if ((!output_prefix_str.size()) && (!restart_output_prefix_str.size())) {
+    fatal_error ("Error: neither the final output state file or "
+                 "the output restart file could be defined, exiting.\n");
+  }
+
+
+#ifdef NAMD_TCL
+  have_scripts = true;
+  // Store pointer to NAMD's Tcl interpreter
+  interp = Node::Object()->getScript()->interp;
+
+  // See is user-scripted forces are defined
+  if (Tcl_FindCommand(interp, "calc_colvar_forces", NULL, 0) == NULL) {
+    force_script_defined = false;
+  } else {
+    force_script_defined = true;
+  }
+#else
+    force_script_defined = false;
+    have_scripts = false;
+#endif
+
+
+  // initiate module: this object will be the communication proxy
+  colvars = new colvarmodule (this);
+  colvars->config_file (config->data);
+  colvars->setup_input();
+  colvars->setup_output();
+
   // save to Node for Tcl script access
   Node::Object()->colvars = colvars;
+
+
+#ifdef NAMD_TCL
+  // Construct instance of colvars scripting interface
+  script = new colvarscript (this);
+#endif
+
 
   if (simparams->firstTimestep != 0) {
     cvm::log ("Initializing step number as firstTimestep.\n");
@@ -87,10 +128,42 @@ colvarproxy_namd::colvarproxy_namd()
     iout << "Info: done initializing the colvars proxy object.\n" << endi;
 }
 
+/*
+void colvarproxy_namd::construct_cvm (char const  *config_filename)
+// TODO This method might need some refinements for delayed initialization
+// eg. accept config string instead of filename, as below
+//void colvarproxy_namd::construct_cvm (std::string const &config)
+{
+
+  // initiate the colvarmodule, this object will be the communication
+  // proxy
+  colvars = new colvarmodule (config_filename, this);
+  // save to Node for Tcl script access
+  Node::Object()->colvars = colvars;
+
+  if (simparams->firstTimestep != 0) {
+    cvm::log ("Initializing step number as firstTimestep.\n");
+    colvars->it = colvars->it_restart = simparams->firstTimestep;
+  }
+
+  if (cvm::debug()) {
+    cvm::log ("colvars_atoms = "+cvm::to_str (colvars_atoms)+"\n");
+    cvm::log ("colvars_atoms_ncopies = "+cvm::to_str (colvars_atoms_ncopies)+"\n");
+    cvm::log ("positions = "+cvm::to_str (positions)+"\n");
+    cvm::log ("total_forces = "+cvm::to_str (total_forces)+"\n");
+    cvm::log ("applied_forces = "+cvm::to_str (applied_forces)+"\n");
+    cvm::log (cvm::line_marker);
+  }
+}
+*/
 
 colvarproxy_namd::~colvarproxy_namd()
 {
   delete reduction;
+  if (script != NULL) {
+    delete script;
+    script = NULL;
+  }
   if (colvars != NULL) {
     delete colvars;
     colvars = NULL;
@@ -169,7 +242,7 @@ void colvarproxy_namd::calculate()
           found_total_force = true;
           Vector const &namd_force = *f_i;
           total_forces[i] = cvm::rvector (namd_force.x, namd_force.y, namd_force.z);
-          //           if (cvm::debug()) 
+          //           if (cvm::debug())
           //             cvm::log ("Found the total force of atom "+
           //                       cvm::to_str (colvars_atoms[i]+1)+", which is "+
           //                       cvm::to_str (total_forces[i])+".\n");
@@ -205,7 +278,9 @@ void colvarproxy_namd::calculate()
   }
 
   // call the collective variable module
-  colvars->calc();
+  if (colvars->calc() != COLVARS_OK) {
+    fatal_error("");
+  }
   // send MISC energy
   reduction->submit();
 
@@ -214,6 +289,94 @@ void colvarproxy_namd::calculate()
   if (step == simparams->N) {
     colvars->write_output_files();
   }
+}
+
+// Callback functions
+
+int colvarproxy_namd::run_force_callback () {
+#ifdef NAMD_TCL
+  std::string cmd = std::string("calc_colvar_forces ")
+    + cvm::to_str(cvm::step_absolute());
+  int err = Tcl_Eval(interp, cmd.c_str());
+  if (err != TCL_OK) {
+    cvm::log(std::string("Error while executing calc_colvar_forces:\n"));
+    cvm::error(Tcl_GetStringResult(interp));
+    return COLVARS_ERROR;
+  }
+  return COLVARS_OK;
+#else
+  return COLVARS_NOT_IMPLEMENTED;
+#endif
+}
+
+int colvarproxy_namd::run_colvar_callback(std::string const &name,
+                      std::vector<const colvarvalue *> const &cvc_values,
+                      colvarvalue &value)
+{
+#ifdef NAMD_TCL
+  size_t i;
+  std::string cmd = std::string("calc_") + name;
+  for (i = 0; i < cvc_values.size(); i++) {
+    cmd += std::string(" {") +  (*(cvc_values[i])).to_simple_string() + std::string("}");
+  }
+  int err = Tcl_Eval(interp, cmd.c_str());
+  const char *result = Tcl_GetStringResult(interp);
+  if (err != TCL_OK) {
+    cvm::log(std::string("Error while executing ")
+              + cmd + std::string(":\n"));
+    cvm::error(result);
+    return COLVARS_ERROR;
+  }
+  std::istringstream is (result);
+  if (value.from_simple_string(is.str()) != COLVARS_OK) {
+    cvm::log("Error parsing colvar value from script:");
+    cvm::error(result);
+    return COLVARS_ERROR;
+  }
+  return COLVARS_OK;
+#else
+  return COLVARS_NOT_IMPLEMENTED;
+#endif
+}
+
+int colvarproxy_namd::run_colvar_gradient_callback(std::string const &name,
+                               std::vector<const colvarvalue *> const &cvc_values,
+                               std::vector<colvarvalue> &gradient)
+{
+#ifdef NAMD_TCL
+  size_t i;
+  std::string cmd = std::string("calc_") + name + "_gradient";
+  for (i = 0; i < cvc_values.size(); i++) {
+    cmd += std::string(" {") +  (*(cvc_values[i])).to_simple_string() + std::string("}");
+  }
+  int err = Tcl_Eval(interp, cmd.c_str());
+  if (err != TCL_OK) {
+    cvm::log(std::string("Error while executing ")
+              + cmd + std::string(":\n"));
+    cvm::error(Tcl_GetStringResult(interp));
+    return COLVARS_ERROR;
+  }
+  Tcl_Obj **list;
+  int n;
+  Tcl_ListObjGetElements(interp, Tcl_GetObjResult(interp),
+                         &n, &list);
+  if (n != int(gradient.size())) {
+    cvm::error("Error parsing list of gradient values from script");
+    return COLVARS_ERROR;
+  }
+  for (i = 0; i < gradient.size(); i++) {
+    std::istringstream is (Tcl_GetString(list[i]));
+    gradient[i].type(*(cvc_values[i]));
+    gradient[i].is_derivative();
+    if (gradient[i].from_simple_string(is.str()) != COLVARS_OK) {
+      cvm::error("Error parsing gradient value from script");
+      return COLVARS_ERROR;
+    }
+  }
+  return (err == TCL_OK) ? COLVARS_OK : COLVARS_ERROR;
+#else
+  return COLVARS_NOT_IMPLEMENTED;
+#endif
 }
 
 
@@ -236,14 +399,20 @@ void colvarproxy_namd::log (std::string const &message)
   iout << endi;
 }
 
+void colvarproxy_namd::error (std::string const &message)
+{
+  // In NAMD, all errors are fatal
+  fatal_error(message);
+}
+
 
 void colvarproxy_namd::fatal_error (std::string const &message)
 {
-  cvm::log (message);
+  log (message);
   if (!cvm::debug())
-    cvm::log ("If this error message is unclear, "
+    log ("If this error message is unclear, "
               "try recompiling with -DCOLVARS_DEBUG.\n");
-  NAMD_err ("Error in the collective variables module: exiting.\n");
+  NAMD_die ("Error in the collective variables module: exiting.\n");
 }
 
 
@@ -283,7 +452,7 @@ e_pdb_field pdb_field_str2enum (std::string const &pdb_field_str)
       colvarparse::to_lower_cppstr ("X")) {
     pdb_field = e_pdb_x;
   }
-  
+
   if (colvarparse::to_lower_cppstr (pdb_field_str) ==
       colvarparse::to_lower_cppstr ("Y")) {
     pdb_field = e_pdb_y;
@@ -295,18 +464,18 @@ e_pdb_field pdb_field_str2enum (std::string const &pdb_field_str)
   }
 
   if (pdb_field == e_pdb_none) {
-    cvm::fatal_error ("Error: unsupported PDB field, \""+
-                      pdb_field_str+"\".\n");
+    cvm::error ("Error: unsupported PDB field, \""+
+                 pdb_field_str+"\".\n", INPUT_ERROR);
   }
 
   return pdb_field;
 }
 
 
-void colvarproxy_namd::load_coords (char const *pdb_filename,
+int colvarproxy_namd::load_coords (char const *pdb_filename,
                                     std::vector<cvm::atom_pos> &pos,
                                     const std::vector<int> &indices,
-                                    std::string const pdb_field_str,
+                                    std::string const &pdb_field_str,
                                     double const pdb_field_value)
 {
   if (pdb_field_str.size() == 0 && indices.size() == 0) {
@@ -325,7 +494,7 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
 
   PDB *pdb = new PDB (pdb_filename);
   size_t const pdb_natoms = pdb->num_atoms();
-  
+
   if (pos.size() != pdb_natoms) {
 
     bool const pos_allocated = (pos.size() > 0);
@@ -373,7 +542,7 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
           current_index++;
         }
       }
-      
+
       if (!pos_allocated) {
         pos.push_back (cvm::atom_pos (0.0, 0.0, 0.0));
       } else if (ipos >= pos.size()) {
@@ -410,12 +579,13 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
   }
 
   delete pdb;
+  return COLVARS_OK;
 }
 
 
-void colvarproxy_namd::load_atoms (char const *pdb_filename,
+int colvarproxy_namd::load_atoms (char const *pdb_filename,
                                    std::vector<cvm::atom> &atoms,
-                                   std::string const pdb_field_str,
+                                   std::string const &pdb_field_str,
                                    double const pdb_field_value)
 {
   if (pdb_field_str.size() == 0)
@@ -457,21 +627,23 @@ void colvarproxy_namd::load_atoms (char const *pdb_filename,
     } else if (atom_pdb_field_value == 0.0) {
       continue;
     }
-     
+
     atoms.push_back (cvm::atom (ipdb+1));
   }
 
   delete pdb;
+  return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
 }
 
 
-void colvarproxy_namd::backup_file (char const *filename)
+int colvarproxy_namd::backup_file (char const *filename)
 {
   if (std::string (filename).rfind (std::string (".colvars.state")) != std::string::npos) {
     NAMD_backup_file (filename, ".old");
   } else {
     NAMD_backup_file (filename, ".BAK");
   }
+  return COLVARS_OK;
 }
 
 
@@ -507,9 +679,11 @@ cvm::atom::atom (int const &atom_number)
     cvm::log ("Adding atom "+cvm::to_str (aid+1)+
               " for collective variables calculation.\n");
 
-  if ( (aid < 0) || (aid >= Node::Object()->molecule->numAtoms) ) 
-    cvm::fatal_error ("Error: invalid atom number specified, "+
+  if ( (aid < 0) || (aid >= Node::Object()->molecule->numAtoms) ) {
+    cvm::error ("Error: invalid atom number specified, "+
                       cvm::to_str (atom_number)+"\n");
+    return;
+  }
   this->index = ((colvarproxy_namd *) cvm::proxy)->init_namd_atom (aid);
   if (cvm::debug())
     cvm::log ("The index of this atom in the colvarproxy_namd arrays is "+
@@ -528,14 +702,14 @@ cvm::atom::atom (cvm::residue_id const &residue,
                  std::string const     &segment_id)
 {
   AtomID const aid =
-    (segment_id.size() ? 
+    (segment_id.size() ?
        Node::Object()->molecule->get_atom_from_name (segment_id.c_str(),
                                                      residue,
                                                      atom_name.c_str()) :
      Node::Object()->molecule->get_atom_from_name ("MAIN",
                                                    residue,
                                                    atom_name.c_str()));
-    
+
 
   if (cvm::debug())
     cvm::log ("Adding atom \""+
@@ -578,7 +752,7 @@ cvm::atom::atom (cvm::atom const &a)
 }
 
 
-cvm::atom::~atom() 
+cvm::atom::~atom()
 {
   if (this->index >= 0) {
     colvarproxy_namd *gm = (colvarproxy_namd *) cvm::proxy;

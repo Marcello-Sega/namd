@@ -1,6 +1,9 @@
 \cvnamdugonly{
 \section{Collective Variable-based Calculations\footnote{The features described in this section were contributed by Giacomo Fiorin (ICMS, Temple University, Philadelphia, PA, USA) and J\'er\^ome H\'enin (IBPC, CNRS, Paris, France). Please send feedback and suggestions to the NAMD mailing list.}}
 }
+\cvvmdugonly{
+\chapter{Collective Variables Interface}
+}
 \cvrefmanonly{
 \section{Introduction}
 }
@@ -55,11 +58,12 @@ The values of ``$c$''\cvnamebasedonly{ and ``alpha''} are also recorded througho
   \label{fig:colvars_diagram}
 \end{figure}
 
-More detailed explanations of the design of the colvars module are provided in G. Fiorin, M. L. Klein and J. H\'enin, \emph{Using collective variables to drive molecular dynamics simulations}, Molecular Physics (2013) (http://dx.doi.org/10.1080/00268976.2013.813594). Please cite this reference whenever publishing work that makes use of this module.
+Detailed explanations of the design of the colvars module are provided in reference~\cite{Fiorin2013}. Please cite this reference whenever publishing work that makes use of this module.
 
 \cvsec{General parameters and input/output files}
 \label{sec:colvarmodule}
 
+% TODO: change for VMD
 To enable a collective variable calculation, one or more parameters are added to the \MDENGINE{} configuration file.
 In \ref{sec:colvars_mdengine_params}, we document the syntax of such parameters.
 One of these is the name of a configuration file for the collective variables module itself, which is described in \ref{sec:colvars_config}, and in the following sections.
@@ -265,6 +269,7 @@ The following keywords are available in the global context of this configuration
     UNIX filename}{%
     This option reads an index file (usually with a \texttt{.ndx}
     extension) as produced by the \texttt{make\_ndx} tool of GROMACS.
+    This keyword may be repeated to load multiple index files: the same group name cannot appear in multiple index files.
     \cvlammpsonly{In LAMMPS, the \texttt{group2ndx} command can be used to generate such file from existing groups.
     Note that the collective variables module reads the indices of atoms from the index file: therefore, the LAMMPS groups do not need to remain active during the simulation, and could be deleted right after issuing \texttt{group2ndx}.
 }
@@ -284,7 +289,7 @@ The following keywords are available in the global context of this configuration
     whatever run-time statistical analysis it is configured to, such as
     correlation functions, or running averages and standard deviations.
     See section~\ref{sec:colvar_acf} for details.}
-
+    
 \end{itemize}
 
 The example below defines the same configuration shown in Fig.~\ref{fig:colvars_diagram}.  The options within the \texttt{colvar} blocks are described in \ref{sec:colvar} and \ref{sec:cvc}, the ones within the \texttt{harmonic} and \texttt{histogram} blocks in \ref{sec:colvarbias}.
@@ -357,6 +362,7 @@ Aside from the configuration file, an optional input state file may be provided 
 \cvsubsec{Output files}
 \label{sec:colvars_output}
 
+% TODO: change for VMD
 In addition to the output files written by \MDENGINE{}, the following three output files are written:
 
 \begin{itemize}
@@ -577,7 +583,10 @@ To apply moving restraints, or restraints to more than one colvar simultaneously
     except constraint forces on this colvar --- see
     equation~(\ref{eq:gradient_vector}) in
     section~\ref{sec:colvarbias_abf}) are written to the trajectory
-    file under the label ``\texttt{fs\_}$<$\texttt{name}$>$''.  \textbf{Note:} not all components support this option.  The
+    file under the label ``\texttt{fs\_}$<$\texttt{name}$>$''.
+    For extended Lagrangian colvars, the "system force" felt by the extended degree of freedom
+    is simply the force from the harmonic spring.
+    \textbf{Note:} not all components support this option.  The
     physical unit for this force is \cvnamdonly{kcal/mol}\cvlammpsonly{the unit of energy specified by \texttt{units}}, divided by the colvar unit.}
 
 \item %
@@ -589,9 +598,13 @@ To apply moving restraints, or restraints to more than one colvar simultaneously
     boolean}{%
     \texttt{off}}{%
     If \texttt{colvarsTrajFrequency} is defined, the total force
-    applied on this colvar by biases within the colvar module are
+    applied on this colvar by biases and confining potentials (walls)
+    within the colvar module are
     written to the trajectory under the label
-    ``\texttt{fa\_}$<$\texttt{name}$>$''.  The physical unit for this
+    ``\texttt{fa\_}$<$\texttt{name}$>$''. 
+    For extended Lagrangian colvars, this force is actually applied to the
+    extended degree of freedom rather than the geometric colvar itself.
+    The physical unit for this
     force is \cvnamdonly{kcal/mol}\cvlammpsonly{the unit of energy specified by \texttt{units}} divided by the colvar unit.}
 \end{itemize}
 
@@ -602,6 +615,9 @@ To apply moving restraints, or restraints to more than one colvar simultaneously
 The following options enable extended-system
 dynamics, where a colvar is coupled to an additional degree of freedom 
 (fictitious particle) by a harmonic spring.
+All biasing and confining forces are then applied to the extended degree
+of freedom, and the actual, geometric colvar (function of Cartesian 
+coordinates) only feels the force from the harmonic spring.
 
 \begin{itemize}
 \item %
@@ -623,13 +639,12 @@ dynamics, where a colvar is coupled to an additional degree of freedom
     }
 
 \item %
-  \keydef
+  \key
     {extendedFluctuation}{%
     \texttt{colvar}}{%
     Standard deviation between the colvar and the fictitious
     particle (colvar unit)}{%
     positive decimal}{%
-    \texttt{width}}{%
     Defines the spring stiffness for the \texttt{extendedLagrangian}
     mode, by setting the typical deviation between the colvar and the extended
     degree of freedom due to thermal fluctuation.
@@ -997,7 +1012,7 @@ In typical applications, the default settings result in the expected behavior.
     \texttt{off}}{%
     If this option is \texttt{on}, the coordinates of this group will be optimally superimposed to the reference positions provided by \cvnamebasedonly{either} \texttt{refPositions}\cvnamebasedonly{ or \texttt{refPositionsFile}}.
     The rotation will be performed around the center of geometry if \texttt{centerReference} is \texttt{on}, around the origin otherwise.
-    The algorithm used is the same employed by the \texttt{orientation} colvar component     \cite{Coutsias2004}.
+    The algorithm used is the same employed by the \texttt{orientation} colvar component~\cite{Coutsias2004}.
     Forces applied to the atoms of this group will also be implicitly rotated back to the original frame.
     \textbf{Note}: unless otherwise specified, \texttt{rmsd} and \texttt{eigenvector} set this option to \texttt{on} \emph{by default}.
 }
@@ -1095,6 +1110,8 @@ The following two options have default values appropriate for the vast majority 
     $\partial\mathbf{x}^{\mathrm{C}}/\partial\mathbf{x}_{i}$ (translational gradients).
     By default, these terms are calculated and included in the total gradients;
     if this option is set to \texttt{off}, they are neglected.
+    In the case of a minimum RMSD component, this flag is automatically disabled
+    because the contributions of those derivatives to the gradients cancel out.
 }
 
 \item %
@@ -1186,6 +1203,7 @@ one or more instances of the following components:
   vector;
 \item \texttt{orientationAngle}: angle of the best-fit rotation from
   a set of reference coordinates;
+\item \texttt{orientationProj}: cosine of \texttt{orientationProj};
 \item \texttt{spinAngle}: projection orthogonal to an axis of the best-fit rotation
   from a set of reference coordinates;
 \item \texttt{tilt}: projection on an axis of the best-fit rotation
@@ -1892,6 +1910,13 @@ The returned value is the angle of rotation $\omega$ between the current and the
 This angle is expressed in degrees within the range [0$^{\circ}$:180$^{\circ}$].
 
 
+\cvsubsubsec{\texttt{orientationProj}: cosine of the angle of rotation from reference coordinates.}  
+The block \texttt{orientationProj~\{...\}} accepts the same base options as
+the component \texttt{orientation}: \texttt{atoms} and \texttt{refPositions}\cvnamebasedonly{, or \texttt{refPositionsFile}, \texttt{refPositionsCol} and \texttt{refPositionsColValue}}.
+The returned value is the cosine of the angle of rotation $\omega$ between the current and the reference positions.
+The range of values is [-1:1].
+
+
 \cvsubsubsec{\texttt{spinAngle}: angle of rotation around a given axis.}
 The complete rotation described by \texttt{orientation} can optionally be decomposed into two sub-rotations: one is a ``\emph{spin}'' rotation around \textbf{e}, and the other a ``\emph{tilt}'' rotation around an axis orthogonal to \textbf{e}.
 The component \texttt{spinAngle} measures the angle of the ``spin'' sub-rotation around \textbf{e}.
@@ -1991,7 +2016,8 @@ colvar component on the same atoms.  The options recognized within the
 \item %
   \key
     {residueRange}{%
-    (\texttt{alpha}) Potential $\alpha$-helical residues}{%
+      \texttt{alpha}}{%
+      Potential $\alpha$-helical residues}{%
     ``$<$Initial residue number$>$-$<$Final residue number$>$''}{%
     This option specifies the range of residues on which this
     component should be defined.  The colvar module looks for the
@@ -2270,7 +2296,10 @@ following parameters, which are common to all components:
     Defines the power at which the value of this component is raised
     before being added to the sum.  When this exponent is
     different than 1 (non-linear sum), system forces and the Jacobian
-    force are not available, making the colvar unsuitable for ABF calculations.}
+    force are not available, making the colvar unsuitable for ABF calculations.
+    \cvscriptonly{Alternately, defines the order number of components
+    within scripted colvars. Values should then range from 1 to the number
+    of components. See~\ref{sec:colvar_scripted} for details.}}
 \end{itemize}
 
 \textbf{Example:} To define the \emph{average} of a colvar across
@@ -2279,6 +2308,32 @@ block a series of components of the same type (applied to different
 atom groups), and assign to each component a \texttt{componentCoeff}
 of $1/N$.
 
+
+\cvscriptonly{
+\cvsubsec{Colvars as scripted functions of components}
+\label{sec:colvar_scripted}
+In contexts that support scripting, a colvar may be defined as
+custom scripted function of the values of its components,
+rather than a linear or polynomial combination.
+\begin{itemize}
+ \item %
+  \key
+    {scriptedFunction}{%
+    \texttt{colvar}}{%
+    Compute colvar as a scripted function of its components}{%
+    string}{%
+    If this option is specified, the colvar will be computed as a
+    scripted function of the values of its components.
+    To that effect, the user should define two Tcl procedures:
+    \texttt{calc\_$<$scriptedFunction$>$} and \texttt{calc\_$<$scriptedFunction$>$\_gradient},
+    both accepting as many parameters as the colvar has components.
+    \texttt{calc\_$<$scriptedFunction$>$} should return one scalar,
+    corresponding to the colvar value.
+    \texttt{calc\_$<$scriptedFunction$>$\_gradient} should return a Tcl list
+    containing the derivatives of the function with respect to each
+    component.}
+\end{itemize}
+} % \cvscriptonly
 
 
 \cvsec{Biasing and analysis methods}
@@ -2399,20 +2454,24 @@ degrees of freedom.
 bonds involving hydrogen atoms, for example in TIP3P water molecules (parameter \texttt{rigidBonds}\cvnamdugonly{, section~\ref{section:rigidBonds}}).}
 
 In the framework of ABF,
-${\bf F}_\xi$ is accumulated in bins of finite size, $\delta \xi$,
+${\bf F}_\xi$ is accumulated in bins of finite size $\delta \xi$,
 thereby providing an estimate of the free energy gradient
 according to equation~({\ref{eq:gradient}}).
-The biasing force applied along the colective variables
+The biasing force applied along the collective variables
 to overcome free energy barriers is calculated as:
 
 \begin{equation}
   \label{eq:abf}
-  {\bf F}^{\rm ABF} = \gradx \widetilde A(\bm{\xi})
+  {\bf F}^{\rm ABF} = \alpha(N_\xi) \times \gradx \widetilde A(\bm{\xi})
 \end{equation}
 
 where $\gradx \widetilde A$ denotes the current estimate of the
 free energy gradient at the current point $\bm{\xi}$ in the collective
-variable subspace.
+variable subspace, and $\alpha(N_\xi)$ is a scaling factor that is ramped
+from 0 to 1 as the local number of samples $N_\xi$ increases
+to prevent nonequilibrium effects in the early phase of the simulation,
+when the gradient estimate has a large variance.
+See the \texttt{fullSamples} parameter below for details.
 
 As sampling of the phase space proceeds, the estimate
 $\gradx \widetilde A$ is progressively refined. The biasing
@@ -2468,8 +2527,13 @@ group used in a \texttt{distance} component.
 
 \cvsubsubsec{Parameters for ABF}
 
-The following parameters can be set in the ABF configuration block
-(in addition to generic bias parameters such as \texttt{colvars}):
+ABF depends on parameters from collective variables to define the grid on which free
+energy gradients are computed. In the direction of each colvar, the grid ranges from
+\texttt{lowerBoundary} to \texttt{upperBoundary}, and the bin width (grid spacing)
+is set by the \texttt{width} parameter (see~\ref{sec:colvar_general}).
+The following specific parameters can be set in the ABF configuration block
+(in addition to generic bias parameters such as \texttt{colvars}
+-- section~\ref{sec:colvarbias}):
 
 \begin{itemize}
 \item \keydef{fullSamples}{\texttt{abf}}{%
@@ -2477,10 +2541,14 @@ The following parameters can be set in the ABF configuration block
     to application of the ABF}
   {positive integer}
   {200}
-  {To avoid nonequilibrium effects in the dynamics of the system, due to large
-    fluctuations of the force exerted along the reaction coordinate, $\xi$, it
-    is recommended to apply the biasing force only after a reasonable estimate
-    of the latter has been obtained.}
+  {To avoid nonequilibrium effects due to large fluctuations of the force exerted along the
+   colvars, it is recommended to apply a biasing force only after a the estimate has started
+   converging. If \texttt{fullSamples} is non-zero, the applied biasing force is scaled by a factor
+   $\alpha(N_\xi)$ between 0 and 1.
+   If the number of samples $N_\xi$ in the current bin is higher than \texttt{fullSamples},
+   the factor is one. If it is less than half of \texttt{fullSamples}, the factor is zero and
+   no bias is applied. Between those two thresholds, the factor follows a linear ramp from
+   0 to 1: $\alpha(N_\xi) =(2N_\xi/\mathrm{fullSamples})-1$}.
 
 \item \keydef{maxForce}{\texttt{abf}}{%
     Maximum magnitude of the ABF force}
@@ -2565,11 +2633,36 @@ The following parameters can be set in the ABF configuration block
   }
 \end{itemize}
 
-ABF also depends on parameters from collective variables to define the grid on which free
-energy gradients are computed. In the direction of each colvar, the grid ranges from
-\texttt{lowerBoundary} to \texttt{upperBoundary}, and the bin width (grid spacing)
-is set by the \texttt{width} parameter.
+\cvnamdonly{
+\cvsubsubsec{Multiple-replica ABF}
 
+\begin{itemize}
+\item \keydef{shared}{\texttt{abf}}{%
+    Apply multiple-replica ABF, sharing force samples among the replicas?}
+  {boolean}
+  {\texttt{no}}
+  { This is command requires that NAMD be compiled and executed with multiple-replica
+    support.
+    If \texttt{shared} is set to yes, the system force samples will be synchronized among all replicas
+    at intervals defined by \texttt{sharedFreq}.
+    Thus, it is as if system force samples among all replicas are
+    gathered in a single shared buffer, which why the algorithm is referred to as shared ABF.
+    Shared ABF allows all replicas to benefit from the sampling done by other replicas and can lead to faster convergence of the biasing force.
+  }
+
+\item \keydef{sharedFreq}{\texttt{abf}}{%
+    Frequency (in timesteps) at which force samples are synchronized among the replicas}
+  {positive integer}
+  {\texttt{outputFreq}}
+  {
+  In the current implementation of shared ABF, each replica maintains a separate
+  buffer of system force samples that determine the biasing force.
+  Every \texttt{sharedFreq} steps, the replicas communicate the samples that
+  have been gathered since the last synchronization time, ensuring all replicas
+  apply a similar biasing force.
+  }
+\end{itemize}
+}
 
 \cvsubsubsec{Output files}
 
@@ -3089,7 +3182,6 @@ limit the size of the colvars trajectory file, it
 may be wise to disable \texttt{outputValue} for such ``ancillary''
 variables, and leave it enabled only for ``relevant'' ones.
 
-
 \cvsubsubsec{Moving restraints: steered molecular dynamics}
 \label{sec:colvarbias_smd}
 
@@ -3152,10 +3244,10 @@ When the centers are changed continuously, a steered MD in a collective variable
   \keydef
     {outputAccumulatedWork}{%
     \texttt{harmonic}}{%
-    Write the accumulated work to the trajectory file}{%
+    Write the accumulated work of the moving restraint to the trajectory file}{%
     boolean}{%
     \texttt{off}}{%
-    If this option is chosen and  \texttt{colvarsTrajFrequency} is not zero, the accumulated work from the beginning of the simulation will be written to the trajectory file.
+    If this option is chosen, \texttt{targetCenters} is defined, and \texttt{colvarsTrajFrequency} is not zero, the accumulated work from the beginning of the simulation will be written to the trajectory file.
     If the simulation has been continued from a previous state file, the previously accumulated work is included in the integral.
     This option allows to conveniently extract the PMF from the colvars trajectory files in a steered MD calculation.
 }
@@ -3179,7 +3271,7 @@ The sampling windows in simulation are calculated in sequence.
 The colvars trajectory file may then be used both to evaluate the correlation times between consecutive windows, and to calculate the frequency distribution of the colvar of interest in each window.
 Furthermore, frequency distributions on a predefined grid can be automatically obtained by using the \texttt{histogram} bias (see \ref{sec:colvarbias_histogram}).
 
-To activate an umbrella sampling simulation, the same keyords as in the previous section can be used, with the addition of the following:
+To activate an umbrella sampling simulation, the same keywords as in the previous section can be used, with the addition of the following:
 \begin{itemize}
 
 \item %
@@ -3234,8 +3326,9 @@ The force constant of the harmonic restraint may also be changed to equilibrate 
 \item %
   \keydef
     {targetForceExponent}{%
-    Exponent in the time-dependence of the force constant}{%
-    decimal equal to or greater than 1.0}{%
+      \texttt{harmonic}}{%
+      Exponent in the time-dependence of the force constant}{%
+      decimal equal to or greater than 1.0}{%
     \texttt{1.0}}{%
     Sets the exponent, $\alpha$, in the function used to vary the force
     constant as a function of time. The force is varied according to a
@@ -3275,6 +3368,124 @@ The force constant of the harmonic restraint may also be changed to equilibrate 
 
 \end{itemize}
 
+\cvsubsec{Linear restraints}
+\label{sec:colvarbias_linear}
+
+The linear restraint biasing method is used to minimally bias a
+simulation. There is generally a unique strength of bias for each CV
+center, which means you must know the bias force constant specifically
+for the center of the CV. This force constant may be found by using
+experiment directed simulation described in
+section \ref{sec:colvarbias_alb}. Please cite Pitera and Chodera when
+using \cite{Pitera2012}.
+
+\begin{itemize}
+
+\item %
+  \keydef
+    {forceConstant}{%
+    \texttt{linear}}{%
+    Scaled force constant (\cvnamdonly{kcal/mol}\cvlammpsonly{unit of energy specified by \texttt{units}})}{%
+    positive decimal}{%
+    \texttt{1.0}}{%
+    This defines a scaled force constant for the linear bias.
+    To ensure consistency for multidimensional restraints, it is
+    divided internally by  the specific \texttt{width}
+    for each colvar involved (which is 1 by default), so that all colvars
+    are effectively dimensionless and of commensurate size.}
+
+\item %
+  \key
+    {centers}{%
+    \texttt{linear}}{%
+    Initial linear restraint centers}{%
+    space-separated list of colvar values}{%
+    The centers (equilibrium values) of the restraint are entered here.
+    The number of values must be the number of requested colvars.
+    Each value is a decimal number if the corresponding colvar returns
+    a scalar, a ``\texttt{(x, y, z)}'' triplet if it returns a unit
+    vector or a vector, and a ``\texttt{q0, q1, q2, q3)}'' quadruplet
+    if it returns a rotational quaternion.  If a colvar has
+    periodicities or symmetries, its closest image to the restraint
+    center is considered when calculating the linear potential.}
+\end{itemize}
+
+\cvsubsec{Adaptive Linear Bias/Experiment Directed Simulation}
+\label{sec:colvarbias_alb}
+
+Experiment directed simulation applies a linear bias with a changing
+force constant. Please cite White and Voth \cite{White2014} when
+using. As opposed to that reference, the force constant here is scaled
+by the \texttt{width} corresponding to the biased colvar. In White and
+Voth, each force constant is scaled by the colvars set center. The
+bias converges to a linear bias, after which it will be the minimal
+possible bias. You may also stop the simulation, take the median of
+the force constants (ForceConst) found in the colvars trajectory file,
+and then apply a linear bias with that constant. All the notes about
+units described in sections \ref{sec:colvarbias_linear}
+and \ref{sec:colvarbias_harmonic} apply here as well. {\bf This is not
+a valid simulation of any particular statistical ensemble and is only
+an optimization algorithm until the bias has converged}.
+
+\begin{itemize}
+\item %
+      \key{centers}{\texttt{alb}}{%
+      Collective variable centers}{%
+      space-separated list of colvar values}{%
+      The desired center (equilibrium values) which will be sought during the 
+      adaptive linear biasing.
+    The number of values must be the number of requested colvars.
+    Each value is a decimal number if the corresponding colvar returns
+    a scalar, a ``\texttt{(x, y, z)}'' triplet if it returns a unit
+    vector or a vector, and a ``\texttt{q0, q1, q2, q3)}'' quadruplet
+    if it returns a rotational quaternion.  If a colvar has
+    periodicities or symmetries, its closest image to the restraint
+    center is considered when calculating the linear potential.}
+\item %
+      \key{updateFrequency}{\texttt{alb}}{%
+      The duration of updates}{An integer}{%
+      This is, $N$, the number of simulation steps to use for each update to the bias.
+      This determines how long the system requires to equilibrate 
+      after a change in force constant ($N/2$), how long statistics 
+      are collected for an iteration ($N/2$), and how quickly energy is 
+      added to the system (at most, $A/2N$, where $A$ is the \texttt{forceRange}). Until the force 
+      constant has converged, the method as described is an 
+      optimization procedure and not an integration of a particular 
+      statistical ensemble. It is important that each step should be 
+      uncorrelated from the last so that iterations are independent. 
+      Therefore, $N$ should be at least twice the autocorrelation time 
+      of the collective variable. The system should also be able to 
+      dissipate energy as fast as $N/2$, which can be done by adjusting 
+      thermostat parameters. Practically, $N$ has been tested successfully at 
+      significantly shorter than the autocorrelation time of the 
+      collective variables being biased and still converge correctly.}
+
+\item %
+      \keydef{forceRange}{\texttt{alb}}{% 
+      The expected range of the force constant in units of energy}{A space-separated list of decimal numbers}{%
+      3 $k_b T$}{%
+      This is largest magnitude of the force constant which one expects. If this parameter is
+      too low, the simulation will not converge. If it is too high the
+      simulation will waste time exploring values that are too
+      large. A value of 3 $k_bT$ has worked well in the systems presented
+      as a first choice. This parameter is dynamically adjusted over
+      the course of a simulation. The benefit is that a bad guess for
+      the forceRange can be corrected. However, this can lead to
+      large amounts of energy being added over time to the system. To
+      prevent this dynamic update, add \texttt{hardForceRange yes}
+      as a parameter}
+\item %
+      \key{rateMax}{\texttt{alb}}{%
+      The maximum rate of change of force constant}{%
+      A list of space-separated real numbers}{%
+      This optional parameter controls
+      how much energy is added to the system from this bias.  Tuning
+      this separately from the \texttt{updateFrequency}
+      and \texttt{forceRange} can allow for large bias changes but
+      with a low \texttt{rateMax} prevents large energy changes that
+      can lead to instability in the simulation.}
+     
+\end{itemize}
 
 \cvsubsec{Multidimensional histograms}
 \label{sec:colvarbias_histogram}
@@ -3300,3 +3511,86 @@ parameters from the colvars to define its grid.  The grid ranges from
 \texttt{lowerBoundary} to \texttt{upperBoundary}, and the bin width is
 set by the \texttt{width} parameter.
 
+
+\cvnamdonly{\cvscriptonly{%
+\cvsubsec{Scripted biases}
+\label{sec:scripted_biases}
+
+Rather than using the biasing methods described above, it is possible to apply biases
+provided at run time as a Tcl script, in the spirit of \texttt{TclForces}.
+
+\begin{itemize}
+\item %
+  \keydef
+    {scriptedColvarForces}{%
+    global}{%
+    Enable custom, scripted forces on colvars }{%
+    boolean}{%
+    \texttt{off}}{%
+    If this flag is enabled, a Tcl procedure named \texttt{calc\_colvar\_forces}
+    accepting one parameter should be defined by the user. It is executed
+    at each timestep, with the current step number as parameter, between the
+    calculation of colvars and the application of bias forces. This procedure
+    may use the scripting interface (see \ref{sec:scripting}) to access
+    the values of colvars and apply forces on them, effectively defining custom
+    collective variable biases.}
+\end{itemize}
+}}
+
+\cvscriptonly{\cvsec{Colvars scripting}
+\label{sec:scripting}
+
+Collective variables and biases can be added, queried and deleted through the scripting command
+\texttt{cv}, with the following syntax: \texttt{cv~$<$subcommand$>$ [args...]}
+for which the available subcommands are listed in the next subsections.
+For example, to query the value of a collective variable named \texttt{myVar},
+use the following syntax: \texttt{set value [cv colvar myVar value]}.
+
+\cvnamdonly{This interface is particularly useful to implement custom biases as scripted colvar forces.
+See the \texttt{scriptedColvarForces} option in \ref{sec:scripted_biases}.
+Note that scripting commands may not be used directly in the NAMD configuration file before the first 
+\texttt{run} or \texttt{minimize} statement. That is, they may be used within the callback procedures
+(e.g. \texttt{calc\_colvar\_forces}) or in the NAMD config file after a \texttt{run} or
+\texttt{minimize} statement.}
+
+\cvsubsec{Managing the colvars module}
+\begin{itemize}
+\cvvmdugonly{
+\item \texttt{molid $<$molecule ID$>$} : create colvars instance for specified molecule
+}
+\item \texttt{configfile $<$file name$>$} : read configuration from a file
+\item \texttt{config $<$string$>$} : read configuration from the given string
+\item \texttt{reset} : delete all internal configuration
+\cvvmdugonly{
+\item \texttt{delete} : delete this colvars module instance
+}
+\end{itemize}
+
+\cvsubsec{Input and output}
+\begin{itemize}
+\item \texttt{list} : return a list of all variables
+\item \texttt{list biases} : return a list of all biases
+\item \texttt{load $<$file name$>$} : load a state file (requires configuration)
+\item \texttt{update} : recalculate colvars and biases
+\item \texttt{printframe} : return a summary of the current frame
+\item \texttt{printframelabels} : return labels to annotate printframe's output
+\cvvmdugonly{
+\item \texttt{frame} : return current frame number
+\item \texttt{frame $<$new\_frame$>$} : set frame number
+}
+\end{itemize}
+
+\cvsubsec{Accessing collective variables}
+\begin{itemize}
+\item \texttt{colvar $<$name$>$ value} : return the current value of the colvar $<$name$>$
+\item \texttt{colvar $<$name$>$ update} : recalculate the colvar $<$name$>$
+\item \texttt{colvar $<$name$>$ delete} : delete the colvar $<$name$>$
+\end{itemize}
+
+\cvsubsec{Accessing biases}
+\begin{itemize}
+\item \texttt{bias $<$name$>$ energy} : return the current energy of the bias $<$name$>$
+\item \texttt{bias $<$name$>$ update} : recalculate the bias $<$name$>$
+\item \texttt{bias $<$name$>$ delete} : delete the bias $<$name$>$
+\end{itemize}
+}

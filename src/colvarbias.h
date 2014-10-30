@@ -1,3 +1,5 @@
+/// -*- c++ -*-
+
 #ifndef COLVARBIAS_H
 #define COLVARBIAS_H
 
@@ -9,9 +11,6 @@
 class colvarbias : public colvarparse {
 public:
 
-  /// Numeric id of this bias
-  int            id;
-
   /// Name of this bias
   std::string    name;
 
@@ -22,11 +21,22 @@ public:
   /// Return bias energy
   virtual cvm::real update() = 0;
 
+  // TODO: move update_bias here (share with metadynamics)
+
   /// Load new configuration - force constant and/or centers only
   virtual void change_configuration(std::string const &conf);
 
   /// Calculate change in energy from using alternate configuration
   virtual cvm::real energy_difference(std::string const &conf);
+
+  /// Give the total number of bins for a given bias.
+  virtual int bin_num();
+  /// Calculate the bin index for a given bias.
+  virtual int current_bin();
+  //// Give the count at a given bin index.
+  virtual int bin_count(int bin_index);
+  //// Share information between replicas, whatever it may be.
+  virtual int replica_share();
 
   /// Perform analysis tasks
   virtual inline void analyse() {}
@@ -44,7 +54,7 @@ public:
   colvarbias();
 
   /// Destructor
-  virtual inline ~colvarbias() {}
+  virtual ~colvarbias();
 
   /// Read the bias configuration from a restart file
   virtual std::istream & read_restart (std::istream &is) = 0;
@@ -58,7 +68,9 @@ public:
   /// Output quantities such as the bias energy to the trajectory file
   virtual std::ostream & write_traj (std::ostream &os);
 
-
+  inline cvm::real get_energy () {
+    return bias_energy;
+  }
 protected:
 
   /// \brief Pointers to collective variables to which the bias is
@@ -81,113 +93,4 @@ protected:
 
 };
 
-
-/// \brief Harmonic restraint, optionally moving towards a target
-/// (implementation of \link colvarbias \endlink)
-class colvarbias_harmonic : public colvarbias {
-
-public:
-
-  /// Retrieve colvar values and calculate their biasing forces
-  virtual cvm::real update();
-
-  /// Load new configuration - force constant and/or centers only
-  virtual void change_configuration(std::string const &conf);
-
-  /// Calculate change in energy from using alternate configuration
-  virtual cvm::real energy_difference(std::string const &conf);
-
-  /// Read the bias configuration from a restart file
-  virtual std::istream & read_restart (std::istream &is);
-
-  /// Write the bias configuration to a restart file
-  virtual std::ostream & write_restart (std::ostream &os);
-
-  /// Write a label to the trajectory file (comment line)
-  virtual std::ostream & write_traj_label (std::ostream &os);
-
-  /// Output quantities such as the bias energy to the trajectory file
-  virtual std::ostream & write_traj (std::ostream &os);
-
-  /// \brief Constructor
-  colvarbias_harmonic (std::string const &conf, char const *key);
-
-  /// Destructor
-  virtual ~colvarbias_harmonic();
-
-
-protected:
-
-  /// \brief Restraint centers
-  std::vector<colvarvalue> colvar_centers;
-
-  /// \brief Restraint centers without wrapping or constraints applied
-  std::vector<colvarvalue> colvar_centers_raw;
-
-  /// \brief Moving target?
-  bool b_chg_centers;
-
-  /// \brief New restraint centers
-  std::vector<colvarvalue> target_centers;
-
-  /// \brief Amplitude of the restraint centers' increment at each step
-  /// (or stage) towards the new values (calculated from target_nsteps)
-  std::vector<colvarvalue> centers_incr;
-
-  /// Whether to write the current restraint centers to the trajectory file
-  bool b_output_centers;
-
-  /// Whether to write the current accumulated work to the trajectory file
-  bool b_output_acc_work;
-
-  /// \brief Accumulated work
-  cvm::real acc_work;
-
-
-  /// \brief Restraint force constant
-  cvm::real force_k;
-
-  /// \brief Changing force constant?
-  bool b_chg_force_k;
-
-  /// \brief Restraint force constant (target value)
-  cvm::real target_force_k;
-
-  /// \brief Restraint force constant (starting value)
-  cvm::real starting_force_k;
-
-  /// \brief Lambda-schedule for custom varying force constant
-  std::vector<cvm::real> lambda_schedule;
-
-  /// \brief Exponent for varying the force constant
-  cvm::real force_k_exp;
-
-  /// \brief Intermediate quantity to compute the restraint free energy
-  /// (in TI, would be the accumulating FE derivative)
-  cvm::real restraint_FE;
-
-
-  /// \brief Equilibration steps for restraint FE calculation through TI
-  cvm::real target_equil_steps;
-
-  /// \brief Number of stages over which to perform the change
-  /// If zero, perform a continuous change
-  int target_nstages;
-
-  /// \brief Number of current stage of the perturbation
-  int stage;
-
-  /// \brief Number of steps required to reach the target force constant
-  /// or restraint centers
-  size_t target_nsteps;
-};
-
-
 #endif
-
-
-
-// Emacs
-// Local Variables:
-// mode: C++
-// End:
