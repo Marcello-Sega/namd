@@ -5,6 +5,14 @@
 #include <stdlib.h>
 #include <math.h>
 
+#ifdef _MSC_VER
+#if _MSC_VER <= 1700
+#define copysign(A,B) _copysign(A,B)
+double fmax(double A, double B) { return ( A > B ? A : B ); }
+double fmin(double A, double B) { return ( A < B ? A : B ); }
+#endif
+#endif
+
 /* Note about nomenclature. Force constant is called a coupling
  * constant here to emphasize its changing in the code. Outwards,
  * everything is called a force constant to keep it consistent with
