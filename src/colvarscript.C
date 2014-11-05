@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 #include "colvarscript.h"
+#include <stdlib.h>
+#include <string.h>
 
 
 colvarscript::colvarscript (colvarproxy *p)

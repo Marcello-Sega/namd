@@ -3,6 +3,8 @@
 #include "colvarmodule.h"
 #include "colvartypes.h"
 #include "colvarparse.h"
+#include <stdlib.h>
+#include <string.h>
 
 std::string cvm::rvector::to_simple_string() const
 {

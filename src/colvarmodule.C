@@ -11,6 +11,7 @@
 #include "colvarbias_abf.h"
 #include "colvarbias_restraint.h"
 #include "colvarscript.h"
+#include <string.h>
 
 colvarmodule::colvarmodule (colvarproxy *proxy_in)
 {
