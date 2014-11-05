@@ -3,6 +3,7 @@
 #include "colvarbias.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 /* Note about nomenclature. Force constant is called a coupling
  * constant here to emphasize its changing in the code. Outwards,
