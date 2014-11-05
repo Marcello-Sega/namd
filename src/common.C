@@ -13,6 +13,7 @@
 #endif
 #include <errno.h>
 #include <string.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <ctype.h>
 
@@ -164,12 +165,12 @@ int NAMD_open(const char *fname) {
 
   //  open the file and die if the open fails
 #ifdef WIN32
-  while ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,_S_IREAD|_S_IWRITE)) < 0) {
+  while ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY,_S_IREAD|_S_IWRITE)) < 0) {
 #else
 #ifdef NAMD_NO_O_EXCL
-  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE,
+  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC,
 #else
-  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_LARGEFILE,
+  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_EXCL,
 #endif
                            S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
 #endif
