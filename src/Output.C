@@ -50,6 +50,10 @@
 #define NAMD_write NAMD_write64
 #define NAMD_close NAMD_close64
 
+#ifndef O_LARGEFILE
+#define O_LARGEFILE 0x0
+#endif
+
 // same as open, only does error checking internally
 int NAMD_open(const char *fname) {
   int fd;
@@ -108,11 +112,6 @@ void NAMD_close(int fd, const char *fname) {
 
 
 #define seek_dcdfile NAMD_seek
-
-#ifndef O_LARGEFILE
-#define O_LARGEFILE 0x0
-#endif
-
 
 // These make the NAMD 1 names work in NAMD 2
 #define namdMyNode Node::Object()
