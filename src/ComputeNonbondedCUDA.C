@@ -244,7 +244,9 @@ void cuda_initialize() {
       if ( deviceProp.computeMode != cudaComputeModeProhibited
            && (deviceProp.major > 1 || deviceProp.minor >= 1)
            && deviceProp.canMapHostMemory
-           && deviceProp.multiProcessorCount > 2 ) {  // exclude weak cards
+           && ( (deviceProp.multiProcessorCount > 2) ||
+                ((ndevices==0)&&(CkNumNodes()==1)) ) // exclude weak cards
+         ) {
         devices[ndevices++] = dev;
       }
       if ( deviceProp.computeMode == cudaComputeModeExclusive ) {
