@@ -680,7 +680,7 @@ int colvarmodule::calc() {
   // write trajectory file, if needed
   if (cv_traj_freq && cv_traj_name.size()) {
 
-    if (!cv_traj_os.good()) {
+    if (!cv_traj_os.is_open()) {
       open_traj_file (cv_traj_name);
     }
 
@@ -852,6 +852,11 @@ int colvarmodule::setup_output()
       proxy->backup_file (cv_traj_name.c_str());
       cv_traj_os.open (cv_traj_name.c_str(), std::ios::out);
     }
+    if (!cv_traj_os.is_open()) {
+      cvm::error ("Error: cannot write to file \""+cv_traj_name+"\".\n",
+                  FILE_ERROR);
+    }
+    cv_traj_os.clear();
     cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
   }
   return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
@@ -1046,10 +1051,12 @@ int colvarmodule::open_traj_file (std::string const &file_name)
     proxy->backup_file (file_name.c_str());
     cv_traj_os.open (file_name.c_str(), std::ios::out);
   }
-  if (!cv_traj_os.good()) {
+  if (!cv_traj_os.is_open()) {
     cvm::error ("Error: cannot write to file \""+file_name+"\".\n",
                 FILE_ERROR);
   }
+  cv_traj_os.clear();
+  cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
   return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
 }
 
