@@ -25,6 +25,7 @@
 #define GLOBALMASTER_H
 
 #include "NamdTypes.h"
+class Lattice;
 
 class GlobalMaster {
  public:
@@ -61,6 +62,8 @@ class GlobalMaster {
   virtual ~GlobalMaster() {}; // necessary for abstract classes '-P
 
   void check() const; // dies if there are problems with the rep invariants
+
+  void setLattice(const Lattice *lat) { lattice = lat; }
   
  protected:
   GlobalMaster();
@@ -111,6 +114,8 @@ class GlobalMaster {
   BigRealList::const_iterator getGroupMassEnd();
 
  protected:
+  const Lattice *lattice;  // points to lattice in server
+
   /* These store the pointers to lists of atom ids and atom positions.
      The list of atom positions has the same length as the list of
      ids, so only three iterators are necessary.   There are also

@@ -10,6 +10,7 @@
 #include "charm++.h"
 
 #include "NamdTypes.h"
+#include "Lattice.h"
 #include "ComputeMgr.decl.h"
 
 #if 0
@@ -41,6 +42,7 @@ public:
   BigRealList gmass;  // group total mass
   AtomIDList fid;
   ForceList tf;
+  ResizeArray<Lattice> lat;
 
   // constructor and destructor
   ComputeGlobalDataMsg(void);

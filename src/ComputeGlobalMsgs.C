@@ -47,6 +47,7 @@ PACK_MSG(ComputeGlobalDataMsg,
   PACK_RESIZE(gmass);
   PACK_RESIZE(fid);
   PACK_RESIZE(tf);
+  PACK_RESIZE(lat);
 )
 
 

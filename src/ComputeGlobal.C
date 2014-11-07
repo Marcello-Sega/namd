@@ -206,6 +206,7 @@ void ComputeGlobal::doWork()
   else {
     if ( hasPatchZero ) {
       ComputeGlobalDataMsg *msg = new ComputeGlobalDataMsg;
+      msg->lat.add(patchList[0].p->lattice);
       msg->step = -1;
       msg->count = 1;
       comm->sendComputeGlobalData(msg);
@@ -284,7 +285,7 @@ void ComputeGlobal::sendData()
   msg->count += msg->fid.size();
 
   DebugM(3,"Sending data (" << msg->aid.size() << " positions) on client\n");
-  if ( hasPatchZero ) msg->count++;
+  if ( hasPatchZero ) { msg->count++;  msg->lat.add(lattice); }
   if ( msg->count ) comm->sendComputeGlobalData(msg);
   else delete msg;
   comm->enableComputeGlobalResults();

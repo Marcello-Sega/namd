@@ -12,6 +12,8 @@
 #ifndef GLOBALMASTERSERVER_H
 #define GLOBALMASTERSERVER_H
 
+#include "Lattice.h"
+
 class ComputeGlobalConfigMsg;
 class ComputeGlobalDataMsg;
 class ComputeGlobalResultsMsg;
@@ -37,6 +39,7 @@ class GlobalMasterServer {
   int forceSendEnabled; // are total forces received?
   int numDataSenders; // the number of expected messages each cycle
   int numForceSenders; // the number of expected force messages each cycle
+  int latticeCount; // is lattice received so far this cycle
   int recvCount; // the number of messages so far this cycle
   int firstTime; // used to be compatible with the ComputeGlobals
   int totalAtomsRequested; // the total number of atoms requested
@@ -57,6 +60,7 @@ class GlobalMasterServer {
   ForceList receivedTotalForces;
 
   int step;  // current timestep received from patches
+  Lattice lattice;  // current lattice received from patches
 
   /* the compute manager responsible for my message delivery */
   ComputeMgr *myComputeManager;

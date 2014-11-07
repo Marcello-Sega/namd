@@ -29,6 +29,7 @@ struct position_index {
 void GlobalMasterServer::addClient(GlobalMaster *newClient) {
   DebugM(3,"Adding client\n");
   clientList.add(newClient);
+  newClient->setLattice(&lattice);
   DebugM(2,"Added.\n");
 }
 
@@ -70,6 +71,14 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
   }
   if(i!=totalGroupsRequested) NAMD_die("Received too few groups.");
 
+  if ( msg->lat.size() ) {
+    if ( latticeCount ) {
+      NAMD_bug("GlobalMasterServer::recvData received lattice twice.");
+    }
+    lattice = msg->lat[0];
+    latticeCount = 1;
+  }
+
   recvCount += msg->count;
 
   /* done with the message, delete it */
@@ -80,6 +89,10 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
     NAMD_bug("GlobalMasterServer::recvData recvCount too high.");
   }
   if(recvCount == numDataSenders + numForceSenders + 1) {
+    if ( ! latticeCount ) {
+      NAMD_bug("GlobalMasterServer::recvData did not receive lattice.");
+    }
+
     DebugM(3,"received messages from each of the ComputeGlobals\n");
     callClients();
 
@@ -93,6 +106,7 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
     receivedGroupMasses.setall(0);
     receivedForceIDs.resize(0);
     receivedTotalForces.resize(0);
+    latticeCount = 0;
     recvCount = 0;
   }
 }
@@ -401,6 +415,8 @@ GlobalMasterServer::GlobalMasterServer(ComputeMgr *m,
   myComputeManager = m;
   numDataSenders = 0; // theNumDataSenders;
   numForceSenders = 0;
+  latticeCount = 0;
+  lattice = Node::Object()->simParameters->lattice;
   recvCount = 0; /* we haven't gotten any messages yet */
   firstTime = 1; /* XXX temporary */
   step = -1;
