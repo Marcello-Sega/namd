@@ -761,6 +761,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   if (params->pressureProfileOn) {
     NAMD_die("pressure profile not supported in CUDA");
   }
+  doExclusionCheck = ( CkNumNodes() == 1 && one_cuda_device_per_node() && ! params->goGroPair );
 
   atomsChanged = 1;
   computesChanged = 1;
@@ -2032,7 +2033,7 @@ GBISP("GBIS[%d] fnWork() P0[%d] force.open()\n",CkMyPe(), pr.patchID);
 
 #if 1
     // check exclusions reported as w
-    if ( CkNumPes() == 1 && ! simParams->goGroPair ) {
+    if ( doExclusionCheck ) {
       const CompAtomExt *aExt = pr.xExt;
       for ( int k=0; k<nfree; ++k ) {
         int j = aExt[k].sortOrder;
