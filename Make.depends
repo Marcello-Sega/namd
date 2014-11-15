@@ -1987,6 +1987,8 @@ obj/ComputeGlobalMsgs.o: \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
+	src/Lattice.h \
+	src/Tensor.h \
 	inc/ComputeMgr.decl.h \
 	src/packmsg.h \
 	src/Debug.h
@@ -2074,11 +2076,11 @@ obj/ComputeMgr.o: \
 	src/ResizeArrayRaw.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
+	src/Lattice.h \
+	src/Tensor.h \
 	inc/ProxyMgr.decl.h \
 	src/ProxyMgr.h \
 	src/PatchTypes.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
@@ -2700,11 +2702,11 @@ obj/ComputeNonbondedCUDA.o: \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
+	src/Lattice.h \
+	src/Tensor.h \
 	inc/ComputeMgr.decl.h \
 	src/ProxyMgr.h \
 	src/PatchTypes.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
@@ -2842,11 +2844,11 @@ obj/ComputeNonbondedMIC.o: \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
+	src/Lattice.h \
+	src/Tensor.h \
 	inc/ComputeMgr.decl.h \
 	src/ProxyMgr.h \
 	src/PatchTypes.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
@@ -3696,6 +3698,8 @@ obj/GlobalMasterServer.o: \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
+	src/Lattice.h \
+	src/Tensor.h \
 	inc/ComputeMgr.decl.h \
 	src/ComputeMgr.h \
 	src/main.h \
@@ -3707,8 +3711,6 @@ obj/GlobalMasterServer.o: \
 	src/ProcessorPrivate.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
