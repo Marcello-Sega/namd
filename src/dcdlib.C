@@ -654,22 +654,8 @@ int open_dcd_write(char *dcdname)
 
 {
 	int dcdfd;
-        char *newdcdname = 0;
+        NAMD_backup_file(dcdname,".BAK");
 
-	if (access(dcdname, F_OK) == 0) 
-	{
-           newdcdname = new char[strlen(dcdname)+5];
-           if(newdcdname == (char *) 0)
-             return DCD_OPENFAILED;
-           strcpy(newdcdname, dcdname);
-           strcat(newdcdname, ".BAK");
-#if defined(WIN32) && !defined(__CYGWIN__)
-	   remove(newdcdname);
-#endif
-	   if(rename(dcdname, newdcdname))
-		return(DCD_OPENFAILED);
-	   delete [] newdcdname;
-	} 
 #ifdef WIN32
 	while ( (dcdfd = _open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,
 				_S_IREAD|_S_IWRITE)) < 0)

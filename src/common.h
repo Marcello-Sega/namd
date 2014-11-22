@@ -118,7 +118,9 @@ void NAMD_quit(const char *);
 void NAMD_die(const char *);
 void NAMD_err(const char *);  // also prints strerror(errno)
 void NAMD_bug(const char *);
+int NAMD_file_exists(const char *filename);
 void NAMD_backup_file(const char *filename, const char *extension = 0);
+int NAMD_open_text(const char *fname);
 void NAMD_write(int fd, const void *buf, size_t count); // NAMD_die on error
 char *NAMD_stringdup(const char *);
 FILE *Fopen(const char *filename, const char *mode);

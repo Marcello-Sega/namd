@@ -127,10 +127,25 @@ void NAMD_bug(const char *err_msg)
    delete [] new_err_msg;
 }
 
+int NAMD_file_exists(const char *filename) {
+  int rval;
+  do {
+    rval = access(filename, F_OK);
+  } while ( rval != 0 && errno == EINTR );
+  if ( rval != 0 && errno != ENOENT ) {
+    char *sys_err_msg = strerror(errno);
+    if ( ! sys_err_msg ) sys_err_msg = "(unknown error)";
+    iout << iERROR << "Error on checking file "
+      << filename << ": " << sys_err_msg << "\n" << endi;
+    fflush(stdout);
+  }
+  return ! rval;
+}
+
 // move filename to filename.BAK
 void NAMD_backup_file(const char *filename, const char *extension)
 {
-  if (access(filename, F_OK) == 0) {
+  if (NAMD_file_exists(filename)) {
     if ( ! extension ) extension = ".BAK";
     char *backup = new char[strlen(filename)+strlen(extension)+1];
     strcpy(backup, filename);
@@ -144,13 +159,15 @@ void NAMD_backup_file(const char *filename, const char *extension)
       fflush(stdout);
     }
 #endif
-    if ( rename(filename,backup) )
+    while ( rename(filename,backup) )
     {
+      if ( errno == EINTR ) continue;
       char *sys_err_msg = strerror(errno);
       if ( ! sys_err_msg ) sys_err_msg = "(unknown error)";
       iout << iERROR << "Error on renaming file " << filename
 	<< " to " << backup << ": " << sys_err_msg << "\n" << endi;
       fflush(stdout);
+      break;
       // char errmsg[256];
       // sprintf(errmsg, "Error on renaming file %s to %s",filename,backup);
       // NAMD_err(errmsg);
@@ -160,12 +177,12 @@ void NAMD_backup_file(const char *filename, const char *extension)
 }
 
 // same as open, only does error checking internally
-int NAMD_open(const char *fname) {
+int NAMD_open_text(const char *fname) {
   int fd;
 
   //  open the file and die if the open fails
 #ifdef WIN32
-  while ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY,_S_IREAD|_S_IWRITE)) < 0) {
+  while ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_TEXT,_S_IREAD|_S_IWRITE)) < 0) {
 #else
 #ifdef NAMD_NO_O_EXCL
   while ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC,
