@@ -187,6 +187,7 @@ OBJS = \
         $(DSTDIR)/FreeEnergyRestrain.o \
         $(DSTDIR)/FreeEnergyRMgr.o \
         $(DSTDIR)/FreeEnergyVector.o \
+	$(DSTDIR)/fstream_namd.o \
 	$(DSTDIR)/GlobalMaster.o \
 	$(DSTDIR)/GlobalMasterServer.o \
 	$(DSTDIR)/GlobalMasterTest.o \

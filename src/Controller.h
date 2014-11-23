@@ -10,7 +10,7 @@
 #include "converse.h"
 #include "Node.h"
 #include "common.h"
-#include <fstream>
+#include "fstream_namd.h"
 
 class ControllerBroadcasts;
 class NamdState;
@@ -191,19 +191,19 @@ protected:
     CollectionMaster *const collection;
     
     ControllerBroadcasts * broadcast;
-    std::ofstream xstFile;
+    ofstream_namd xstFile;
     void outputExtendedSystem(int step);
-    void writeExtendedSystemLabels(std::ofstream &file);
-    void writeExtendedSystemData(int step, std::ofstream &file);
+    void writeExtendedSystemLabels(ofstream_namd &file);
+    void writeExtendedSystemData(int step, ofstream_namd &file);
 
 //fepb
-    std::ofstream fepFile;
+    ofstream_namd fepFile;
     void outputFepEnergy(int step);
-    void writeFepEnergyData(int step, std::ofstream &file);
+    void writeFepEnergyData(int step, ofstream_namd &file);
 //fepe
-    std::ofstream tiFile;
+    ofstream_namd tiFile;
     void outputTiEnergy(int step);
-    void writeTiEnergyData(int step, std::ofstream &file);
+    void writeTiEnergyData(int step, ofstream_namd &file);
 
     // for checkpoint/revert
     int checkpoint_stored;
@@ -240,7 +240,7 @@ protected:
    Bool    adaptTempAutoDt;
    BigReal adaptTempDtMin;
    BigReal adaptTempDtMax;
-   std::ofstream adaptTempRestartFile;
+   ofstream_namd adaptTempRestartFile;
   
 private:
     CthThread thread;

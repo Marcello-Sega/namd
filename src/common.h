@@ -121,7 +121,8 @@ void NAMD_bug(const char *);
 int NAMD_file_exists(const char *filename);
 void NAMD_backup_file(const char *filename, const char *extension = 0);
 int NAMD_open_text(const char *fname);
-void NAMD_write(int fd, const void *buf, size_t count); // NAMD_die on error
+void NAMD_write(int fd, const char *buf, size_t count, const char *fname = "in NAMD_write()"); // NAMD_die on error
+void NAMD_close(int fd, const char *fname);
 char *NAMD_stringdup(const char *);
 FILE *Fopen(const char *filename, const char *mode);
 int  Fclose(FILE *fout);

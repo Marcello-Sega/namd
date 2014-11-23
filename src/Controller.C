@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2014/01/29 20:30:53 $
- * $Revision: 1.1305 $
+ * $Date: 2014/11/23 21:25:38 $
+ * $Revision: 1.1306 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -36,6 +36,7 @@
 #include "imd.h"
 #include "IMDOutput.h"
 #include "BackEnd.h"
+#include <fstream>
 #include <iomanip>
 #include <errno.h>
 
@@ -2572,7 +2573,7 @@ void Controller::printEnergies(int step, int minimize)
     }
 }
 
-void Controller::writeExtendedSystemLabels(std::ofstream &file) {
+void Controller::writeExtendedSystemLabels(ofstream_namd &file) {
   Lattice &lattice = state->lattice;
   file << "#$LABELS step";
   if ( lattice.a_p() ) file << " a_x a_y a_z";
@@ -2585,7 +2586,7 @@ void Controller::writeExtendedSystemLabels(std::ofstream &file) {
   file << std::endl;
 }
 
-void Controller::writeExtendedSystemData(int step, std::ofstream &file) {
+void Controller::writeExtendedSystemData(int step, ofstream_namd &file) {
   Lattice &lattice = state->lattice;
   file.precision(12);
   file << step;
@@ -2657,7 +2658,7 @@ void Controller::outputFepEnergy(int step) {
   }
  
   if (stepInRun == 0) {
-    if (!fepFile.rdbuf()->is_open()) {
+    if (!fepFile.is_open()) {
       NAMD_backup_file(simParams->alchOutFile);
       fepFile.open(simParams->alchOutFile);
       iout << "OPENING FEP ENERGY OUTPUT FILE\n" << endi;
@@ -2748,7 +2749,7 @@ void Controller::outputTiEnergy(int step) {
             alchLambda / alchVdwLambdaEnd; 
     BigReal vdw_lambda_2 =  ((1-alchLambda) >= alchVdwLambdaEnd)? 1. : \
             (1-alchLambda) / alchVdwLambdaEnd; 
-    if (!tiFile.rdbuf()->is_open()) {
+    if (!tiFile.is_open()) {
       //tiSum = 0.0;
       NAMD_backup_file(simParams->alchOutFile);
       tiFile.open(simParams->alchOutFile);
@@ -2777,7 +2778,7 @@ void Controller::outputTiEnergy(int step) {
  }
 }
 
-void Controller::writeFepEnergyData(int step, std::ofstream &file) {
+void Controller::writeFepEnergyData(int step, ofstream_namd &file) {
   BigReal eeng = electEnergy+electEnergySlow;
   BigReal eeng_f = electEnergy_f + electEnergySlow_f;
   BigReal dE = eeng_f + ljEnergy_f - eeng - ljEnergy;
@@ -2851,7 +2852,7 @@ void Controller::writeFepEnergyData(int step, std::ofstream &file) {
   }
 }
 //fepe
-void Controller::writeTiEnergyData(int step, std::ofstream &file) {
+void Controller::writeTiEnergyData(int step, ofstream_namd &file) {
   tiFile << TITITLE(step);
   tiFile << FORMAT(recent_dEdl_elec_1 / recent_TiNo);
   tiFile << FORMAT(net_dEdl_elec_1/TiNo);
@@ -2873,7 +2874,7 @@ void Controller::outputExtendedSystem(int step)
     if ( simParams->xstFrequency &&
          ((step % simParams->xstFrequency) == 0) )
     {
-      if ( ! xstFile.rdbuf()->is_open() )
+      if ( ! xstFile.is_open() )
       {
         iout << "OPENING EXTENDED SYSTEM TRAJECTORY FILE\n" << endi;
         NAMD_backup_file(simParams->xstFilename);
@@ -2915,7 +2916,7 @@ void Controller::outputExtendedSystem(int step)
       }
       strcat(fname, ".xsc");
       NAMD_backup_file(fname,bsuffix);
-      std::ofstream xscFile(fname);
+      ofstream_namd xscFile(fname);
       while (!xscFile) {
         if ( errno == EINTR ) {
           CkPrintf("Warning: Interrupted system call opening XSC restart file, retrying.\n");
@@ -2950,7 +2951,7 @@ void Controller::outputExtendedSystem(int step)
     strcpy(fname, simParams->outputFilename);
     strcat(fname, ".xsc");
     NAMD_backup_file(fname);
-    std::ofstream xscFile(fname);
+    ofstream_namd xscFile(fname);
     while (!xscFile) {
       if ( errno == EINTR ) {
         CkPrintf("Warning: Interrupted system call opening XSC output file, retrying.\n");
@@ -2974,7 +2975,7 @@ void Controller::outputExtendedSystem(int step)
 
   //  Close trajectory file
   if (step == END_OF_RUN) {
-    if ( xstFile.rdbuf()->is_open() ) {
+    if ( xstFile.is_open() ) {
       xstFile.close();
       iout << "CLOSING EXTENDED SYSTEM TRAJECTORY FILE\n" << endi;
     }

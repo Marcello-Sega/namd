@@ -3434,6 +3434,7 @@ obj/Controller.o: \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Controller.h \
+	src/fstream_namd.h \
 	src/ReductionMgr.h \
 	src/CollectionMaster.h \
 	src/PatchMap.h \
@@ -3656,6 +3657,11 @@ obj/FreeEnergyVector.o: \
 	src/common.h \
 	src/FreeEnergyVector.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyVector.o $(COPTC) src/FreeEnergyVector.C
+obj/fstream_namd.o: \
+	src/fstream_namd.C \
+	src/fstream_namd.h \
+	src/common.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/fstream_namd.o $(COPTC) src/fstream_namd.C
 obj/GlobalMaster.o: \
 	src/GlobalMaster.C \
 	src/Node.h \
@@ -4561,6 +4567,7 @@ obj/LdbCoordinator.o: \
 	src/ComputeNonbondedMICKernel.h \
 	src/Debug.h \
 	src/Controller.h \
+	src/fstream_namd.h \
 	src/Sequencer.h \
 	src/Priorities.h \
 	src/ComputeMgr.h \
@@ -5103,6 +5110,7 @@ obj/NamdState.o: \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	inc/Node.decl.h \
+	src/fstream_namd.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
 	src/BroadcastObject.h \
@@ -5244,6 +5252,7 @@ obj/Node.o: \
 	src/Sequencer.h \
 	src/Priorities.h \
 	src/Controller.h \
+	src/fstream_namd.h \
 	src/NamdState.h \
 	src/Output.h \
 	src/ProxyMgr.h \
@@ -5927,6 +5936,7 @@ obj/ScriptTcl.o: \
 	inc/WorkDistrib.decl.h \
 	src/NamdState.h \
 	src/Controller.h \
+	src/fstream_namd.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
@@ -6019,6 +6029,7 @@ obj/Sequencer.o: \
 	inc/NamdDummyLB.decl.h \
 	src/Output.h \
 	src/Controller.h \
+	src/fstream_namd.h \
 	src/Broadcasts.h \
 	src/Molecule.h \
 	src/parm.h \

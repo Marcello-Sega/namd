@@ -193,7 +193,7 @@ int NAMD_open_text(const char *fname) {
 #endif
     if ( errno != EINTR ) {
       char errmsg[1024];
-      sprintf(errmsg, "Unable to open binary file %s", fname);
+      sprintf(errmsg, "Unable to open text file %s", fname);
       NAMD_err(errmsg);
     }
   }
@@ -202,7 +202,7 @@ int NAMD_open_text(const char *fname) {
 }
 
 // same as write, only does error checking internally
-void NAMD_write(int fd, const char *buf, size_t count) {
+void NAMD_write(int fd, const char *buf, size_t count, const char *fname) {
   while ( count ) {
 #if defined(WIN32) && !defined(__CYGWIN__)
     long retval = _write(fd,buf,count);
@@ -210,7 +210,11 @@ void NAMD_write(int fd, const char *buf, size_t count) {
     ssize_t retval = write(fd,buf,count);
 #endif
     if ( retval < 0 && errno == EINTR ) retval = 0;
-    if ( retval < 0 ) NAMD_die(strerror(errno));
+    if ( retval < 0 ) {
+      char errmsg[1024];
+      sprintf(errmsg, "Error on writing to file %s", fname);
+      NAMD_err(errmsg);
+    }
     if ( retval > count ) NAMD_bug("extra bytes written in NAMD_write()");
     buf += retval;
     count -= retval;
