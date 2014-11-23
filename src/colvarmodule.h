@@ -45,6 +45,7 @@
 #include <vector>
 #include <list>
 
+#include "fstream_namd.h"
 
 class colvarparse;
 class colvar;
@@ -74,6 +75,9 @@ public:
   friend class colvarproxy;
   // TODO colvarscript should be unaware of colvarmodule's internals
   friend class colvarscript;
+
+  /// Use error-checking ofstream substitute
+  typedef ofstream_namd ofstream;
 
   /// Defining an abstract real number allows to switch precision
   typedef  double    real;
@@ -462,7 +466,7 @@ protected:
   bool          cv_traj_append;
 
   /// Output restart file
-  std::ofstream restart_out_os;
+  colvarmodule::ofstream restart_out_os;
 
   /// \brief Counter for the current depth in the object hierarchy (useg e.g. in output
   static size_t depth;

@@ -923,7 +923,7 @@ int colvarmodule::write_output_files()
      std::string ("colvars.state"));
   cvm::log ("Saving collective variables state to \""+out_name+"\".\n");
   proxy->backup_file (out_name.c_str());
-  std::ofstream out (out_name.c_str());
+  cvm::ofstream out (out_name.c_str());
   out.setf (std::ios::scientific, std::ios::floatfield);
   this->write_restart (out);
   out.close();
