@@ -9,13 +9,15 @@ void ofstream_namd::open(const char *_fname) {
 }
 
 ofstream_namd& ofstream_namd::flush() {
-    const std::string text = str();
-    NAMD_write(fd, text.c_str(), text.size(), fname.c_str());
-    str("");
-    return *this;
+  if ( ! fd ) NAMD_bug("ofstream_namd::flush() called when file is not open");
+  const std::string text = str();
+  NAMD_write(fd, text.c_str(), text.size(), fname.c_str());
+  str("");
+  return *this;
 }
 
 void ofstream_namd::close() {
+  if ( ! fd ) NAMD_bug("ofstream_namd::close() called when file is not open");
   flush();
   NAMD_close(fd, fname.c_str());
   fd = 0;
