@@ -28,7 +28,7 @@ public:
   void close();
 
   ~ofstream_namd() {
-    close();
+    if ( fd ) close();
   }
 
   bool good() const { return true; }
