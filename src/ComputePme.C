@@ -811,7 +811,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   offload = simParams->PMEOffload;
 #ifdef NAMD_CUDA
   if ( offload && ! one_cuda_device_per_node() ) {
-    NAMD_die("PME offload requires exactly one CUDA device per process.");
+    NAMD_die("PME offload requires exactly one CUDA device per process.  Use \"PMEOffload no\".");
   }
   if ( offload ) {
     int dev;
@@ -821,7 +821,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     cudaGetDeviceProperties(&deviceProp, dev);
     cuda_errcheck("in cudaGetDeviceProperties");
     if ( deviceProp.major < 2 )
-      NAMD_die("PME offload requires CUDA device of compute capability 2.0 or higher.");
+      NAMD_die("PME offload requires CUDA device of compute capability 2.0 or higher.  Use \"PMEOffload no\".");
   }
 #endif
 
