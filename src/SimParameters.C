@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2014/12/03 15:32:10 $
- * $Revision: 1.1444 $
+ * $Date: 2014/12/03 17:01:12 $
+ * $Revision: 1.1445 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3137,8 +3137,14 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    if (alchOn) {
 
-     if (alchOn && amberOn) {
-       NAMD_die("Sorry, alchemical free energy calculation is not supported for AMBER parameters.\n");
+     if (alchOn && ! switchingActive) {
+       iout << iWARN << "Switching active for alchemical interactions.\n" << endi;
+     }
+     if (alchOn && vdwForceSwitching) {
+       iout << iWARN << "VDW force switching disabled for alchemical interactions.\n" << endi;
+     }
+     if (alchOn && martiniSwitching) {
+       iout << iWARN << "Martini switching disabled for alchemical interactions.\n" << endi;
      }
 
      if (!opts.defined("alchType")) 
