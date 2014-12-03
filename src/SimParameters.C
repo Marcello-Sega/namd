@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2014/09/05 20:15:44 $
- * $Revision: 1.1443 $
+ * $Date: 2014/12/03 15:32:10 $
+ * $Revision: 1.1444 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -75,6 +75,10 @@ extern "C" {
 #include "strlib.h"    //  For strcasecmp and strncasecmp
 
 #include "ComputeNonbondedMICKernel.h"
+
+#ifdef NAMD_CUDA
+bool one_cuda_device_per_node();
+#endif
 
 //#define DEBUGM
 #include "Debug.h"
@@ -3534,8 +3538,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      PMEEwaldCoefficient = ewaldcof;
 
 #ifdef NAMD_CUDA
+     bool one_device_per_node = one_cuda_device_per_node();  // only checks node 0
      if ( ! opts.defined("PMEOffload") ) {
-       PMEOffload = (PMEInterpOrder > 4);
+       PMEOffload = ( (PMEInterpOrder > 4) && one_device_per_node );
+       if ( PMEOffload ) iout << iINFO << "Enabling PMEOffload because PMEInterpOrder > 4.\n" << endi;
+     } else if ( PMEOffload && ! one_device_per_node ) {
+       PMEOffload = 0;
+       iout << iWARN << "Disabling PMEOffload because multiple CUDA devices per process are not supported.\n" << endi;
      }
 #else
      PMEOffload = 0;
