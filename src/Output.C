@@ -81,6 +81,7 @@ int NAMD_open(const char *fname) {
 
 // same as write, only does error checking internally
 void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg="NAMD_write64") {
+  double firsttime = 0.;
   while ( count ) {
 #if defined(WIN32) && !defined(__CYGWIN__)
     long retval = _write(fd,buf,count);
@@ -88,10 +89,17 @@ void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg="NAMD_
     ssize_t retval = write(fd,buf,count);
 #endif
     if ( retval < 0 && errno == EINTR ) retval = 0;
+    if ( retval < 0 && errno == ENOMEM ) {
+      if ( firsttime == 0. ) firsttime = CmiWallTimer();
+      if ( (CmiWallTimer() - firsttime) < 300. ) retval = 0;
+    }
     if ( retval < 0 ) NAMD_err(errmsg);
     if ( retval > count ) NAMD_bug("extra bytes written in NAMD_write64()");
     buf += retval;
     count -= retval;
+  }
+  if ( firsttime != 0. ) {
+    iout << iWARN << errmsg << ": NAMD_write64() retried for " << (CmiWallTimer() - firsttime) << " seconds.\n" << endi;
   }
 }
 
