@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2014/12/03 17:01:12 $
- * $Revision: 1.1445 $
+ * $Date: 2014/12/04 21:08:50 $
+ * $Revision: 1.1446 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1026,7 +1026,7 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
 
   opts.require("alch", "alchLambda", "Coupling parameter value", 
       &alchLambda);
-  opts.require("alch", "alchLambda2", "Coupling comparison value",
+  opts.optional("alch", "alchLambda2", "Coupling comparison value",
       &alchLambda2);
    opts.optional("alch", "alchFile", "PDB file with perturbation flags "
      "default is the input PDB file", PARSE_STRING); 
