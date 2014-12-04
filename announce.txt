@@ -57,7 +57,9 @@ NAMD 2.10b2 has many advantages over NAMD 2.9, among these are:
 
 - 64-bit Windows shared-memory single-node port with CUDA support
 
-- 32-bit and 64-bit ARM processor port with CUDA support
+- 32-bit and 64-bit ARM processor Linux port with CUDA support
+
+- CUDA support for POWER processor Linux port
 
 - Enhanced performance and scalability
 
