@@ -309,10 +309,11 @@ public:
       if (periodic[i]) {
         ix[i] = (ix[i] + nx[i]) % nx[i]; //to ensure non-negative result
       } else {
-        if (ix[i] < 0 || ix[i] >= nx[i])
+        if (ix[i] < 0 || ix[i] >= nx[i]) {
           cvm::error ("Trying to wrap illegal index vector (non-PBC): "
                      + cvm::to_str (ix));
           return;
+        }
       }
     }
   }
