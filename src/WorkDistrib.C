@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2014/07/25 18:31:33 $
- * $Revision: 1.1280 $
+ * $Date: 2014/12/08 04:20:51 $
+ * $Revision: 1.1281 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1250,9 +1250,9 @@ void WorkDistrib::patchMapInit(void)
   }
   if ( numPatches < numpes ) {
     #if defined(NAMD_CUDA)
-    NAMD_die("CUDA-enabled NAMD requires at least one patch per process.");
+    NAMD_die("CUDA-enabled NAMD requires at least one patch per thread.");
     #elif defined(NAMD_MIC)
-    NAMD_die("MIC-enabled NAMD requires at least one patch per process.");
+    NAMD_die("MIC-enabled NAMD requires at least one patch per thread.");
     #endif
   }
   if ( numPatches % numpes && numPatches <= 1.4 * numpes ) {
