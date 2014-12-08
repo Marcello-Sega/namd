@@ -396,6 +396,7 @@ __global__ void cuda_pme_forces_dev(
 
 CUDA_PME_CHARGES_PROTOTYPE {
   int nblocks = (n_atoms + atoms_per_block - 1) / atoms_per_block;
+  if ( ! nblocks ) return;
 
 #define CALL(ORDER) if ( order == ORDER ) \
                       cuda_pme_charges_dev<ORDER><<<nblocks,32*warps_per_block,0,stream>>>( \
@@ -409,6 +410,7 @@ CUDA_PME_CHARGES_PROTOTYPE {
 
 CUDA_PME_CHARGES_BATCHED_PROTOTYPE {
   int nblocksX = (n_max_atoms + atoms_per_block - 1) / atoms_per_block;
+  if ( (! nblocksX) || (! numPatches) ) return;
   dim3 gridSize;
   gridSize.x = nblocksX;
   gridSize.y = numPatches;
@@ -434,6 +436,7 @@ void dummy() { }
 
 CUDA_PME_FORCES_PROTOTYPE {
   int nblocks = (maxn + atoms_per_block - 1) / atoms_per_block;
+  if ( (! nblocks) || (! dimy) ) return;
 
 #define CALL(ORDER) if ( order == ORDER ) \
                       cudaFuncSetSharedMemConfig(cuda_pme_forces_dev<ORDER>,cudaSharedMemBankSizeEightByte), \
