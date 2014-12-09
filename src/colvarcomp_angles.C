@@ -54,9 +54,9 @@ colvar::angle::angle()
 
 void colvar::angle::calc_value()
 {
-  group1.read_positions();
-  group2.read_positions();
-  group3.read_positions();
+  // group1.read_positions();
+  // group2.read_positions();
+  // group3.read_positions();
 
   cvm::atom_pos const g1_pos = group1.center_of_mass();
   cvm::atom_pos const g2_pos = group2.center_of_mass();
@@ -215,10 +215,10 @@ colvar::dihedral::dihedral()
 
 void colvar::dihedral::calc_value()
 {
-  group1.read_positions();
-  group2.read_positions();
-  group3.read_positions();
-  group4.read_positions();
+  // group1.read_positions();
+  // group2.read_positions();
+  // group3.read_positions();
+  // group4.read_positions();
 
   cvm::atom_pos const g1_pos = group1.center_of_mass();
   cvm::atom_pos const g2_pos = group2.center_of_mass();
