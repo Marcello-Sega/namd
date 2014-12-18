@@ -546,6 +546,7 @@ void crossterm_setup(CrosstermData *table)
     m[INDEX(N,i,i-1)] = 1;
     m[INDEX(N,i,i)] = 4;
   }
+  /* periodic boundary conditions for spline */
   m[INDEX(N,0,N-1)] = 1;
   m[INDEX(N,N-1,0)] = 1;
 
@@ -600,46 +601,35 @@ void crossterm_setup(CrosstermData *table)
       table[INDEX(D,i,N)].d10 = table[INDEX(D,i,0)].d10;
     }
 
-    /* use 4th order difference approx for cross-derivative */
+    /* march back through rows of table
+     *
+     * This is CHARMM's approach for calculating mixed partial derivatives,
+     * by splining the first derivative values.
+     *
+     * Here we spline the dx values along y to calculate dxdy derivatives.
+     *
+     * Test cases show error with CHARMM is within 1e-5 roundoff error.
+     */
     for (i = 0;  i < N;  i++) {
-      for (j = 0;  j < N;  j++) {
-        ij = INDEX(D,i,j);
-        ijp1p1 = INDEX(D,(i+1)%N,(j+1)%N);
-        ijm1m1 = INDEX(D,(i+N-1)%N,(j+N-1)%N);
-        ijp1m1 = INDEX(D,(i+1)%N,(j+N-1)%N);
-        ijm1p1 = INDEX(D,(i+N-1)%N,(j+1)%N);
-        ijp2p2 = INDEX(D,(i+2)%N,(j+2)%N);
-        ijm2m2 = INDEX(D,(i+N-2)%N,(j+N-2)%N);
-        ijp2m2 = INDEX(D,(i+2)%N,(j+N-2)%N);
-        ijm2p2 = INDEX(D,(i+N-2)%N,(j+2)%N);
-        table[ij].d11 = h_2 * (1./3) * (table[ijp1p1].d00 + table[ijm1m1].d00
-            - table[ijp1m1].d00 - table[ijm1p1].d00
-            - (1./16) * (table[ijp2p2].d00 + table[ijm2m2].d00
-              - table[ijp2m2].d00 - table[ijm2p2].d00));
-      }
-    }
 
-#if 0
-    /* use 2nd order difference approx for cross-derivative */
-    for (i = 0;  i < N;  i++) {
-      for (j = 0;  j < N;  j++) {
-        ij = INDEX(D,i,j);
-        ijp1p1 = INDEX(D,(i+1)%N,(j+1)%N);
-        ijm1m1 = INDEX(D,(i+N-1)%N,(j+N-1)%N);
-        ijp1m1 = INDEX(D,(i+1)%N,(j+N-1)%N);
-        ijm1p1 = INDEX(D,(i+N-1)%N,(j+1)%N);
-        table[ij].d11 = h_2 * (1./4) * (table[ijp1p1].d00 + table[ijm1m1].d00
-            - table[ijp1m1].d00 - table[ijm1p1].d00);
+      /* setup RHS vector for solving dxy derivatives from dx */
+      v[0] = tr_h * (table[INDEX(D,i,1)].d10 - table[INDEX(D,i,N-1)].d10);
+      for (j = 1;  j < N;  j++) {
+        v[j] = tr_h * (table[INDEX(D,i,j+1)].d10 - table[INDEX(D,i,j-1)].d10);
       }
-    }
-#endif
 
-    /* fill in redundant edge values */
-    for (i = 0;  i < N;  i++) {
-      table[INDEX(D,i,N)].d11 = table[INDEX(D,i,0)].d11;
-      table[INDEX(D,N,i)].d11 = table[INDEX(D,0,i)].d11;
+      /* solve system, returned into vector */
+      forward_back_sub(v, m, N);
+
+      /* store values as dxy derivatives wrt differenced table values */
+      for (j = 0;  j < N;  j++) {
+        table[INDEX(D,i,j)].d11 = v[j];
+      }
+      table[INDEX(D,i,N)].d11 = v[0];
     }
-    table[INDEX(D,N,N)].d11 = table[INDEX(D,0,0)].d11;
+    for (j = 0;  j <= N;  j++) {
+      table[INDEX(D,N,j)].d11 = table[INDEX(D,0,j)].d11;
+    }
 
   /* done with temp storage */
   delete [] m;
