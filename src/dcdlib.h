@@ -36,6 +36,13 @@
 #include <io.h>
 #endif
 
+#ifdef WIN32
+#define OFF_T __int64
+#else
+#define OFF_T off_t
+#endif
+
+
 /*  DEFINE ERROR CODES THAT MAY BE RETURNED BY DCD ROUTINES		*/
 #define DCD_DNE		-2	/*  DCD file does not exist		*/
 #define DCD_OPENFAILED	-3	/*  Open of DCD file failed		*/
@@ -75,7 +82,7 @@ int update_dcdstep_par_header(int fd);
 int write_dcdstep_par_slave(int fd, int parL, int parU, int N, float *X, float *Y, float *Z);
     
 /* wrapper for seeking the dcd file */
-off_t NAMD_seek(int file, off_t offset, int whence);
+OFF_T NAMD_seek(int file, OFF_T offset, int whence);
 
 #endif /* ! DCDLIB_H */
 

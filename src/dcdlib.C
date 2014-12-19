@@ -34,15 +34,15 @@ void NAMD_write(int fd, const char *buf, size_t count) {
 }
 
 #ifdef WIN32
-#define LSEEK _lseek
+#define LSEEK _lseeki64
 #define READ _read
 #else
 #define LSEEK lseek
 #define READ read
 #endif
 
-off_t NAMD_seek(int file, off_t offset, int whence) {
-  off_t retval = LSEEK(file, offset, whence);
+OFF_T NAMD_seek(int file, OFF_T offset, int whence) {
+  OFF_T retval = LSEEK(file, offset, whence);
   if ( retval < 0 ) NAMD_err("seek failed while writing DCD file");
   if ( whence == SEEK_SET && retval != offset ) {
     char buf[256];
@@ -751,7 +751,7 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 
 	/* don't update header until after write succeeds */
-        off_t end = LSEEK(fd,0,SEEK_CUR);
+        OFF_T end = LSEEK(fd,0,SEEK_CUR);
 	LSEEK(fd,NSAVC_POS,SEEK_SET);
 	READ(fd,(void*) &NSAVC,sizeof(int32));
 	LSEEK(fd,NSTEP_POS,SEEK_SET);
@@ -822,7 +822,7 @@ int update_dcdstep_par_header(int fd)
 {
 	int32 NSAVC,NSTEP,NFILE;
 	/* don't update header until after write succeeds */
-        off_t end = LSEEK(fd,0,SEEK_CUR);
+        OFF_T end = LSEEK(fd,0,SEEK_CUR);
 	LSEEK(fd,NSAVC_POS,SEEK_SET);
 	READ(fd,(void*) &NSAVC,sizeof(int32));
 	LSEEK(fd,NSTEP_POS,SEEK_SET);
@@ -852,7 +852,7 @@ int write_dcdstep_par_slave(int fd, int parL, int parU, int N, float *X, float *
 
 	/* x's 1st number of Xs */
 	/* skip field for the bytes in X, and the first parL atoms in X*/
-	off_t xoffset = sizeof(int)+sizeof(float)*((off_t)parL);
+	OFF_T xoffset = sizeof(int)+sizeof(float)*((OFF_T)parL);
 	LSEEK(fd, xoffset, SEEK_CUR);
 	NAMD_write(fd, (char *) X, out_integer);
 
@@ -860,11 +860,11 @@ int write_dcdstep_par_slave(int fd, int parL, int parU, int N, float *X, float *
 	/* skip the remaining atoms in X at number of (N-1)-(parU+1)+1
 	 * where N-1 is the last atom id, paru+1 is the next atom id. */
 	/* skip the first parL atoms in Y; */
-	off_t yoffset = 2*sizeof(int)+sizeof(float)*((off_t)(N-parU+parL-1));
+	OFF_T yoffset = 2*sizeof(int)+sizeof(float)*((OFF_T)(N-parU+parL-1));
 	LSEEK(fd, yoffset, SEEK_CUR);
 	NAMD_write(fd, (char *) Y, out_integer);
 
-	off_t zoffset = yoffset;
+	OFF_T zoffset = yoffset;
 	LSEEK(fd, zoffset, SEEK_CUR);
 	NAMD_write(fd, (char *) Z, out_integer);
 	return(0);
