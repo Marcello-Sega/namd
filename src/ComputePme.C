@@ -3217,7 +3217,7 @@ void ComputePme::doWork()
 
     myMgr->masterPmeMgr->charges_time = before;
     traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,after);
-    traceUserBracketEvent(CUDA_EVENT_ID_PME_KERNEL,after,2);
+    traceUserBracketEvent(CUDA_EVENT_ID_PME_KERNEL,after,after2);
 
     CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
     cm[cuda_device_pe()].recvNonbondedCUDASlaveReady(1,atomsChanged,sequence());
