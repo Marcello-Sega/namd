@@ -409,7 +409,7 @@ public:
   int check_forces_count;
   int master_pe;
 
-  void cuda_submit_charges(Lattice &lattice, int sequence, int atomsChanged);
+  void cuda_submit_charges(Lattice &lattice, int sequence);
   struct cuda_submit_charges_args {
     ComputePmeMgr *mgr; Lattice *lattice; int sequence; int atomsChanged;
   };
@@ -3202,6 +3202,8 @@ void ComputePme::doWork()
 // cudaDeviceSynchronize();  // XXXX
 #ifdef NAMD_CUDA
   if ( offload ) {
+    int num_submits = 0;
+    int any_atomsChanged = 0;
     ComputePmeMgr::cuda_submit_charges_args args;
     args.mgr = myMgr;
     args.lattice = &lattice;
@@ -3214,7 +3216,9 @@ void ComputePme::doWork()
       ComputePmeMgr::cuda_busy = true;
       while ( 1 ) {
         CmiUnlock(ComputePmeMgr::cuda_lock);
-        args.mgr->cuda_submit_charges(*args.lattice, args.sequence, args.atomsChanged);
+        args.mgr->cuda_submit_charges(*args.lattice, args.sequence);
+        ++num_submits;
+        any_atomsChanged = ( any_atomsChanged || args.atomsChanged );
         CmiLock(ComputePmeMgr::cuda_lock);
         if ( ComputePmeMgr::cuda_submit_charges_deque.size() ) {
           args = ComputePmeMgr::cuda_submit_charges_deque.front();
@@ -3226,6 +3230,10 @@ void ComputePme::doWork()
       }
     }
     CmiUnlock(ComputePmeMgr::cuda_lock);
+    if ( num_submits ) {
+      CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+      cm[cuda_device_pe()].recvNonbondedCUDASlaveReady(num_submits,any_atomsChanged,sequence());
+    }
   } else
 #endif // NAMD_CUDA
   {
@@ -3237,7 +3245,7 @@ void ComputePme::doWork()
 
 #ifdef NAMD_CUDA
 
-void ComputePmeMgr::cuda_submit_charges(Lattice &lattice, int sequence, int atomsChanged) {
+void ComputePmeMgr::cuda_submit_charges(Lattice &lattice, int sequence) {
 
     int n = cuda_atoms_count;
     //CkPrintf("pe %d cuda_atoms_count %d\n", CkMyPe(), cuda_atoms_count);
@@ -3263,9 +3271,6 @@ void ComputePmeMgr::cuda_submit_charges(Lattice &lattice, int sequence, int atom
     masterPmeMgr->charges_time = before;
     traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,after);
     traceUserBracketEvent(CUDA_EVENT_ID_PME_KERNEL,after,after2);
-
-    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
-    cm[cuda_device_pe()].recvNonbondedCUDASlaveReady(1,atomsChanged,sequence);
 }
 
 void cuda_check_pme_charges(void *arg, double walltime) {
