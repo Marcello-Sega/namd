@@ -830,6 +830,8 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   patchRecords.resize(patchMap->numPatches());
   patch_pairs_ptr = new ResizeArray<patch_pair>;
   force_lists_ptr = new ResizeArray<force_list>;
+
+  if ( params->PMEOn && params->PMEOffload ) gpu_is_mine = 0;
 }
 
 
@@ -906,15 +908,7 @@ void ComputeNonbondedCUDA::registerPatches() {
       }
     }
   }
-  if ( master == this ) {
-    int extras = 0;
-    if ( simParams->PMEOn && simParams->PMEOffload ) {
-      for ( int i=0; i<numPesSharingDevice; ++i ) {
-        if ( patchMap->numPatchesOnNode(pesSharingDevice[i]) ) ++extras;
-      }
-    }
-    setNumPatches(activePatches.size() + extras);
-  }
+  if ( master == this ) setNumPatches(activePatches.size());
   else setNumPatches(hostedPatches.size());
   if ( CmiPhysicalNodeID(CkMyPe()) < 2 )
   CkPrintf("Pe %d hosts %d local and %d remote patches for pe %d\n", CkMyPe(), localHostedPatches.size(), remoteHostedPatches.size(), masterPe);
@@ -1740,7 +1734,7 @@ GBISP("doWork[%d] accessing arrays for P%d\n",CkMyPe(),gbisPhase);
 
   kernel_time = CkWallTimer();
   kernel_launch_state = 1;
-  if ( gpu_is_mine ) recvYieldDevice(-1);
+  if ( gpu_is_mine || ! doSlow ) recvYieldDevice(-1);
 }
 
 void cuda_check_remote_calc(void *arg, double /* walltime */) {
@@ -1954,6 +1948,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P3>>>\n", CkMyPe())
         }
       } // phases
     } // GBISOn
+    if ( simParams->PMEOn && simParams->PMEOffload ) break;
 
 
   default:

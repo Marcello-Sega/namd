@@ -2897,12 +2897,6 @@ int ComputePme::noWork() {
   forceBox->skip();
 
   if ( ++(myMgr->noWorkCount) == myMgr->pmeComputes.size() ) {
-#ifdef NAMD_CUDA
-   if ( offload ) {
-    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
-    cm[cuda_device_pe()].recvNonbondedCUDASlaveReady(1,atomsChanged,sequence());
-   }
-#endif 
     myMgr->noWorkCount = 0;
     myMgr->reduction->submit();
   }
@@ -3202,7 +3196,6 @@ void ComputePme::doWork()
 // cudaDeviceSynchronize();  // XXXX
 #ifdef NAMD_CUDA
   if ( offload ) {
-    int num_submits = 0;
     int any_atomsChanged = 0;
     ComputePmeMgr::cuda_submit_charges_args args;
     args.mgr = myMgr;
@@ -3217,7 +3210,6 @@ void ComputePme::doWork()
       while ( 1 ) {
         CmiUnlock(ComputePmeMgr::cuda_lock);
         args.mgr->cuda_submit_charges(*args.lattice, args.sequence);
-        ++num_submits;
         any_atomsChanged = ( any_atomsChanged || args.atomsChanged );
         CmiLock(ComputePmeMgr::cuda_lock);
         if ( ComputePmeMgr::cuda_submit_charges_deque.size() ) {
@@ -3230,10 +3222,6 @@ void ComputePme::doWork()
       }
     }
     CmiUnlock(ComputePmeMgr::cuda_lock);
-    if ( num_submits ) {
-      CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
-      cm[cuda_device_pe()].recvNonbondedCUDASlaveReady(num_submits,any_atomsChanged,sequence());
-    }
   } else
 #endif // NAMD_CUDA
   {
@@ -3323,6 +3311,10 @@ void ComputePmeMgr::chargeGridSubmitted(Lattice &lattice, int sequence) {
   //CmiUnlock(cuda_lock);
   // cudaDeviceSynchronize();  //  XXXX TESTING
   // cuda_errcheck("after memcpy grid to host");
+
+  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+  cm[cuda_device_pe()].recvYieldDevice(-1);
+
   pmeProxy[master_pe].pollChargeGridReady();
  }
 }
