@@ -594,6 +594,8 @@ public:
   void recvZGrid(PmeGridMsg *);
   void recvZUntrans(PmeUntransMsg *);
 
+  void recvUngrid(PmeGridMsg *);
+
   void recvPencilMapProxies(CProxy_PmePencilMap _xm, CProxy_PmePencilMap _ym, CProxy_PmePencilMap _zm){
       xm=_xm; ym=_ym; zm=_zm;
   }
@@ -605,6 +607,10 @@ private:
   CProxy_ComputePmeMgr mgrProxy;
   ComputePmeMgr *mgrObject;
   ComputePmeMgr **mgrObjects;
+#ifdef NAMD_CUDA
+  ComputePmeMgr *masterPmeMgr;
+  int master_pe;
+#endif
   CProxy_PmeXPencil xPencil;
   CProxy_PmeYPencil yPencil;
   CProxy_PmeZPencil zPencil;
@@ -642,6 +648,14 @@ void NodePmeMgr::recvTrans(PmeTransMsg *msg) {
 
 void NodePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   mgrObject->fwdSharedUntrans(msg);
+}
+
+void NodePmeMgr::recvUngrid(PmeGridMsg *msg) {
+#ifdef NAMD_CUDA
+  masterPmeMgr->recvUngrid(msg);
+#else
+  NAMD_bug("NodePmeMgr::recvUngrid called in non-CUDA build.");
+#endif
 }
 
 void NodePmeMgr::registerXPencil(CkArrayIndex3D idx, PmeXPencil *obj)
@@ -2320,6 +2334,11 @@ void ComputePmeMgr::sendUngrid(void) {
 
     SET_PRIORITY(newmsg,grid_sequence,UNGRID_PRIORITY)
     CmiEnableUrgentSend(1);
+#ifdef NAMD_CUDA
+    if ( offload ) {
+      pmeNodeProxy[CkNodeOf(pe)].recvUngrid(newmsg);
+    } else
+#endif
     pmeProxyDir[pe].recvUngrid(newmsg);
     CmiEnableUrgentSend(0);
   }
@@ -2329,6 +2348,9 @@ void ComputePmeMgr::sendUngrid(void) {
 
 void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {
   // CkPrintf("recvUngrid on Pe(%d)\n",CkMyPe());
+#ifdef NAMD_CUDA
+  if ( ! offload )  // would need lock
+#endif
   if ( ungrid_count == 0 ) {
     NAMD_bug("Message order failure in ComputePmeMgr::recvUngrid\n");
   }
@@ -2341,6 +2363,21 @@ void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {
 
 void ComputePmeMgr::recvAck(PmeAckMsg *msg) {
   if ( msg ) delete msg;
+#ifdef NAMD_CUDA
+  if ( offload ) {
+    CmiLock(cuda_lock);
+    if ( ungrid_count == 0 ) {
+      NAMD_bug("Message order failure in ComputePmeMgr::recvUngrid\n");
+    }
+    int uc = --ungrid_count;
+    CmiUnlock(cuda_lock);
+
+    if ( uc == 0 ) {
+      pmeProxyDir[master_pe].ungridCalc();
+    }
+    return;
+  }
+#endif
   --ungrid_count;
 
   if ( ungrid_count == 0 ) {
@@ -2651,6 +2688,11 @@ void ComputePmeMgr::initialize_computes() {
  if ( offload ) {
   CmiLock(cuda_lock);
   cudaFirst = ! masterPmeMgr->chargeGridSubmittedCount++;
+ }
+
+ if ( cudaFirst ) {
+  nodePmeMgr->master_pe = master_pe;
+  nodePmeMgr->masterPmeMgr = masterPmeMgr;
  }
 #endif
 
@@ -6098,6 +6140,11 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
   }
   SET_PRIORITY(msg,sequence,UNGRID_PRIORITY)
     CmiEnableUrgentSend(1);
+#ifdef NAMD_CUDA
+    if ( offload ) {
+      initdata.pmeNodeProxy[CkNodeOf(pe)].recvUngrid(msg);
+    } else
+#endif
   initdata.pmeProxy[pe].recvUngrid(msg);
     CmiEnableUrgentSend(0);
 }

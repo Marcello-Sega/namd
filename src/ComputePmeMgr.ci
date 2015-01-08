@@ -172,6 +172,9 @@ module ComputePmeMgr {
     entry void recvPencilMapProxies(CProxy_PmePencilMap xm, CProxy_PmePencilMap ym, CProxy_PmePencilMap zm);
     entry [expedited] void recvTrans(PmeTransMsg *);
     entry [expedited] void recvUntrans(PmeUntransMsg *);
+    // as of Charm++ 6.6.1 multicore builds run expedited nodegroup messages all on pe 0
+    // and it is not clear if expedited actually conveys any advantage to nodegroup messages
+    entry void recvUngrid(PmeGridMsg *);
 
     // pencil comm management entries
 
