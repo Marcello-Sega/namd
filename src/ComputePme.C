@@ -2434,16 +2434,15 @@ void ComputePmeMgr::ungridCalc(void) {
   //   fz_arr[myGrid.K3+j] = fz_arr[j];
   // }
 #ifdef NAMD_CUDA
-  int q_stride;
- if ( offload ) {
-  q_stride = myGrid.K3+myGrid.order-1;
+ if ( offload ) { if ( this == masterPmeMgr ) {
+  int q_stride = myGrid.K3+myGrid.order-1;
   for (int n = q_data_size/(q_stride*sizeof(float)), i=0; i<n; ++i) {
     float *q_list_i = q_data_host + i * q_stride;
     for (int j=0; j<myGrid.order-1; ++j) {
       q_list_i[myGrid.K3+j] = q_list_i[j];
     }
   }
- } else
+ } } else
 #endif // NAMD_CUDA
  {
   for (int i=0; i<q_count; ++i) {
