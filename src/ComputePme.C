@@ -411,7 +411,7 @@ public:
 
   void cuda_submit_charges(Lattice &lattice, int sequence);
   struct cuda_submit_charges_args {
-    ComputePmeMgr *mgr; Lattice *lattice; int sequence; int atomsChanged;
+    ComputePmeMgr *mgr; Lattice *lattice; int sequence;
   };
   static std::deque<cuda_submit_charges_args> cuda_submit_charges_deque;
   static bool cuda_busy;
@@ -3196,12 +3196,10 @@ void ComputePme::doWork()
 // cudaDeviceSynchronize();  // XXXX
 #ifdef NAMD_CUDA
   if ( offload ) {
-    int any_atomsChanged = 0;
     ComputePmeMgr::cuda_submit_charges_args args;
     args.mgr = myMgr;
     args.lattice = &lattice;
     args.sequence = sequence();
-    args.atomsChanged = atomsChanged;
     CmiLock(ComputePmeMgr::cuda_lock);
     if ( ComputePmeMgr::cuda_busy ) {
       ComputePmeMgr::cuda_submit_charges_deque.push_back(args);
@@ -3210,7 +3208,6 @@ void ComputePme::doWork()
       while ( 1 ) {
         CmiUnlock(ComputePmeMgr::cuda_lock);
         args.mgr->cuda_submit_charges(*args.lattice, args.sequence);
-        any_atomsChanged = ( any_atomsChanged || args.atomsChanged );
         CmiLock(ComputePmeMgr::cuda_lock);
         if ( ComputePmeMgr::cuda_submit_charges_deque.size() ) {
           args = ComputePmeMgr::cuda_submit_charges_deque.front();
