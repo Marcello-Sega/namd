@@ -3203,6 +3203,9 @@ void ComputePme::doWork()
     CmiLock(ComputePmeMgr::cuda_lock);
     if ( ComputePmeMgr::cuda_busy ) {
       ComputePmeMgr::cuda_submit_charges_deque.push_back(args);
+    } else if ( CkMyPe() == cuda_device_pe() ) {
+      // avoid adding work to nonbonded data preparation pe
+      args.mgr->cuda_submit_charges(*args.lattice, args.sequence);
     } else {
       ComputePmeMgr::cuda_busy = true;
       while ( 1 ) {
