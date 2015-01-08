@@ -2436,11 +2436,55 @@ void ComputePmeMgr::ungridCalc(void) {
 #ifdef NAMD_CUDA
  if ( offload ) { if ( this == masterPmeMgr ) {
   int q_stride = myGrid.K3+myGrid.order-1;
-  for (int n = q_data_size/(q_stride*sizeof(float)), i=0; i<n; ++i) {
-    float *q_list_i = q_data_host + i * q_stride;
-    for (int j=0; j<myGrid.order-1; ++j) {
-      q_list_i[myGrid.K3+j] = q_list_i[j];
+  int k3 = myGrid.K3;
+#define LOOP_HEAD \
+    for (int n = q_data_size/(q_stride*sizeof(float)), i=0; i<n; ++i) { \
+      float *q_list_i = q_data_host + i * q_stride;
+  switch ( myGrid.order ) {
+  case 4:
+    LOOP_HEAD
+      float f0 = q_list_i[0];
+      float f1 = q_list_i[1];
+      float f2 = q_list_i[2];
+      q_list_i[k3+0] = f0;
+      q_list_i[k3+1] = f1;
+      q_list_i[k3+2] = f2;
     }
+  break;
+  case 6:
+    LOOP_HEAD
+      float f0 = q_list_i[0];
+      float f1 = q_list_i[1];
+      float f2 = q_list_i[2];
+      float f3 = q_list_i[3];
+      float f4 = q_list_i[4];
+      q_list_i[k3+0] = f0;
+      q_list_i[k3+1] = f1;
+      q_list_i[k3+2] = f2;
+      q_list_i[k3+3] = f3;
+      q_list_i[k3+4] = f4;
+    }
+  break;
+  case 8:
+    LOOP_HEAD
+      float f0 = q_list_i[0];
+      float f1 = q_list_i[1];
+      float f2 = q_list_i[2];
+      float f3 = q_list_i[3];
+      float f4 = q_list_i[4];
+      float f5 = q_list_i[5];
+      float f6 = q_list_i[6];
+      q_list_i[k3+0] = f0;
+      q_list_i[k3+1] = f1;
+      q_list_i[k3+2] = f2;
+      q_list_i[k3+3] = f3;
+      q_list_i[k3+4] = f4;
+      q_list_i[k3+5] = f5;
+      q_list_i[k3+6] = f6;
+    }
+  break;
+  default:
+    NAMD_bug("ComputePmeMgr::ungridCalc unsupported PME interpolation order");
   }
  } } else
 #endif // NAMD_CUDA
