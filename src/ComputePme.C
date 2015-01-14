@@ -356,6 +356,7 @@ public:
   int sendDataHelper_sourcepe;
   int sendDataHelper_errors;
   void sendPencils(Lattice &, int sequence);
+  void sendPencilsPart(int first, int last, Lattice &, int sequence, int sourcepe);
   void recvGrid(PmeGridMsg *);
   void gridCalc1(void);
   void sendTransBarrier(void);
@@ -363,6 +364,7 @@ public:
   void fwdSharedTrans(PmeTransMsg *);
   void recvSharedTrans(PmeSharedTransMsg *);
   void sendDataHelper(int);
+  void sendPencilsHelper(int);
   void recvTrans(PmeTransMsg *);
   void procTrans(PmeTransMsg *);
   void gridCalc2(void);
@@ -592,6 +594,7 @@ public:
   ~NodePmeMgr();
   void initialize();
   void sendDataHelper(int);
+  void sendPencilsHelper(int);
   void recvTrans(PmeTransMsg *);
   void recvUntrans(PmeUntransMsg *);
   void registerXPencil(CkArrayIndex3D, PmeXPencil *);
@@ -3495,7 +3498,7 @@ void ComputePmeMgr::chargeGridReady(Lattice &lattice, int sequence) {
 }
 
 
-void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
+void ComputePmeMgr::sendPencilsPart(int first, int last, Lattice &lattice, int sequence, int sourcepe) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
 
@@ -3512,7 +3515,7 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
   // int savedMessages = 0;
   NodePmeMgr *npMgr = pmeNodeProxy[CkMyNode()].ckLocalBranch();
 
-  for (int ap=0; ap<numPencilsActive; ++ap) {
+  for (int ap=first; ap<=last; ++ap) {
     int ib = activePencils[ap].i;
     int jb = activePencils[ap].j;
     int ibegin = ib*block1;
@@ -3549,7 +3552,7 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
     
     PmeGridMsg *msg = new ( hd*zlistlen, hd*flen,
 	hd*fcount*zlistlen, PRIORITY_SIZE) PmeGridMsg;
-    msg->sourceNode = CkMyPe();
+    msg->sourceNode = sourcepe;
     msg->hasData = hd;
     msg->lattice = lattice;
    if ( hd ) {
@@ -3613,10 +3616,56 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
   }
 
 
+  // if ( savedMessages ) {
+  //   CkPrintf("Pe %d eliminated %d PME messages\n",CkMyPe(),savedMessages);
+  // }
+
+}
+
+
+void ComputePmeMgr::sendPencilsHelper(int iter) {
+  nodePmeMgr->sendPencilsHelper(iter);
+}
+
+void NodePmeMgr::sendPencilsHelper(int iter) {
+  ComputePmeMgr *obj = masterPmeMgr;
+  obj->sendPencilsPart(iter, iter, *obj->sendDataHelper_lattice, obj->sendDataHelper_sequence, obj->sendDataHelper_sourcepe);
+}
+
+void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
+
+  sendDataHelper_lattice = &lattice;
+  sendDataHelper_sequence = sequence;
+  sendDataHelper_sourcepe = CkMyPe();
+
+#ifdef NAMD_CUDA
+  if ( offload ) {
+    for ( int ap=0; ap < numPencilsActive; ++ap ) {
+#if CMK_MULTICORE
+      // nodegroup messages on multicore are delivered to sending pe, or pe 0 if expedited
+      int ib = activePencils[ap].i;
+      int jb = activePencils[ap].j;
+      int destproc = nodePmeMgr->zm.ckLocalBranch()->procNum(0, CkArrayIndex3D(ib,jb,0));
+      pmeProxy[destproc].sendPencilsHelper(ap);
+#else
+      pmeNodeProxy[CkMyNode()].sendPencilsHelper(ap);
+#endif
+    }
+  } else
+#endif
+  {
+    sendPencilsPart(0,numPencilsActive-1,lattice,sequence,CkMyPe());
+  }
+
   if ( strayChargeErrors ) {
    strayChargeErrors = 0;
    iout << iERROR << "Stray PME grid charges detected: "
  	<< CkMyPe() << " sending to (x,y)";
+   int K1 = myGrid.K1;
+   int K2 = myGrid.K2;
+   int dim2 = myGrid.dim2;
+   int block1 = myGrid.block1;
+   int block2 = myGrid.block2;
    for (int ib=0; ib<xBlocks; ++ib) {
     for (int jb=0; jb<yBlocks; ++jb) {
      int ibegin = ib*block1;
@@ -3642,11 +3691,7 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
    }
    iout << "\n" << endi;
   }
-
-  // if ( savedMessages ) {
-  //   CkPrintf("Pe %d eliminated %d PME messages\n",CkMyPe(),savedMessages);
-  // }
-
+ 
 }
 
 

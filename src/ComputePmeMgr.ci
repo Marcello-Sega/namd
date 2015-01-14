@@ -175,6 +175,7 @@ module ComputePmeMgr {
     // as of Charm++ 6.6.1 multicore builds run expedited nodegroup messages all on pe 0
     // and it is not clear if expedited actually conveys any advantage to nodegroup messages
     entry void sendDataHelper(int);
+    entry void sendPencilsHelper(int);
     entry void recvUngrid(PmeGridMsg *);
 
     // pencil comm management entries
@@ -199,6 +200,7 @@ module ComputePmeMgr {
     entry void pollChargeGridReady(void);  // CUDA
     entry void recvChargeGridReady(void);  // CUDA
     entry void sendDataHelper(int);
+    entry void sendPencilsHelper(int);
     entry void recvGrid(PmeGridMsg *);
     entry void gridCalc1(void);
     entry void sendTransBarrier(void);
