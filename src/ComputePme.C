@@ -350,6 +350,11 @@ public:
   void initialize_computes();
 
   void sendData(Lattice &, int sequence);
+  void sendDataPart(int first, int last, Lattice &, int sequence, int sourcepe, int errors);
+  Lattice *sendDataHelper_lattice;
+  int sendDataHelper_sequence;
+  int sendDataHelper_sourcepe;
+  int sendDataHelper_errors;
   void sendPencils(Lattice &, int sequence);
   void recvGrid(PmeGridMsg *);
   void gridCalc1(void);
@@ -357,6 +362,7 @@ public:
   void sendTrans(void);
   void fwdSharedTrans(PmeTransMsg *);
   void recvSharedTrans(PmeSharedTransMsg *);
+  void sendDataHelper(int);
   void recvTrans(PmeTransMsg *);
   void procTrans(PmeTransMsg *);
   void gridCalc2(void);
@@ -585,6 +591,7 @@ public:
   NodePmeMgr();
   ~NodePmeMgr();
   void initialize();
+  void sendDataHelper(int);
   void recvTrans(PmeTransMsg *);
   void recvUntrans(PmeUntransMsg *);
   void registerXPencil(CkArrayIndex3D, PmeXPencil *);
@@ -3682,16 +3689,16 @@ void ComputePmeMgr::copyPencils(PmeGridMsg *msg) {
 }
 
 
-void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
+void ComputePmeMgr::sendDataPart(int first, int last, Lattice &lattice, int sequence, int sourcepe, int errors) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
 
   bsize = myGrid.block1 * myGrid.dim2 * myGrid.dim3;
 
   CProxy_ComputePmeMgr pmeProxy(CkpvAccess(BOCclass_group).computePmeMgr);
-  for (int j=0; j<numGridPes; j++) {
+  for (int j=first; j<=last; j++) {
     int pe = gridPeOrder[j];  // different order
-    if ( ! recipPeDest[pe] && ! strayChargeErrors ) continue;
+    if ( ! recipPeDest[pe] && ! errors ) continue;
     int start = pe * bsize;
     int len = bsize;
     if ( start >= qsize ) { start = 0; len = 0; }
@@ -3718,7 +3725,7 @@ void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
         }
         if ( errfound ) {
           iout << iERROR << "Stray PME grid charges detected: "
-		<< CkMyPe() << " sending to " << gridPeMap[pe] << " for planes";
+		<< sourcepe << " sending to " << gridPeMap[pe] << " for planes";
           int iz = -1;
           for ( i=0; i<flen; ++i ) {
             if ( f[i] == 3 ) {
@@ -3746,7 +3753,7 @@ void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
     PmeGridMsg *msg = new (zlistlen, flen*numGrids,
 				fcount*zlistlen, PRIORITY_SIZE) PmeGridMsg;
 
-    msg->sourceNode = CkMyPe();
+    msg->sourceNode = sourcepe;
     msg->lattice = lattice;
     msg->start = fstart;
     msg->len = flen;
@@ -3774,9 +3781,42 @@ void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
     SET_PRIORITY(msg,compute_sequence,PME_GRID_PRIORITY)
     pmeProxy[gridPeMap[pe]].recvGrid(msg);
   }
- 
+
+}
+
+void ComputePmeMgr::sendDataHelper(int iter) {
+  nodePmeMgr->sendDataHelper(iter);
+}
+
+void NodePmeMgr::sendDataHelper(int iter) {
+  ComputePmeMgr *obj = masterPmeMgr;
+  obj->sendDataPart(iter, iter, *obj->sendDataHelper_lattice, obj->sendDataHelper_sequence, obj->sendDataHelper_sourcepe, obj->sendDataHelper_errors);
+}
+
+void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
+
+  sendDataHelper_lattice = &lattice;
+  sendDataHelper_sequence = sequence;
+  sendDataHelper_sourcepe = CkMyPe();
+  sendDataHelper_errors = strayChargeErrors;
   strayChargeErrors = 0;
 
+#ifdef NAMD_CUDA
+  if ( offload ) {
+    for ( int i=0; i < numGridPes; ++i ) {
+#if CMK_MULTICORE
+      // nodegroup messages on multicore are delivered to sending pe, or pe 0 if expedited
+      pmeProxy[gridPeMap[gridPeOrder[i]]].sendDataHelper(i);
+#else
+      pmeNodeProxy[CkMyNode()].sendDataHelper(i);
+#endif
+    }
+  } else
+#endif
+  {
+    sendDataPart(0,numGridPes-1,lattice,sequence,CkMyPe(),sendDataHelper_errors);
+  }
+ 
 }
 
 void ComputePmeMgr::copyResults(PmeGridMsg *msg) {
