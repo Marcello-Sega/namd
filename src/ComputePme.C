@@ -3628,8 +3628,12 @@ void ComputePmeMgr::sendPencilsHelper(int iter) {
 }
 
 void NodePmeMgr::sendPencilsHelper(int iter) {
+#ifdef NAMD_CUDA
   ComputePmeMgr *obj = masterPmeMgr;
   obj->sendPencilsPart(iter, iter, *obj->sendDataHelper_lattice, obj->sendDataHelper_sequence, obj->sendDataHelper_sourcepe);
+#else
+  NAMD_bug("NodePmeMgr::sendPencilsHelper called in non-CUDA build");
+#endif
 }
 
 void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
@@ -3834,8 +3838,12 @@ void ComputePmeMgr::sendDataHelper(int iter) {
 }
 
 void NodePmeMgr::sendDataHelper(int iter) {
+#ifdef NAMD_CUDA
   ComputePmeMgr *obj = masterPmeMgr;
   obj->sendDataPart(iter, iter, *obj->sendDataHelper_lattice, obj->sendDataHelper_sequence, obj->sendDataHelper_sourcepe, obj->sendDataHelper_errors);
+#else
+  NAMD_bug("NodePmeMgr::sendDataHelper called in non-CUDA build");
+#endif
 }
 
 void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
