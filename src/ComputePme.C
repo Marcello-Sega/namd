@@ -3849,9 +3849,11 @@ void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
 #ifdef NAMD_CUDA
   if ( offload ) {
     for ( int i=0; i < numGridPes; ++i ) {
+      int pe = gridPeOrder[i];  // different order
+      if ( ! recipPeDest[pe] && ! sendDataHelper_errors ) continue;
 #if CMK_MULTICORE
       // nodegroup messages on multicore are delivered to sending pe, or pe 0 if expedited
-      pmeProxy[gridPeMap[gridPeOrder[i]]].sendDataHelper(i);
+      pmeProxy[gridPeMap[pe]].sendDataHelper(i);
 #else
       pmeNodeProxy[CkMyNode()].sendDataHelper(i);
 #endif
