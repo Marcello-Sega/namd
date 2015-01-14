@@ -408,6 +408,7 @@ public:
   int check_charges_count;
   int check_forces_count;
   int master_pe;
+  int this_pe;
 
   void cuda_submit_charges(Lattice &lattice, int sequence);
   struct cuda_submit_charges_args {
@@ -422,6 +423,7 @@ public:
   Lattice *saved_lattice;  // saved by chargeGridSubmitted
   int saved_sequence;      // saved by chargeGridSubmitted
   void pollChargeGridReady();
+  void pollForcesReady();
   void recvChargeGridReady();
   void chargeGridReady(Lattice &lattice, int sequence);
 
@@ -718,6 +720,8 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
   streams[i] = 0;  // XXXX Testing!!!
 #endif
   }
+
+  this_pe = CkMyPe();
  
   cudaEventCreateWithFlags(&end_charges,cudaEventDisableTiming);
   end_forces = 0;
@@ -2509,11 +2513,10 @@ void ComputePmeMgr::ungridCalc(void) {
     cudaEventRecord(nodePmeMgr->end_potential_memcpy, streams[stream]);
     traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,CmiWallTimer());
 
-    const int first = CkNodeFirst(CkMyNode());
-    const int myrank = CkMyPe() - first;
+    const int myrank = CkMyRank();
     for ( int i=0; i<CkMyNodeSize(); ++i ) {
       if ( myrank != i && nodePmeMgr->mgrObjects[i]->pmeComputes.size() ) {
-        pmeProxy[first + i].ungridCalc();
+        nodePmeMgr->mgrObjects[i]->ungridCalc();
       }
     }
     if ( ! pmeComputes.size() ) return;
@@ -2562,7 +2565,7 @@ void ComputePmeMgr::ungridCalc(void) {
     f_dev += 3*n;
     f_host += 3*n;
   }
-  CmiLock(cuda_lock);
+  //CmiLock(cuda_lock);
   double before = CmiWallTimer();
   cudaMemcpyAsync(afn_dev, afn_host, 3*pcsz*sizeof(float*), cudaMemcpyHostToDevice, streams[stream]);
   traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,CmiWallTimer());
@@ -2600,7 +2603,7 @@ void ComputePmeMgr::ungridCalc(void) {
     }
     // CkPrintf("pe %d c %d natoms %d fdev %lld fhost %lld\n", CkMyPe(), i, (int64)afn_host[3*i+2], pmeComputes[i]->f_data_dev, pmeComputes[i]->f_data_host);
   }
-  CmiUnlock(cuda_lock);
+  //CmiUnlock(cuda_lock);
  } else
 #endif // NAMD_CUDA
  {
@@ -2616,11 +2619,19 @@ void ComputePmeMgr::ungridCalc(void) {
   forces_time = CmiWallTimer();
   forces_count = ungridForcesCount;
   forces_done_count = 0;
-  CUDA_POLL(cuda_check_pme_forces, this);
+  pmeProxy[this_pe].pollForcesReady();
  }
 #endif
 
   ungrid_count = (usePencils ? numPencilsActive : numDestRecipPes );
+}
+
+void ComputePmeMgr::pollForcesReady() {
+#ifdef NAMD_CUDA
+  CUDA_POLL(cuda_check_pme_forces,this);
+#else
+  NAMD_bug("ComputePmeMgr::pollForcesReady() called in non-CUDA build.");
+#endif
 }
 
 void ComputePme::atomUpdate() { atomsChanged = 1; }

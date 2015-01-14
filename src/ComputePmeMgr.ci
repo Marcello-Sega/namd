@@ -213,6 +213,7 @@ module ComputePmeMgr {
     entry void recvUngrid(PmeGridMsg *);
     entry void recvAck(PmeAckMsg *);
     entry void ungridCalc(void);
+    entry void pollForcesReady(void);  // CUDA
     entry void recvRecipEvir(PmeEvirMsg *);
     entry void addRecipEvirClient(void);
 
