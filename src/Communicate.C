@@ -87,7 +87,8 @@ void *Communicate::getMessage(int PE, int tag)
   itag[0] = (PE==(-1)) ? (CmmWildCard) : PE;
   itag[1] = (tag==(-1)) ? (CmmWildCard) : tag;
   while((msg=CmmGet(CkpvAccess(CsmMessages),2,itag,rtag))==0) {
-    CmiDeliverMsgs(0);
+    CmiDeliverMsgs(1);
+    // CmiDeliverSpecificMsg(CsmHandlerIndex);
   }
 
   char *ackmsg = (char *) CmiAlloc(CmiMsgHeaderSizeBytes);
@@ -95,7 +96,8 @@ void *Communicate::getMessage(int PE, int tag)
   CmiSyncSend(parent, CmiMsgHeaderSizeBytes, ackmsg);
 
   while ( CkpvAccess(CsmAcks) < nchildren ) {
-    CmiDeliverMsgs(0);
+    CmiDeliverMsgs(1);
+    // CmiDeliverSpecificMsg(CsmAckHandlerIndex);
   }
   CkpvAccess(CsmAcks) = 0;
 
@@ -112,7 +114,8 @@ void Communicate::sendMessage(int PE, void *msg, int size)
   if ( CmiMyPe() ) NAMD_bug("Communicate::sendMessage not from Pe 0");
 
   while ( CkpvAccess(CsmAcks) < nchildren ) {
-    CmiDeliverMsgs(0);
+    CmiDeliverMsgs(1);
+    // CmiDeliverSpecificMsg(CsmAckHandlerIndex);
   }
   CkpvAccess(CsmAcks) = 0;
 
