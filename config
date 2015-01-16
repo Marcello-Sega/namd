@@ -402,20 +402,22 @@ begin:
 
   echo "Writing build options to $BUILD_LINK/Make.config"
 
+  set noclobber
+
   if ( $?CHARM_BASE ) then
-    echo "CHARMBASE = $CHARM_BASE" >> Make.config
+    echo "CHARMBASE = $CHARM_BASE" > Make.config
   else if ( -d .rootdir/charm-$CHARM_VERSION ) then
     set CHARM_BASE = .rootdir/charm-$CHARM_VERSION
     echo "Using Charm++ $CHARM_VERSION build found in main build directory"
-    echo "CHARMBASE = .rootdir/charm-$CHARM_VERSION" >> Make.config
+    echo "CHARMBASE = .rootdir/charm-$CHARM_VERSION" > Make.config
   else if ( -d .rootdir/charm ) then
     set CHARM_BASE = .rootdir/charm
     echo "Using Charm++ build found in main build directory"
-    echo 'CHARMBASE = .rootdir/charm' >> Make.config
+    echo 'CHARMBASE = .rootdir/charm' > Make.config
   else
     set CHARM_BASE = `awk '/^CHARMBASE =/ {print $3}' .rootdir/Make.charm`
     echo "Using Charm++ build found in Make.charm: $CHARM_BASE"
-    echo include .rootdir/Make.charm >! Make.config
+    echo include .rootdir/Make.charm > Make.config
   endif
 
   echo include .rootdir/arch/$ARCH.arch >> Make.config
