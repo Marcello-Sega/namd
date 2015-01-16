@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2013/09/12 22:31:17 $
- * $Revision: 1.123 $
+ * $Date: 2015/01/16 21:36:18 $
+ * $Revision: 1.124 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -583,7 +583,7 @@ int NamdCentLB::buildData(LDStats* stats)
   #if defined(NAMD_MIC)
     if (simParams->mic_unloadMICPEs != 0) {
       for (i = 0; i < n_pes; i++) {
-        if (isMICProcessor(i) != 0) { processorArray[i].available = CmiFalse; }
+        if (isMICProcessor(i) != 0) { processorArray[i].available = false; }
       }
     }
   #endif
