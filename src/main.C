@@ -195,6 +195,12 @@ public:
     memusage(&memsource);
     iout << iINFO << memusage_MB() << " MB of memory in use"
 	 << " based on " << memsource << "\n";
+
+#if CMK_SMP
+    if ( CmiNumNodes() > 1 && CkNumPes() == CmiNumNodes() ) {
+      NAMD_die("SMP build launched as multiple single-thread processes.  Use ++ppn to set number of worker threads per process to match available cores, reserving one core per process for communication thread.");
+    }
+#endif
   }
 };
 
