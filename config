@@ -354,6 +354,40 @@ begin:
     endif
   endif
 
+  if ( $use_cuda || $use_mic ) then
+
+    if ( $?CHARM_ARCH ) then
+      set CHARM_ARCH_TEST = $CHARM_ARCH
+    else
+      set CHARM_ARCH_TEST = `awk '/^CHARMARCH =/ {print $3}' arch/$ARCH.arch`
+    endif
+
+    if ( $CHARM_ARCH_TEST =~ mpi-* ) then
+      set charm_arch_mpi = 1
+    else
+      set charm_arch_mpi = 0
+    endif
+
+    if ( $CHARM_ARCH_TEST =~ *-smp* || $CHARM_ARCH_TEST =~ multicore-* ) then
+      set charm_arch_smp = 1
+    else
+      set charm_arch_smp = 0
+    endif
+
+    if ( $use_cuda ) set ERRTYPE = "CUDA"
+    if ( $use_mic ) set ERRTYPE = "MIC"
+
+    if ( $charm_arch_mpi || ! $charm_arch_smp ) then
+      echo ''
+      echo "ERROR: $ERRTYPE builds require non-MPI SMP or multicore Charm++ arch for reasonable performance."
+      echo ''
+      echo "Consider ibverbs-smp or verbs-smp (InfiniBand), gni-smp (Cray), or multicore (single node)."
+      echo ''
+      exit 1
+    endif
+
+  endif
+
   if ( $?CHARM_BASE ) then
     if ( $CHARM_BASE !~ /* ) set CHARM_BASE = .rootdir/$CHARM_BASE
   endif
