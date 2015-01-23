@@ -3,11 +3,8 @@
 #ifndef COLVARPROXY_H
 #define COLVARPROXY_H
 
-
-#ifndef COLVARPROXY_VERSION
-#define COLVARPROXY_VERSION "2014-10-21"
-#endif
-
+#include <fstream>
+#include <list>
 
 #include "colvarmodule.h"
 #include "colvarvalue.h"
@@ -31,7 +28,7 @@ public:
   colvarmodule *colvars;
 
   /// Default constructor
-  inline colvarproxy() : script (NULL) {}
+  inline colvarproxy() : script(NULL) {}
 
   /// Default destructor
   virtual inline ~colvarproxy() {}
@@ -56,14 +53,14 @@ public:
   virtual cvm::real dt() = 0;
 
   /// \brief Pseudo-random number with Gaussian distribution
-  virtual cvm::real rand_gaussian (void) = 0;
+  virtual cvm::real rand_gaussian(void) = 0;
 
   /// \brief Get the current frame number
   virtual int frame() { return COLVARS_NOT_IMPLEMENTED; }
 
   /// \brief Set the current frame number
   // return 0 on success, -1 on failure
-  virtual int frame (int) { return COLVARS_NOT_IMPLEMENTED; }
+  virtual int frame(int) { return COLVARS_NOT_IMPLEMENTED; }
 
 
   // Replica exchange commands:
@@ -122,36 +119,36 @@ public:
   // **************** ACCESS ATOMIC DATA ****************
 
   /// Pass restraint energy value for current timestep to MD engine
-  virtual void add_energy (cvm::real energy) = 0;
+  virtual void add_energy(cvm::real energy) = 0;
 
   /// Tell the proxy whether system forces are needed (may not always be available)
-  virtual void request_system_force (bool yesno) = 0;
+  virtual void request_system_force(bool yesno) = 0;
 
 
 
   // **************** PERIODIC BOUNDARY CONDITIONS ****************
 
   /// \brief Get the PBC-aware distance vector between two positions
-  virtual cvm::rvector position_distance (cvm::atom_pos const &pos1,
-                                          cvm::atom_pos const &pos2) = 0;
+  virtual cvm::rvector position_distance(cvm::atom_pos const &pos1,
+                                         cvm::atom_pos const &pos2) = 0;
 
   /// \brief Get the PBC-aware square distance between two positions;
   /// may be implemented independently from position_distance() for optimization purposes
-  virtual cvm::real position_dist2 (cvm::atom_pos const &pos1,
-                                    cvm::atom_pos const &pos2);
+  virtual cvm::real position_dist2(cvm::atom_pos const &pos1,
+                                   cvm::atom_pos const &pos2);
 
   /// \brief Get the closest periodic image to a reference position
   /// \param pos The position to look for the closest periodic image
   /// \param ref_pos The reference position
-  virtual void select_closest_image (cvm::atom_pos &pos,
-                                     cvm::atom_pos const &ref_pos) = 0;
+  virtual void select_closest_image(cvm::atom_pos &pos,
+                                    cvm::atom_pos const &ref_pos) = 0;
 
   /// \brief Perform select_closest_image() on a set of atomic positions
   ///
   /// After that, distance vectors can then be calculated directly,
   /// without using position_distance()
-  void select_closest_images (std::vector<cvm::atom_pos> &pos,
-                              cvm::atom_pos const &ref_pos);
+  void select_closest_images(std::vector<cvm::atom_pos> &pos,
+                             cvm::atom_pos const &ref_pos);
 
   // **************** SCRIPTING INTERFACE ****************
 
@@ -169,67 +166,118 @@ public:
   virtual int run_force_callback() { return COLVARS_NOT_IMPLEMENTED; }
 
   virtual int run_colvar_callback(std::string const &name,
-                                std::vector<const colvarvalue *> const &cvcs,
-                                colvarvalue &value)
+                                  std::vector<const colvarvalue *> const &cvcs,
+                                  colvarvalue &value)
   { return COLVARS_NOT_IMPLEMENTED; }
 
   virtual int run_colvar_gradient_callback(std::string const &name,
-                                         std::vector<const colvarvalue *> const &cvcs,
-                                         std::vector<colvarvalue> &gradient)
+                                           std::vector<const colvarvalue *> const &cvcs,
+                                           std::vector<cvm::matrix2d<cvm::real> > &gradient)
   { return COLVARS_NOT_IMPLEMENTED; }
 
   // **************** INPUT/OUTPUT ****************
 
   /// Print a message to the main log
-  virtual void log (std::string const &message) = 0;
+  virtual void log(std::string const &message) = 0;
 
   /// Print a message to the main log and let the rest of the program handle the error
-  virtual void error (std::string const &message) = 0;
+  virtual void error(std::string const &message) = 0;
 
   /// Print a message to the main log and exit with error code
-  virtual void fatal_error (std::string const &message) = 0;
+  virtual void fatal_error(std::string const &message) = 0;
 
   /// Print a message to the main log and exit normally
-  virtual void exit (std::string const &message) = 0;
+  virtual void exit(std::string const &message) = 0;
 
   /// \brief Read atom identifiers from a file \param filename name of
   /// the file (usually a PDB) \param atoms array to which atoms read
   /// from "filename" will be appended \param pdb_field (optiona) if
   /// "filename" is a PDB file, use this field to determine which are
   /// the atoms to be set
-  virtual int load_atoms (char const *filename,
-                           std::vector<cvm::atom> &atoms,
-                           std::string const &pdb_field,
-                           double const pdb_field_value = 0.0) = 0;
+  virtual int load_atoms(char const *filename,
+                         std::vector<cvm::atom> &atoms,
+                         std::string const &pdb_field,
+                         double const pdb_field_value = 0.0) = 0;
 
   /// \brief Load the coordinates for a group of atoms from a file
   /// (usually a PDB); if "pos" is already allocated, the number of its
   /// elements must match the number of atoms in "filename"
-  virtual int load_coords (char const *filename,
-                            std::vector<cvm::atom_pos> &pos,
-                            const std::vector<int> &indices,
-                            std::string const &pdb_field,
-                            double const pdb_field_value = 0.0) = 0;
+  virtual int load_coords(char const *filename,
+                          std::vector<cvm::atom_pos> &pos,
+                          const std::vector<int> &indices,
+                          std::string const &pdb_field,
+                          double const pdb_field_value = 0.0) = 0;
+
+protected:
+
+  /// \brief Open output files: by default, these are ofstream objects.
+  /// Allows redefinition to implement different output mechanisms
+  std::list<std::ostream *> output_files;
+  /// \brief Identifiers for output_stream objects: by default, these are the names of the files
+  std::list<std::string>    output_stream_names;
+
+public:
+
+  // TODO the following definitions may be moved to a .cpp file
+
+  /// \brief Returns a reference to the given output channel;
+  /// if this is not open already, then open it
+  virtual std::ostream * output_stream(std::string const &output_name)
+  {
+    std::list<std::ostream *>::iterator osi  = output_files.begin();
+    std::list<std::string>::iterator    osni = output_stream_names.begin();
+    for ( ; osi != output_files.end(); osi++, osni++) {
+      if (*osni == output_name) {
+        return *osi;
+      }
+    }
+    output_stream_names.push_back(output_name);
+    std::ofstream * os = new std::ofstream(output_name.c_str());
+    if (!os->is_open()) {
+      cvm::error("Error: cannot write to file \""+output_name+"\".\n",
+                 FILE_ERROR);
+    }
+    output_files.push_back(os);
+    return os;
+  }
+
+  /// \brief Closes the given output channel
+  virtual int close_output_stream(std::string const &output_name)
+  {
+    std::list<std::ostream *>::iterator osi  = output_files.begin();
+    std::list<std::string>::iterator    osni = output_stream_names.begin();
+    for ( ; osi != output_files.end(); osi++, osni++) {
+      if (*osni == output_name) {
+        ((std::ofstream *) (*osi))->close();
+        output_files.erase(osi);
+        output_stream_names.erase(osni);
+        return COLVARS_OK;
+      }
+    }
+    return COLVARS_ERROR;
+  }
 
   /// \brief Rename the given file, before overwriting it
-  virtual int backup_file (char const *filename)
-  { return COLVARS_NOT_IMPLEMENTED; }
+  virtual int backup_file(char const *filename)
+  {
+    return COLVARS_NOT_IMPLEMENTED;
+  }
 };
 
 
-inline void colvarproxy::select_closest_images (std::vector<cvm::atom_pos> &pos,
-                                                cvm::atom_pos const &ref_pos)
+inline void colvarproxy::select_closest_images(std::vector<cvm::atom_pos> &pos,
+                                               cvm::atom_pos const &ref_pos)
 {
   for (std::vector<cvm::atom_pos>::iterator pi = pos.begin();
        pi != pos.end(); ++pi) {
-    select_closest_image (*pi, ref_pos);
+    select_closest_image(*pi, ref_pos);
   }
 }
 
-inline cvm::real colvarproxy::position_dist2 (cvm::atom_pos const &pos1,
-                                              cvm::atom_pos const &pos2)
+inline cvm::real colvarproxy::position_dist2(cvm::atom_pos const &pos1,
+                                             cvm::atom_pos const &pos2)
 {
-  return (position_distance (pos1, pos2)).norm2();
+  return (position_distance(pos1, pos2)).norm2();
 }
 
 #endif
