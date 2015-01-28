@@ -1837,7 +1837,7 @@ int HomePatch::hardWallDrude(const BigReal timestep, Tensor *virial,
           if ( (rab > (2.0*r_wall)) && dieOnError ) {  // unexpected situation
             iout << iERROR << "HardWallDrude> "
               << "The drude is too far away from atom "
-              << (ia + 1) << " d = " << rab << "!\n" << endi;
+              << (atom[ia].id + 1) << " d = " << rab << "!\n" << endi;
             return -1;  // triggers early exit
           }
 
