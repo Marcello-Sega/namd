@@ -643,6 +643,10 @@ void Parameters::read_charmm_parameter_file(char *fname)
       {
         par_type=11; skipline=1;
       }
+      else if (strncasecmp(first_word, "ioformat", 8)==0)
+      {
+        skipline=1;
+      }
       else if (strncasecmp(first_word, "read", 4)==0)
       {
         skip_stream_read(buffer, pfile);  skipline=1;
