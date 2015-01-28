@@ -83,9 +83,16 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, int all_caps, void *v,
         print_msg (v, "skipping unknown section in stream file");
         skip = 1;
         continue;
+      } else if ( ! strncasecmp("IOFORMAT",tok[0],8) ) {
+        first = 1;
+        continue;
       } else if ( ntok == 2 && sscanf(tok[0],"%u",&utmp) == 1
                           && sscanf(tok[1],"%u",&utmp) == 1 ) {
         sprintf(msgbuf,"Created by CHARMM version %s %s",tok[0],tok[1]);
+        print_msg(v,msgbuf);
+        continue;
+      } else if ( ntok == 1 && sscanf(tok[0],"%u",&utmp) == 1 ) {
+        sprintf(msgbuf,"Created by CHARMM version %s",tok[0]);
         print_msg(v,msgbuf);
         continue;
       }
