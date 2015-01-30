@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2015/01/30 22:52:09 $
- * $Revision: 1.1224 $
+ * $Date: 2015/01/30 23:40:32 $
+ * $Revision: 1.1225 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -656,7 +656,7 @@ void Sequencer::newMinimizeDirection(BigReal c) {
     a[i].velocity *= c;
     a[i].velocity += f1[i] + f2[i] + f3[i];
     if ( drudeHardWallOn && i && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
-      Vector netvel = 0.5 * ( a[i-1].velocity + a[i].velocity );
+      Vector netvel = a[i-1].velocity + a[i].velocity;
       if ( fixedAtomsOn && a[i-1].atomFixed ) netvel = 0;
       a[i-1].velocity = netvel;
       a[i].velocity = netvel;
@@ -671,7 +671,7 @@ void Sequencer::newMinimizeDirection(BigReal c) {
   maxv2 = 0.;
   for ( int i = 0; i < numAtoms; ++i ) {
     if ( drudeHardWallOn && i && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
-      a[i].velocity = a[i-1].velocity;
+      a[i].velocity = a[i-1].velocity = 0.5 * a[i-1].velocity;
       if ( fixedAtomsOn && a[i].atomFixed ) a[i].velocity = 0;
     }
     BigReal v2 = a[i].velocity.length2();
@@ -696,6 +696,7 @@ void Sequencer::newMinimizeDirection(BigReal c) {
     if ( adjustChildren ) {
       // if ( hgs > 1 ) ++adjustCount;
       for ( int j = i+1; j < (i+hgs); ++j ) {
+        if (a[i].mass < 0.01) continue;  // lone pair
         a[j].velocity = a[i].velocity;
       }
     }
