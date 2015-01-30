@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2014/01/22 19:52:57 $
- * $Revision: 1.1219 $
+ * $Date: 2015/01/30 16:08:57 $
+ * $Revision: 1.1220 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -643,13 +643,21 @@ void Sequencer::newMinimizeDirection(BigReal c) {
   Force *f1 = patch->f[Results::normal].begin();
   Force *f2 = patch->f[Results::nbond].begin();
   Force *f3 = patch->f[Results::slow].begin();
+  const bool fixedAtomsOn = simParams->fixedAtomsOn;
+  const bool drudeHardWallOn = simParams->drudeHardWallOn;
   int numAtoms = patch->numAtoms;
   BigReal maxv2 = 0.;
 
   for ( int i = 0; i < numAtoms; ++i ) {
     a[i].velocity *= c;
     a[i].velocity += f1[i] + f2[i] + f3[i];
-    if ( simParams->fixedAtomsOn && a[i].atomFixed ) a[i].velocity = 0;
+    if ( drudeHardWallOn && i && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
+      Vector avgvel = 0.5 * ( a[i-1].velocity + a[i].velocity );
+      if ( fixedAtomsOn && a[i-1].atomFixed ) avgvel = 0;
+      a[i-1].velocity = avgvel;
+      a[i].velocity = avgvel;
+    }
+    if ( fixedAtomsOn && a[i].atomFixed ) a[i].velocity = 0;
     BigReal v2 = a[i].velocity.length2();
     if ( v2 > maxv2 ) maxv2 = v2;
   }
@@ -687,6 +695,24 @@ void Sequencer::newMinimizePosition(BigReal c) {
 
   for ( int i = 0; i < numAtoms; ++i ) {
     a[i].position += c * a[i].velocity;
+  }
+
+  if ( simParams->drudeHardWallOn ) {
+    const bool fixedAtomsOn = simParams->fixedAtomsOn;
+    Force *f1 = patch->f[Results::normal].begin();
+    Force *f2 = patch->f[Results::nbond].begin();
+    Force *f3 = patch->f[Results::slow].begin();
+    const double drudeBondLen = simParams->drudeBondLen;
+    const double drudeBondLen2 = drudeBondLen * drudeBondLen;
+    for ( int i = 1; i < numAtoms; ++i ) {
+      if ( (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
+        if ( fixedAtomsOn && a[i].atomFixed ) continue;
+        a[i].position += 0.01 * (f1[i] + f2[i] + f3[i]).unit();
+        if ( (a[i].position - a[i-1].position).length2() > drudeBondLen2 ) {
+          a[i].position = a[i-1].position + drudeBondLen * (a[i].position - a[i-1].position).unit();
+        }
+      }
+    }
   }
 }
 
