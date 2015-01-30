@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2015/01/30 21:57:01 $
- * $Revision: 1.1222 $
+ * $Date: 2015/01/30 22:16:28 $
+ * $Revision: 1.1223 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -666,7 +666,7 @@ void Sequencer::newMinimizeDirection(BigReal c) {
     if ( v2 > maxv2 ) maxv2 = v2;
   }
 
-  { Tensor virial; patch->rattle2( 0.1 * TIMEFACTOR / sqrt(maxv2), &virial); }
+  if (simParams->drudeOn) { Tensor virial; patch->rattle2( 0.1 * TIMEFACTOR / sqrt(maxv2), &virial); }
 
   maxv2 = 0.;
   for ( int i = 0; i < numAtoms; ++i ) {
@@ -713,7 +713,7 @@ void Sequencer::newMinimizePosition(BigReal c) {
     a[i].position += c * a[i].velocity;
   }
 
-  patch->rattle1(0.,0,0);
+  if (simParams->drudeOn) patch->rattle1(0.,0,0);
 
   if ( simParams->drudeHardWallOn ) {
     const bool fixedAtomsOn = simParams->fixedAtomsOn;
