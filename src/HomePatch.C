@@ -2395,6 +2395,140 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
 }
 
 
+//  Adjust gradients for minimizer
+void HomePatch::minimize_rattle2(const BigReal timestep, Tensor *virial)
+{
+  Molecule *mol = Node::Object()->molecule;
+  SimParameters *simParams = Node::Object()->simParameters;
+  const int fixedAtomsOn = simParams->fixedAtomsOn;
+  const int useSettle = simParams->useSettle;
+  const BigReal dt = timestep / TIMEFACTOR;
+  Tensor wc;  // constraint virial
+  BigReal tol = simParams->rigidTol;
+  int maxiter = simParams->rigidIter;
+  int dieOnError = simParams->rigidDie;
+  int i, iter;
+  BigReal dsqi[10], tmp;
+  int ial[10], ibl[10];
+  Vector ref[10];  // reference position
+  Vector refab[10];  // reference vector
+  Vector vel[10];  // new velocity
+  BigReal rmass[10];  // 1 / mass
+  BigReal redmass[10];  // reduced mass
+  int fixed[10];  // is atom fixed?
+  
+  // Size of a hydrogen group for water
+  int wathgsize = 3;
+  if (simParams->watmodel == WAT_TIP4) wathgsize = 4;
+  else if (simParams->watmodel == WAT_SWM4) wathgsize = 5;
+
+  //  CkPrintf("In rattle2!\n");
+  for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
+    //    CkPrintf("ig=%d\n",ig);
+    int hgs = atom[ig].hydrogenGroupSize;
+    if ( hgs == 1 ) continue;  // only one atom in group
+    // cache data in local arrays and integrate positions normally
+    for ( i = 0; i < hgs; ++i ) {
+      ref[i] = atom[ig+i].position;
+      vel[i] = atom[ig+i].velocity;
+      rmass[i] = 1.0;
+      fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
+      if ( fixed[i] ) rmass[i] = 0.;
+    }
+    int icnt = 0;
+    if ( ( tmp = atom[ig].rigidBondLength ) > 0 ) {  // for water
+      if (hgs != wathgsize) {
+        NAMD_bug("Hydrogen group error caught in rattle2().");
+      }
+      // Use SETTLE for water unless some of the water atoms are fixed,
+      // for speed we test groupFixed rather than the individual atoms
+      if (useSettle && !atom[ig].groupFixed) {
+        if (simParams->watmodel == WAT_SWM4) {
+          // SWM4 ordering:  O D LP H1 H2
+          // do swap(O,LP) and call settle with subarray O H1 H2
+          // swap back after we return
+          Vector lp_ref = ref[2];
+          // Vector lp_vel = vel[2];
+          ref[2] = ref[0];
+          vel[2] = vel[0];
+          settle2(1.0, 1.0, ref+2, vel+2, dt, virial);
+          ref[0] = ref[2];
+          vel[0] = vel[2];
+          ref[2] = lp_ref;
+          // vel[2] = vel[0];  // set LP vel to O vel
+        }
+        else {
+          settle2(1.0, 1.0, ref, vel, dt, virial);
+          if (simParams->watmodel == WAT_TIP4) {
+            vel[3] = vel[0];
+          }
+        }
+        for (i=0; i<hgs; i++) {
+          atom[ig+i].velocity = vel[i];
+        }
+        continue;
+      }
+      if ( !(fixed[1] && fixed[2]) ) {
+	redmass[icnt] = 1. / (rmass[1] + rmass[2]);
+	dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+      }
+    }
+    //    CkPrintf("Loop 2\n");
+    for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
+      if ( ( tmp = atom[ig+i].rigidBondLength ) > 0 ) {
+        if ( !(fixed[0] && fixed[i]) ) {
+	  redmass[icnt] = 1. / (rmass[0] + rmass[i]);
+	  dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 0;
+	  ibl[icnt] = i;  ++icnt;
+	}
+      }
+    }
+    if ( icnt == 0 ) continue;  // no constraints
+    //    CkPrintf("Loop 3\n");
+    for ( i = 0; i < icnt; ++i ) {
+      refab[i] = ref[ial[i]] - ref[ibl[i]];
+    }
+    //    CkPrintf("Loop 4\n");
+    int done;
+    for ( iter = 0; iter < maxiter; ++iter ) {
+      done = 1;
+      for ( i = 0; i < icnt; ++i ) {
+	int a = ial[i];  int b = ibl[i];
+	Vector vab = vel[a] - vel[b];
+	Vector &rab = refab[i];
+	BigReal rabsqi = dsqi[i];
+	BigReal rvab = rab.x*vab.x + rab.y*vab.y + rab.z*vab.z;
+	if ( (fabs(rvab) * dt * rabsqi) > tol ) {
+	  Vector dp = rab * (-rvab * redmass[i] * rabsqi);
+	  wc += outer(dp,rab);
+	  vel[a] += rmass[a] * dp;
+	  vel[b] -= rmass[b] * dp;
+	  done = 0;
+	}
+      }
+      if ( done ) break;
+      //if (done) { if (iter > 0) CkPrintf("iter=%d\n", iter); break; }
+    }
+    if ( ! done ) {
+      if ( dieOnError ) {
+	NAMD_die("Exceeded maximum number of iterations in rattle2().");
+      } else {
+	iout << iWARN <<
+	  "Exceeded maximum number of iterations in rattle2().\n" << endi;
+      }
+    }
+    // store data back to patch
+    for ( i = 0; i < hgs; ++i ) {
+      atom[ig+i].velocity = vel[i];
+    }
+  }
+  //  CkPrintf("Leaving rattle2!\n");
+  // check that there isn't a constant needed here!
+  *virial += wc / ( 0.5 * dt );
+
+}
+
+
 // BEGIN LA
 void HomePatch::loweAndersenVelocities()
 {

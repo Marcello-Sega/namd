@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2015/01/30 22:16:28 $
- * $Revision: 1.1223 $
+ * $Date: 2015/01/30 22:52:09 $
+ * $Revision: 1.1224 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -656,7 +656,7 @@ void Sequencer::newMinimizeDirection(BigReal c) {
     a[i].velocity *= c;
     a[i].velocity += f1[i] + f2[i] + f3[i];
     if ( drudeHardWallOn && i && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
-      Vector netvel = a[i-1].velocity + a[i].velocity;
+      Vector netvel = 0.5 * ( a[i-1].velocity + a[i].velocity );
       if ( fixedAtomsOn && a[i-1].atomFixed ) netvel = 0;
       a[i-1].velocity = netvel;
       a[i].velocity = netvel;
@@ -666,7 +666,7 @@ void Sequencer::newMinimizeDirection(BigReal c) {
     if ( v2 > maxv2 ) maxv2 = v2;
   }
 
-  if (simParams->drudeOn) { Tensor virial; patch->rattle2( 0.1 * TIMEFACTOR / sqrt(maxv2), &virial); }
+  { Tensor virial; patch->minimize_rattle2( 0.1 * TIMEFACTOR / sqrt(maxv2), &virial); }
 
   maxv2 = 0.;
   for ( int i = 0; i < numAtoms; ++i ) {
@@ -713,7 +713,7 @@ void Sequencer::newMinimizePosition(BigReal c) {
     a[i].position += c * a[i].velocity;
   }
 
-  if (simParams->drudeOn) patch->rattle1(0.,0,0);
+  patch->rattle1(0.,0,0);
 
   if ( simParams->drudeHardWallOn ) {
     const bool fixedAtomsOn = simParams->fixedAtomsOn;
