@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2015/01/30 16:08:57 $
- * $Revision: 1.1220 $
+ * $Date: 2015/01/30 20:45:55 $
+ * $Revision: 1.1221 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -564,6 +564,8 @@ void Sequencer::minimize() {
   int &doEnergy = patch->flags.doEnergy;
   doEnergy = 1;
 
+  patch->rattle1(0.,0,0);  // enforce rigid bond constraints on initial positions
+
   if (simParams->lonepairs) {
     patch->atomMapper->registerIDsFullAtom(
 		patch->atom.begin(),patch->atom.end());
@@ -635,6 +637,8 @@ void Sequencer::minimizeMoveDownhill(BigReal fmax2) {
       }
     }
   }
+
+  patch->rattle1(0.,0,0);
 }
 
 // v = c * v + f
@@ -658,6 +662,18 @@ void Sequencer::newMinimizeDirection(BigReal c) {
       a[i].velocity = avgvel;
     }
     if ( fixedAtomsOn && a[i].atomFixed ) a[i].velocity = 0;
+    BigReal v2 = a[i].velocity.length2();
+    if ( v2 > maxv2 ) maxv2 = v2;
+  }
+
+  { Tensor virial; patch->rattle2( 0.1 * TIMEFACTOR / sqrt(maxv2), &virial); }
+
+  maxv2 = 0.;
+  for ( int i = 0; i < numAtoms; ++i ) {
+    if ( drudeHardWallOn && i && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
+      a[i].velocity = a[i-1].velocity;
+      if ( fixedAtomsOn && a[i].atomFixed ) a[i].velocity = 0;
+    }
     BigReal v2 = a[i].velocity.length2();
     if ( v2 > maxv2 ) maxv2 = v2;
   }
@@ -696,6 +712,8 @@ void Sequencer::newMinimizePosition(BigReal c) {
   for ( int i = 0; i < numAtoms; ++i ) {
     a[i].position += c * a[i].velocity;
   }
+
+  patch->rattle1(0.,0,0);
 
   if ( simParams->drudeHardWallOn ) {
     const bool fixedAtomsOn = simParams->fixedAtomsOn;

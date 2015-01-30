@@ -2303,13 +2303,33 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
     }
     int icnt = 0;
     if ( ( tmp = atom[ig].rigidBondLength ) > 0 ) {  // for water
-      if ( wathgsize != 4 ) {
+      if (hgs != wathgsize) {
         NAMD_bug("Hydrogen group error caught in rattle2().");
       }
-      // Use SETTLE for water unless some of the water atoms are fixed
-      if (useSettle && !fixed[0] && !fixed[1] && !fixed[2]) {
-        settle2(atom[ig].mass, atom[ig+1].mass, ref, vel, dt, virial);
-        for (i=0; i<3; i++) {
+      // Use SETTLE for water unless some of the water atoms are fixed,
+      // for speed we test groupFixed rather than the individual atoms
+      if (useSettle && !atom[ig].groupFixed) {
+        if (simParams->watmodel == WAT_SWM4) {
+          // SWM4 ordering:  O D LP H1 H2
+          // do swap(O,LP) and call settle with subarray O H1 H2
+          // swap back after we return
+          Vector lp_ref = ref[2];
+          // Vector lp_vel = vel[2];
+          ref[2] = ref[0];
+          vel[2] = vel[0];
+          settle2(atom[ig].mass, atom[ig+3].mass, ref+2, vel+2, dt, virial);
+          ref[0] = ref[2];
+          vel[0] = vel[2];
+          ref[2] = lp_ref;
+          // vel[2] = vel[0];  // set LP vel to O vel
+        }
+        else {
+          settle2(atom[ig].mass, atom[ig+1].mass, ref, vel, dt, virial);
+          if (simParams->watmodel == WAT_TIP4) {
+            vel[3] = vel[0];
+          }
+        }
+        for (i=0; i<hgs; i++) {
           atom[ig+i].velocity = vel[i];
         }
         continue;
