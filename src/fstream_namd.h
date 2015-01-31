@@ -15,11 +15,11 @@ public:
 
   ofstream_namd() : fd(0) { ; }
 
-  explicit ofstream_namd(const char *_fname) : fd(0) {
-    open(_fname);
+  explicit ofstream_namd(const char *_fname, std::ios_base::openmode _mode = std::ios_base::out) : fd(0) {
+    open(_fname, _mode);
   }
 
-  void open(const char *_fname);
+  void open(const char *_fname, std::ios_base::openmode _mode = std::ios_base::out);
 
   bool is_open() const { return ! ! fd; }
 

@@ -177,17 +177,17 @@ void NAMD_backup_file(const char *filename, const char *extension)
 }
 
 // same as open, only does error checking internally
-int NAMD_open_text(const char *fname) {
+int NAMD_open_text(const char *fname, int append) {
   int fd;
 
   //  open the file and die if the open fails
 #ifdef WIN32
-  while ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_TEXT,_S_IREAD|_S_IWRITE)) < 0) {
+  while ( (fd = _open(fname, O_WRONLY|(append?O_APPEND:O_CREAT|O_EXCL)|O_TEXT,_S_IREAD|_S_IWRITE)) < 0) {
 #else
 #ifdef NAMD_NO_O_EXCL
-  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC,
+  while ( (fd = open(fname, O_WRONLY|(append?O_APPEND:O_CREAT|O_TRUNC),
 #else
-  while ( (fd = open(fname, O_WRONLY|O_CREAT|O_EXCL,
+  while ( (fd = open(fname, O_WRONLY|(append?O_APPEND:O_CREAT|O_EXCL),
 #endif
                            S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
 #endif
