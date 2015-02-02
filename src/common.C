@@ -182,12 +182,12 @@ int NAMD_open_text(const char *fname, int append) {
 
   //  open the file and die if the open fails
 #ifdef WIN32
-  while ( (fd = _open(fname, O_WRONLY|(append?O_APPEND:O_CREAT|O_EXCL)|O_TEXT,_S_IREAD|_S_IWRITE)) < 0) {
+  while ( (fd = _open(fname, O_WRONLY|(append?O_APPEND:O_EXCL)|O_CREAT|O_TEXT,_S_IREAD|_S_IWRITE)) < 0) {
 #else
 #ifdef NAMD_NO_O_EXCL
-  while ( (fd = open(fname, O_WRONLY|(append?O_APPEND:O_CREAT|O_TRUNC),
+  while ( (fd = open(fname, O_WRONLY|(append?O_APPEND:O_TRUNC)|O_CREAT,
 #else
-  while ( (fd = open(fname, O_WRONLY|(append?O_APPEND:O_CREAT|O_EXCL),
+  while ( (fd = open(fname, O_WRONLY|(append?O_APPEND:O_EXCL)|O_CREAT,
 #endif
                            S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
 #endif
