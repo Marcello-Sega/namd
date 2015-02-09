@@ -45,11 +45,14 @@ module ComputeMoaMgr {
     entry [threaded] void compute();
   };
 
+#ifdef CHARM_HAS_MSA
+  include "msa/msa.h";
+
   group MSA_CacheGroup<double, DefaultEntry<double>,
         MSA_DEFAULT_ENTRIES_PER_PAGE>;
 
   array [1D] MSA_PageArray<double, DefaultEntry<double>,
         MSA_DEFAULT_ENTRIES_PER_PAGE>;
-
+#endif
 };
 
