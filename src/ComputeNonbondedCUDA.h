@@ -71,7 +71,6 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     int step;
     int doExclusionCheck;
     int finishWork();  // returns true when finished, false to continue
-    void messageFinishWork();
 
     static void build_lj_table();
     static void build_force_table();

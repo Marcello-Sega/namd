@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2014/12/31 17:23:53 $
- * $Revision: 1.1282 $
+ * $Date: 2015/02/13 23:22:00 $
+ * $Revision: 1.1283 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -2885,6 +2885,39 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   }
 }
 
+//----------------------------------------------------------------------
+void WorkDistrib::messageFinishCUDA(Compute *compute) {
+  LocalWorkMsg *msg = compute->localWorkMsg;
+  int seq = compute->sequence();
+  int gbisPhase = compute->getGBISPhase();
+
+  if ( seq < 0 ) {
+    NAMD_bug("compute->sequence() < 0 in WorkDistrib::messageEnqueueWork");
+  } else {
+    SET_PRIORITY(msg,seq,compute->priority());
+  }
+
+  msg->compute = compute; // pointer is valid since send is to local Pe
+  CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
+
+#ifdef NAMD_CUDA
+    //wdProxy[CkMyPe()].finishCUDA(msg);
+    switch ( gbisPhase ) {
+       case 1:
+         wdProxy[CkMyPe()].finishCUDA(msg);
+         break;
+       case 2:
+         wdProxy[CkMyPe()].finishCUDAP2(msg);
+         break;
+       case 3:
+         wdProxy[CkMyPe()].finishCUDAP3(msg);
+         break;
+    }
+#else
+    msg->compute->doWork();  MACHINE_PROGRESS
+#endif
+}
+
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
   msg->compute->doWork();  MACHINE_PROGRESS
   if ( msg->compute->localWorkMsg != msg )
@@ -3043,6 +3076,19 @@ void WorkDistrib::enqueueCUDAP2(LocalWorkMsg *msg) {
 void WorkDistrib::enqueueCUDAP3(LocalWorkMsg *msg) {
   msg->compute->doWork();  MACHINE_PROGRESS
 }
+void WorkDistrib::finishCUDA(LocalWorkMsg *msg) {
+  msg->compute->doWork();  MACHINE_PROGRESS
+  // ComputeNonbondedCUDA *c = msg->compute;
+  // if ( c->localWorkMsg != msg && c->localWorkMsg2 != msg )
+  //   NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+void WorkDistrib::finishCUDAP2(LocalWorkMsg *msg) {
+  msg->compute->doWork();  MACHINE_PROGRESS
+}
+void WorkDistrib::finishCUDAP3(LocalWorkMsg *msg) {
+  msg->compute->doWork();  MACHINE_PROGRESS
+}
+
 void WorkDistrib::enqueueMIC(LocalWorkMsg *msg) {
   msg->compute->doWork();  MACHINE_PROGRESS
 }

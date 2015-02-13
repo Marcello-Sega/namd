@@ -43,6 +43,7 @@ public:
   // void movePatchDone();
 
   static void messageEnqueueWork(Compute *);
+  static void messageFinishCUDA(Compute *);
   void enqueueWork(LocalWorkMsg *msg);
   void enqueueExcls(LocalWorkMsg *msg);
   void enqueueBonds(LocalWorkMsg *msg);
@@ -72,6 +73,9 @@ public:
   void enqueueCUDA(LocalWorkMsg *msg);
   void enqueueCUDAP2(LocalWorkMsg *msg);
   void enqueueCUDAP3(LocalWorkMsg *msg);
+  void finishCUDA(LocalWorkMsg *msg);
+  void finishCUDAP2(LocalWorkMsg *msg);
+  void finishCUDAP3(LocalWorkMsg *msg);
   void enqueueMIC(LocalWorkMsg *msg);
   void enqueueLCPO(LocalWorkMsg *msg);
 

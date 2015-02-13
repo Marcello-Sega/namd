@@ -1111,8 +1111,9 @@ void cuda_check_remote_progress(void *arg, double walltime) {
     if ( mergegrids ) {  // no local
       kernel_time = local_submit_time - kernel_time;
     }
-    ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
     check_remote_count = 0;
+    cuda_errcheck("at cuda remote stream completed");
+    WorkDistrib::messageFinishCUDA((ComputeNonbondedCUDA *) arg);
   } else if ( err != cudaErrorNotReady ) {
     cuda_errcheck("in cuda_check_remote_progress");
     NAMD_bug("cuda_errcheck missed error in cuda_check_remote_progress");
@@ -1137,8 +1138,9 @@ void cuda_check_local_progress(void *arg, double walltime) {
   if ( err == cudaSuccess ) {
     CUDA_TRACE_LOCAL(local_submit_time,walltime);
     kernel_time = walltime - kernel_time;
-    ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
     check_local_count = 0;
+    cuda_errcheck("at cuda local stream completed");
+    WorkDistrib::messageFinishCUDA((ComputeNonbondedCUDA *) arg);
   } else if ( err != cudaErrorNotReady ) {
     cuda_errcheck("in cuda_check_local_progress");
     NAMD_bug("cuda_errcheck missed error in cuda_check_local_progress");
@@ -1960,20 +1962,15 @@ GBISP("C.N.CUDA[%d]::recvYieldDevice: DONE\n", CkMyPe())
 }
 
 
-void ComputeNonbondedCUDA::messageFinishWork() {
-
-  cuda_errcheck("at cuda stream completed");
-
-  for ( int i = 0; i < numSlaves; ++i ) {
-    computeMgr->sendNonbondedCUDASlaveEnqueue(slaves[i],slavePes[i],sequence(),priority(),workStarted);
-  }
-
-  WorkDistrib::messageEnqueueWork(this);
-
-}
-
 //dtanner
 int ComputeNonbondedCUDA::finishWork() {
+
+  if ( master == this ) {
+    for ( int i = 0; i < numSlaves; ++i ) {
+      computeMgr->sendNonbondedCUDASlaveEnqueue(slaves[i],slavePes[i],sequence(),priority(),workStarted);
+    }
+  }
+
 GBISP("C.N.CUDA[%d]::fnWork: workStarted %d, phase %d\n", \
 CkMyPe(), workStarted, gbisPhase)
 
@@ -2211,6 +2208,7 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
 
   // Next GBIS Phase
 GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
+int oldPhase = gbisPhase;
     if (simParams->GBISOn) gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
 
   GBISP("C.N.CUDA[%d] finished ready for next step\n",CkMyPe());
