@@ -86,7 +86,7 @@ inline unsigned long memusage_ps() {
   return 0;
 #else
   char pscmd[100];
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
   sprintf(pscmd, "/bin/ps -o rss= -p %d", getpid());
 #else
   sprintf(pscmd, "/bin/ps -o vsz= -p %d", getpid());
@@ -136,14 +136,14 @@ inline unsigned long memusage_proc_self_stat() {
   FILE *f = fopen("/proc/self/stat","r");
   if ( ! f ) { failed_once = 1; return 0; }
   for ( int i=0; i<22; ++i ) fscanf(f,"%*s");
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
   // skip vss, next value is rss in pages
   fscanf(f,"%*s");
 #endif
   unsigned long vsz = 0;  // should remain 0 on failure
   fscanf(f,"%lu",&vsz);
   fclose(f);
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
   vsz *= sysconf(_SC_PAGESIZE);
 #endif
   if ( ! vsz ) failed_once = 1;
