@@ -1225,15 +1225,7 @@ int topo_mol_end(topo_mol *mol) {
     }
   }
 
-  /* apply patches */
-
-  res = &(seg->residue_array[0]);
-  if ( ! strlen(seg->pfirst) ) strcpy(seg->pfirst,"NONE");
-
-  target.segid = seg->segid;
-  target.resid = res->resid;
-  if ( topo_mol_patch(mol, &target, 1, seg->pfirst, 1,
-	seg->auto_angles, seg->auto_dihedrals, firstdefault) ) return -10;
+  /* apply patches, last then first because dipeptide patch ACED depends on CT3 atom NT */
 
   res = &(seg->residue_array[n-1]);
   if ( ! strlen(seg->plast) ) strcpy(seg->plast,"NONE");
@@ -1241,7 +1233,15 @@ int topo_mol_end(topo_mol *mol) {
   target.segid = seg->segid;
   target.resid = res->resid;
   if ( topo_mol_patch(mol, &target, 1, seg->plast, 0,
-	seg->auto_angles, seg->auto_dihedrals, lastdefault) ) return -11;
+	seg->auto_angles, seg->auto_dihedrals, lastdefault) ) return -10;
+
+  res = &(seg->residue_array[0]);
+  if ( ! strlen(seg->pfirst) ) strcpy(seg->pfirst,"NONE");
+
+  target.segid = seg->segid;
+  target.resid = res->resid;
+  if ( topo_mol_patch(mol, &target, 1, seg->pfirst, 1,
+	seg->auto_angles, seg->auto_dihedrals, firstdefault) ) return -11;
 
   if (seg->auto_angles && topo_mol_auto_angles(mol, seg)) return -12;
   if (seg->auto_dihedrals && topo_mol_auto_dihedrals(mol, seg)) return -13;
@@ -1573,6 +1573,7 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
   topo_defs_angle_t *angldef;
   topo_defs_dihedral_t *dihedef;
   topo_defs_improper_t *imprdef;
+  topo_defs_cmap_t *cmapdef;
   topo_defs_conformation_t *confdef;
   topo_mol_residue_t *res, *oldres;
   topo_mol_atom_t *oldatoms;
@@ -1649,6 +1650,13 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
     if ( imprdef->del ) topo_mol_del_improper(mol,targets,ntargets,imprdef);
     else if ( topo_mol_add_improper(mol,targets,ntargets,imprdef) ) {
       sprintf(errmsg,"Warning: add improper failed in patch %s",rname);
+      topo_mol_log_error(mol,errmsg);
+    }
+  }
+  for ( cmapdef = resdef->cmaps; cmapdef; cmapdef = cmapdef->next ) {
+    if ( cmapdef->del ) topo_mol_del_cmap(mol,targets,ntargets,cmapdef);
+    else if ( topo_mol_add_cmap(mol,targets,ntargets,cmapdef) ) {
+      sprintf(errmsg,"Warning: add cross-term failed in patch %s",rname);
       topo_mol_log_error(mol,errmsg);
     }
   }
