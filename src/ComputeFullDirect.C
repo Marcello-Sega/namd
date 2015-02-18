@@ -57,6 +57,8 @@ void ComputeFullDirect::doWork()
 
   int numWorkingPes = (PatchMap::Object())->numNodesWithPatches();
 
+  if ( numWorkingPes > 1 ) NAMD_die("FullDirect not supported for parallel runs.");
+
   ResizeArrayIter<PatchElem> ap(patchList);
 
   // Skip computations if nothing to do.
