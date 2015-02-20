@@ -325,6 +325,8 @@ void HomePatch::reinitAtoms(FullAtomList &al) {
   atom.swap(al);
   numAtoms = atom.size();
 
+  atomMapper->registerIDsFullAtom(atom.begin(),atom.end());
+
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0
 
@@ -2899,6 +2901,8 @@ void HomePatch::revert(void) {
   numAtoms = atom.size();
   lattice = checkpoint_lattice;
 
+  atomMapper->registerIDsFullAtom(atom.begin(),atom.end());
+
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0
     numWaterAtoms = checkpoint_numWaterAtoms;
@@ -2946,6 +2950,7 @@ void HomePatch::recvExchangeMsg(ExchangeAtomsMsg *msg) {
   memcpy(atom.begin(),msg->atoms,numAtoms*sizeof(FullAtom));
   delete msg;
   CkpvAccess(_qd)->process();
+  atomMapper->registerIDsFullAtom(atom.begin(),atom.end());
 }
 
 void HomePatch::submitLoadStats(int timestep)
