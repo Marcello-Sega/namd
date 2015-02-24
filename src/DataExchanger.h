@@ -18,12 +18,13 @@ class DataMessage {
   public:
   char core[CmiMsgHeaderSizeBytes];
   int src, srcPart;
-  int size;
+  int size, code;
   char data[1];
 
-  void setMessage(char *_data, int _src, int _srcPart, int _size, int _handler) {
+  void setMessage(const char *_data, int _src, int _srcPart, int _size, int _handler, int _code) {
     src = _src; srcPart = _srcPart;
     size = _size;
+    code = _code;
     memcpy(data,_data,size);
     CmiSetHandler(core,_handler);
   }
@@ -45,10 +46,12 @@ class DataExchanger : public CBase_DataExchanger
     int recv_ack_idx;
     int recv_bcast_idx;
     int recv_red_idx;
+    int recv_eval_command_idx;
+    int recv_eval_result_idx;
 };
 
 extern "C" {
-void packSend(int dest, int partition, char *data, int size, int handler);
+void packSend(int dest, int partition, const char *data, int size, int handler, int code=0);
 void recvData(DataMessage *dmsg); 
 void recvAck(DataMessage *dmsg); 
 
@@ -59,5 +62,7 @@ void replica_barrier();
 
 void replica_bcast(char *buf, int count, int root=0);
 void replica_min_double(double *dat, int count);
+
+void replica_eval(char *cmdbuf, int targPart, int targPE, DataMessage **precvMsg);
 }
 #endif

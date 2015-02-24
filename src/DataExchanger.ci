@@ -6,6 +6,7 @@ module DataExchanger {
   {
     entry DataExchanger(void);
     entry void recv_data(Pointer p);
+    entry void recv_eval_result(Pointer p);
     entry void recv_ack();
     entry void recv_red();
     entry void recv_bcast();
@@ -55,6 +56,27 @@ module DataExchanger {
       }
       when recv_ack() serial { 
         CpvAccess(breakScheduler) = 1;
+      }
+    };
+
+    entry void eval(Pointer srcPointer, int srcSize, int dstPart, int dst, Pointer recvPointer) {
+      serial {
+        packSend(dst,dstPart,(char*)srcPointer.data,srcSize,recv_eval_command_idx);
+      }
+      when recv_eval_result(Pointer p) serial { 
+        DataMessage *dmsg = (DataMessage*)p.data;
+        *((DataMessage**)recvPointer.data) = dmsg;
+        CpvAccess(breakScheduler) = 1;
+      }
+    };
+
+    entry void recv_eval_command(Pointer p) {
+      serial {
+        DataMessage *dmsg = (DataMessage*)p.data;
+        const char *resultPtr = 0;
+        int code = Node::Object()->getScript()->eval(dmsg->data, &resultPtr);
+        int resultSize = strlen(resultPtr);
+        packSend(dmsg->src,dmsg->srcPart,resultPtr,resultSize,recv_eval_result_idx,code);
       }
     };
 

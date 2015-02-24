@@ -7,6 +7,8 @@
 #include "DataExchanger.h"
 #include "ProcessorPrivate.h"
 #include "common.h"
+#include "Node.h"
+#include "ScriptTcl.h"
 
 #if CMK_HAS_PARTITION
 #ifdef CmiMyPartitionSize
@@ -23,10 +25,10 @@ CpvDeclare(int, breakScheduler);
 
 //functions to receive and invoke chare's entry methods
 extern "C" {
-  void packSend(int dst, int dstPart, char *data, int size, int handler) {
+  void packSend(int dst, int dstPart, const char *data, int size, int handler, int code) {
     int msgsize = sizeof(DataMessage) + size;
     DataMessage *dmsg = (DataMessage *)CmiAlloc(msgsize);
-    dmsg->setMessage(data,CkMyPe(),CmiMyPartition(),size,handler);
+    dmsg->setMessage(data,CkMyPe(),CmiMyPartition(),size,handler,code);
 #if CMK_HAS_PARTITION
     CmiInterSyncSendAndFree(dst,dstPart,msgsize,(char*)dmsg);
 #else
@@ -54,6 +56,16 @@ extern "C" {
     CmiFree(dmsg);
   }
 
+  void recvEvalCommand(DataMessage *dmsg) {
+    Pointer msg(dmsg);
+    CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv_eval_command(msg);
+  }
+
+  void recvEvalResult(DataMessage *dmsg) {
+    Pointer msg(dmsg);
+    CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv_eval_result(msg);
+  }
+
   void replica_send(char *sndbuf, int sendcount, int destPart, int destPE) {
     Pointer sendPointer(sndbuf);
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].send(sendPointer,sendcount,destPart,destPE); 
@@ -72,6 +84,15 @@ extern "C" {
     Pointer sendPointer(sndbuf);
     Pointer recvPointer((char *) precvMsg);
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].sendRecv(sendPointer,sendcount,destPart,destPE,recvPointer,srcPart,srcPE);
+    CpvAccess(breakScheduler) = 0;
+    while(!CpvAccess(breakScheduler)) CsdSchedulePoll();
+  }
+
+  void replica_eval(char *cmdbuf, int targPart, int targPE, DataMessage **precvMsg) {
+    Pointer sendPointer(cmdbuf);
+    Pointer recvPointer((char *) precvMsg);
+    int sendcount = strlen(cmdbuf) + 1;
+    CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].eval(sendPointer,sendcount,targPart,targPE,recvPointer);
     CpvAccess(breakScheduler) = 0;
     while(!CpvAccess(breakScheduler)) CsdSchedulePoll();
   }
@@ -159,6 +180,8 @@ DataExchanger::DataExchanger()
   recv_ack_idx = CmiRegisterHandler((CmiHandler)recvAck);
   recv_red_idx = CmiRegisterHandler((CmiHandler)recvRed);
   recv_bcast_idx = CmiRegisterHandler((CmiHandler)recvBcast);
+  recv_eval_command_idx = CmiRegisterHandler((CmiHandler)recvEvalCommand);
+  recv_eval_result_idx = CmiRegisterHandler((CmiHandler)recvEvalResult);
 }
 
 //----------------------------------------------------------------------
