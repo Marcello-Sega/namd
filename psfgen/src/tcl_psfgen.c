@@ -642,7 +642,7 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
       psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
-    sprintf(msg,"reading coordinates and insertion codes from pdb file %s",pdbfilename);
+    sprintf(msg,"reading coordinates, insertion codes, and element symbols from pdb file %s",pdbfilename);
     newhandle_msg(interp,msg);
   }
   namdbin_file = 0;

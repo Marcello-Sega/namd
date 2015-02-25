@@ -22,6 +22,7 @@ struct psfatom {
   char resname[8];
   char segname[8];
   char resid[8];
+  char element[3];
   double charge, mass;
 };
 typedef struct psfatom psfatom;
@@ -432,6 +433,7 @@ int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, FILE *namdbinfile
   /* Read in all atoms */
   for (i=0; i<natoms; i++) {
     psfatom *atom = atomlist + i;
+    strcpy(atom->element,"");
     if (psf_get_atom(file, atom->name,atom->atype,atom->resname, atom->segname,
                      atom->resid, &atom->charge, &atom->mass)
         < 0) {
@@ -441,7 +443,7 @@ int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, FILE *namdbinfile
     }
   }
 
-  /* Optionally read coordinates and insertion code from PDB file */
+  /* Optionally read coordinates, insertion code, and element symbol from PDB file */
   atomcoords = 0;
   if ( pdbfile ) {
     char record[PDB_RECORD_LENGTH+2];
@@ -478,6 +480,7 @@ int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, FILE *namdbinfile
           strncpy(atom->resid,resid,7);  atom->resid[7] = 0;
           ++insertions;
         }
+        strncpy(atom->element,element,3);  atom->element[2] = 0;
         atomcoords[i*3    ] = x;
         atomcoords[i*3 + 1] = y;
         atomcoords[i*3 + 2] = z;
@@ -612,7 +615,7 @@ int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, FILE *namdbinfile
       atomtmp->conformations = 0;
       strcpy(atomtmp->name, atomlist[i].name);
       strcpy(atomtmp->type, atomlist[i].atype);
-      strcpy(atomtmp->element,"");
+      strcpy(atomtmp->element, atomlist[i].element);
       atomtmp->mass = atomlist[i].mass; 
       atomtmp->charge = atomlist[i].charge;
       if (atomcoords) {
