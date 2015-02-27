@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2015/02/27 22:13:55 $
- * $Revision: 1.1226 $
+ * $Date: 2015/02/27 23:34:59 $
+ * $Revision: 1.1227 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -1791,7 +1791,10 @@ void Sequencer::submitMinimizeReductions(int step, BigReal fmax2)
   const bool drudeHardWallOn = simParams->drudeHardWallOn;
   const double drudeBondLen = simParams->drudeBondLen;
   const double drudeBondLen2 = drudeBondLen * drudeBondLen;
-  const double drudeMove = 0.001;
+  const double drudeStep = 0.1/(TIMEFACTOR*TIMEFACTOR);
+  const double drudeMove = 0.01;
+  const double drudeStep2 = drudeStep * drudeStep;
+  const double drudeMove2 = drudeMove * drudeMove;
   int numAtoms = patch->numAtoms;
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
@@ -1800,7 +1803,11 @@ void Sequencer::submitMinimizeReductions(int step, BigReal fmax2)
     f1[i] += f2[i] + f3[i];  // add all forces
     if ( drudeHardWallOn && i && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
       if ( ! fixedAtomsOn || ! a[i].atomFixed ) {
-        a[i].position += drudeMove * f1[i].unit();  // move very slowly downhill
+        if ( drudeStep2 * f1[i].length2() > drudeMove2 ) {
+          a[i].position += drudeMove * f1[i].unit();
+        } else {
+          a[i].position += drudeStep * f1[i];
+        }
         if ( (a[i].position - a[i-1].position).length2() > drudeBondLen2 ) {
           a[i].position = a[i-1].position + drudeBondLen * (a[i].position - a[i-1].position).unit();
         }
