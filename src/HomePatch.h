@@ -112,7 +112,7 @@ public:
   // methods for rigidBonds
   int rattle1(const BigReal, Tensor *virial, SubmitReduction *);
   void rattle2(const BigReal, Tensor *virial);
-  void minimize_rattle2(const BigReal, Tensor *virial);
+  void minimize_rattle2(const BigReal, Tensor *virial, bool forces=false);
 
   // methods for mollified impluse (MOLLY)
   void mollyAverage();

@@ -2398,10 +2398,11 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
 
 
 //  Adjust gradients for minimizer
-void HomePatch::minimize_rattle2(const BigReal timestep, Tensor *virial)
+void HomePatch::minimize_rattle2(const BigReal timestep, Tensor *virial, bool forces)
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
+  Force *f1 = f[Results::normal].begin();
   const int fixedAtomsOn = simParams->fixedAtomsOn;
   const int useSettle = simParams->useSettle;
   const BigReal dt = timestep / TIMEFACTOR;
@@ -2432,7 +2433,7 @@ void HomePatch::minimize_rattle2(const BigReal timestep, Tensor *virial)
     // cache data in local arrays and integrate positions normally
     for ( i = 0; i < hgs; ++i ) {
       ref[i] = atom[ig+i].position;
-      vel[i] = atom[ig+i].velocity;
+      vel[i] = ( forces ? f1[ig+i] : atom[ig+i].velocity );
       rmass[i] = 1.0;
       fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
       if ( fixed[i] ) rmass[i] = 0.;
@@ -2466,7 +2467,7 @@ void HomePatch::minimize_rattle2(const BigReal timestep, Tensor *virial)
           }
         }
         for (i=0; i<hgs; i++) {
-          atom[ig+i].velocity = vel[i];
+          ( forces ? f1[ig+i] : atom[ig+i].velocity ) = vel[i];
         }
         continue;
       }
@@ -2521,7 +2522,7 @@ void HomePatch::minimize_rattle2(const BigReal timestep, Tensor *virial)
     }
     // store data back to patch
     for ( i = 0; i < hgs; ++i ) {
-      atom[ig+i].velocity = vel[i];
+      ( forces ? f1[ig+i] : atom[ig+i].velocity ) = vel[i];
     }
   }
   //  CkPrintf("Leaving rattle2!\n");

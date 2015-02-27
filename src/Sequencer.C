@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2015/01/30 23:40:32 $
- * $Revision: 1.1225 $
+ * $Date: 2015/02/27 22:13:55 $
+ * $Revision: 1.1226 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -621,14 +621,12 @@ void Sequencer::minimize() {
 void Sequencer::minimizeMoveDownhill(BigReal fmax2) {
 
   FullAtom *a = patch->atom.begin();
-  Force *f1 = patch->f[Results::normal].begin();
-  Force *f2 = patch->f[Results::nbond].begin();
-  Force *f3 = patch->f[Results::slow].begin();
+  Force *f1 = patch->f[Results::normal].begin();  // includes nbond and slow
   int numAtoms = patch->numAtoms;
 
   for ( int i = 0; i < numAtoms; ++i ) {
     if ( simParams->fixedAtomsOn && a[i].atomFixed ) continue;
-    Force f = f1[i] + f2[i] + f3[i];
+    Force f = f1[i];
     if ( f.length2() > fmax2 ) {
       a[i].position += ( 0.1 * f.unit() );
       int hgs = a[i].hydrogenGroupSize;  // 0 if not parent
@@ -644,9 +642,7 @@ void Sequencer::minimizeMoveDownhill(BigReal fmax2) {
 // v = c * v + f
 void Sequencer::newMinimizeDirection(BigReal c) {
   FullAtom *a = patch->atom.begin();
-  Force *f1 = patch->f[Results::normal].begin();
-  Force *f2 = patch->f[Results::nbond].begin();
-  Force *f3 = patch->f[Results::slow].begin();
+  Force *f1 = patch->f[Results::normal].begin(); // includes nbond and slow
   const bool fixedAtomsOn = simParams->fixedAtomsOn;
   const bool drudeHardWallOn = simParams->drudeHardWallOn;
   int numAtoms = patch->numAtoms;
@@ -654,12 +650,9 @@ void Sequencer::newMinimizeDirection(BigReal c) {
 
   for ( int i = 0; i < numAtoms; ++i ) {
     a[i].velocity *= c;
-    a[i].velocity += f1[i] + f2[i] + f3[i];
+    a[i].velocity += f1[i];
     if ( drudeHardWallOn && i && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
-      Vector netvel = a[i-1].velocity + a[i].velocity;
-      if ( fixedAtomsOn && a[i-1].atomFixed ) netvel = 0;
-      a[i-1].velocity = netvel;
-      a[i].velocity = netvel;
+      a[i].velocity = a[i-1].velocity;
     }
     if ( fixedAtomsOn && a[i].atomFixed ) a[i].velocity = 0;
     BigReal v2 = a[i].velocity.length2();
@@ -671,7 +664,7 @@ void Sequencer::newMinimizeDirection(BigReal c) {
   maxv2 = 0.;
   for ( int i = 0; i < numAtoms; ++i ) {
     if ( drudeHardWallOn && i && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
-      a[i].velocity = a[i-1].velocity = 0.5 * a[i-1].velocity;
+      a[i].velocity = a[i-1].velocity;
       if ( fixedAtomsOn && a[i].atomFixed ) a[i].velocity = 0;
     }
     BigReal v2 = a[i].velocity.length2();
@@ -714,22 +707,20 @@ void Sequencer::newMinimizePosition(BigReal c) {
     a[i].position += c * a[i].velocity;
   }
 
+  if ( simParams->drudeHardWallOn ) {
+    for ( int i = 1; i < numAtoms; ++i ) {
+      if ( (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
+        a[i].position -= a[i-1].position;
+      }
+    }
+  }
+
   patch->rattle1(0.,0,0);
 
   if ( simParams->drudeHardWallOn ) {
-    const bool fixedAtomsOn = simParams->fixedAtomsOn;
-    Force *f1 = patch->f[Results::normal].begin();
-    Force *f2 = patch->f[Results::nbond].begin();
-    Force *f3 = patch->f[Results::slow].begin();
-    const double drudeBondLen = simParams->drudeBondLen;
-    const double drudeBondLen2 = drudeBondLen * drudeBondLen;
     for ( int i = 1; i < numAtoms; ++i ) {
       if ( (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
-        if ( fixedAtomsOn && a[i].atomFixed ) continue;
-        a[i].position += 0.001 * (f1[i] + f2[i] + f3[i]).unit();
-        if ( (a[i].position - a[i-1].position).length2() > drudeBondLen2 ) {
-          a[i].position = a[i-1].position + drudeBondLen * (a[i].position - a[i-1].position).unit();
-        }
+        a[i].position += a[i-1].position;
       }
     }
   }
@@ -1796,9 +1787,48 @@ void Sequencer::submitMinimizeReductions(int step, BigReal fmax2)
   Force *f1 = patch->f[Results::normal].begin();
   Force *f2 = patch->f[Results::nbond].begin();
   Force *f3 = patch->f[Results::slow].begin();
+  const bool fixedAtomsOn = simParams->fixedAtomsOn;
+  const bool drudeHardWallOn = simParams->drudeHardWallOn;
+  const double drudeBondLen = simParams->drudeBondLen;
+  const double drudeBondLen2 = drudeBondLen * drudeBondLen;
+  const double drudeMove = 0.001;
   int numAtoms = patch->numAtoms;
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
+
+  for ( int i = 0; i < numAtoms; ++i ) {
+    f1[i] += f2[i] + f3[i];  // add all forces
+    if ( drudeHardWallOn && i && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) { // drude particle
+      if ( ! fixedAtomsOn || ! a[i].atomFixed ) {
+        a[i].position += drudeMove * f1[i].unit();  // move very slowly downhill
+        if ( (a[i].position - a[i-1].position).length2() > drudeBondLen2 ) {
+          a[i].position = a[i-1].position + drudeBondLen * (a[i].position - a[i-1].position).unit();
+        }
+      }
+      Vector netf = f1[i-1] + f1[i];
+      if ( fixedAtomsOn && a[i-1].atomFixed ) netf = 0;
+      f1[i-1] = netf;
+      f1[i] = 0.;
+    }
+    if ( fixedAtomsOn && a[i].atomFixed ) f1[i] = 0;
+  }
+
+  f2 = f3 = 0;  // included in f1
+
+  BigReal maxv2 = 0.;
+
+  for ( int i = 0; i < numAtoms; ++i ) {
+    BigReal v2 = a[i].velocity.length2();
+    if ( v2 > 0. ) {
+      if ( v2 > maxv2 ) maxv2 = v2;
+    } else {
+      v2 = f1[i].length2();
+      if ( v2 > maxv2 ) maxv2 = v2;
+    }
+  }
+
+  if ( fmax2 > 10. * TIMEFACTOR * TIMEFACTOR * TIMEFACTOR * TIMEFACTOR )
+  { Tensor virial; patch->minimize_rattle2( 0.1 * TIMEFACTOR / sqrt(maxv2), &virial, true /* forces */); }
 
   BigReal fdotf = 0;
   BigReal fdotv = 0;
@@ -1806,7 +1836,8 @@ void Sequencer::submitMinimizeReductions(int step, BigReal fmax2)
   int numHuge = 0;
   for ( int i = 0; i < numAtoms; ++i ) {
     if ( simParams->fixedAtomsOn && a[i].atomFixed ) continue;
-    Force f = f1[i] + f2[i] + f3[i];
+    if ( drudeHardWallOn && (a[i].mass > 0.01) && ((a[i].mass < 1.0)) ) continue; // drude particle
+    Force f = f1[i];
     BigReal ff = f * f;
     if ( ff > fmax2 ) {
       if (simParams->printBadContacts) {
@@ -1817,8 +1848,6 @@ void Sequencer::submitMinimizeReductions(int step, BigReal fmax2)
       BigReal fmult = 1.01 * sqrt(fmax2/ff);
       f *= fmult;  ff = f * f;
       f1[i] *= fmult;
-      f2[i] *= fmult;
-      f3[i] *= fmult;
     }
     fdotf += ff;
     fdotv += f * a[i].velocity;
