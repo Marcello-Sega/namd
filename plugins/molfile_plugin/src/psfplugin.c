@@ -11,7 +11,7 @@
  *
  *      $RCSfile: psfplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.8 $       $Date: 2013/10/03 20:33:39 $
+ *      $Revision: 1.9 $       $Date: 2015/02/27 00:46:16 $
  *
  ***************************************************************************/
 
@@ -131,8 +131,8 @@ static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
 
   if (namdfmt == 1) {
     int cnt, rcnt;
-    char residstr[8], trash;
-    cnt = sscanf(inbuf, "%d %7s %7s %7s %7s %7s %f %f",
+    char residstr[12], trash;
+    cnt = sscanf(inbuf, "%d %7s %10s %7s %7s %7s %f %f",
                  &num, segname, residstr, resname, name, atype, q, m);
     insertion[0] = ' ';  insertion[1] = '\0';
     rcnt = sscanf(residstr, "%d%c%c", resid, insertion, &trash);
