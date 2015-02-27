@@ -477,12 +477,11 @@ int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, FILE *namdbinfile
           return -1;
         }
         if ( insertion[0] != ' ' && insertion[0] != '\0' ) {
-          if ( strlen(atom->resid ) <= 4 ) {
-            if ( strncmp(atom->resid,resid,4) ) {
-              strncpy(atom->resid,resid,7);  atom->resid[7] = 0;
-              ++insertions;
-            }
-          } else if ( atom->resid[strlen(atom->resid)-1] != insertion[0] ) {
+          if ( ( strlen(atom->resid ) <= 4 ) && strncmp(atom->resid,resid,4) ) {
+            strncpy(atom->resid,resid,7);  atom->resid[7] = 0;
+            ++insertions;
+          }
+          if ( atom->resid[strlen(atom->resid)-1] != insertion[0] ) {
             strncat(atom->resid,insertion,1);
           }
         }
