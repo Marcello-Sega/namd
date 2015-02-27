@@ -357,7 +357,10 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
     if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
+      char resid[9];
       res = &(seg->residue_array[ires]);
+      strncpy(resid,res->resid,9);
+      resid[ charmmext ? 8 : 4 ] = '\0';
       if ( charmmfmt ) for ( atom = res->atoms; atom; atom = atom->next ) {
         int idef,typeid;
         idef = hasharray_index(mol->defs->type_hash,atom->type);
@@ -370,13 +373,13 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
         fprintf(file, ( charmmext ?
                      "%10d %-8s %-8s %-8s %-8s %4d %10.6f    %10.4f  %10d\n" :
                      "%8d %-4s %-4s %-4s %-4s %4d %10.6f    %10.4f  %10d\n" ),
-                atom->atomid, seg->segid,res->resid,res->name,
+                atom->atomid, seg->segid,resid,res->name,
                 atom->name,typeid,atom->charge,atom->mass,0);
       } else for ( atom = res->atoms; atom; atom = atom->next ) {
         fprintf(file, ( charmmext ?
                      "%10d %-8s %-8s %-8s %-8s %-6s %10.6f    %10.4f  %10d\n" :
                      "%8d %-4s %-4s %-4s %-4s %-4s %10.6f    %10.4f  %10d\n" ),
-                atom->atomid, seg->segid,res->resid,res->name,
+                atom->atomid, seg->segid,resid,res->name,
                 atom->name,atom->type,atom->charge,atom->mass,0);
       }
     }

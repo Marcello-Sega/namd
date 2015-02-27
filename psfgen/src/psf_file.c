@@ -61,7 +61,7 @@ int psf_get_atom(FILE *f, char *name, char *atype, char *resname,
   if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, f)) {
     return(-1);
   }
-  read_count = sscanf(inbuf, "%d %7s %7s %7s %7s %7s %lf %lf",
+  read_count = sscanf(inbuf, "%d %8s %8s %8s %8s %8s %lf %lf",
     &num, segname, resid, resname, name, atype, q, m);
 
   if (read_count != 8) {

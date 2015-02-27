@@ -6,7 +6,7 @@
 #include "hasharray.h"
 #include "topo_defs.h"
 
-#define NAMEMAXLEN 8
+#define NAMEMAXLEN 10
 #define NAMETOOLONG(X) ( strlen(X) >= NAMEMAXLEN )
 
 typedef struct topo_defs_type_t {

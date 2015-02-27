@@ -17,11 +17,11 @@
 
 /* Read in all psf atom information using this struct */
 struct psfatom {
-  char name[8];
-  char atype[8];
-  char resname[8];
-  char segname[8];
-  char resid[8];
+  char name[10];
+  char atype[10];
+  char resname[10];
+  char segname[10];
+  char resid[10];
   char element[3];
   double charge, mass;
 };
@@ -476,9 +476,15 @@ int psf_file_extract(topo_mol *mol, FILE *file, FILE *pdbfile, FILE *namdbinfile
           free(atomcoords);
           return -1;
         }
-        if ( insertion[0] != ' ' && insertion[0] != '\0' && strncmp(atom->resid,resid,8) ) {
-          strncpy(atom->resid,resid,7);  atom->resid[7] = 0;
-          ++insertions;
+        if ( insertion[0] != ' ' && insertion[0] != '\0' ) {
+          if ( strlen(atom->resid ) <= 4 ) {
+            if ( strncmp(atom->resid,resid,4) ) {
+              strncpy(atom->resid,resid,7);  atom->resid[7] = 0;
+              ++insertions;
+            }
+          } else if ( atom->resid[strlen(atom->resid)-1] != insertion[0] ) {
+            strncat(atom->resid,insertion,1);
+          }
         }
         strncpy(atom->element,element,3);  atom->element[2] = 0;
         atomcoords[i*3    ] = x;

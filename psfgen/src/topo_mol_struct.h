@@ -7,7 +7,7 @@
 #include "topo_defs_struct.h"
 #include "topo_mol.h"
 
-#define NAMEMAXLEN 8
+#define NAMEMAXLEN 10
 #define NAMETOOLONG(X) ( strlen(X) >= NAMEMAXLEN )
 
 struct topo_mol_atom_t;
