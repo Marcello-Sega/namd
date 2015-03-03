@@ -141,6 +141,9 @@ int ScriptTcl::Tcl_exit(ClientData clientData,
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
   CkPrintf("TCL: Exiting due to exit command.\n");
+#if CMK_HAS_PARTITION
+  replica_barrier();
+#endif
   script->runController(SCRIPT_END);
   BackEnd::exit();
   return TCL_OK;
@@ -238,6 +241,27 @@ int ScriptTcl::Tcl_replicaEval(ClientData, Tcl_Interp *interp, int argc, char **
 #else
   return Tcl_EvalEx(interp,argv[2],-1,TCL_EVAL_GLOBAL);
 #endif
+}
+
+int ScriptTcl::Tcl_replicaYield(ClientData, Tcl_Interp *interp, int argc, char **argv) {
+  if ( argc > 2 ) {
+    Tcl_SetResult(interp,"args: ?seconds?",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  double time = 0.;
+  if ( argc == 2 ) {
+    if ( sscanf(argv[1],"%lf",&time) != 1 ) {
+      Tcl_SetResult(interp,"args: ?seconds?",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  }
+  if ( time > 0. ) {
+    time += CmiWallTimer();
+    do { CsdSchedulePoll(); } while ( CmiWallTimer() < time );
+  } else {
+    CsdSchedulePoll();
+  }
+  return TCL_OK;
 }
 
 
@@ -1604,6 +1628,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "replicaEval", Tcl_replicaEval,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "replicaYield", Tcl_replicaYield,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "replicaSendrecv", Tcl_replicaSendrecv,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "replicaSend", Tcl_replicaSend,
@@ -1747,6 +1773,9 @@ void ScriptTcl::run(char *scriptFile) {
     runWasCalled = 1;
   }
 
+#if CMK_HAS_PARTITION
+  replica_barrier();
+#endif
   runController(SCRIPT_END);
 
 }

@@ -65,6 +65,7 @@ private:
   static int Tcl_numReplicas(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_myReplica(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_replicaEval(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_replicaYield(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_replicaSendrecv(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_replicaSend(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_replicaRecv(ClientData, Tcl_Interp *, int, char **);
