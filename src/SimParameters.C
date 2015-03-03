@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2015/01/29 17:33:49 $
- * $Revision: 1.1447 $
+ * $Date: 2015/03/03 17:54:14 $
+ * $Revision: 1.1448 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -173,6 +173,10 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("scriptArg3",scriptArg3)
   SCRIPT_PARSE_FLOAT("scriptArg4",scriptArg4)
   SCRIPT_PARSE_FLOAT("scriptArg5",scriptArg5)
+  SCRIPT_PARSE_INT("scriptIntArg1",scriptIntArg1)
+  SCRIPT_PARSE_INT("scriptIntArg2",scriptIntArg2)
+  SCRIPT_PARSE_STRING("scriptStringArg1",scriptStringArg1)
+  SCRIPT_PARSE_STRING("scriptStringArg2",scriptStringArg2)
   SCRIPT_PARSE_INT("numsteps",N)
   SCRIPT_PARSE_INT("firsttimestep",firstTimestep)
   SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)

@@ -75,6 +75,18 @@ extern "C" void CApplicationInit();
 
 #include "DumpBench.h"
 
+class CheckpointMsg : public CMessage_CheckpointMsg {
+public:
+  int task;
+  int replica;
+  Controller::checkpoint checkpoint;
+  char *key;
+};
+
+extern "C" {
+  void recvCheckpointCReq_handler(envelope*);
+  void recvCheckpointCAck_handler(envelope*);
+}
 
 #ifdef CMK_BALANCED_INJECTION_API
 #include "ckBIconfig.h"
@@ -288,6 +300,9 @@ Node::Node(GroupInitMsg *msg)
   delete msg;
 
   CkpvAccess(BOCclass_group).node = thisgroup;
+
+  recvCheckpointCReq_index = CmiRegisterHandler((CmiHandler)recvCheckpointCReq_handler);
+  recvCheckpointCAck_index = CmiRegisterHandler((CmiHandler)recvCheckpointCAck_handler);
 
   startupPhase = 0;
 
@@ -1119,6 +1134,59 @@ void Node::reloadGridforceGrid(int gridnum) {
     DebugM(4, "reloadGridforceGrid(int) finished\n" << endi);
 }
 // END gf
+
+
+// initiating replica
+void Node::sendCheckpointReq(int remote, const char *key, int task, Lattice &lat, ControllerState &cs) {
+  CheckpointMsg *msg = new (1+strlen(key),0) CheckpointMsg;
+  msg->replica = CmiMyPartition();
+  msg->task = task;
+  msg->checkpoint.lattice = lat;
+  msg->checkpoint.state = cs;
+  strcpy(msg->key,key);
+  envelope *env = UsrToEnv(CheckpointMsg::pack(msg));
+  CmiSetHandler(env,recvCheckpointCReq_index);
+#if CMK_HAS_PARTITION
+  CmiInterSyncSendAndFree(CkMyPe(),remote,env->getTotalsize(),(char*)env);
+#else
+  CmiSyncSendAndFree(CkMyPe(),env->getTotalsize(),(char*)env);
+#endif
+}
+
+// responding replica
+extern "C" {
+  void recvCheckpointCReq_handler(envelope *env) {
+    Node::Object()->recvCheckpointReq(CheckpointMsg::unpack(EnvToUsr(env)));
+  }
+}
+
+// responding replica
+void Node::recvCheckpointReq(CheckpointMsg *msg) {
+  state->controller->recvCheckpointReq(msg->key,msg->task,msg->checkpoint);
+
+  int remote = msg->replica;
+  msg->replica = CmiMyPartition();
+  envelope *env = UsrToEnv(CheckpointMsg::pack(msg));
+  CmiSetHandler(env,recvCheckpointCAck_index);
+#if CMK_HAS_PARTITION
+  CmiInterSyncSendAndFree(CkMyPe(),remote,env->getTotalsize(),(char*)env);
+#else
+  CmiSyncSendAndFree(CkMyPe(),env->getTotalsize(),(char*)env);
+#endif
+}
+
+// initiating replica
+extern "C" {
+  void recvCheckpointCAck_handler(envelope *env) {
+    Node::Object()->recvCheckpointAck(CheckpointMsg::unpack(EnvToUsr(env)));
+  }
+}
+
+// initiating replica
+void Node::recvCheckpointAck(CheckpointMsg *msg) {
+  state->controller->recvCheckpointAck(msg->checkpoint);
+  delete msg;
+}
 
 
 void Node::sendEnableExitScheduler(void) {

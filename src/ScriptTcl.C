@@ -1168,6 +1168,55 @@ int ScriptTcl::Tcl_revert(ClientData clientData,
   return TCL_OK;
 }
 
+static int replica_hash(const char *key) {
+  unsigned int hash = 0;
+
+  while (*key) {
+    hash *= 73; 
+    hash += *key++;
+  }
+
+  return hash % CmiNumPartitions();
+}
+
+int ScriptTcl::Tcl_checkpointReplica(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc < 2 || argc > 3) {
+    Tcl_SetResult(interp,"args: <key> ?<replica> or global?",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  script->setParameter("scriptStringArg1", argv[1]);
+  int replica = CmiMyPartition();
+  if ( argc == 3 ) {
+    if ( ! strcmp(argv[2],"global") ) {
+      replica = replica_hash(argv[1]);
+    } else if ( sscanf(argv[2],"%d",&replica) != 1 ) {
+      Tcl_SetResult(interp,"args: <key> ?<replica> or global?",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  }
+  CHECK_REPLICA(replica);
+  char str[40];
+  sprintf(str, "%d", replica);
+  script->setParameter("scriptIntArg1", str);
+
+  CkpvAccess(_qd)->create(PatchMap::Object()->numPatches());
+  if ( replica != CmiMyPartition() ) CkpvAccess(_qd)->create(1);
+
+  if ( ! strcmp(argv[0],"checkpointStore") ) script->runController(SCRIPT_CHECKPOINT_STORE);
+  else if ( ! strcmp(argv[0],"checkpointLoad") ) script->runController(SCRIPT_CHECKPOINT_LOAD);
+  else if ( ! strcmp(argv[0],"checkpointSwap") ) script->runController(SCRIPT_CHECKPOINT_SWAP);
+  else if ( ! strcmp(argv[0],"checkpointFree") ) script->runController(SCRIPT_CHECKPOINT_FREE);
+  else {
+    Tcl_SetResult(interp,"checkpointStore/Load/Swap/Free called via unrecognized name",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_callback(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -1604,6 +1653,14 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "checkpoint", Tcl_checkpoint,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "revert", Tcl_revert,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "checkpointStore", Tcl_checkpointReplica,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "checkpointLoad", Tcl_checkpointReplica,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "checkpointSwap", Tcl_checkpointReplica,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "checkpointFree", Tcl_checkpointReplica,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "reinitvels", Tcl_reinitvels,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);

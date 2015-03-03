@@ -13,6 +13,15 @@ module PatchMgr {
   message MoveAtomMsg;
   message MoveAllByMsg;
   message SetLatticeMsg;
+
+  message CheckpointAtomsReqMsg {
+    char key[];
+  };
+  message CheckpointAtomsMsg {
+    FullAtom atoms[];
+    char key[];
+  };
+
   message ExchangeAtomsReqMsg;
   message ExchangeAtomsMsg {
     FullAtom atoms[];
@@ -28,6 +37,12 @@ module PatchMgr {
     entry void moveAtom(MoveAtomMsg *);
     entry void moveAllBy(MoveAllByMsg *);
     entry void setLattice(SetLatticeMsg *);
+
+    entry void recvCheckpointReq(CheckpointAtomsReqMsg*);
+    entry void recvCheckpointLoad(CheckpointAtomsMsg*);
+    entry void recvCheckpointStore(CheckpointAtomsMsg*);
+    entry void recvCheckpointAck(CheckpointAtomsReqMsg*);
+
     entry void recvExchangeReq(ExchangeAtomsReqMsg*);
     entry void recvExchangeMsg(ExchangeAtomsMsg*);
   } ;

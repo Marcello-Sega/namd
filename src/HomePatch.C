@@ -2910,6 +2910,100 @@ void HomePatch::revert(void) {
   #endif
 }
 
+void HomePatch::exchangeCheckpoint(int scriptTask, int &bpc) {  // initiating replica
+  SimParameters *simParams = Node::Object()->simParameters;
+  checkpoint_task = scriptTask;
+  const int remote = simParams->scriptIntArg1;
+  const char *key = simParams->scriptStringArg1;
+  PatchMgr::Object()->sendCheckpointReq(patchID, remote, key, scriptTask);
+}
+
+void HomePatch::recvCheckpointReq(int task, const char *key, int replica, int pe) {  // responding replica
+  if ( task == SCRIPT_CHECKPOINT_FREE ) {
+    if ( ! checkpoints.count(key) ) {
+      NAMD_die("Unable to free checkpoint, requested key was never stored.");
+    }
+    delete checkpoints[key];
+    checkpoints.erase(key);
+    PatchMgr::Object()->sendCheckpointAck(patchID, replica, pe);
+    return;
+  }
+  CheckpointAtomsMsg *msg;
+  if ( task == SCRIPT_CHECKPOINT_LOAD || task == SCRIPT_CHECKPOINT_SWAP ) {
+    if ( ! checkpoints.count(key) ) {
+      NAMD_die("Unable to load checkpoint, requested key was never stored.");
+    }
+    checkpoint_t &cp = *checkpoints[key];
+    msg = new (cp.numAtoms,1,0) CheckpointAtomsMsg;
+    msg->lattice = cp.lattice;
+    msg->berendsenPressure_count = cp.berendsenPressure_count;
+    msg->numAtoms = cp.numAtoms;
+    memcpy(msg->atoms,cp.atoms.begin(),cp.numAtoms*sizeof(FullAtom));
+  } else {
+    msg = new (0,1,0) CheckpointAtomsMsg;
+  }
+  msg->pid = patchID;
+  msg->replica = CmiMyPartition();
+  msg->pe = CkMyPe();
+  PatchMgr::Object()->sendCheckpointLoad(msg, replica, pe);
+}
+
+void HomePatch::recvCheckpointLoad(CheckpointAtomsMsg *msg) {  // initiating replica
+  SimParameters *simParams = Node::Object()->simParameters;
+  const int remote = simParams->scriptIntArg1;
+  const char *key = simParams->scriptStringArg1;
+  if ( checkpoint_task == SCRIPT_CHECKPOINT_FREE ) {
+    NAMD_bug("HomePatch::recvCheckpointLoad called during checkpointFree.");
+  }
+  if ( msg->replica != remote ) {
+    NAMD_bug("HomePatch::recvCheckpointLoad message from wrong replica.");
+  }
+  if ( checkpoint_task == SCRIPT_CHECKPOINT_STORE || checkpoint_task == SCRIPT_CHECKPOINT_SWAP ) {
+    CheckpointAtomsMsg *newmsg = new (numAtoms,1+strlen(key),0) CheckpointAtomsMsg;
+    strcpy(newmsg->key,key);
+    newmsg->lattice = lattice;
+    newmsg->berendsenPressure_count = sequencer->berendsenPressure_count;
+    newmsg->pid = patchID;
+    newmsg->pe = CkMyPe();
+    newmsg->replica = CmiMyPartition();
+    newmsg->numAtoms = numAtoms;
+    memcpy(newmsg->atoms,atom.begin(),numAtoms*sizeof(FullAtom));
+    PatchMgr::Object()->sendCheckpointStore(newmsg, remote, msg->pe);
+  }
+  if ( checkpoint_task == SCRIPT_CHECKPOINT_LOAD || checkpoint_task == SCRIPT_CHECKPOINT_SWAP ) {
+    atomMapper->unregisterIDsFullAtom(atom.begin(),atom.end());
+    lattice = msg->lattice;
+    sequencer->berendsenPressure_count = msg->berendsenPressure_count;
+    numAtoms = msg->numAtoms;
+    atom.resize(numAtoms);
+    memcpy(atom.begin(),msg->atoms,numAtoms*sizeof(FullAtom));
+    if ( ! numNeighbors ) atomMapper->registerIDsFullAtom(atom.begin(),atom.end());
+  }
+  if ( checkpoint_task == SCRIPT_CHECKPOINT_LOAD ) {
+    recvCheckpointAck();
+  }
+  delete msg;
+}
+
+void HomePatch::recvCheckpointStore(CheckpointAtomsMsg *msg) {  // responding replica
+  if ( ! checkpoints.count(msg->key) ) {
+    checkpoints[msg->key] = new checkpoint_t;
+  }
+  checkpoint_t &cp = *checkpoints[msg->key];
+  cp.lattice = msg->lattice;
+  cp.berendsenPressure_count = msg->berendsenPressure_count;
+  cp.numAtoms = msg->numAtoms;
+  cp.atoms.resize(cp.numAtoms);
+  memcpy(cp.atoms.begin(),msg->atoms,cp.numAtoms*sizeof(FullAtom));
+  PatchMgr::Object()->sendCheckpointAck(patchID, msg->replica, msg->pe);
+  delete msg;
+}
+
+void HomePatch::recvCheckpointAck() {  // initiating replica
+  CkpvAccess(_qd)->process();
+}
+
+
 void HomePatch::exchangeAtoms(int scriptTask) {
   SimParameters *simParams = Node::Object()->simParameters;
   // CkPrintf("exchangeAtoms %d %d %d %d\n", CmiMyPartition(), scriptTask, (int)(simParams->scriptArg1), (int)(simParams->scriptArg2));

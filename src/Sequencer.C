@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2015/02/27 23:34:59 $
- * $Revision: 1.1227 $
+ * $Date: 2015/03/03 17:54:14 $
+ * $Revision: 1.1228 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -141,6 +141,12 @@ void Sequencer::algorithm(void)
         berendsenPressure_count = checkpoint_berendsenPressure_count;
         pairlistsAreValid = 0;
 	break;
+      case SCRIPT_CHECKPOINT_STORE:
+      case SCRIPT_CHECKPOINT_LOAD:
+      case SCRIPT_CHECKPOINT_SWAP:
+      case SCRIPT_CHECKPOINT_FREE:
+        patch->exchangeCheckpoint(scriptTask,berendsenPressure_count);
+	break;
       case SCRIPT_ATOMSENDRECV:
       case SCRIPT_ATOMSEND:
       case SCRIPT_ATOMRECV:
@@ -153,6 +159,8 @@ void Sequencer::algorithm(void)
       case SCRIPT_CONTINUE:
 	integrate(scriptTask);
 	break;
+      default:
+        NAMD_bug("Unknown task in Sequencer::algorithm");
     }
   }
   submitCollections(END_OF_RUN);

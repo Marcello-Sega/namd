@@ -50,6 +50,9 @@ class ScriptTcl;
 class IMDOutput;
 class Vector;
 class colvarmodule;
+class CheckpointMsg;
+class Lattice;
+class ControllerState;
 
 #ifdef MEM_OPT_VERSION
 class ParallelIOMgr;
@@ -94,6 +97,10 @@ public:
 
   void reloadGridforceGrid(const char *key);
   void reloadGridforceGrid(int gridnum);
+
+  void sendCheckpointReq(int remote, const char *key, int task, Lattice &lat, ControllerState &cs);
+  void recvCheckpointReq(CheckpointMsg*);
+  void recvCheckpointAck(CheckpointMsg*);
   
   void sendEnableExitScheduler(void);
   void recvEnableExitScheduler(CkQdMsg *);
@@ -208,6 +215,9 @@ private:
 #ifdef CMK_BALANCED_INJECTION_API
   int balancedInjectionLevel;
 #endif
+
+  int recvCheckpointCReq_index;
+  int recvCheckpointCAck_index;
 };
 
 #endif /* _NODE_H */

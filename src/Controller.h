@@ -11,6 +11,8 @@
 #include "Node.h"
 #include "common.h"
 #include "fstream_namd.h"
+#include <string>
+#include <map>
 
 class ControllerBroadcasts;
 class NamdState;
@@ -48,6 +50,8 @@ public:
 
 protected:
     friend class ScriptTcl;
+    friend class Node;
+    friend class CheckpointMsg;
     virtual void algorithm(void);	// subclasses redefine this method
 
     void integrate(int); // Verlet integrator
@@ -209,6 +213,15 @@ protected:
     int checkpoint_stored;
     Lattice checkpoint_lattice;
     ControllerState checkpoint_state;
+
+    struct checkpoint {
+      Lattice lattice;
+      ControllerState state;
+    };
+    std::map<std::string,checkpoint*> checkpoints;
+    int checkpoint_task;
+    void recvCheckpointReq(const char *key, int task, checkpoint &cp);
+    void recvCheckpointAck(checkpoint &cp);
 
     Lattice origLattice;
 

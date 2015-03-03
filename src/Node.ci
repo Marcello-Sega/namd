@@ -13,6 +13,9 @@ module Node {
 
   message GroupInitMsg;
   message ScriptParamMsg;  
+  message CheckpointMsg {
+    char key[];
+  };
 
   group Node
   {
@@ -34,6 +37,10 @@ module Node {
     entry void reloadCharges(float charge[n], int n);
 
     entry void reloadGridforceGrid(int gridnum);
+
+    // used for asynchronous checkpoint on remote replica
+    entry void recvCheckpointReq(CheckpointMsg*);
+    entry void recvCheckpointAck(CheckpointMsg*);
 
     // exit scheduler to return to front end
     entry void recvEnableExitScheduler(CkQdMsg *);

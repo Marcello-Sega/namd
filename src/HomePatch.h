@@ -23,6 +23,9 @@
 #include "common.h"
 #include "Migration.h"
 
+#include <string>
+#include <map>
+
 class RegisterProxyMsg;
 class UnregisterProxyMsg;
 class ProxyResultVarsizeMsg;
@@ -32,6 +35,7 @@ class Sequencer;
 class SubmitReduction;
 class ProxyGBISP1ResultMsg;
 class ProxyGBISP2ResultMsg;
+class CheckpointAtomsMsg;
 class ExchangeAtomsMsg;
 
 class ProxyNodeAwareSpanningTreeMsg;
@@ -137,6 +141,20 @@ public:
   // methods for CONTRA, etc
   void checkpoint(void);
   void revert(void);
+
+  void exchangeCheckpoint(int scriptTask, int &bpc);
+  void recvCheckpointReq(int task, const char *key, int replica, int pe);
+  void recvCheckpointLoad(CheckpointAtomsMsg *msg);
+  void recvCheckpointStore(CheckpointAtomsMsg *msg);
+  void recvCheckpointAck();
+  int checkpoint_task;
+  struct checkpoint_t {
+    Lattice lattice;
+    int berendsenPressure_count;
+    int numAtoms;
+    ResizeArray<FullAtom> atoms;
+  };
+  std::map<std::string,checkpoint_t*> checkpoints;
 
   // replica exchange
   void exchangeAtoms(int scriptTask);

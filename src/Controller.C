@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2014/11/23 21:25:38 $
- * $Revision: 1.1306 $
+ * $Date: 2015/03/03 17:54:14 $
+ * $Revision: 1.1307 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -39,6 +39,7 @@
 #include <fstream>
 #include <iomanip>
 #include <errno.h>
+#include "qd.h"
 
 #include "ComputeNonbondedMICKernel.h"
 
@@ -268,19 +269,86 @@ void Controller::algorithm(void)
           << " BY " << simParams->scriptArg1 << "\n" << endi;
         break;
       case SCRIPT_CHECKPOINT:
-        iout << "CHECKPOINTING POSITIONS AT STEP " << simParams->firstTimestep
+        iout << "CHECKPOINTING AT STEP " << simParams->firstTimestep
           << "\n" << endi;
         checkpoint_stored = 1;
         checkpoint_lattice = state->lattice;
         checkpoint_state = *(ControllerState*)this;
         break;
       case SCRIPT_REVERT:
-        iout << "REVERTING POSITIONS AT STEP " << simParams->firstTimestep
+        iout << "REVERTING AT STEP " << simParams->firstTimestep
           << "\n" << endi;
         if ( ! checkpoint_stored )
           NAMD_die("Unable to revert, checkpoint was never called!");
         state->lattice = checkpoint_lattice;
         *(ControllerState*)this = checkpoint_state;
+        break;
+      case SCRIPT_CHECKPOINT_STORE:
+        iout << "STORING CHECKPOINT AT STEP " << simParams->firstTimestep
+          << " TO KEY " << simParams->scriptStringArg1;
+        if ( CmiNumPartitions() > 1 ) iout << " ON REPLICA " << simParams->scriptIntArg1;
+        iout << "\n" << endi;
+        if ( simParams->scriptIntArg1 == CmiMyPartition() ) {
+          if ( ! checkpoints.count(simParams->scriptStringArg1) ) {
+            checkpoints[simParams->scriptStringArg1] = new checkpoint;
+          }
+          checkpoint &cp = *checkpoints[simParams->scriptStringArg1];
+          cp.lattice = state->lattice;
+          cp.state = *(ControllerState*)this;
+        } else {
+          Node::Object()->sendCheckpointReq(simParams->scriptIntArg1,simParams->scriptStringArg1,
+                                            scriptTask, state->lattice, *(ControllerState*)this);
+        }
+        break;
+      case SCRIPT_CHECKPOINT_LOAD:
+        iout << "LOADING CHECKPOINT AT STEP " << simParams->firstTimestep
+          << " FROM KEY " << simParams->scriptStringArg1;
+        if ( CmiNumPartitions() > 1 ) iout << " ON REPLICA " << simParams->scriptIntArg1;
+        iout << "\n" << endi;
+        if ( simParams->scriptIntArg1 == CmiMyPartition() ) {
+          if ( ! checkpoints.count(simParams->scriptStringArg1) ) {
+            NAMD_die("Unable to load checkpoint, requested key was never stored.");
+          }
+          checkpoint &cp = *checkpoints[simParams->scriptStringArg1];
+          state->lattice = cp.lattice;
+          *(ControllerState*)this = cp.state;
+        } else {
+          Node::Object()->sendCheckpointReq(simParams->scriptIntArg1,simParams->scriptStringArg1,
+                                            scriptTask, state->lattice, *(ControllerState*)this);
+        }
+        break;
+      case SCRIPT_CHECKPOINT_SWAP:
+        iout << "SWAPPING CHECKPOINT AT STEP " << simParams->firstTimestep
+          << " FROM KEY " << simParams->scriptStringArg1;
+        if ( CmiNumPartitions() > 1 ) iout << " ON REPLICA " << simParams->scriptIntArg1;
+        iout << "\n" << endi;
+        if ( simParams->scriptIntArg1 == CmiMyPartition() ) {
+          if ( ! checkpoints.count(simParams->scriptStringArg1) ) {
+            NAMD_die("Unable to swap checkpoint, requested key was never stored.");
+          }
+          checkpoint &cp = *checkpoints[simParams->scriptStringArg1];
+          std::swap(state->lattice,cp.lattice);
+          std::swap(*(ControllerState*)this,cp.state);
+        } else {
+          Node::Object()->sendCheckpointReq(simParams->scriptIntArg1,simParams->scriptStringArg1,
+                                            scriptTask, state->lattice, *(ControllerState*)this);
+        }
+        break;
+      case SCRIPT_CHECKPOINT_FREE:
+        iout << "FREEING CHECKPOINT AT STEP " << simParams->firstTimestep
+          << " FROM KEY " << simParams->scriptStringArg1;
+        if ( CmiNumPartitions() > 1 ) iout << " ON REPLICA " << simParams->scriptIntArg1;
+        iout << "\n" << endi;
+        if ( simParams->scriptIntArg1 == CmiMyPartition() ) {
+          if ( ! checkpoints.count(simParams->scriptStringArg1) ) {
+            NAMD_die("Unable to free checkpoint, requested key was never stored.");
+          }
+          delete checkpoints[simParams->scriptStringArg1];
+          checkpoints.erase(simParams->scriptStringArg1);
+        } else {
+          Node::Object()->sendCheckpointReq(simParams->scriptIntArg1,simParams->scriptStringArg1,
+                                            scriptTask, state->lattice, *(ControllerState*)this);
+        }
         break;
       case SCRIPT_ATOMSENDRECV:
       case SCRIPT_ATOMSEND:
@@ -293,6 +361,8 @@ void Controller::algorithm(void)
       case SCRIPT_CONTINUE:
         integrate(scriptTask);
         break;
+      default:
+        NAMD_bug("Unknown task in Controller::algorithm");
     }
     BackEnd::awaken();
   }
@@ -2982,6 +3052,46 @@ void Controller::outputExtendedSystem(int step)
   }
 
 }
+
+
+void Controller::recvCheckpointReq(const char *key, int task, checkpoint &cp) {  // responding replica
+  switch ( task ) {
+    case SCRIPT_CHECKPOINT_STORE:
+      if ( ! checkpoints.count(key) ) {
+        checkpoints[key] = new checkpoint;
+      }
+      *checkpoints[key] = cp;
+      break;
+    case SCRIPT_CHECKPOINT_LOAD:
+      if ( ! checkpoints.count(key) ) {
+        NAMD_die("Unable to load checkpoint, requested key was never stored.");
+      }
+      cp = *checkpoints[key];
+      break;
+    case SCRIPT_CHECKPOINT_SWAP:
+      if ( ! checkpoints.count(key) ) {
+        NAMD_die("Unable to swap checkpoint, requested key was never stored.");
+      }
+      std::swap(cp,*checkpoints[key]);
+      break;
+    case SCRIPT_CHECKPOINT_FREE:
+      if ( ! checkpoints.count(key) ) {
+        NAMD_die("Unable to free checkpoint, requested key was never stored.");
+      }
+      delete checkpoints[key];
+      checkpoints.erase(key);
+      break;
+  }
+}
+
+void Controller::recvCheckpointAck(checkpoint &cp) {  // initiating replica
+  if ( checkpoint_task == SCRIPT_CHECKPOINT_LOAD || checkpoint_task == SCRIPT_CHECKPOINT_SWAP ) {
+    state->lattice = cp.lattice;
+    *(ControllerState*)this = cp.state;
+  }
+  CkpvAccess(_qd)->process();
+}
+
 
 void Controller::rebalanceLoad(int step)
 {

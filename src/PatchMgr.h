@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.h,v $
  * $Author: jim $
- * $Date: 2013/11/13 00:01:33 $
- * $Revision: 1.1031 $
+ * $Date: 2015/03/03 17:54:14 $
+ * $Revision: 1.1032 $
  *****************************************************************************/
 
 #ifndef PATCHMGR_H
@@ -66,6 +66,37 @@ class SetLatticeMsg : public CMessage_SetLatticeMsg {
 public:
   Lattice lattice;
 };
+
+
+class CheckpointAtomsReqMsg : public CMessage_CheckpointAtomsReqMsg {
+public:
+  int task;
+  int pid;
+  int replica;
+  int pe;
+  char *key;
+};
+
+class CheckpointAtomsMsg : public CMessage_CheckpointAtomsMsg {
+public:
+  Lattice lattice;
+  int task;
+  int pid;
+  int replica;
+  int pe;
+  int berendsenPressure_count;
+  int numAtoms;
+  FullAtom *atoms;
+  char *key;
+};
+
+extern "C" {
+  void recvCheckpointReq_handler(envelope*);
+  void recvCheckpointLoad_handler(envelope*);
+  void recvCheckpointStore_handler(envelope*);
+  void recvCheckpointAck_handler(envelope*);
+}
+
 
 class ExchangeAtomsReqMsg : public CMessage_ExchangeAtomsReqMsg {
 public:
@@ -147,6 +178,15 @@ public:
   void moveAllBy(MoveAllByMsg *msg);
   void setLattice(SetLatticeMsg *msg);
 
+  void sendCheckpointReq(int pid, int remote, const char *key, int task);
+  void recvCheckpointReq(CheckpointAtomsReqMsg *msg);
+  void sendCheckpointLoad(CheckpointAtomsMsg *msg, int dst, int dstpe);
+  void recvCheckpointLoad(CheckpointAtomsMsg *msg);
+  void sendCheckpointStore(CheckpointAtomsMsg *msg, int dst, int dstpe);
+  void recvCheckpointStore(CheckpointAtomsMsg *msg);
+  void sendCheckpointAck(int pid, int dst, int dstpe);
+  void recvCheckpointAck(CheckpointAtomsReqMsg *msg);
+
   void sendExchangeReq(int pid, int src);
   void recvExchangeReq(ExchangeAtomsReqMsg *msg);
   void sendExchangeMsg(ExchangeAtomsMsg *msg, int dst, int dstpe);
@@ -158,6 +198,11 @@ private:
 
   int numAllPatches;
   int numHomePatches;
+
+  int recvCheckpointReq_index;
+  int recvCheckpointLoad_index;
+  int recvCheckpointStore_index;
+  int recvCheckpointAck_index;
 
   int recvExchangeReq_index;
   int recvExchangeMsg_index;

@@ -48,6 +48,11 @@ PatchMgr::PatchMgr()
     patchMap = PatchMap::Instance();
     patchMap->registerPatchMgr(this);
 
+    recvCheckpointReq_index = CmiRegisterHandler((CmiHandler)recvCheckpointReq_handler);
+    recvCheckpointLoad_index = CmiRegisterHandler((CmiHandler)recvCheckpointLoad_handler);
+    recvCheckpointStore_index = CmiRegisterHandler((CmiHandler)recvCheckpointStore_handler);
+    recvCheckpointAck_index = CmiRegisterHandler((CmiHandler)recvCheckpointAck_handler);
+
     recvExchangeReq_index = CmiRegisterHandler((CmiHandler)recvExchangeReq_handler);
     recvExchangeMsg_index = CmiRegisterHandler((CmiHandler)recvExchangeMsg_handler);
 
@@ -267,6 +272,124 @@ void PatchMgr::setLattice(SetLatticeMsg *msg) {
   // Must also do this for SimParameters in order for pressure profile to work!
   Node::Object()->simParameters->lattice = msg->lattice;
 }
+
+
+// initiating replica
+void PatchMgr::sendCheckpointReq(int pid, int remote, const char *key, int task) {
+  CheckpointAtomsReqMsg *msg = new (1+strlen(key),0) CheckpointAtomsReqMsg;
+  msg->pid = pid;
+  msg->pe = CkMyPe();
+  msg->replica = CmiMyPartition();
+  msg->task = task;
+  strcpy(msg->key,key);
+  envelope *env = UsrToEnv(CheckpointAtomsReqMsg::pack(msg));
+  CmiSetHandler(env,recvCheckpointReq_index);
+#if CMK_HAS_PARTITION
+  CmiInterSyncSendAndFree(CkMyPe(),remote,env->getTotalsize(),(char*)env);
+#else
+  CmiSyncSendAndFree(CkMyPe(),env->getTotalsize(),(char*)env);
+#endif
+}
+
+// responding replica
+extern "C" {
+  void recvCheckpointReq_handler(envelope *env) {
+    PatchMgr::Object()->recvCheckpointReq(CheckpointAtomsReqMsg::unpack(EnvToUsr(env)));
+  }
+}
+
+// responding replica
+void PatchMgr::recvCheckpointReq(CheckpointAtomsReqMsg *msg) {
+  int patchnode = patchMap->node(msg->pid);
+  if ( CkMyPe() != patchnode ) {
+    thisProxy[patchnode].recvCheckpointReq(msg);
+  } else {
+    HomePatch *hp = patchMap->homePatch(msg->pid);
+    if ( ! hp ) NAMD_bug("null HomePatch pointer in PatchMgr::recvCheckpointReq");
+    hp->recvCheckpointReq(msg->task, msg->key, msg->replica, msg->pe);
+    delete msg;
+  }
+}
+
+
+// responding replica
+void PatchMgr::sendCheckpointLoad(CheckpointAtomsMsg *msg, int dst, int dstpe) {
+  envelope *env = UsrToEnv(CheckpointAtomsMsg::pack(msg));
+  CmiSetHandler(env,recvCheckpointLoad_index);
+#if CMK_HAS_PARTITION
+  CmiInterSyncSendAndFree(dstpe,dst,env->getTotalsize(),(char*)env);
+#else
+  CmiSyncSendAndFree(dstpe,env->getTotalsize(),(char*)env);
+#endif
+}
+
+// initiating replica
+extern "C" {
+  void recvCheckpointLoad_handler(envelope *env) {
+    PatchMgr::Object()->recvCheckpointLoad(CheckpointAtomsMsg::unpack(EnvToUsr(env)));
+  }
+}
+
+// initiating replica
+void PatchMgr::recvCheckpointLoad(CheckpointAtomsMsg *msg) {
+  HomePatch *hp = patchMap->homePatch(msg->pid);
+  hp->recvCheckpointLoad(msg);
+}
+
+
+// initiating replica
+void PatchMgr::sendCheckpointStore(CheckpointAtomsMsg *msg, int dst, int dstpe) {
+  envelope *env = UsrToEnv(CheckpointAtomsMsg::pack(msg));
+  CmiSetHandler(env,recvCheckpointStore_index);
+#if CMK_HAS_PARTITION
+  CmiInterSyncSendAndFree(dstpe,dst,env->getTotalsize(),(char*)env);
+#else
+  CmiSyncSendAndFree(dstpe,env->getTotalsize(),(char*)env);
+#endif
+}
+
+// responding replica
+extern "C" {
+  void recvCheckpointStore_handler(envelope *env) {
+    PatchMgr::Object()->recvCheckpointStore(CheckpointAtomsMsg::unpack(EnvToUsr(env)));
+  }
+}
+
+// responding replica
+void PatchMgr::recvCheckpointStore(CheckpointAtomsMsg *msg) {
+  HomePatch *hp = patchMap->homePatch(msg->pid);
+  hp->recvCheckpointStore(msg);
+}
+
+
+// responding replica
+void PatchMgr::sendCheckpointAck(int pid, int dst, int dstpe) {
+  CheckpointAtomsReqMsg *msg = new CheckpointAtomsReqMsg;
+  msg->pid = pid;
+  envelope *env = UsrToEnv(CheckpointAtomsReqMsg::pack(msg));
+  CmiSetHandler(env,recvCheckpointAck_index);
+#if CMK_HAS_PARTITION
+  CmiInterSyncSendAndFree(dstpe,dst,env->getTotalsize(),(char*)env);
+#else
+  CmiSyncSendAndFree(dstpe,env->getTotalsize(),(char*)env);
+#endif
+}
+
+// initiating replica
+extern "C" {
+  void recvCheckpointAck_handler(envelope *env) {
+    PatchMgr::Object()->recvCheckpointAck(CheckpointAtomsReqMsg::unpack(EnvToUsr(env)));
+  }
+}
+
+// initiating replica
+void PatchMgr::recvCheckpointAck(CheckpointAtomsReqMsg *msg) {
+  HomePatch *hp = patchMap->homePatch(msg->pid);
+  if ( ! hp ) NAMD_bug("null HomePatch pointer in PatchMgr::recvCheckpointAck");
+  hp->recvCheckpointAck();
+  delete msg;
+}
+
 
 void PatchMgr::sendExchangeReq(int pid, int src) {
   ExchangeAtomsReqMsg *msg = new ExchangeAtomsReqMsg;

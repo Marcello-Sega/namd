@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2014/05/09 21:39:06 $
- * $Revision: 1.1236 $
+ * $Date: 2015/03/03 17:54:15 $
+ * $Revision: 1.1237 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -842,6 +842,10 @@ public:
 	BigReal scriptArg3;
 	BigReal scriptArg4;
 	BigReal scriptArg5;
+        int scriptIntArg1;
+        int scriptIntArg2;
+        char scriptStringArg1[128];
+        char scriptStringArg2[128];
 
 	Bool useCompressedPsf;
 	Bool genCompressedPsf;
