@@ -234,6 +234,8 @@ while {$i_run < $num_runs} {
       puts $history_file "$i_step $replica(index)<->$replica(index.$swap) $POTENTIAL $POTENTIAL2 $POTENTIAL_NEW $POTENTIAL_NEW2 $doswap"
 #     flush $history_file
     }
+  } else {
+      puts $history_file "$i_step $replica(index)<->$replica(index.$swap) $POTENTIAL $POTENTIAL2 $POTENTIAL $POTENTIAL2 0"
   }
 
   set newloc $r
