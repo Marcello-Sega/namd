@@ -523,7 +523,7 @@ The default is likely sufficient, as it is version and platform specific.}
 
 \subsubsection{MSM parameters}
 
-The multilevel summation method (MSM) 
+The multilevel summation method (MSM)~\cite{HARD2015}
 is an alternative to PME for calculating full electrostatic interactions.
 The use of the FFT in PME has two drawbacks:
 (1) it generally requires the use of periodic boundary conditions, 
@@ -545,6 +545,22 @@ Also, better parallel scaling has been observed with MSM
 when scaling a sufficiently large system to a large number of processors. 
 See the MSM research web page (http://www.ks.uiuc.edu/Research/msm/) 
 for more information. 
+
+We presently recommend using the default MSMQuality 0 
+($C^1$ cubic interpolation with $C^2$ Taylor splitting)
+which has been validated to correctly reproduce the PME results
+for water properties and
+for air--water and membrane--water interfaces~\cite{HARD2015}. 
+Although these parameters for MSM give slower performance 
+than for $C^1$ Hermite interpolation, 
+roughly half the speed, 
+there appears to be a bug with Hermite interpolation 
+which, in particular, does not give correct results 
+for the air--water interface. 
+Once the optimizations described in Ref.~\cite{HARD2015} 
+have been completed in \NAMD, 
+we expect the performance for cubic interpolation 
+to be comparable to Hermite interpolation. 
 
 For now, \NAMD's implementation of the MSM
 does not calculate the long-range electrostatic 
