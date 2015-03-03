@@ -4269,6 +4269,7 @@ obj/colvarparse.o: \
 obj/colvarproxy_namd.o: \
 	src/colvarproxy_namd.C \
 	src/common.h \
+	src/fstream_namd.h \
 	src/BackEnd.h \
 	src/InfoStream.h \
 	src/Node.h \
@@ -4315,7 +4316,6 @@ obj/colvarproxy_namd.o: \
 	inc/NamdHybridLB.decl.h \
 	inc/NamdDummyLB.decl.h \
 	src/colvarmodule.h \
-	src/fstream_namd.h \
 	src/colvartypes.h \
 	src/colvarproxy.h \
 	src/colvarvalue.h \
@@ -6370,6 +6370,30 @@ obj/DataExchanger.o: \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	src/common.h \
+	src/Node.h \
+	inc/Node.decl.h \
+	src/ScriptTcl.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/Broadcasts.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/InfoStream.h \
+	inc/BroadcastMgr.decl.h \
+	src/BroadcastClient.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	inc/DataExchanger.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/DataExchanger.o $(COPTC) src/DataExchanger.C
 obj/ParallelIOMgr.o: \
