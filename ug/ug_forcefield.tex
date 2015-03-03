@@ -546,26 +546,30 @@ when scaling a sufficiently large system to a large number of processors.
 See the MSM research web page (http://www.ks.uiuc.edu/Research/msm/) 
 for more information. 
 
-We presently recommend using the default MSMQuality 0 
-($C^1$ cubic interpolation with $C^2$ Taylor splitting)
-which has been validated to correctly reproduce the PME results
-for water properties and
-for air--water and membrane--water interfaces~\cite{HARD2015}. 
-Although these parameters for MSM give slower performance 
-than for $C^1$ Hermite interpolation, 
-roughly half the speed, 
-there appears to be a bug with Hermite interpolation 
-which, in particular, does not give correct results 
-for the air--water interface. 
-Once the optimizations described in Ref.~\cite{HARD2015} 
-have been completed in \NAMD, 
-we expect the performance for cubic interpolation 
-to be comparable to Hermite interpolation. 
+In order to use the MSM, 
+one need only specify ``MSM on'' in the configuration file. 
+For production use, 
+we presently recommend using the default 
+``MSMQuality 0''
+($C^1$ cubic interpolation with $C^2$ Taylor splitting), 
+which has been validated to correctly reproduce
+the PME results~\cite{HARD2015}. 
+At this time, we discourage use of the higher order interpolation schemes 
+(Hermite, quintic, etc.), 
+as they are still under development. 
+With cubic interpolation, MSM now gets roughly half the performance of PME. 
+Comparable performance and better scaling for MSM 
+have been observed with the optimizations described
+in Ref.~\cite{HARD2015}, which will be available shortly. 
 
 For now, \NAMD's implementation of the MSM
 does not calculate the long-range electrostatic 
 contribution to the virial, so use with a barostat for 
 constant pressure simulation is inappropriate. 
+(Note that the experiments in Ref.~\cite{HARD2015} 
+involving constant pressure simulation with MSM 
+made use of a custom version that is incompatible with 
+some other \NAMD features, so is not yet available.) 
 The performance of PME is generally still better for smaller systems 
 with smaller processor counts. 
 MSM is the only efficient method in \NAMD\ for calculating 
@@ -626,6 +630,16 @@ interpolation and splitting for MSM.  The available choices are:
 \item 3 sets $C^1$ septic ($p=7$) interpolation with $C^4$ Taylor splitting,
 \item 4 sets $C^1$ nonic ($p=9$) interpolation with $C^5$ Taylor splitting.
 \end{itemize}
+\emph{We presently recommend using the default selection, 
+which has been validated to correctly reproduce
+the PME results~\cite{HARD2015}, 
+and discourage use of the higher order interpolation schemes, 
+as they are still under development.}
+With cubic interpolation, MSM now gets roughly half the performance of PME. 
+Comparable performance and better scaling for MSM 
+have been observed with the optimizations described
+in Ref.~\cite{HARD2015}, which will be available shortly. 
+
 There is generally a tradeoff between quality and performance. 
 Empirical results show that the $C^1$ interpolation schemes offer a little
 better accuracy than the alternative
