@@ -44,6 +44,7 @@ public:
 
   static void messageEnqueueWork(Compute *);
   static void messageFinishCUDA(Compute *);
+  static void messageFinishMIC(Compute *);
   void enqueueWork(LocalWorkMsg *msg);
   void enqueueExcls(LocalWorkMsg *msg);
   void enqueueBonds(LocalWorkMsg *msg);
@@ -77,6 +78,7 @@ public:
   void finishCUDAP2(LocalWorkMsg *msg);
   void finishCUDAP3(LocalWorkMsg *msg);
   void enqueueMIC(LocalWorkMsg *msg);
+  void finishMIC(LocalWorkMsg *msg);
   void enqueueLCPO(LocalWorkMsg *msg);
 
   void mapComputes(void);

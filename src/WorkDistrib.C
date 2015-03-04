@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2015/02/13 23:22:00 $
- * $Revision: 1.1283 $
+ * $Date: 2015/03/04 23:29:02 $
+ * $Revision: 1.1284 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -2918,6 +2918,28 @@ void WorkDistrib::messageFinishCUDA(Compute *compute) {
 #endif
 }
 
+//----------------------------------------------------------------------
+void WorkDistrib::messageFinishMIC(Compute *compute) {
+  LocalWorkMsg *msg = compute->localWorkMsg;
+  int seq = compute->sequence();
+  int gbisPhase = compute->getGBISPhase();
+
+  if ( seq < 0 ) {
+    NAMD_bug("compute->sequence() < 0 in WorkDistrib::messageFinishMIC");
+  } else {
+    SET_PRIORITY(msg,seq,compute->priority());
+  }
+
+  msg->compute = compute; // pointer is valid since send is to local Pe
+  CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
+
+#ifdef NAMD_MIC
+    wdProxy[CkMyPe()].finishMIC(msg);
+#else
+    msg->compute->doWork();  MACHINE_PROGRESS
+#endif
+}
+
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
   msg->compute->doWork();  MACHINE_PROGRESS
   if ( msg->compute->localWorkMsg != msg )
@@ -3090,6 +3112,9 @@ void WorkDistrib::finishCUDAP3(LocalWorkMsg *msg) {
 }
 
 void WorkDistrib::enqueueMIC(LocalWorkMsg *msg) {
+  msg->compute->doWork();  MACHINE_PROGRESS
+}
+void WorkDistrib::finishMIC(LocalWorkMsg *msg) {
   msg->compute->doWork();  MACHINE_PROGRESS
 }
 

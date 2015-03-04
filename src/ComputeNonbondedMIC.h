@@ -74,7 +74,6 @@ class ComputeNonbondedMIC : public Compute, private ComputeNonbondedUtil {
     int doSlow, doEnergy;
     int step;
     int finishWork();  // returns true when finished, false to continue
-    void messageFinishWork();
 
     static void bind_lj_table(int deviceNum);
     static void bind_force_table(int deviceNum);

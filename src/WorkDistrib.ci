@@ -46,6 +46,7 @@ module WorkDistrib {
     entry [expedited] void finishCUDAP2(LocalWorkMsg *);
     entry [expedited] void finishCUDAP3(LocalWorkMsg *);
     entry void enqueueMIC(LocalWorkMsg *);
+    entry [expedited] void finishMIC(LocalWorkMsg *);
     entry void enqueuePme(LocalWorkMsg *);
     entry void enqueueSelfA1(LocalWorkMsg *);
     entry void enqueueSelfA2(LocalWorkMsg *);

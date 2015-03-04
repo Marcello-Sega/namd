@@ -1165,7 +1165,6 @@ void mic_check_remote_progress(void *arg, double) {
         MIC_TRACING_RECORD(MIC_EVENT_SYNC_OUTPUT_REMOTE_PRAGMA, xfer_start, xfer_end);
       #endif
     #endif
-    compute->messageFinishWork();
     //#if MIC_TRACING != 0
     //  double now = CmiWallTimer();
     //  mic_tracing_offload_end_remote = now;
@@ -1174,6 +1173,8 @@ void mic_check_remote_progress(void *arg, double) {
     //  mic_tracing_polling_count = 0;
     //#endif
     check_remote_count = 0;
+    mic_errcheck("at mic remote stream completed");
+    WorkDistrib::messageFinishMIC((ComputeNonbondedMIC *) arg);
 
     // DMK - DEBUG
     MICP("[DEBUG:%d] :: << detected remote kernel completion >>\n", CkMyPe()); MICPF;
@@ -1224,7 +1225,6 @@ void mic_check_local_progress(void *arg, double) {
         MIC_TRACING_RECORD(MIC_EVENT_SYNC_OUTPUT_LOCAL_PRAGMA, xfer_start, xfer_end);
       #endif
     #endif
-    compute->messageFinishWork();
     //#if MIC_TRACING != 0
     //  double now = CmiWallTimer();
     //  mic_tracing_offload_end_local = now;
@@ -1233,6 +1233,8 @@ void mic_check_local_progress(void *arg, double) {
     //  mic_tracing_polling_count = 0;
     //#endif
     check_local_count = 0;
+    mic_errcheck("at mic local stream completed");
+    WorkDistrib::messageFinishMIC((ComputeNonbondedMIC *) arg);
 
     // DMK - DEBUG
     MICP("[DEBUG:%d] :: << detected local kernel completion >>\n", CkMyPe()); MICPF;
@@ -2211,19 +2213,13 @@ void ComputeNonbondedMIC::recvYieldDevice(int pe) {
 }
 
 
-void ComputeNonbondedMIC::messageFinishWork() {
-
-  mic_errcheck("at mic stream completed");
-
-  for ( int i = 0; i < numSlaves; ++i ) {
-    computeMgr->sendNonbondedMICSlaveEnqueue(slaves[i],slavePes[i],sequence(),priority(),workStarted);
-  }
-
-  WorkDistrib::messageEnqueueWork(this);
-}
-
-//dtanner
 int ComputeNonbondedMIC::finishWork() {
+
+  if ( master == this ) {
+    for ( int i = 0; i < numSlaves; ++i ) {
+      computeMgr->sendNonbondedMICSlaveEnqueue(slaves[i],slavePes[i],sequence(),priority(),workStarted);
+    }
+  }
 
   //#if MIC_TRACING != 0
   //  double finishWork_start = CmiWallTimer();
