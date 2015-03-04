@@ -176,6 +176,12 @@ Additional features include:
  \item The ``\icommand{checkpoint}'' and ``revert'' commands (no arguments) allow
     a scripted simulation to save and restore (in memory) to a single prior state.
     The ``output'' and ``reinitatoms'' commands support multiple saved states using files.
+    Multiple saved states in memory are supported by the commands
+    ``\icommand{checkpointStore}'', ``\icommand{checkpointLoad}'', ``\icommand{checkpointSwap}'', and
+    ``\icommand{checkpointFree}'', all of which take a string key as an argument,
+    plus an optional second argument that is either
+    replica index (the checkpoint is stored asynchronously on the target replica)
+    or the keyword ``global'' (the target replica is computed as a hash of the key).
  \item The ``\icommand{output}'' command takes an output file basename and causes
     .coor, .vel, and .xsc files to be written with that name.
     Alternatively, ``\icommand{output withforces}'' and
@@ -223,6 +229,7 @@ Additional features include:
     for details, as well as the example scripts in Sec.~\ref{section:sample}.
 \end{itemize}
 
+
 Please note that while NAMD has traditionally allowed comments to be
 started by a \# appearing anywhere on a line, Tcl only allows comments
 to appear where a new statement could begin.  With Tcl config file
@@ -244,6 +251,68 @@ reassignTemp 40 ; # temp to reset velocities to     <- ";" is required
 NAMD has also traditionally allowed parameters to be specified as
 ``param=value'' as well as ``param value''.  This is supported, but only
 before the first ``run'' command.  For an easy life, use ``param value''.
+
+
+\subsubsection{Multiple-copy/replica-exchange scripting interface}
+\label{section:replicascripting}
+
+Multiple-copy (or replica-based) algorithms are supported by the following commands,
+which utilize two-sided semantics modeled on MPI:
+
+\begin{itemize}
+  \item \icommand{myReplica}
+  \item \icommand{numReplicas}
+  \item \icommand{replicaBarrier}
+  \item \icommand{replicaSend} {\em data} {\em dest}
+  \item \icommand{replicaRecv} {\em source}
+  \item \icommand{replicaSendrecv} {\em data} {\em dest} {\em source}
+  \item \icommand{replicaAtomSend} {\em dest}
+  \item \icommand{replicaAtomRecv} {\em source}
+  \item \icommand{replicaAtomSendrecv} {\em dest} {\em source}
+\end{itemize}
+
+The replicaSend/Sendrecv {\em data} argument may be any string,
+and hence any Tcl object (e.g., a list) that can be represented as a string.
+Data received from the {\em source} replica is returned by replicaRecv/Sendrecv.
+
+The parameter {\iparam{replicaUniformPatchGrids}} must be true for 
+atom exchange (replicaAtom...) or remote checkpointing (checkpoint... with a second argument, see below).
+
+The following additional commands utilize one-sided semantics,
+and should provide a complete feature set for running a simulation with
+fewer NAMD replica partitions than logical replicas:
+
+\begin{itemize}
+  \item \icommand{checkpointStore} {\em key} ?{\em replica} or global?
+  \item \icommand{checkpointLoad} {\em key} ?{\em replica} or global?
+  \item \icommand{checkpointSwap} {\em key} ?{\em replica} or global?
+  \item \icommand{checkpointFree} {\em key} ?{\em replica} or global?
+  \item \icommand{replicaEval} {\em replica} {\em script}
+  \item \icommand{replicaYield} ?{\em seconds}?
+\end{itemize}
+
+The {\em key} can be any string.
+By default the checkpoint is stored in the memory of the replica the command is called on.
+If you specify a replica index the checkpoint is stored asynchronously in that replica's memory.
+If you specify ``global'' a hash is computed based on the key to select the replica on which
+to store the checkpoint.
+You can have checkpoints with the same key stored on multiple replicas at once if you really want to.
+The checkpoint... commands will not return until the checkpoint operation has completed.
+
+Storing checkpoints is not atomic.
+If two replicas try to store a checkpoint with the same key on the same replica at the same
+time you may end up with a mix of the two (and probably duplicate/missing atoms).
+If one replica tries to load a checkpoint while another replica is storing it the same may happen.
+You cannot store a checkpoint on a replica until that replica has created its own patch data structures.
+This can be guaranteed by calling "run 0" and "replicaBarrier" before any remote checkpoint calls.
+
+The replicaEval command asynchronously executes its script in the top-level context
+of the target replica's Tcl interpreter and returns the result or error.
+This should be general enough to build any kind of work scheduler or shared data structure you need.
+If you want to call replicaEval repeatedly, e.g., to check if some value has been set,
+you should call ``replicaYield {\em seconds}'' in between, as this will introduce a delay but
+still enable processing of asynchronous calls from other replicas.
+
 
 \subsubsection{Required \NAMD\ configuration parameters}
 \label{section:requiredparams}
