@@ -1221,6 +1221,13 @@ int ScriptTcl::Tcl_checkpointReplica(ClientData clientData,
       return TCL_ERROR;
     }
   }
+  if ( replica != CmiMyPartition() ) {
+    if ( ! Node::Object()->simParameters->replicaUniformPatchGrids ) {
+      Tcl_SetResult(interp,"replicaUniformPatchGrids is required for checkpointing on other replicas",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  }
+
   CHECK_REPLICA(replica);
   char str[40];
   sprintf(str, "%d", replica);
