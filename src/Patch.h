@@ -193,6 +193,9 @@ class Patch
      ForceList     f[Results::maxNumForces];
      Results	   results;
 
+     int computesSortedByPriority;
+     int firstHoldableCompute;
+
      OwnerBox<Patch,CompAtom> positionBox;
      ComputePtrList              positionComputeList;
      OwnerBox<Patch,CompAtom> avgPositionBox;

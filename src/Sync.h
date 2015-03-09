@@ -18,9 +18,6 @@
 
 #include "ProcessorPrivate.h"
 #include "Sync.decl.h"
-#include "ResizeArrayPrimIter.h"
-
-typedef ResizeArrayPrimIter<Compute*> ComputePtrListIter;
 
 class Sync : public CBase_Sync
 {
@@ -28,7 +25,8 @@ private:
     struct _clist {
     int pid;
     int step;
-    ComputePtrListIter cid;
+    Compute **cbegin;
+    Compute **cend;
     int doneMigration;
     } *clist;
     const int INCREASE;
@@ -51,7 +49,7 @@ public:
     ~Sync(void);
     inline static Sync *Object() { return CkpvAccess(Sync_instance); }
     void openSync(); 
-    int holdComputes(PatchID pid, ComputePtrListIter cid, int doneMigration, int seq);
+    int holdComputes(PatchID pid, Compute **cbegin, Compute **cend, int doneMigration, int seq);
     void PatchReady(void);
 };
 

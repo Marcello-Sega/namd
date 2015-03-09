@@ -16,11 +16,19 @@
 #include "SimParameters.h"
 #include "ResizeArrayPrimIter.h"
 #include "ComputeNonbondedMICKernel.h"
+#include "Priorities.h"
 
 #include "Sync.h"
 
+#include <algorithm>
+
 typedef ResizeArrayPrimIter<Compute*> ComputePtrListIter;
 
+struct cptr_sortop_priority {
+  bool operator() (Compute *i, Compute *j) const {
+    return ( i->priority() < j->priority() );
+  }
+};
 
 //#define  DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -45,7 +53,8 @@ Patch::Patch(PatchID pd) :
    dHdrPrefixBox(this,&Patch::dHdrPrefixBoxClosed,pd,9), //end gbis
    lcpoTypeBox(this,&Patch::lcpoTypeBoxClosed,pd,10),
    forceBox(this,&Patch::forceBoxClosed,pd,1),
-   boxesOpen(0), _hasNewAtoms(0)
+   boxesOpen(0), _hasNewAtoms(0),
+   computesSortedByPriority(0), firstHoldableCompute(0)
 
    // DMK - Atom Separation (water vs. non-water)
    #if NAMD_SeparateWaters != 0
@@ -90,6 +99,10 @@ Patch::Patch(PatchID pd) :
 
 Box<Patch,CompAtom>* Patch::registerPositionPickup(Compute *cid)
 {
+   if ( computesSortedByPriority ) {
+     positionComputeList.sort();
+     computesSortedByPriority = 0;
+   }
    //DebugM(4, "registerPositionPickupa("<<patchID<<") from " << cid->cid << "\n");
    if (positionComputeList.add(cid) < 0)
    {
@@ -101,6 +114,10 @@ Box<Patch,CompAtom>* Patch::registerPositionPickup(Compute *cid)
 
 void Patch::unregisterPositionPickup(Compute *cid, Box<Patch,CompAtom> **const box)
 {
+   if ( computesSortedByPriority ) {
+     positionComputeList.sort();
+     computesSortedByPriority = 0;
+   }
    DebugM(4, "UnregisterPositionPickup from " << cid->cid << "\n");
    positionComputeList.del(cid);
    positionBox.checkIn(*box);
@@ -367,32 +384,41 @@ void Patch::positionsReady(int doneMigration)
     }
    forceBox.open(&results);
 
-   // Iterate over compute objects that need to be informed we are ready
-   ComputePtrListIter cid(positionComputeList);
-   int seq = flags.sequence;
-   // gzheng
-     if (Sync::Object()->holdComputes(patchID, cid, doneMigration, seq)) {
-       for(cid = cid.begin(); cid != cid.end(); cid++) {
-         if ( (*cid)->type() == computePmeType ) {
-	   (*cid)->patchReady(patchID,doneMigration,seq);
-           break;  // should only be one
-         }
-       }
-       return;
-     }
-
-   int compute_count = 0;
-   for(cid = cid.begin(); cid != cid.end(); cid++)
-   {
-         compute_count++;
-	 (*cid)->patchReady(patchID,doneMigration,seq);
-   }
-   if (compute_count == 0 && PatchMap::Object()->node(patchID) != CkMyPe()) {
+   if ( ! computesSortedByPriority ) {
+     if (positionComputeList.size() == 0 && PatchMap::Object()->node(patchID) != CkMyPe()) {
        iout << iINFO << "PATCH_COUNT: Patch " << patchID 
 	    << " on PE " << CkMyPe() <<" home patch " 
 	    << PatchMap::Object()->node(patchID)
 	    << " does not have any computes\n" 
 	    << endi;
+     }
+
+     cptr_sortop_priority so;
+     std::sort(positionComputeList.begin(), positionComputeList.end(), so);
+     computesSortedByPriority = 1;
+     int i;
+     for ( i=0; i<positionComputeList.size(); ++i ) {
+       if ( positionComputeList[i]->priority() > PME_PRIORITY ) break;
+     }
+     firstHoldableCompute = i;
+   }
+
+   int seq = flags.sequence;
+
+   // Iterate over compute objects that need to be informed we are ready
+   Compute **cid = positionComputeList.begin();
+   for ( int i=0; i < firstHoldableCompute; ++i, ++cid ) {
+     (*cid)->patchReady(patchID,doneMigration,seq);
+   }
+   Compute **cend = positionComputeList.end();
+
+   // gzheng
+   if (Sync::Object()->holdComputes(patchID, cid, cend, doneMigration, seq)) {
+     return;
+   }
+
+   for( ; cid != cend; cid++ ) {
+     (*cid)->patchReady(patchID,doneMigration,seq);
    }
 }
 
@@ -401,13 +427,11 @@ void Patch::positionsReady(int doneMigration)
 void Patch::gbisP2Ready() {
  ComputePtrListIter cid(positionComputeList);
 
-  int compute_count = 0;
   int seq = flags.sequence;
   for(cid = cid.begin(); cid != cid.end(); cid++) {
     if ( (*cid)->type() == computeNonbondedSelfType ||
          (*cid)->type() == computeNonbondedPairType ||
          (*cid)->type() == computeNonbondedCUDAType) {
-      compute_count++;
       (*cid)->gbisP2PatchReady(patchID,seq);
     }
   }
@@ -417,13 +441,11 @@ void Patch::gbisP3Ready() {
 
   ComputePtrListIter cid(positionComputeList);
 
-  int compute_count = 0;
   int seq = flags.sequence;
   for(cid = cid.begin(); cid != cid.end(); cid++) {
     if ( (*cid)->type() == computeNonbondedSelfType ||
          (*cid)->type() == computeNonbondedPairType ||
          (*cid)->type() == computeNonbondedCUDAType) {
-      compute_count++;
       (*cid)->gbisP3PatchReady(patchID,seq);
     }
   }

@@ -68,6 +68,12 @@ void Sync::openSync(void)
   while ( 2 * reportPe < CkNumPes() ) reportPe *= 2;
   step = -1;
   useSync = 1;
+  if ( PatchMap::Object()->numPatches() >= 4 * CkNumPes() ) useSync = 0;
+  if ( CmiNumNodes() < 2 ) useSync = 0;
+  if ( CmiNumPhysicalNodes() < 2 ) useSync = 0;
+#if defined(NAMD_CUDA) || defined(NAMD_MIC)
+  useSync = 0;
+#endif
   useProxySync = 0;
   if (useSync) {
     // if use proxy spanning tree, proxy sync is forced
@@ -96,7 +102,7 @@ void Sync::openSync(void)
 }    
 
 // called from Patch::positionsReady()
-int Sync::holdComputes(PatchID pid, ComputePtrListIter cid, int doneMigration, int seq)
+int Sync::holdComputes(PatchID pid, Compute **cbegin, Compute **cend, int doneMigration, int seq)
 {
   if (!useSync) return 0;
   if (step < 0) step = seq;
@@ -127,7 +133,8 @@ int Sync::holdComputes(PatchID pid, ComputePtrListIter cid, int doneMigration, i
     }
   }
 
-  clist[slot].cid = cid;
+  clist[slot].cbegin = cbegin;
+  clist[slot].cend = cend;
   clist[slot].pid = pid;
   clist[slot].doneMigration  = doneMigration;
   clist[slot].step = seq;
@@ -166,20 +173,16 @@ void Sync::releaseComputes()
     //	 clist[i].pid, clist[i].step,
     //      patchMap->patch(pid)->flags.sequence);
 
-    ComputePtrListIter cid = clist[i].cid;
-
-    int compute_count = 0;
-    for(cid = cid.begin(); cid != cid.end(); cid++) {
-      compute_count++;
-      if ( (*cid)->type() != computePmeType )  // PME not held
+    Compute **cend = clist[i].cend;
+    for(Compute **cid = clist[i].cbegin; cid != cend; cid++) {
+      if ( (*cid)->type() == computePmeType ) continue;  // PME not held
+#ifdef NAMD_CUDA
+      if ( (*cid)->type() == computeNonbondedCUDAType ) continue;  // PME not held
+#endif
+#ifdef NAMD_MIC
+      if ( (*cid)->type() == computeNonbondedMICType ) continue;  // PME not held
+#endif
       (*cid)->patchReady(pid,clist[i].doneMigration,step);
-    }
-    if (compute_count == 0 && patchMap->node(pid) != CkMyPe()) {
-	   iout << iINFO << "PATCH_COUNT-Sync step " << step
-		<< "]: Patch " << pid << " on PE " 
-		<< CkMyPe() <<" home patch " 
-		<< patchMap->node(pid) << " does not have any computes\n" 
-		<< endi;
     }
     pid = -1;
   }
