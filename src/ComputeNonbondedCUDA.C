@@ -1091,6 +1091,8 @@ static __thread double local_submit_time;
 
 #define CUDA_POLL(FN,ARG) CcdCallFnAfter(FN,ARG,0.1)
 
+extern "C" void CcdCallBacksReset(void *ignored,double curWallTime);  // fix Charm++
+
 #ifdef PRINT_GBIS
 #define GBISP(...) CkPrintf(__VA_ARGS__);
 #else
@@ -1127,6 +1129,7 @@ void cuda_check_remote_progress(void *arg, double walltime) {
   } else if ( check_local_count ) {
     NAMD_bug("nonzero check_local_count in cuda_check_remote_progress");
   } else {
+    CcdCallBacksReset(0,walltime);  // fix Charm++
     CUDA_POLL(cuda_check_remote_progress, arg);
   }
 }
@@ -1154,6 +1157,7 @@ void cuda_check_local_progress(void *arg, double walltime) {
   } else if ( check_remote_count ) {
     NAMD_bug("nonzero check_remote_count in cuda_check_local_progress");
   } else {
+    CcdCallBacksReset(0,walltime);  // fix Charm++
     CUDA_POLL(cuda_check_local_progress, arg);
   }
 }
@@ -1163,6 +1167,7 @@ void cuda_check_local_progress(void *arg, double walltime) {
 void cuda_check_progress(void *arg, double walltime) {
   if ( cuda_stream_finished() ) {
     kernel_time = walltime - kernel_time;
+    CcdCallBacksReset(0,walltime);  // fix Charm++
     CUDA_POLL(ccd_index);
     // ((ComputeNonbondedCUDA *) arg)->finishWork();
     WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
@@ -1739,7 +1744,7 @@ GBISP("doWork[%d] accessing arrays for P%d\n",CkMyPe(),gbisPhase);
   if ( gpu_is_mine || ! doSlow ) recvYieldDevice(-1);
 }
 
-void cuda_check_remote_calc(void *arg, double /* walltime */) {
+void cuda_check_remote_calc(void *arg, double walltime) {
   // in theory we only need end_remote_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_remote_calc) == cudaSuccess ) {
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
@@ -1747,11 +1752,12 @@ void cuda_check_remote_calc(void *arg, double /* walltime */) {
     computeMgr->sendYieldDevice(next_pe_sharing_gpu);
 // CkPrintf("Pe %d yielded to %d after remote calc\n", CkMyPe(), next_pe_sharing_gpu);
   } else {
+    CcdCallBacksReset(0,walltime);  // fix Charm++
     CUDA_POLL(cuda_check_remote_calc, arg);
   }
 }
 
-void cuda_check_local_calc(void *arg, double /* walltime */) {
+void cuda_check_local_calc(void *arg, double walltime) {
   // in theory we only need end_local_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_local_calc) == cudaSuccess ) {
   if ( cudaEventQuery(end_local_download) == cudaSuccess ) {
@@ -1759,6 +1765,7 @@ void cuda_check_local_calc(void *arg, double /* walltime */) {
     computeMgr->sendYieldDevice(next_pe_sharing_gpu);
 // CkPrintf("Pe %d yielded to %d after local calc\n", CkMyPe(), next_pe_sharing_gpu);
   } else {
+    CcdCallBacksReset(0,walltime);  // fix Charm++
     CUDA_POLL(cuda_check_local_calc, arg);
   }
 }
@@ -1782,6 +1789,12 @@ workStarted, gbisPhase, kernel_launch_state, pe)
   latc.z = lattice.c().z;
   SimParameters *simParams = Node::Object()->simParameters;
 
+  double walltime;
+  if ( kernel_launch_state == 1 || kernel_launch_state == 2 ) {
+    walltime = CkWallTimer();
+    CcdCallBacksReset(0,walltime);  // fix Charm++
+  }
+
   switch ( kernel_launch_state ) {
 ////////////////////////////////////////////////////////////
 // Remote
@@ -1789,7 +1802,7 @@ workStarted, gbisPhase, kernel_launch_state, pe)
 GBISP("C.N.CUDA[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
     ++kernel_launch_state;
     gpu_is_mine = 0;
-    remote_submit_time = CkWallTimer();
+    remote_submit_time = walltime;
 
     if (!simParams->GBISOn || gbisPhase == 1) {
     // cudaEventRecord(start_upload, stream);

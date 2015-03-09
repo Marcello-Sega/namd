@@ -2404,6 +2404,8 @@ void ComputePmeMgr::recvAck(PmeAckMsg *msg) {
 #define CUDA_POLL(FN,ARG) CcdCallFnAfter(FN,ARG,0.1)
 #define EVENT_STRIDE 10
 
+extern "C" void CcdCallBacksReset(void *ignored,double curWallTime);  // fix Charm++
+
 void cuda_check_pme_forces(void *arg, double walltime) {
   ComputePmeMgr *argp = (ComputePmeMgr *) arg;
 
@@ -2437,6 +2439,7 @@ void cuda_check_pme_forces(void *arg, double walltime) {
     break; // call again
   }
  } // while ( 1 )
+ CcdCallBacksReset(0,walltime);  // fix Charm++
  CUDA_POLL(cuda_check_pme_forces, arg);
 }
 #endif // NAMD_CUDA
@@ -2638,6 +2641,7 @@ void ComputePmeMgr::ungridCalc(void) {
 
 void ComputePmeMgr::pollForcesReady() {
 #ifdef NAMD_CUDA
+  CcdCallBacksReset(0,CmiWallTimer());  // fix Charm++
   CUDA_POLL(cuda_check_pme_forces,this);
 #else
   NAMD_bug("ComputePmeMgr::pollForcesReady() called in non-CUDA build.");
@@ -3387,6 +3391,7 @@ void cuda_check_pme_charges(void *arg, double walltime) {
     cuda_errcheck(errmsg);
     NAMD_die(errmsg);
   } else {
+    CcdCallBacksReset(0,walltime);  // fix Charm++
     CUDA_POLL(cuda_check_pme_charges, arg);
   }
 }
@@ -3441,6 +3446,7 @@ void ComputePmeMgr::sendChargeGridReady() {
 
 void ComputePmeMgr::pollChargeGridReady() {
 #ifdef NAMD_CUDA
+  CcdCallBacksReset(0,CmiWallTimer());  // fix Charm++
   CUDA_POLL(cuda_check_pme_charges,this);
 #else
   NAMD_bug("ComputePmeMgr::pollChargeGridReady() called in non-CUDA build.");
