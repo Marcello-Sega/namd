@@ -175,13 +175,6 @@ void Sync::releaseComputes()
 
     Compute **cend = clist[i].cend;
     for(Compute **cid = clist[i].cbegin; cid != cend; cid++) {
-      if ( (*cid)->type() == computePmeType ) continue;  // PME not held
-#ifdef NAMD_CUDA
-      if ( (*cid)->type() == computeNonbondedCUDAType ) continue;  // PME not held
-#endif
-#ifdef NAMD_MIC
-      if ( (*cid)->type() == computeNonbondedMICType ) continue;  // PME not held
-#endif
       (*cid)->patchReady(pid,clist[i].doneMigration,step);
     }
     pid = -1;
