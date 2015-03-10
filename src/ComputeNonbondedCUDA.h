@@ -5,6 +5,8 @@ class ComputeMgr;
 
 class ComputeNonbondedCUDAKernel;
 
+class FinishWorkMsg;
+
 class float4;
 
 int cuda_device_pe();
@@ -29,8 +31,13 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     int numFreeAtoms;
     int refCount;
     int isLocal;
+    int isSameNode;
+    int isSamePhysicalNode;
+    int reversePriorityRankInPe;
     int hostPe;
     PatchID patchID;
+    ComputeNonbondedCUDA *slave;
+    FinishWorkMsg *msg;
     Patch *p;
     Box<Patch,CompAtom> *positionBox;
     Box<Patch,Results> *forceBox;
@@ -71,6 +78,10 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     int step;
     int doExclusionCheck;
     int finishWork();  // returns true when finished, false to continue
+    void finishReductions();
+    void finishPatch(int);
+    void finishPatch(patch_record&);
+    void messageFinishPatch(int);
 
     static void build_lj_table();
     static void build_force_table();
@@ -111,6 +122,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
 
     int atomsChanged;
     int computesChanged;
+    int patchPairsReordered;
 
     int pairlistsValid;
     float pairlistTolerance;

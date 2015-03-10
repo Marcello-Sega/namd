@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2015/03/04 23:29:02 $
- * $Revision: 1.1284 $
+ * $Date: 2015/03/10 23:32:44 $
+ * $Revision: 1.1285 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -3098,6 +3098,11 @@ void WorkDistrib::enqueueCUDAP2(LocalWorkMsg *msg) {
 void WorkDistrib::enqueueCUDAP3(LocalWorkMsg *msg) {
   msg->compute->doWork();  MACHINE_PROGRESS
 }
+
+void WorkDistrib::finishCUDAPatch(FinishWorkMsg *msg) {
+  msg->compute->finishPatch(msg->data);
+}
+
 void WorkDistrib::finishCUDA(LocalWorkMsg *msg) {
   msg->compute->doWork();  MACHINE_PROGRESS
   // ComputeNonbondedCUDA *c = msg->compute;

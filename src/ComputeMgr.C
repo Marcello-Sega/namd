@@ -1248,6 +1248,14 @@ void ComputeMgr::sendNonbondedCUDASlaveEnqueue(ComputeNonbondedCUDA *c, int pe, 
   wdProxy[pe].enqueueCUDA(msg);
 }
 
+void ComputeMgr::sendNonbondedCUDASlaveEnqueuePatch(ComputeNonbondedCUDA *c, int pe, int seq, int prio, int data, FinishWorkMsg *msg) {
+  msg->compute = c;
+  msg->data = data;
+  SET_PRIORITY(msg,seq,prio);
+  CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
+  wdProxy[pe].finishCUDAPatch(msg);
+}
+
 class NonbondedMICSlaveMsg : public CMessage_NonbondedMICSlaveMsg {
 public:
   int index;

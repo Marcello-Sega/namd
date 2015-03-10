@@ -40,6 +40,7 @@ class ComputeEwaldMsg;
 class ComputeNonbondedCUDA;
 class NonbondedCUDASlaveMsg;
 class NonbondedCUDASkipMsg;
+class FinishWorkMsg;
 
 class ComputeNonbondedMIC;
 class NonbondedMICSlaveMsg;
@@ -108,6 +109,7 @@ public:
   void sendNonbondedCUDASlaveSkip(ComputeNonbondedCUDA *c, int);
   void recvNonbondedCUDASlaveSkip(NonbondedCUDASkipMsg *);
   void sendNonbondedCUDASlaveEnqueue(ComputeNonbondedCUDA *c, int,int,int,int);
+  void sendNonbondedCUDASlaveEnqueuePatch(ComputeNonbondedCUDA *c, int,int,int,int, FinishWorkMsg*);
   void sendCreateNonbondedMICSlave(int,int);
   void recvCreateNonbondedMICSlave(NonbondedMICSlaveMsg *);
   void sendNonbondedMICSlaveReady(int,int,int,int);

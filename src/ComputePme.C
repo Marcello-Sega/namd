@@ -721,10 +721,22 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
     cuda_lock = CmiCreateLock();
   }
 
+#if CUDA_VERSION >= 5050
+  int leastPriority, greatestPriority;
+  cudaDeviceGetStreamPriorityRange(&leastPriority, &greatestPriority);
+  cuda_errcheck("in cudaDeviceGetStreamPriorityRange");
+  //if ( CkMyNode() == 0 ) {
+  //  CkPrintf("Pe %d PME CUDA stream priority range %d %d\n", CkMyPe(), leastPriority, greatestPriority);
+  //}
+#define CUDA_STREAM_CREATE(X) cudaStreamCreateWithPriority(X,cudaStreamDefault,greatestPriority)
+#else
+#define CUDA_STREAM_CREATE(X) cudaStreamCreate(X)
+#endif
+
   stream = 0;
   for ( int i=0; i<NUM_STREAMS; ++i ) {
 #if 1
-    cudaStreamCreate(&streams[i]);
+    CUDA_STREAM_CREATE(&streams[i]);
     cuda_errcheck("cudaStreamCreate");
 #else
   streams[i] = 0;  // XXXX Testing!!!

@@ -107,3 +107,7 @@ void Compute::doWork() {
     DebugM(5,"Default Compute::doWork() called.\n");
 }
 
+void Compute::finishPatch(int) {
+    DebugM(5,"Default Compute::finishPatch() called.\n");
+}
+

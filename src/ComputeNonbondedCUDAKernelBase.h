@@ -83,9 +83,14 @@ __global__ static void NAME(dev_nonbonded)(
 	float *slow_virial_buffers,
         const unsigned int *overflow_exclusions,
         unsigned int *force_list_counters,
+        int block_begin,
+        int total_block_count,
+        int *block_order,
+        int *force_ready_queue,
         const force_list *force_lists,
         float4 *forces, float *virials,
         float4 *slow_forces, float *slow_virials,
+        int force_lists_size,
         int lj_table_size,
         float3 lata, float3 latb, float3 latc,
 	float cutoff2, float plcutoff2, int doSlow) {
@@ -150,7 +155,7 @@ __global__ static void NAME(dev_nonbonded)(
 
   if ( threadIdx.x < PATCH_PAIR_USED ) {
     unsigned int tmp = ((unsigned int*)patch_pairs)[
-			PATCH_PAIR_SIZE*blockIdx.x+threadIdx.x];
+			PATCH_PAIR_SIZE*(block_begin+blockIdx.x)+threadIdx.x];
     pp.i[threadIdx.x] = tmp;
   }
 
@@ -485,7 +490,7 @@ __global__ static void NAME(dev_nonbonded)(
   __shared__ bool sumForces;
 
   if (threadIdx.x == 0) {
-    int fli = myPatchPair.patch1_force_list_index;
+    int fli = myPatchPair.patch1_force_list_index + 3;
     int fls = myPatchPair.patch1_force_list_size;
     int old = atomicInc(force_list_counters+fli,fls-1);
     sumForces = ( old == fls - 1 );
@@ -503,9 +508,33 @@ __global__ static void NAME(dev_nonbonded)(
          atoms,force_lists,slow_force_buffers,
          slow_virial_buffers,slow_forces,slow_virials);
     }
+
+   if ( force_ready_queue ) {
+#if __CUDA_ARCH__ < 200
+    __threadfence();
+#else
+    __threadfence_system();
+#endif
+    __syncthreads();
+    if (threadIdx.x == 0) {
+      int old = atomicInc(force_list_counters,force_lists_size-1);
+      force_ready_queue[old] = myPatchPair.patch1_force_list_index;
+#if __CUDA_ARCH__ < 200
+    __threadfence();
+#else
+    __threadfence_system();
+#endif
+    }
+   }
   }
 
  } // end of force sum
+
+    if (threadIdx.x == 0 && block_order) {
+      int old = atomicInc(force_list_counters+1,total_block_count-1);
+      block_order[old] = block_begin + blockIdx.x;
+    }
+
 }
 
 

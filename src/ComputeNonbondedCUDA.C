@@ -15,6 +15,7 @@
 #include "LJTable.h"
 #include "ObjectArena.h"
 #include "SortAtoms.h"
+#include "Priorities.h"
 #include <algorithm>
 
 #include "NamdTypes.h"
@@ -27,6 +28,8 @@
 #ifdef WIN32
 #define __thread __declspec(thread)
 #endif
+
+extern __thread int max_grid_size;
 
 extern __thread cudaStream_t stream;
 extern __thread cudaStream_t stream2;
@@ -72,6 +75,8 @@ char *devicelist;
 static __thread int usedevicelist;
 static __thread int ignoresharing;
 static __thread int mergegrids;
+static __thread int nomergegrids;
+static __thread int nostreaming;
 
 void cuda_getargs(char **argv) {
   devicelist = 0;
@@ -79,6 +84,9 @@ void cuda_getargs(char **argv) {
 	"comma-delimited list of CUDA device numbers such as 0,2,1,2");
   ignoresharing = CmiGetArgFlag(argv, "+ignoresharing");
   mergegrids = CmiGetArgFlag(argv, "+mergegrids");
+  nomergegrids = CmiGetArgFlag(argv, "+nomergegrids");
+  if ( mergegrids && nomergegrids ) NAMD_die("Do not specify both +mergegrids and +nomergegrids");
+  nostreaming = CmiGetArgFlag(argv, "+nostreaming");
 }
 
 static __thread int shared_gpu;
@@ -765,6 +773,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
 
   atomsChanged = 1;
   computesChanged = 1;
+  patchPairsReordered = 1;
 
   pairlistsValid = 0;
   pairlistTolerance = 0.;
@@ -787,6 +796,9 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   }
   masterPe = CkMyPe();
 
+  const bool streaming = ! (nostreaming || params->GBISOn);
+  if ( streaming && ! shared_gpu && ! nomergegrids ) mergegrids = 1;
+
 #if CUDA_VERSION >= 5050
   int leastPriority, greatestPriority;
   cudaDeviceGetStreamPriorityRange(&leastPriority, &greatestPriority);
@@ -798,6 +810,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
       cuda_errcheck("cudaGetDevice");
       CkPrintf("CUDA device %d stream priority range %d %d\n", dev, leastPriority, greatestPriority);
     }
+    if ( mergegrids && params->PMEOn && params->PMEOffload ) { greatestPriority = leastPriority; }
     cudaStreamCreateWithPriority(&stream,cudaStreamDefault,greatestPriority);
     cudaStreamCreateWithPriority(&stream2,cudaStreamDefault,leastPriority);
   } else
@@ -811,7 +824,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, dev);
     cuda_errcheck("cudaGetDeviceProperties");
-    if ( deviceProp.concurrentKernels ) {
+    if ( deviceProp.concurrentKernels && deviceProp.major > 2 ) {
       if ( CkMyNode() == 0 ) CkPrintf("CUDA device %d supports concurrent kernels.\n", dev);
       cudaStreamCreate(&stream2);
     } else {
@@ -821,6 +834,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   cuda_errcheck("cudaStreamCreate");
 
   cuda_init();
+  if ( max_grid_size < 65535 ) NAMD_bug("bad CUDA max_grid_size");
   build_exclusions();
   // cudaEventCreate(&start_upload);
   cudaEventCreateWithFlags(&start_calc,cudaEventDisableTiming);
@@ -842,13 +856,15 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
   computesChanged = 1;
   patch_record &pr = patchRecords[pid];
   if ( pr.refCount == 0 ) {
+    pr.isSamePhysicalNode = ( CmiPhysicalNodeID(patchMap->node(pid)) == CmiPhysicalNodeID(CkMyPe()) );
+    pr.isSameNode = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
     if ( mergegrids ) {
       pr.isLocal = 0;
     } else if ( CkNumNodes() < 2 ) {
       pr.isLocal = 1 & ( 1 ^ patchMap->index_a(pid) ^
          patchMap->index_b(pid) ^ patchMap->index_c(pid) );
     } else {
-      pr.isLocal = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
+      pr.isLocal = pr.isSameNode;
     }
     if ( pr.isLocal ) {
       localActivePatches.add(pid);
@@ -886,6 +902,8 @@ void ComputeNonbondedCUDA::registerPatches() {
     int pid = pids[i];
     patch_record &pr = recs[pid];
     if ( pr.hostPe == CkMyPe() ) {
+      pr.slave = this;
+      pr.msg = new (PRIORITY_SIZE) FinishWorkMsg;
       //if ( ! reduction ) {
       //  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
       //}
@@ -914,6 +932,15 @@ void ComputeNonbondedCUDA::registerPatches() {
   CkPrintf("Pe %d hosts %d local and %d remote patches for pe %d\n", CkMyPe(), localHostedPatches.size(), remoteHostedPatches.size(), masterPe);
 }
 
+struct pid_sortop_reverse_priority {
+  bool operator() (int pidj, int pidi) {  // i and j reversed
+    int ppi = PATCH_PRIORITY(pidi);
+    int ppj = PATCH_PRIORITY(pidj);
+    if ( ppi != ppj ) return ppi < ppj;
+    return pidi < pidj;
+  }
+};
+
 void ComputeNonbondedCUDA::assignPatches() {
 
   int *pesOnNodeSharingDevice = new int[CkMyNodeSize()];
@@ -931,6 +958,27 @@ void ComputeNonbondedCUDA::assignPatches() {
 
   if ( npatches ) {
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+  }
+
+  // calculate priority rank of local home patch within pe
+  {
+    ResizeArray< ResizeArray<int> > homePatchByRank(CkMyNodeSize());
+    for ( int i=0; i<npatches; ++i ) {
+      int pid = activePatches[i];
+      int homePe = patchMap->node(pid);
+      if ( CkNodeOf(homePe) == CkMyNode() ) {
+        homePatchByRank[CkRankOf(homePe)].add(pid);
+      }
+    }
+    for ( int i=0; i<CkMyNodeSize(); ++i ) {
+      pid_sortop_reverse_priority so;
+      std::sort(homePatchByRank[i].begin(),homePatchByRank[i].end(),so);
+      int masterBoost = ( CkMyRank() == i ? 2 : 0 );
+      for ( int j=0; j<homePatchByRank[i].size(); ++j ) {
+        int pid = homePatchByRank[i][j];
+        patchRecords[pid].reversePriorityRankInPe = j + masterBoost;
+      }
+    }
   }
 
   int *count = new int[npatches];
@@ -1073,6 +1121,10 @@ static __thread int num_virials;
 static __thread int num_virials_allocated;
 static __thread float *virials;
 static __thread float *slow_virials;
+static __thread int *block_order;
+static __thread int *force_ready_queue;
+static __thread int force_ready_queue_size;
+static __thread int force_ready_queue_next;
 static __thread float *energy_gbis;
 
 //GBIS host pointers
@@ -1100,8 +1152,45 @@ extern "C" void CcdCallBacksReset(void *ignored,double curWallTime);  // fix Cha
 #endif
 
 #define count_limit 1000000
+static __thread int check_count;
 static __thread int check_remote_count;
 static __thread int check_local_count;
+
+void cuda_check_progress(void *arg, double walltime) {
+  CUDA_TRACE_POLL_REMOTE;
+
+  int flindex;
+  int poll_again = 1;
+  while ( -1 != (flindex = force_ready_queue[force_ready_queue_next]) ) {
+    // CkPrintf("Pe %d forces ready %d is index %d at %lf\n",
+    //           CkMyPe(), force_ready_queue_next, flindex, walltime);
+    force_ready_queue[force_ready_queue_next] = -1;
+    ++force_ready_queue_next;
+    check_count = 0;
+    if ( force_ready_queue_next == force_ready_queue_size ) {
+      poll_again = 0;
+      CUDA_TRACE_LOCAL(kernel_time,walltime);
+      kernel_time = walltime - kernel_time;
+      // need to guarantee this finishes before the last patch message!
+      ((ComputeNonbondedCUDA *) arg)->workStarted = 0;
+      ((ComputeNonbondedCUDA *) arg)->finishReductions();
+    }
+    ((ComputeNonbondedCUDA *) arg)->messageFinishPatch(flindex);
+    if ( force_ready_queue_next == force_ready_queue_size ) break;
+  }
+  if ( ++check_count >= count_limit ) {
+    char errmsg[256];
+    sprintf(errmsg,"cuda_check_progress polled %d times over %f s on step %d",
+            check_count, walltime - remote_submit_time,
+            ((ComputeNonbondedCUDA *) arg)->step);
+    cuda_errcheck(errmsg);
+    NAMD_die(errmsg);
+  }
+  if ( poll_again ) {
+    CcdCallBacksReset(0,walltime);  // fix Charm++
+    CUDA_POLL(cuda_check_progress, arg);
+  }
+}
 
 void cuda_check_remote_progress(void *arg, double walltime) {
 
@@ -1179,9 +1268,9 @@ void ComputeNonbondedCUDA::atomUpdate() { atomsChanged = 1; }
 
 static __thread int kernel_launch_state = 0;
 
-struct cr_sortop {
+struct cr_sortop_distance {
   const Lattice &l;
-  cr_sortop(const Lattice &lattice) : l(lattice) { }
+  cr_sortop_distance(const Lattice &lattice) : l(lattice) { }
   bool operator() (ComputeNonbondedCUDA::compute_record i,
 			ComputeNonbondedCUDA::compute_record j) {
     Vector a = l.a();
@@ -1190,6 +1279,35 @@ struct cr_sortop {
     BigReal ri = (i.offset.x * a + i.offset.y * b + i.offset.z * c).length2();
     BigReal rj = (j.offset.x * a + j.offset.y * b + j.offset.z * c).length2();
     return ( ri < rj );
+  }
+};
+
+struct cr_sortop_reverse_priority {
+  cr_sortop_distance &distop;
+  const ComputeNonbondedCUDA::patch_record *pr;
+  cr_sortop_reverse_priority(cr_sortop_distance &sod,
+       const ComputeNonbondedCUDA::patch_record *patchrecs) : distop(sod), pr(patchrecs) { }
+  bool operator() (ComputeNonbondedCUDA::compute_record j,
+			ComputeNonbondedCUDA::compute_record i) {  // i and j reversed
+    const ComputeNonbondedCUDA::patch_record &pri = pr[i.pid[0]];
+    const ComputeNonbondedCUDA::patch_record &prj = pr[j.pid[0]];
+    if ( pri.isSamePhysicalNode && ! prj.isSamePhysicalNode ) return 0;
+    if ( prj.isSamePhysicalNode && ! pri.isSamePhysicalNode ) return 1;
+    if ( pri.isSameNode && ! prj.isSameNode ) return 0;
+    if ( prj.isSameNode && ! pri.isSameNode ) return 1;
+    int pidi = pri.patchID;
+    int pidj = prj.patchID;
+    if ( pri.isSameNode ) {  // and prj.isSameNode
+      int rpri = pri.reversePriorityRankInPe;
+      int rprj = prj.reversePriorityRankInPe;
+      if ( rpri != rprj ) return rpri > rprj;
+      return sortop_bitreverse(CkRankOf(pri.hostPe),CkRankOf(prj.hostPe));
+    }
+    int ppi = PATCH_PRIORITY(pidi);
+    int ppj = PATCH_PRIORITY(pidj);
+    if ( ppi != ppj ) return ppi < ppj;
+    if ( pidi != pidj ) return pidi < pidj;
+    return distop(i,j);
   }
 };
 
@@ -1266,16 +1384,16 @@ GBISP("opened GBIS boxes");
   // message masterPe
   computeMgr->sendNonbondedCUDASlaveReady(masterPe,
 			hostedPatches.size(),atomsChanged,sequence());
+  atomsChanged = 0;
 
   workStarted = 1;
-  basePriority = COMPUTE_PROXY_PRIORITY;
 
   return 1;
 }
 
 void ComputeNonbondedCUDA::doWork() {
-GBISP("C.N.CUDA[%d]::doWork: seq %d, phase %d, workStarted %d\n", \
-CkMyPe(), sequence(), gbisPhase, workStarted);
+GBISP("C.N.CUDA[%d]::doWork: seq %d, phase %d, workStarted %d, atomsChanged %d\n", \
+CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
 
   PATCH_PAIRS_REF;
   FORCE_LISTS_REF;
@@ -1326,6 +1444,10 @@ CkMyPe(), sequence(), gbisPhase, workStarted);
         cudaFreeHost(virials);
         cudaFreeHost(energy_gbis);
         cuda_errcheck("in cudaFreeHost virials");
+        cudaFreeHost(force_ready_queue);
+        cuda_errcheck("in cudaFreeHost force_ready_queue");
+        cudaFreeHost(block_order);
+        cuda_errcheck("in cudaFreeHost block_order");
       }
       num_virials_allocated = 1.1 * num_virials + 1;
       cudaHostAlloc((void**)&virials,2*16*sizeof(float)*num_virials_allocated,cudaHostAllocMapped);
@@ -1334,7 +1456,13 @@ CkMyPe(), sequence(), gbisPhase, workStarted);
         energy_gbis[i] = 0.f;
       cuda_errcheck("in cudaHostAlloc virials");
       slow_virials = virials + 16*num_virials;
+      cudaHostAlloc((void**)&force_ready_queue,sizeof(int)*num_virials_allocated,cudaHostAllocMapped /* |cudaHostAllocWriteCombined */);
+      cuda_errcheck("in cudaHostAlloc force_ready_queue");
+      for ( int k=0; k<num_virials_allocated; ++k ) { force_ready_queue[k] = -1; }
+      cudaHostAlloc((void**)&block_order,sizeof(int)*2*(localComputeRecords.size()+remoteComputeRecords.size()),cudaHostAllocMapped);
+      cuda_errcheck("in cudaHostAlloc block_order");
     }
+    force_ready_queue_size = num_virials;
 
     int *ap = activePatches.begin();
     for ( int i=0; i<localActivePatches.size(); ++i ) {
@@ -1345,19 +1473,40 @@ CkMyPe(), sequence(), gbisPhase, workStarted);
     }
 
     // sort computes by distance between patches
-    cr_sortop so(lattice);
+    cr_sortop_distance so(lattice);
     std::stable_sort(localComputeRecords.begin(),localComputeRecords.end(),so);
     std::stable_sort(remoteComputeRecords.begin(),remoteComputeRecords.end(),so);
+
+    const bool streaming = ! (nostreaming || simParams->GBISOn);
+
+    if ( streaming ) {
+      // iout << "Reverse-priority sorting...\n" << endi;
+      cr_sortop_reverse_priority sorp(so,patchRecords.begin());
+      std::stable_sort(localComputeRecords.begin(),localComputeRecords.end(),sorp);
+      std::stable_sort(remoteComputeRecords.begin(),remoteComputeRecords.end(),sorp);
+      patchPairsReordered = 0;
+      // int len = remoteComputeRecords.size();
+      // for ( int i=0; i<len; ++i ) {
+      //   iout << "reverse_order " << i << " " << remoteComputeRecords[i].pid[0] << "\n";
+      // }
+      // int len2 = localComputeRecords.size();
+      // for ( int i=0; i<len2; ++i ) {
+      //   iout << "reverse_order " << (i+len) << " " << localComputeRecords[i].pid[0] << "\n";
+      // }
+      // iout << endi;
+    } else {
+      patchPairsReordered = 1;
+    }
  
     int nlc = localComputeRecords.size();
     int nrc = remoteComputeRecords.size();
     computeRecords.resize(nlc+nrc);
     compute_record *cr = computeRecords.begin();
-    for ( int i=0; i<nlc; ++i ) {
-      *(cr++) = localComputeRecords[i];
-    }
     for ( int i=0; i<nrc; ++i ) {
       *(cr++) = remoteComputeRecords[i];
+    }
+    for ( int i=0; i<nlc; ++i ) {
+      *(cr++) = localComputeRecords[i];
     }
 
     force_lists.resize(npatches);
@@ -1393,6 +1542,27 @@ CkMyPe(), sequence(), gbisPhase, workStarted);
 	localComputeRecords.size(), remoteComputeRecords.size());
    }
   }  // computesChanged
+  else if ( ! patchPairsReordered ) {
+    patchPairsReordered = 1;
+    int len = patch_pairs.size();
+    int nlc = localComputeRecords.size();
+    int nrc = remoteComputeRecords.size();
+    if ( len != nlc + nrc ) NAMD_bug("array size mismatch in ComputeNonbondedCUDA reordering");
+    ResizeArray<ComputeNonbondedCUDA::compute_record> new_computeRecords(len);
+    ResizeArray<patch_pair> new_patch_pairs(len);
+    int irc=nrc;
+    int ilc=len;
+    for ( int i=0; i<len; ++i ) {
+      int boi = block_order[i];
+      int dest;
+      if ( boi < nrc ) { dest = --irc; } else { dest = --ilc; }
+      new_computeRecords[dest] = computeRecords[boi];
+      new_patch_pairs[dest] = patch_pairs[boi];
+    }
+    if ( irc != 0 || ilc != nrc ) NAMD_bug("block index mismatch in ComputeNonbondedCUDA reordering");
+    computeRecords.swap(new_computeRecords);
+    patch_pairs.swap(new_patch_pairs);
+  }
 
   int istart = 0;
   int flstart = 0;
@@ -1789,6 +1959,8 @@ workStarted, gbisPhase, kernel_launch_state, pe)
   latc.z = lattice.c().z;
   SimParameters *simParams = Node::Object()->simParameters;
 
+  const bool streaming = ! (nostreaming || simParams->GBISOn);
+
   double walltime;
   if ( kernel_launch_state == 1 || kernel_launch_state == 2 ) {
     walltime = CkWallTimer();
@@ -1815,19 +1987,20 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
         cuda_bind_GBIS_intRad(intRad0H, intRadSH);
       }
     }
+    atomsChanged = 0;
     cuda_bind_atoms(atoms);
     cuda_bind_forces(forces, slow_forces);
-    cuda_bind_virials(virials);
+    cuda_bind_virials(virials, force_ready_queue, block_order);
     cuda_bind_GBIS_energy(energy_gbis);
-    cudaEventRecord(start_calc, stream);
+    if ( stream2 != stream ) cudaEventRecord(start_calc, stream);
     //call CUDA Kernels
     cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
-	localComputeRecords.size(),remoteComputeRecords.size(),
-	localActivePatches.size(),remoteActivePatches.size(),
-	doSlow, doEnergy, usePairlists, savePairlists, stream);
+	0,remoteComputeRecords.size(),
+	remoteComputeRecords.size()+localComputeRecords.size(),
+	doSlow, doEnergy, usePairlists, savePairlists, streaming, ! patchPairsReordered, stream);
     if (simParams->GBISOn) {
       cuda_GBIS_P1(
-        localComputeRecords.size(),remoteComputeRecords.size(),
+        0,remoteComputeRecords.size(),
         localActivePatches.size(),remoteActivePatches.size(),
         simParams->alpha_cutoff-simParams->fsMax,
         simParams->coulomb_radius_offset,
@@ -1835,8 +2008,15 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
     }
     //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
     //    num_local_atom_records,num_remote_atom_records);
-    cudaEventRecord(end_remote_download, stream);
-    CUDA_POLL(cuda_check_remote_progress,this);
+    if ( ( ! streaming ) || ( shared_gpu && ! mergegrids ) ) {
+      cudaEventRecord(end_remote_download, stream);
+    }
+    if ( streaming ) {
+      force_ready_queue_next = 0;
+      CUDA_POLL(cuda_check_progress,this);
+    } else {
+      CUDA_POLL(cuda_check_remote_progress,this);
+    }
     if ( shared_gpu && ! mergegrids ) {
       CUDA_POLL(cuda_check_remote_calc,this);
       break;
@@ -1850,9 +2030,9 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P2>>>\n", CkMyPe())
         // cudaEventRecord(start_upload, stream);
         cuda_bind_GBIS_bornRad(bornRadH);
         cuda_bind_GBIS_dEdaSum(dEdaSumH);
-        cudaEventRecord(start_calc, stream);
+        if ( stream2 != stream ) cudaEventRecord(start_calc, stream);
         cuda_GBIS_P2(
-          localComputeRecords.size(),remoteComputeRecords.size(),
+          0,remoteComputeRecords.size(),
           localActivePatches.size(),remoteActivePatches.size(),
           (simParams->alpha_cutoff-simParams->fsMax), simParams->cutoff,
           simParams->nonbondedScaling, simParams->kappa,
@@ -1867,10 +2047,10 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P2>>>\n", CkMyPe())
 GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P3>>>\n", CkMyPe())
         // cudaEventRecord(start_upload, stream);
         cuda_bind_GBIS_dHdrPrefix(dHdrPrefixH);
-        cudaEventRecord(start_calc, stream);
+        if ( stream2 != stream ) cudaEventRecord(start_calc, stream);
         if (doSlow)
         cuda_GBIS_P3(
-          localComputeRecords.size(),remoteComputeRecords.size(),
+          0,remoteComputeRecords.size(),
           localActivePatches.size(),remoteActivePatches.size(),
           (simParams->alpha_cutoff-simParams->fsMax),
           simParams->coulomb_radius_offset,
@@ -1890,6 +2070,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
     gpu_is_mine = 0;
 
     if ( stream2 != stream ) {
+      // needed to ensure that upload is finished
       cudaStreamWaitEvent(stream2, start_calc, 0);
       // priorities do not prevent local from launching ahead
       // of remote, so delay local stream with a small memset
@@ -1899,12 +2080,12 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
     if (!simParams->GBISOn || gbisPhase == 1) {
 
       cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
-	      0,localComputeRecords.size(),
-	      0,localActivePatches.size(),
-	      doSlow, doEnergy, usePairlists, savePairlists, stream2);
+	      remoteComputeRecords.size(),localComputeRecords.size(),
+	      remoteComputeRecords.size()+localComputeRecords.size(),
+	      doSlow, doEnergy, usePairlists, savePairlists, streaming, ! patchPairsReordered, stream2);
       if (simParams->GBISOn) {
         cuda_GBIS_P1(
-          0,localComputeRecords.size(),
+          remoteComputeRecords.size(),localComputeRecords.size(),
           0,localActivePatches.size(),
           simParams->alpha_cutoff-simParams->fsMax,
           simParams->coulomb_radius_offset,
@@ -1913,8 +2094,10 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
     //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
     //    0,num_local_atom_records);
     //cuda_load_virials(virials, doSlow);  // slow_virials follows virials
-    cudaEventRecord(end_local_download, stream2);
-    if ( workStarted == 2 ) {
+    if ( ( ! streaming ) || ( shared_gpu && ! mergegrids ) ) {
+      cudaEventRecord(end_local_download, stream2);
+    }
+    if ( ! streaming && workStarted == 2 ) {
 GBISP("C.N.CUDA[%d]::recvYieldDeviceL: adding POLL \
 cuda_check_local_progress\n", CkMyPe())
       CUDA_POLL(cuda_check_local_progress,this);
@@ -1933,7 +2116,7 @@ cuda_check_local_calc\n", CkMyPe())
       } else if (gbisPhase == 2) {
 GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P2>>>\n", CkMyPe())
         cuda_GBIS_P2(
-          0,localComputeRecords.size(),
+          remoteComputeRecords.size(),localComputeRecords.size(),
           0,localActivePatches.size(),
           (simParams->alpha_cutoff-simParams->fsMax), simParams->cutoff,
           simParams->nonbondedScaling, simParams->kappa,
@@ -1950,7 +2133,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P2>>>\n", CkMyPe())
 GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P3>>>\n", CkMyPe())
         if (doSlow)
         cuda_GBIS_P3(
-          0,localComputeRecords.size(),
+          remoteComputeRecords.size(),localComputeRecords.size(),
           0,localActivePatches.size(),
           (simParams->alpha_cutoff-simParams->fsMax),
           simParams->coulomb_radius_offset,
@@ -1975,43 +2158,23 @@ GBISP("C.N.CUDA[%d]::recvYieldDevice: DONE\n", CkMyPe())
 }
 
 
-//dtanner
-int ComputeNonbondedCUDA::finishWork() {
+void ComputeNonbondedCUDA::messageFinishPatch(int flindex) {
+  int pid = activePatches[flindex];
+  patch_record &pr = patchRecords[pid];
+  computeMgr->sendNonbondedCUDASlaveEnqueuePatch(pr.slave,pr.hostPe,sequence(),PROXY_DATA_PRIORITY,flindex,pr.msg);
+}
 
-  if ( master == this ) {
-    for ( int i = 0; i < numSlaves; ++i ) {
-      computeMgr->sendNonbondedCUDASlaveEnqueue(slaves[i],slavePes[i],sequence(),priority(),workStarted);
-    }
-  }
+void ComputeNonbondedCUDA::finishPatch(int flindex) {
+  patch_record &pr = master->patchRecords[master->activePatches[flindex]];
+  pr.r = pr.forceBox->open();
+  finishPatch(pr);
+  pr.positionBox->close(&(pr.x));
+  pr.forceBox->close(&(pr.r));
+}
 
-GBISP("C.N.CUDA[%d]::fnWork: workStarted %d, phase %d\n", \
-CkMyPe(), workStarted, gbisPhase)
-
-  Molecule *mol = Node::Object()->molecule;
-  SimParameters *simParams = Node::Object()->simParameters;
-
-  ResizeArray<int> &patches( workStarted == 1 ?
-				remoteHostedPatches : localHostedPatches );
-
-  //call once at beginning of each phase/step
-  if ( !simParams->GBISOn || gbisPhase == 1 ) {
-    for ( int i=0; i<patches.size(); ++i ) {
-      patch_record &pr = master->patchRecords[patches[i]];
-GBISP("GBIS[%d] fnWork() P0[%d] force.open()\n",CkMyPe(), pr.patchID);
-      pr.r = pr.forceBox->open();
-    }
-  } // !GBISOn || gbisPhase==1
-
-  // long long int wcount = 0;
-  // double virial = 0.;
-  // double virial_slow = 0.;
-  for ( int i=0; i<patches.size(); ++i ) {
-    // CkPrintf("Pe %d patch %d of %d pid %d\n",CkMyPe(),i,patches.size(),patches[i]);
-    patch_record &pr = master->patchRecords[patches[i]];
-
+void ComputeNonbondedCUDA::finishPatch(patch_record &pr) {
     int start = pr.localStart;
     const CompAtomExt *aExt = pr.xExt;
-    if ( !simParams->GBISOn || gbisPhase == 3 ) {
     int nfree = pr.numFreeAtoms;
     pr.f = pr.r->f[Results::nbond];
     Force *f = pr.f;
@@ -2049,12 +2212,49 @@ GBISP("GBIS[%d] fnWork() P0[%d] force.open()\n",CkMyPe(), pr.patchID);
 #endif
         if ( af[k].w != excl_expected ) {
           CkPrintf("%d:%d(%d) atom %d found %d exclusions but expected %d\n",
-		i, j, k, aExt[j].id, (int)af[k].w, excl_expected );
+		pr.patchID, j, k, aExt[j].id, (int)af[k].w, excl_expected );
         }
       }
     }
 #endif
-  } // !GBISOn || gbisPhase == 3
+}
+
+//dtanner
+int ComputeNonbondedCUDA::finishWork() {
+
+  if ( master == this ) {
+    for ( int i = 0; i < numSlaves; ++i ) {
+      computeMgr->sendNonbondedCUDASlaveEnqueue(slaves[i],slavePes[i],sequence(),priority(),workStarted);
+    }
+  }
+
+GBISP("C.N.CUDA[%d]::fnWork: workStarted %d, phase %d\n", \
+CkMyPe(), workStarted, gbisPhase)
+
+  Molecule *mol = Node::Object()->molecule;
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  ResizeArray<int> &patches( workStarted == 1 ?
+				remoteHostedPatches : localHostedPatches );
+
+  // long long int wcount = 0;
+  // double virial = 0.;
+  // double virial_slow = 0.;
+  for ( int i=0; i<patches.size(); ++i ) {
+    // CkPrintf("Pe %d patch %d of %d pid %d\n",CkMyPe(),i,patches.size(),patches[i]);
+    patch_record &pr = master->patchRecords[patches[i]];
+
+    if ( !simParams->GBISOn || gbisPhase == 1 ) {
+      patch_record &pr = master->patchRecords[patches[i]];
+GBISP("GBIS[%d] fnWork() P0[%d] force.open()\n",CkMyPe(), pr.patchID);
+      pr.r = pr.forceBox->open();
+    } // !GBISOn || gbisPhase==1
+
+    int start = pr.localStart;
+    const CompAtomExt *aExt = pr.xExt;
+    if ( !simParams->GBISOn || gbisPhase == 3 ) {
+      finishPatch(pr);
+    } // !GBISOn || gbisPhase == 3
 
 #if 0
     if ( i % 31 == 0 ) for ( int j=0; j<3; ++j ) {
@@ -2131,6 +2331,46 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
 
   if ( !simParams->GBISOn || gbisPhase == 3 ) {
 
+    atomsChanged = 0;
+    finishReductions();
+
+  } // !GBISOn || gbisPhase==3  
+
+  // Next GBIS Phase
+GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
+    if (simParams->GBISOn) gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
+
+  GBISP("C.N.CUDA[%d] finished ready for next step\n",CkMyPe());
+  return 1;  // finished and ready for next step
+}
+
+
+void ComputeNonbondedCUDA::finishReductions() {
+
+  basePriority = PROXY_DATA_PRIORITY;  // higher to aid overlap
+
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  if ( 0 && patchPairsReordered && patchPairsReordered < 3 ) {
+    if ( patchPairsReordered++ == 2) {
+      int patch_len = patchRecords.size();
+      ResizeArray<int> plast(patch_len);
+      for ( int i=0; i<patch_len; ++i ) {
+        plast[i] = -1;
+      }
+      int order_len = localComputeRecords.size()+remoteComputeRecords.size();
+      for ( int i=0; i<order_len; ++i ) {
+        plast[computeRecords[block_order[i]].pid[0]] = i;
+        iout << "block_order " << i << " " << block_order[i] << " " << computeRecords[block_order[i]].pid[0] << "\n";
+      }
+      iout << endi;
+      for ( int i=0; i<patch_len; ++i ) {
+        iout << "patch_last " << i << " " << plast[i] << "\n";
+      }
+      iout << endi;
+    }
+  }
+
   {
     Tensor virial_tensor;
     BigReal energyv = 0.;
@@ -2176,7 +2416,6 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,virial_slow_tensor);
   }
 
-  atomsChanged = 0;
   reduction->submit();
 
   cuda_timer_count++;
@@ -2217,15 +2456,6 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
     cuda_timer_total = 0;
   }
 
-  } // !GBISOn || gbisPhase==3  
-
-  // Next GBIS Phase
-GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
-int oldPhase = gbisPhase;
-    if (simParams->GBISOn) gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
-
-  GBISP("C.N.CUDA[%d] finished ready for next step\n",CkMyPe());
-  return 1;  // finished and ready for next step
 }
 
 

@@ -60,6 +60,7 @@ public:
   virtual void patchReady(PatchID, int doneMigration, int seq);
   virtual int noWork(); // cleans up and returns 1 if no work to do
   virtual void doWork(); // actually does the work if noWork() returns 0
+  virtual void finishPatch(int);
   int sequence(void) { return sequenceNumber; }
   int priority(void) { return basePriority+gbisPhasePriority[gbisPhase-1]; }
   int getGBISPhase(void) {return gbisPhase;}

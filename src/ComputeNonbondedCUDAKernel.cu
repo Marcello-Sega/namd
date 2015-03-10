@@ -110,6 +110,8 @@ static __thread unsigned int *force_list_counters;
 static __thread unsigned int *GBIS_P1_counters;
 static __thread unsigned int *GBIS_P2_counters;
 static __thread unsigned int *GBIS_P3_counters;
+static __thread int *force_ready_queue;
+static __thread int *block_order;
 
 static __thread int force_buffers_size;
 static __thread float4 *force_buffers;
@@ -143,6 +145,8 @@ static __thread int atoms_alloc;
 
 static __thread int max_atoms_per_patch;
 
+__thread int max_grid_size;
+
 __thread cudaStream_t stream;
 __thread cudaStream_t stream2;
  
@@ -161,6 +165,8 @@ void cuda_init() {
   GBIS_P1_counters = 0;
   GBIS_P2_counters = 0;
   GBIS_P3_counters = 0;
+  force_ready_queue = 0;
+  block_order = 0;
   patch_pairs = 0;
   virial_buffers = 0;
   energy_gbis_buffers = 0;
@@ -181,6 +187,14 @@ void cuda_init() {
   force_buffers_alloc = 0;
   force_lists_alloc = 0;
   atoms_alloc = 0;
+
+  int dev;
+  cudaGetDevice(&dev);
+  cuda_errcheck("cudaGetDevice");
+  cudaDeviceProp deviceProp;
+  cudaGetDeviceProperties(&deviceProp, dev);
+  cuda_errcheck("cudaGetDeviceProperties");
+  max_grid_size = deviceProp.maxGridSize[1];
 }
 
 void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
@@ -265,7 +279,7 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
   // cudaMalloc((void**) &virials, 2 * force_lists_alloc * 16*sizeof(float));
   // slow_virials = virials + force_lists_size * 16;
   cudaMalloc((void**) &force_lists, force_lists_alloc * sizeof(force_list));
-  cudaMalloc((void**) &force_list_counters, force_lists_alloc * sizeof(unsigned int));
+  cudaMalloc((void**) &force_list_counters, (force_lists_alloc + 3) * sizeof(unsigned int));
   cudaMalloc((void**) &GBIS_P1_counters, force_lists_alloc * sizeof(unsigned int));
   cudaMalloc((void**) &GBIS_P2_counters, force_lists_alloc * sizeof(unsigned int));
   cudaMalloc((void**) &GBIS_P3_counters, force_lists_alloc * sizeof(unsigned int));
@@ -295,7 +309,7 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
 				cudaMemcpyHostToDevice);
   cuda_errcheck("memcpy to force_lists");
 
-  cudaMemset(force_list_counters, 0, nfl * sizeof(unsigned int));
+  cudaMemset(force_list_counters, 0, (nfl+3) * sizeof(unsigned int));
   cudaMemset(GBIS_P1_counters, 0, nfl * sizeof(unsigned int));
   cudaMemset(GBIS_P2_counters, 0, nfl * sizeof(unsigned int));
   cudaMemset(GBIS_P3_counters, 0, nfl * sizeof(unsigned int));
@@ -322,10 +336,14 @@ void cuda_bind_forces(float4 *f, float4 *f_slow) {
   cuda_errcheck("cudaHostGetDevicePointer slow_forces");
 }
 
-void cuda_bind_virials(float *v) {
+void cuda_bind_virials(float *v, int *queue, int *blockorder) {
   cudaHostGetDevicePointer(&virials, v, 0);
   cuda_errcheck("cudaHostGetDevicePointer virials");
   slow_virials = virials + force_lists_size*16;
+  cudaHostGetDevicePointer(&force_ready_queue, queue, 0);
+  cuda_errcheck("cudaHostGetDevicePointer force_ready_queue");
+  cudaHostGetDevicePointer(&block_order, blockorder, 0);
+  cuda_errcheck("cudaHostGetDevicePointer block_order");
 }
 
 //GBIS bindings
@@ -444,9 +462,9 @@ __host__ __device__ static int3 patch_offset_from_neighbor(int neighbor) {
 
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
 		float cutoff2, float plcutoff2,
-		int cbegin, int ccount, int pbegin, int pcount,
+		int cbegin, int ccount, int ctotal,
 		int doSlow, int doEnergy, int usePairlists, int savePairlists,
-		cudaStream_t &strm) {
+		int doStreaming, int saveOrder, cudaStream_t &strm) {
 
  if ( ccount ) {
    if ( usePairlists ) {
@@ -454,19 +472,21 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
    } else {
      plcutoff2 = cutoff2;
    }
-   int grid_dim = 65535;  // maximum allowed
+   int grid_dim = max_grid_size;  // maximum allowed
    for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
      if ( grid_dim > ccount - cstart ) grid_dim = ccount - cstart;
      // printf("%d %d %d\n",cbegin+cstart,grid_dim,patch_pairs_size);
 
 #define CALL(X) X<<< grid_dim, BLOCK_SIZE, 0, strm \
-	>>>(patch_pairs+cbegin+cstart,atoms,atom_params,force_buffers, \
+	>>>(patch_pairs,atoms,atom_params,force_buffers, \
 	     (doSlow?slow_force_buffers:0), block_flags, \
              virial_buffers, (doSlow?slow_virial_buffers:0), \
-             overflow_exclusions, force_list_counters, force_lists, \
+             overflow_exclusions, force_list_counters, \
+             cbegin+cstart, ctotal, (saveOrder?block_order:0), \
+             (doStreaming?force_ready_queue:0), force_lists, \
              forces, virials, \
              (doSlow?slow_forces:0), (doSlow?slow_virials:0), \
-             lj_table_size, \
+             force_lists_size, lj_table_size, \
 	     lata, latb, latc, cutoff2, plcutoff2, doSlow)
 //end definition
 
@@ -528,7 +548,7 @@ void cuda_GBIS_P1(
   cudaStream_t &strm
 ) {
 
-  int grid_dim = 65535;  // maximum allowed
+  int grid_dim = max_grid_size;  // maximum allowed
   for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
     if (grid_dim > ccount - cstart) {
       grid_dim = ccount - cstart;
@@ -576,7 +596,7 @@ void cuda_GBIS_P2(
   int doFullElec,
   cudaStream_t &strm
 ) {
-  int grid_dim = 65535;  // maximum allowed
+  int grid_dim = max_grid_size;  // maximum allowed
   for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
     if (grid_dim > ccount - cstart)
       grid_dim = ccount - cstart;
@@ -627,7 +647,7 @@ void cuda_GBIS_P3(
   float3 latc,
   cudaStream_t &strm
 ) {
-  int grid_dim = 65535;  // maximum allowed
+  int grid_dim = max_grid_size;  // maximum allowed
   for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
     if (grid_dim > ccount - cstart)
       grid_dim = ccount - cstart;

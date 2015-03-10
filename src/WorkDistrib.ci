@@ -8,6 +8,7 @@ module WorkDistrib {
   // WorkDistributor - is a bit of a mishmash
 
   message LocalWorkMsg;
+  message FinishWorkMsg;
   message ComputeMapChangeMsg {
     int newNodes[];
     char newNumPartitions[];
@@ -42,6 +43,7 @@ module WorkDistrib {
     entry void enqueueCUDA(LocalWorkMsg *);
     entry void enqueueCUDAP2(LocalWorkMsg *);
     entry void enqueueCUDAP3(LocalWorkMsg *);
+    entry void finishCUDAPatch(FinishWorkMsg *);
     entry [expedited] void finishCUDA(LocalWorkMsg *);
     entry [expedited] void finishCUDAP2(LocalWorkMsg *);
     entry [expedited] void finishCUDAP3(LocalWorkMsg *);

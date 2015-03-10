@@ -27,6 +27,13 @@ public:
   Compute *compute;
 };
 
+class FinishWorkMsg : public CMessage_FinishWorkMsg
+{
+public:
+  Compute *compute;
+  int data;
+};
+
 enum { maxPatchDepends = 126 };
 
 class PatchMapMsg;
@@ -74,6 +81,7 @@ public:
   void enqueueCUDA(LocalWorkMsg *msg);
   void enqueueCUDAP2(LocalWorkMsg *msg);
   void enqueueCUDAP3(LocalWorkMsg *msg);
+  void finishCUDAPatch(FinishWorkMsg *msg);
   void finishCUDA(LocalWorkMsg *msg);
   void finishCUDAP2(LocalWorkMsg *msg);
   void finishCUDAP3(LocalWorkMsg *msg);

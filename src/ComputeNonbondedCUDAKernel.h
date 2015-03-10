@@ -109,13 +109,13 @@ void cuda_bind_atoms(const atom *a);
 
 void cuda_bind_forces(float4 *f, float4 *f_slow);
 
-void cuda_bind_virials(float *v);
+void cuda_bind_virials(float *v, int *queue, int *blockorder);
 
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
                 float cutoff2, float plcutoff2,
-                int cbegin, int ccount, int pbegin, int pcount,
+                int cbegin, int ccount, int ctotal,
                 int doSlow, int doEnergy, int usePairlists, int savePairlists,
-		cudaStream_t &strm);
+                int doStreaming, int saveOrder, cudaStream_t &strm);
 
 //GBIS methods
 void cuda_GBIS_P1(
