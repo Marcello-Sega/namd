@@ -593,11 +593,12 @@ void Node::startup() {
   case 6:     
     if(simParameters->isSendSpanningTreeOn()) {				
 			ProxyMgr::Object()->setSendSpanning();
-			ProxyMgr::Object()->setProxyTreeBranchFactor(simParameters->proxyTreeBranchFactor);				
     }
     if(simParameters->isRecvSpanningTreeOn()) {				
 			ProxyMgr::Object()->setRecvSpanning();
-			ProxyMgr::Object()->setProxyTreeBranchFactor(simParameters->proxyTreeBranchFactor);				
+    }
+    if(simParameters->proxyTreeBranchFactor) {
+			ProxyMgr::Object()->setProxyTreeBranchFactor(simParameters->proxyTreeBranchFactor);
     }
     #ifdef PROCTRACE_DEBUG
     DebugFileTrace::Instance("procTrace");
