@@ -187,7 +187,7 @@ void master_init(int argc, char **argv){
   group.nodeProxyMgr = CProxy_NodeProxyMgr::ckNew();
   #endif
   
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   group.ckLoop = CkLoop_Init();
 #endif
 

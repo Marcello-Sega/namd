@@ -9,7 +9,7 @@
 
 #include "charm++.h"
 #include "ckmulticast.h"
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
 #include "CkLoopAPI.h"
 #endif
 
@@ -43,7 +43,7 @@ public:
   CkGroupID nodeProxyMgr;
   #endif
   
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   CProxy_FuncCkLoop ckLoop;
 #endif
 

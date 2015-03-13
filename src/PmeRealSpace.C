@@ -357,7 +357,7 @@ void PmeRealSpace::compute_forces_order4(const float * const *q_arr,
   float *Mi, *dMi;
   int K1, K2, K3, dim2;
 
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_UNGRIDCALC){          
       //compute_forces_order4_partial(0, N-1, q_arr, p, f);

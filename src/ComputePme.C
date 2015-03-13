@@ -4651,7 +4651,7 @@ void PmeZPencil::fft_init() {
 					  (float *) data, NULL, 1, 
 					  ndim,
 					  fftwFlags);
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   if(simParams->useCkLoop) {
 	  //How many FFT plans to be created? The grain-size issue!!.
 	  //Currently, I am choosing the min(nx, ny) to be coarse-grain
@@ -4908,7 +4908,7 @@ void PmeXPencil::fft_init() {
 					  FFTW_BACKWARD,
 				      fftwFlags);
 
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   if(simParams->useCkLoop) {
 	  //How many FFT plans to be created? The grain-size issue!!.
 	  //Currently, I am choosing the min(nx, ny) to be coarse-grain
@@ -5021,7 +5021,7 @@ void PmeZPencil::forward_fft() {
   dumpMatrixFloat3("fw_z_b", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
 #ifdef NAMD_FFTW_3
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT) {
           //for(int i=0; i<numPlans; i++) fftwf_execute(forward_plans[i]);
@@ -5117,7 +5117,7 @@ void PmeZPencil::send_trans() {
 #if USE_PERSISTENT
     if (trans_handle == NULL) setup_persistent();
 #endif
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
 	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
 	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS) {
 		/**
@@ -5243,7 +5243,7 @@ void PmeYPencil::forward_fft() {
 #endif
   
 #ifdef NAMD_FFTW_3
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT) {
 	  CkLoop_Parallelize(PmeYPencilForwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
@@ -5336,7 +5336,7 @@ void PmeYPencil::send_trans() {
 #if USE_PERSISTENT
     if (trans_handle == NULL) setup_persistent();
 #endif
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
 	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
 	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS) {
 		/**
@@ -5472,7 +5472,7 @@ void PmeXPencil::forward_fft() {
 #endif
 
 #ifdef NAMD_FFTW_3
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT) {
 	  //for(int i=0; i<numPlans; i++) fftwf_execute(forward_plans[i]);
@@ -5521,7 +5521,7 @@ void PmeXPencil::backward_fft() {
 #endif
 
 #ifdef NAMD_FFTW_3
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT) {
           //for(int i=0; i<numPlans; i++) fftwf_execute(backward_plans[i]);
@@ -5668,7 +5668,7 @@ void PmeXPencil::send_untrans() {
 #if USE_PERSISTENT
   if (untrans_handle == NULL) setup_persistent();
 #endif
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS) {
 	  	int xBlocks = initdata.xBlocks;
@@ -5801,7 +5801,7 @@ void PmeYPencil::backward_fft() {
 #endif
 
 #ifdef NAMD_FFTW_3
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT) {
 	  CkLoop_Parallelize(PmeYPencilBackwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
@@ -5953,7 +5953,7 @@ void PmeYPencil::send_untrans() {
 #if USE_PERSISTENT
   if (untrans_handle == NULL) setup_persistent();
 #endif
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS) {
 	  int yBlocks = initdata.yBlocks;
@@ -6080,7 +6080,7 @@ void PmeZPencil::backward_fft() {
   dumpMatrixFloat3("bw_z_b", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
 #ifdef NAMD_FFTW_3
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT) {
 	  //for(int i=0; i<numPlans; i++) fftwf_execute(backward_plans[i]);
@@ -6168,7 +6168,7 @@ void PmeZPencil::send_all_ungrid() {
 		}
 	}
 
-#if     USE_CKLOOP
+#if     CMK_SMP && USE_CKLOOP
 	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
 	if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS) {
 		//????What's the best value for numChunks?????
