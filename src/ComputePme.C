@@ -86,7 +86,7 @@ bool one_cuda_device_per_node();
 #define X_PERSIST 1
 #endif
 
-//#define USE_NODE_PAR_RECEIVE    1
+#define USE_NODE_PAR_RECEIVE    1
 
 char *pencilPMEProcessors;
 
@@ -6246,7 +6246,6 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
 void PmeZPencil::node_process_grid(PmeGridMsg *msg)
 {
 #if USE_NODE_PAR_RECEIVE
-  CmiLock(ComputePmeMgr::fftw_plan_lock);
   CmiMemoryReadFence();
 #endif
   recv_grid(msg);
@@ -6268,7 +6267,6 @@ void PmeZPencil::node_process_grid(PmeGridMsg *msg)
       //      CkPrintf("[%d] PmeZPencil grid node_zero imsg for %d %d %d\n",CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z);
     }
 #if USE_NODE_PAR_RECEIVE
-  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
   CmiMemoryWriteFence();
 #endif
 }
@@ -6276,7 +6274,6 @@ void PmeZPencil::node_process_grid(PmeGridMsg *msg)
 void PmeZPencil::node_process_untrans(PmeUntransMsg *msg)
 {
 #if USE_NODE_PAR_RECEIVE
-  CmiLock(ComputePmeMgr::fftw_plan_lock);
   CmiMemoryReadFence();
 #endif    
   recv_untrans(msg);
@@ -6311,7 +6308,6 @@ void PmeZPencil::node_process_untrans(PmeUntransMsg *msg)
       //      CkPrintf("[%d] PmeZPencil untrans node_zero imsg for %d %d %d\n",CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z);
     }
 #if USE_NODE_PAR_RECEIVE
-  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
   CmiMemoryWriteFence();
 #endif
 }
