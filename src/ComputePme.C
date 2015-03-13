@@ -2459,73 +2459,6 @@ void cuda_check_pme_forces(void *arg, double walltime) {
 void ComputePmeMgr::ungridCalc(void) {
   // CkPrintf("ungridCalc on Pe(%d)\n",CkMyPe());
 
-  // for (int j=0; j<myGrid.order-1; ++j) {
-  //   fz_arr[myGrid.K3+j] = fz_arr[j];
-  // }
-#ifdef NAMD_CUDA
- if ( offload ) { if ( this == masterPmeMgr ) {
-  int q_stride = myGrid.K3+myGrid.order-1;
-  int k3 = myGrid.K3;
-#define LOOP_HEAD \
-    for (int n = q_data_size/(q_stride*sizeof(float)), i=0; i<n; ++i) { \
-      float *q_list_i = q_data_host + i * q_stride;
-  switch ( myGrid.order ) {
-  case 4:
-    LOOP_HEAD
-      float f0 = q_list_i[0];
-      float f1 = q_list_i[1];
-      float f2 = q_list_i[2];
-      q_list_i[k3+0] = f0;
-      q_list_i[k3+1] = f1;
-      q_list_i[k3+2] = f2;
-    }
-  break;
-  case 6:
-    LOOP_HEAD
-      float f0 = q_list_i[0];
-      float f1 = q_list_i[1];
-      float f2 = q_list_i[2];
-      float f3 = q_list_i[3];
-      float f4 = q_list_i[4];
-      q_list_i[k3+0] = f0;
-      q_list_i[k3+1] = f1;
-      q_list_i[k3+2] = f2;
-      q_list_i[k3+3] = f3;
-      q_list_i[k3+4] = f4;
-    }
-  break;
-  case 8:
-    LOOP_HEAD
-      float f0 = q_list_i[0];
-      float f1 = q_list_i[1];
-      float f2 = q_list_i[2];
-      float f3 = q_list_i[3];
-      float f4 = q_list_i[4];
-      float f5 = q_list_i[5];
-      float f6 = q_list_i[6];
-      q_list_i[k3+0] = f0;
-      q_list_i[k3+1] = f1;
-      q_list_i[k3+2] = f2;
-      q_list_i[k3+3] = f3;
-      q_list_i[k3+4] = f4;
-      q_list_i[k3+5] = f5;
-      q_list_i[k3+6] = f6;
-    }
-  break;
-  default:
-    NAMD_bug("ComputePmeMgr::ungridCalc unsupported PME interpolation order");
-  }
- } } else
-#endif // NAMD_CUDA
- {
-  for (int i=0; i<q_count; ++i) {
-    float *q_list_i = q_list[i];
-    for (int j=0; j<myGrid.order-1; ++j) {
-      q_list_i[myGrid.K3+j] = q_list_i[j];
-    }
-  }
- }
-
   ungridForcesCount = pmeComputes.size();
 
 #ifdef NAMD_CUDA
@@ -3474,13 +3407,13 @@ void ComputePmeMgr::chargeGridReady(Lattice &lattice, int sequence) {
 #ifdef NAMD_CUDA
  int q_stride;
  if ( offload ) {
+  int errcount = 0;
   q_stride = myGrid.K3+myGrid.order-1;
   for (int n=fsize+q_stride, j=0; j<n; ++j) {
     f_arr[j] = ffz_host[j];
-    if ( ffz_host[j] != 0 && ffz_host[j] != 1 ) {
-      CkPrintf("flag %d/%d == %d on pe %d in ComputePmeMgr::chargeGridReady\n", j, n, ffz_host[j], CkMyPe());
-    }
+    if ( ffz_host[j] & ~1 ) ++errcount;
   }
+  if ( errcount ) NAMD_bug("bad flag in ComputePmeMgr::chargeGridReady");
  }
 #endif
   recipEvirCount = recipEvirClients;
@@ -3489,24 +3422,6 @@ void ComputePmeMgr::chargeGridReady(Lattice &lattice, int sequence) {
   for (int j=0; j<myGrid.order-1; ++j) {
     fz_arr[j] |= fz_arr[myGrid.K3+j];
   }
-#ifdef NAMD_CUDA
- if ( offload ) {
-  for (int n = q_data_size/(q_stride*sizeof(float)), i=0; i<n; ++i) {
-    float *q_list_i = q_data_host + i * q_stride;
-    for (int j=0; j<myGrid.order-1; ++j) {
-      q_list_i[j] += q_list_i[myGrid.K3+j];
-    }
-  }
- } else
-#endif
- {
-  for (int i=0; i<q_count; ++i) {
-    float *q_list_i = q_list[i];
-    for (int j=0; j<myGrid.order-1; ++j) {
-      q_list_i[j] += q_list_i[myGrid.K3+j];
-    }
-  }
- }
 
   if ( usePencils ) {
     sendPencils(lattice,sequence);
@@ -3596,6 +3511,9 @@ void ComputePmeMgr::sendPencilsPart(int first, int last, Lattice &lattice, int s
        for ( int j=jbegin; j<jend; ++j ) {
         *(fmsg++) = f[i*dim2+j];
         if( f[i*dim2+j] ) {
+          for (int h=0; h<myGrid.order-1; ++h) {
+            q[i*dim2+j][h] += q[i*dim2+j][myGrid.K3+h];
+          }
           for ( int k=0; k<zlistlen; ++k ) {
             *(qmsg++) = q[i*dim2+j][zlist[k]];
           }
@@ -3749,6 +3667,9 @@ void ComputePmeMgr::copyPencils(PmeGridMsg *msg) {
         for ( int k=0; k<zlistlen; ++k ) {
           q[i*dim2+j][zlist[k]] = *(qmsg++);
         }
+        for (int h=0; h<myGrid.order-1; ++h) {
+          q[i*dim2+j][myGrid.K3+h] = q[i*dim2+j][h];
+        }
       }
      }
     }
@@ -3837,6 +3758,9 @@ void ComputePmeMgr::sendDataPart(int first, int last, Lattice &lattice, int sequ
       float **q = q_arr + fstart + g*fsize;
       for ( i=0; i<flen; ++i ) {
         if ( f[i] ) {
+          for (int h=0; h<myGrid.order-1; ++h) {
+            q[i][h] += q[i][myGrid.K3+h];
+          }
           for ( int k=0; k<zlistlen; ++k ) {
             *(qmsg++) = q[i][zlist[k]];
           }
@@ -3909,6 +3833,9 @@ void ComputePmeMgr::copyResults(PmeGridMsg *msg) {
         f[i] = 0;
         for ( int k=0; k<zlistlen; ++k ) {
           q[i][zlist[k]] = *(qmsg++);
+        }
+        for (int h=0; h<myGrid.order-1; ++h) {
+          q[i][myGrid.K3+h] = q[i][h];
         }
       }
     }
