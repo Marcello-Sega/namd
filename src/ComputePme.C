@@ -3405,11 +3405,10 @@ void ComputePmeMgr::recvChargeGridReady() {
 void ComputePmeMgr::chargeGridReady(Lattice &lattice, int sequence) {
 
 #ifdef NAMD_CUDA
- int q_stride;
  if ( offload ) {
   int errcount = 0;
-  q_stride = myGrid.K3+myGrid.order-1;
-  for (int n=fsize+q_stride, j=0; j<n; ++j) {
+  int q_stride = myGrid.K3+myGrid.order-1;
+  for (int n=fsize+q_stride, j=fsize; j<n; ++j) {
     f_arr[j] = ffz_host[j];
     if ( ffz_host[j] & ~1 ) ++errcount;
   }
@@ -3460,6 +3459,20 @@ void ComputePmeMgr::sendPencilsPart(int first, int last, Lattice &lattice, int s
     int fcount = 0;
     for ( int g=0; g<numGrids; ++g ) {
       char *f = f_arr + g*fsize;
+#ifdef NAMD_CUDA
+     if ( offload ) {
+      int errcount = 0;
+      for ( int i=ibegin; i<iend; ++i ) {
+       for ( int j=jbegin; j<jend; ++j ) {
+        int k = i*dim2+j;
+        f[k] = ffz_host[k];
+        fcount += f[k];
+        if ( ffz_host[k] & ~1 ) ++errcount;
+       }
+      }
+      if ( errcount ) NAMD_bug("bad flag in ComputePmeMgr::sendPencilsPart");
+     } else
+#endif
       for ( int i=ibegin; i<iend; ++i ) {
        for ( int j=jbegin; j<jend; ++j ) {
         fcount += f[i*dim2+j];
@@ -3700,6 +3713,17 @@ void ComputePmeMgr::sendDataPart(int first, int last, Lattice &lattice, int sequ
     int g;
     for ( g=0; g<numGrids; ++g ) {
       char *f = f_arr + fstart + g*fsize;
+#ifdef NAMD_CUDA
+     if ( offload ) {
+      int errcount = 0;
+      for ( i=0; i<flen; ++i ) {
+        f[i] = ffz_host[fstart+i];
+        fcount += f[i];
+        if ( ffz_host[fstart+i] & ~1 ) ++errcount;
+      }
+      if ( errcount ) NAMD_bug("bad flag in ComputePmeMgr::sendDataPart");
+     } else
+#endif
       for ( i=0; i<flen; ++i ) {
         fcount += f[i];
       }
