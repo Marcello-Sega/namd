@@ -4680,6 +4680,8 @@ void PmeZPencil::fft_init() {
 	  //How many FFT plans to be created? The grain-size issue!!.
 	  //Currently, I am choosing the min(nx, ny) to be coarse-grain
 	  numPlans = (nx<=ny?nx:ny);
+          if ( numPlans < CkMyNodeSize() ) numPlans = (nx>=ny?nx:ny);
+          if ( numPlans < CkMyNodeSize() ) numPlans = sizeLines;
 	  int howmany = sizeLines/numPlans;
 	  forward_plans = new fftwf_plan[numPlans];
 	  backward_plans = new fftwf_plan[numPlans];
@@ -4937,6 +4939,8 @@ void PmeXPencil::fft_init() {
 	  //How many FFT plans to be created? The grain-size issue!!.
 	  //Currently, I am choosing the min(nx, ny) to be coarse-grain
 	  numPlans = (ny<=nz?ny:nz);
+          if ( numPlans < CkMyNodeSize() ) numPlans = (ny>=nz?ny:nz);
+          if ( numPlans < CkMyNodeSize() ) numPlans = sizeLines;
 	  int howmany = sizeLines/numPlans;
 	  forward_plans = new fftwf_plan[numPlans];
 	  backward_plans = new fftwf_plan[numPlans];
