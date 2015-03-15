@@ -86,7 +86,9 @@ bool one_cuda_device_per_node();
 #define X_PERSIST 1
 #endif
 
+#if defined(NAMD_CUDA) and defined(MEM_OPT_VERSION)
 #define USE_NODE_PAR_RECEIVE    1
+#endif
 
 char *pencilPMEProcessors;
 
@@ -6274,6 +6276,7 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
 void PmeZPencil::node_process_grid(PmeGridMsg *msg)
 {
 #if USE_NODE_PAR_RECEIVE
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
   CmiMemoryReadFence();
 #endif
   recv_grid(msg);
@@ -6295,20 +6298,25 @@ void PmeZPencil::node_process_grid(PmeGridMsg *msg)
       //      CkPrintf("[%d] PmeZPencil grid node_zero imsg for %d %d %d\n",CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z);
     }
 #if USE_NODE_PAR_RECEIVE
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
   CmiMemoryWriteFence();
 #endif
 }
 
 void PmeZPencil::node_process_untrans(PmeUntransMsg *msg)
 {
-#if USE_NODE_PAR_RECEIVE
-  CmiMemoryReadFence();
-#endif    
   recv_untrans(msg);
+#if USE_NODE_PAR_RECEIVE
+  CmiMemoryWriteFence();
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+#endif    
   int limsg;
   CmiMemoryAtomicFetchAndInc(imsgb,limsg);
   if(limsg+1 == initdata.zBlocks)
     {
+#if USE_NODE_PAR_RECEIVE
+      CmiMemoryReadFence();
+#endif    
       if(hasData) // maybe this should be an assert
         {
           backward_fft();
@@ -6336,7 +6344,7 @@ void PmeZPencil::node_process_untrans(PmeUntransMsg *msg)
       //      CkPrintf("[%d] PmeZPencil untrans node_zero imsg for %d %d %d\n",CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z);
     }
 #if USE_NODE_PAR_RECEIVE
-  CmiMemoryWriteFence();
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
 #endif
 }
 
