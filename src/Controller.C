@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2015/03/03 17:54:14 $
- * $Revision: 1.1307 $
+ * $Date: 2015/03/18 23:14:39 $
+ * $Revision: 1.1308 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2769,6 +2769,7 @@ void Controller::outputFepEnergy(int step) {
     fepSum = fepSum + dG;
     fepFile << "#Free energy change for lambda window [ " << alchLambda
 	    << " " << alchLambda2 << " ] is " << dG << " ; net change until now is " << fepSum << std::endl;
+    fepFile.flush();
   }
  }
 }
