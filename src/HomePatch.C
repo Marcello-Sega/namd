@@ -2089,7 +2089,11 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
     int icnt = 0;
     if ( ( tmp = atom[ig].rigidBondLength ) > 0 ) {  // for water
       if (hgs != wathgsize) {
-        NAMD_bug("Hydrogen group error caught in rattle1().");
+        char errmsg[256];
+        sprintf(errmsg, "Water molecule starting with atom %d contains %d atoms "
+                         "but the specified water model requires %d atoms.\n",
+                         atom[ig].id+1, hgs, wathgsize);
+        NAMD_die(errmsg);
       }
       // Use SETTLE for water unless some of the water atoms are fixed,
       // for speed we test groupFixed rather than the individual atoms
