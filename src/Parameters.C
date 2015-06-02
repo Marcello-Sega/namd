@@ -2580,8 +2580,6 @@ void Parameters::add_vdw_pair_param(char *buf)
   Real B;          //  B value for pair
   Real A14;        //  A value for 1-4 ints
   Real B14;        //  B value for 1-4 ints
-  Real sqrt26;     //  2^(1/6)
-  Real expo;       //  just for pow
   int read_count;        //  count from sscanf
   struct vdw_pair_params *new_node;  //  new node
 
@@ -2594,27 +2592,15 @@ void Parameters::add_vdw_pair_param(char *buf)
   }
   else if (paramType == paraCharmm)
   {
-    // XXX CHARMM CAN HAVE 1-4 PARAMETERS TOO!!!
+    Real well, rmin, well14, rmin14;
     /* read CHARMM format */
-    read_count=sscanf(buf, "%s %s %f %f\n", atom1name, 
-       atom2name, &A, &B);
-    // convert to XPLOR format and use A14, B14 as dummies
-    /* XXX doesn't this just do the following?
-       A = -eps*pow(sig,6.);
-       B = -2*eps*pow(sig,12.);
-       Why do we need to do this in such a complicated way?
-       -pgrayson */
-    A14=-A;
-    sqrt26=pow(2.,(1./6.));
-    B14=B/sqrt26;
-    expo=12.;
-    A=pow(B14,expo);
-    A=A*4.*A14;
-    expo=6.;
-    B=pow(B14,expo);
-    B=B*4.*A14;
-    A14=A;
-    B14=B;
+    read_count=sscanf(buf, "%s %s %f %f %f %f\n", atom1name, 
+       atom2name, &well, &rmin, &well14, &rmin14);
+    if ( read_count == 4 ) { well14 = well; rmin14 = rmin; }
+    A = -1. * well * pow(rmin, 12.);
+    B = -2. * well * pow(rmin, 6.);
+    A14 = -1. * well14 * pow(rmin14, 12.);
+    B14 = -2. * well14 * pow(rmin14, 6.);
   }
 
   /*  Check to make sure we got what we expected      */
@@ -2625,7 +2611,7 @@ void Parameters::add_vdw_pair_param(char *buf)
     sprintf(err_msg, "BAD vdW PAIR FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*", buf);
     NAMD_die(err_msg);
   }
-  if ((read_count != 4) && (paramType == paraCharmm))
+  if ((read_count != 4) && (read_count != 6) && (paramType == paraCharmm))
   {
     char err_msg[512];
 
