@@ -2075,6 +2075,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
     int hgs = atom[ig].hydrogenGroupSize;
     if ( hgs == 1 ) continue;  // only one atom in group
     // cache data in local arrays and integrate positions normally
+    int anyfixed = 0;
     for ( i = 0; i < hgs; ++i ) {
       ref[i] = atom[ig+i].position;
       pos[i] = atom[ig+i].position;
@@ -2084,7 +2085,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
       //printf("fixed status of %i is %i\n", i, fixed[i]);
       // undo addVelocityToPosition to get proper reference coordinates
-      if ( fixed[i] ) rmass[i] = 0.; else pos[i] += vel[i] * dt;
+      if ( fixed[i] ) { anyfixed = 1; rmass[i] = 0.; } else pos[i] += vel[i] * dt;
     }
     int icnt = 0;
     if ( ( tmp = atom[ig].rigidBondLength ) > 0 ) {  // for water
@@ -2096,8 +2097,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
         NAMD_die(errmsg);
       }
       // Use SETTLE for water unless some of the water atoms are fixed,
-      // for speed we test groupFixed rather than the individual atoms
-      if (useSettle && !atom[ig].groupFixed) {
+      if (useSettle && !anyfixed) {
         if (simParams->watmodel == WAT_SWM4) {
           // SWM4 ordering:  O D LP H1 H2
           // do swap(O,LP) and call settle with subarray O H1 H2
@@ -2300,12 +2300,13 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
     int hgs = atom[ig].hydrogenGroupSize;
     if ( hgs == 1 ) continue;  // only one atom in group
     // cache data in local arrays and integrate positions normally
+    int anyfixed = 0;
     for ( i = 0; i < hgs; ++i ) {
       ref[i] = atom[ig+i].position;
       vel[i] = atom[ig+i].velocity;
       rmass[i] = atom[ig+i].mass > 0. ? 1. / atom[ig+i].mass : 0.;
       fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
-      if ( fixed[i] ) rmass[i] = 0.;
+      if ( fixed[i] ) { anyfixed = 1; rmass[i] = 0.; }
     }
     int icnt = 0;
     if ( ( tmp = atom[ig].rigidBondLength ) > 0 ) {  // for water
@@ -2313,8 +2314,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
         NAMD_bug("Hydrogen group error caught in rattle2().");
       }
       // Use SETTLE for water unless some of the water atoms are fixed,
-      // for speed we test groupFixed rather than the individual atoms
-      if (useSettle && !atom[ig].groupFixed) {
+      if (useSettle && !anyfixed) {
         if (simParams->watmodel == WAT_SWM4) {
           // SWM4 ordering:  O D LP H1 H2
           // do swap(O,LP) and call settle with subarray O H1 H2
@@ -2435,12 +2435,13 @@ void HomePatch::minimize_rattle2(const BigReal timestep, Tensor *virial, bool fo
     int hgs = atom[ig].hydrogenGroupSize;
     if ( hgs == 1 ) continue;  // only one atom in group
     // cache data in local arrays and integrate positions normally
+    int anyfixed = 0;
     for ( i = 0; i < hgs; ++i ) {
       ref[i] = atom[ig+i].position;
       vel[i] = ( forces ? f1[ig+i] : atom[ig+i].velocity );
       rmass[i] = 1.0;
       fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
-      if ( fixed[i] ) rmass[i] = 0.;
+      if ( fixed[i] ) { anyfixed = 1; rmass[i] = 0.; }
     }
     int icnt = 0;
     if ( ( tmp = atom[ig].rigidBondLength ) > 0 ) {  // for water
@@ -2448,8 +2449,7 @@ void HomePatch::minimize_rattle2(const BigReal timestep, Tensor *virial, bool fo
         NAMD_bug("Hydrogen group error caught in rattle2().");
       }
       // Use SETTLE for water unless some of the water atoms are fixed,
-      // for speed we test groupFixed rather than the individual atoms
-      if (useSettle && !atom[ig].groupFixed) {
+      if (useSettle && !anyfixed) {
         if (simParams->watmodel == WAT_SWM4) {
           // SWM4 ordering:  O D LP H1 H2
           // do swap(O,LP) and call settle with subarray O H1 H2
