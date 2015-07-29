@@ -274,7 +274,7 @@ See the Cray XE/XK/XC directions below for a more complex example.
 
 -- Cray XE/XK/XC --
 
-First load modules for the GNU compilers (XE/XK only, XC30 should use Intel),
+First load modules for the GNU compilers (XE/XK only, XC should use Intel),
 topology information, huge page sizes, and the system FFTW 3 library:
 
   module swap PrgEnv-cray PrgEnv-gnu
@@ -288,11 +288,11 @@ be loaded when building CUDA binaries and never for non-CUDA binaries:
   module load cudatoolkit
 
 For CUDA or large simulations on XE/XK use gemini_gni-crayxe-persistent-smp
-and for smaller XE simulations use gemini_gni-crayxe-persistent.  For XC30
-the persistent feature is broken so use gni-crayxc-smp or gni-crayxc.
+and for smaller XE simulations use gemini_gni-crayxe-persistent.  For XC
+similarly use gni-crayxc-persistent-smp or gni-crayxc-persistent.
 
 For XE/XK use CRAY-XE-gnu and (for CUDA) the ``--with-cuda'' config option,
-the appropriate ``--charm-arch'' parameter, and --with-fftw3.  For XC30
+the appropriate ``--charm-arch'' parameter, and --with-fftw3.  For XC
 use instead CRAY-XC-intel but all other options the same.
 
 Your batch job will need to load modules and set environment variables:
