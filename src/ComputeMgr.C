@@ -92,6 +92,11 @@
 
 #include "ComputeNonbondedMICKernel.h"
 
+#include "DeviceCUDA.h"
+#ifdef NAMD_CUDA
+extern __thread DeviceCUDA *deviceCUDA;
+#endif
+
 ComputeMgr::ComputeMgr()
 {
     CkpvAccess(BOCclass_group).computeMgr = thisgroup;
@@ -421,24 +426,24 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         break;
 #ifdef NAMD_CUDA
     case computeNonbondedCUDAType:
-	c = computeNonbondedCUDAObject = new ComputeNonbondedCUDA(i,this); // unknown delete
-	map->registerCompute(i,c);
-	c->initialize();
-	break;
+      c = computeNonbondedCUDAObject = new ComputeNonbondedCUDA(i,this); // unknown delete
+      map->registerCompute(i,c);
+      c->initialize();
+      break;
 #endif
 #ifdef NAMD_MIC
     case computeNonbondedMICType:
-	c = computeNonbondedMICObject = new ComputeNonbondedMIC(i,this); // unknown delete
-	map->registerCompute(i,c);
-	c->initialize();
-	break;
+	    c = computeNonbondedMICObject = new ComputeNonbondedMIC(i,this); // unknown delete
+      map->registerCompute(i,c);
+      c->initialize();
+      break;
 #endif
     case computeExclsType:
-        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
-        c = new ComputeExcls(i,pids); // unknown delete
-        map->registerCompute(i,c);
-        c->initialize();
-        break;
+      PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+      c = new ComputeExcls(i,pids); // unknown delete
+      map->registerCompute(i,c);
+      c->initialize();
+      break;
     case computeBondsType:
         PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
         c = new ComputeBonds(i,pids); // unknown delete
@@ -483,16 +488,16 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         break;
 	// JLai
     case computeGromacsPairType:
-	PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
-	c = new ComputeGromacsPair(i,pids); // unknown delete
-	map->registerCompute(i,c);
-	c->initialize();
-	break;
+        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+	      c = new ComputeGromacsPair(i,pids); // unknown delete
+	      map->registerCompute(i,c);
+	      c->initialize();
+	      break;
   case computeSelfGromacsPairType:
         c = new ComputeSelfGromacsPair(i,map->computeData[i].pids[0].pid); // unknown delete
-	map->registerCompute(i,c);
-	c->initialize();
-	break;
+	      map->registerCompute(i,c);
+	      c->initialize();
+	      break;
 	// End of JLai
     case computeSelfExclsType:
         c = new ComputeSelfExcls(i,map->computeData[i].pids[0].pid);
@@ -872,7 +877,7 @@ ComputeMgr::createComputes(ComputeMap *map)
     }
 
 #ifdef NAMD_CUDA
-    bool deviceIsMine = ( cuda_device_pe() == CkMyPe() );
+    bool deviceIsMine = ( deviceCUDA->getMasterPe() == CkMyPe() );
 #endif
 
     #ifdef NAMD_MIC
@@ -891,7 +896,7 @@ ComputeMgr::createComputes(ComputeMap *map)
           case computeNonbondedSelfType:
           case computeNonbondedPairType:
             if ( ! deviceIsMine ) continue;
-            if ( ! cuda_device_shared_with_pe(map->computeData[i].node) ) continue;
+            if ( ! deviceCUDA->device_shared_with_pe(map->computeData[i].node) ) continue;
           break;
 #endif
 #ifdef NAMD_MIC
@@ -921,7 +926,7 @@ ComputeMgr::createComputes(ComputeMap *map)
           default:
             if ( map->computeData[i].node != myNode ) continue;
         }
-#else
+#else // defined(NAMD_CUDA) || defined(NAMD_MIC)
         if ( map->computeData[i].node != myNode ) continue;
 #endif
         DebugM(1,"Compute " << i << '\n');
@@ -1185,8 +1190,6 @@ void ComputeMgr::recvBuildMICForceTable() {
     build_mic_force_table();
   #endif
 }
-
-
 
 class NonbondedCUDASlaveMsg : public CMessage_NonbondedCUDASlaveMsg {
 public:

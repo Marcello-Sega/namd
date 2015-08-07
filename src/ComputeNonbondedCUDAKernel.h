@@ -9,38 +9,34 @@ void cuda_errcheck(const char *msg);
 #define __align__(X)
 #endif
 
-#define PATCH_PAIR_SIZE 16
-#define PATCH_PAIR_USED 15
 
-struct __align__(16) patch_pair {  // must be multiple of 16!
-  float4 offset;
-  unsigned int patch1_size;
-  unsigned int patch2_size;
-  unsigned int patch1_force_size;  // non-fixed atoms at start of list
-  unsigned int patch1_atom_start;
-  unsigned int patch2_atom_start;
-  unsigned int patch1_force_start;
-  unsigned int block_flags_start;
-  unsigned int virial_start;  // virial output location padded to 16
-  unsigned int patch1_force_list_index;
-  unsigned int patch1_force_list_size;
-  unsigned int patch2_force_size;  // used for fixed-atom energy
-  unsigned int pad2;
+// Number of warps per block for Non-bonded CUDA kernel
+#define NUM_WARP 4
+#define WARPSIZE 32
+
+// Exclusion mask: bit 1 = atom pair is excluded
+struct exclmask {
+  unsigned int excl[32];
 };
 
-#define FORCE_LIST_SIZE 8
-#define FORCE_LIST_USED 8
-
-struct __align__(16) force_list {  // must be multiple of 16!
-  unsigned int force_list_start;  // beginning of compute output
-  unsigned int force_list_size;  // number of computes for this patch
-  unsigned int patch_size;  // real number of atoms in patch
-  unsigned int patch_stride;  // padded number of atoms in patch
-  unsigned int force_output_start;  // output array
-  unsigned int atom_start;  // atom positions
-  unsigned int virial_list_start;  // beginning of compute virial output
-  unsigned int virial_output_start;  // virial output location padded to 16
+struct __align__(16) patch_pair {
+  float3 offset;
+  int patch1_start;      // Coordinate/force start for this patch
+  int patch1_size;       // Size of the patch
+  int patch2_start;
+  int patch2_size;
+  int patch1_ind;        // Patch index
+  int patch2_ind;
+  int patch1_num_pairs;  // Number of pairs that involve this patch
+  int patch2_num_pairs;
+  int plist_start;       // Pair list start
+  int plist_size;        // Pair list size
+  int exclmask_start;    // Exclusion mask start
+  int pad1, pad2;
 };
+
+#define PATCH_PAIR_SIZE (sizeof(patch_pair)/4)
+#define PATCH_PAIR_USED 14
 
 struct __align__(16) atom {  // must be multiple of 16!
   float3 position;
@@ -98,12 +94,11 @@ void cuda_bind_force_table(const float4 *t, const float4 *et);
 
 void cuda_init();
 
-void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
-			const force_list *fl, int nfl,
-			int atoms_size_p, int force_buffers_size_p,
-			int block_flags_size_p, int max_atoms_per_patch_p);
+void cuda_bind_patch_pairs(patch_pair *h_patch_pairs, int npatch_pairs,
+			   int npatches, int natoms, int nexclmask, int plist_len);
 
 void cuda_bind_atom_params(const atom_param *t);
+void cuda_bind_vdw_types(const int *t);
 
 void cuda_bind_atoms(const atom *a);
 
@@ -112,10 +107,10 @@ void cuda_bind_forces(float4 *f, float4 *f_slow);
 void cuda_bind_virials(float *v, int *queue, int *blockorder);
 
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
-                float cutoff2, float plcutoff2,
-                int cbegin, int ccount, int ctotal,
-                int doSlow, int doEnergy, int usePairlists, int savePairlists,
-                int doStreaming, int saveOrder, cudaStream_t &strm);
+			   float cutoff2, float plcutoff2,
+			   int cbegin, int ccount, int ctotal,
+			   int doSlow, int doEnergy, int usePairlists, int savePairlists,
+			   int doStreaming, int saveOrder, cudaStream_t &strm);
 
 //GBIS methods
 void cuda_GBIS_P1(

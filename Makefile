@@ -176,8 +176,10 @@ OBJS = \
 	$(DSTDIR)/ComputeThole.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
+	$(DSTDIR)/CudaUtils.o \
 	$(DSTDIR)/ccsinterface.o \
 	$(DSTDIR)/DataStream.o \
+	$(DSTDIR)/DeviceCUDA.o \
 	$(DSTDIR)/DumpBench.o \
         $(DSTDIR)/FreeEnergyAssert.o \
         $(DSTDIR)/FreeEnergyGroup.o \

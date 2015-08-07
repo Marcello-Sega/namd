@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2015/03/11 23:04:38 $
- * $Revision: 1.1449 $
+ * $Date: 2015/08/07 20:34:32 $
+ * $Revision: 1.1450 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -76,8 +76,12 @@ extern "C" {
 
 #include "ComputeNonbondedMICKernel.h"
 
+//#ifdef NAMD_CUDA
+//bool one_cuda_device_per_node();
+//#endif
+#include "DeviceCUDA.h"
 #ifdef NAMD_CUDA
-bool one_cuda_device_per_node();
+extern __thread DeviceCUDA *deviceCUDA;
 #endif
 
 //#define DEBUGM
@@ -3553,7 +3557,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      PMEEwaldCoefficient = ewaldcof;
 
 #ifdef NAMD_CUDA
-     bool one_device_per_node = one_cuda_device_per_node();  // only checks node 0
+     bool one_device_per_node = deviceCUDA->one_device_per_node();  // only checks node 0
      if ( ! opts.defined("PMEOffload") ) {
        PMEOffload = ( (PMEInterpOrder > 4) && one_device_per_node );
        if ( PMEOffload ) iout << iINFO << "Enabling PMEOffload because PMEInterpOrder > 4.\n" << endi;
@@ -3573,7 +3577,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      PMEEwaldCoefficient = 0;
      PMEOffload = 0;
    }
-
 
    //  Take care of initializing FMA values to something if FMA is not
    //  active

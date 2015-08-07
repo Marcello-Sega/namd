@@ -2219,6 +2219,7 @@ obj/ComputeMgr.o: \
 	src/DataExchanger.h \
 	inc/DataExchanger.decl.h \
 	src/Pointer.h \
+	src/DeviceCUDA.h \
 	inc/ComputeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMgr.o $(COPTC) src/ComputeMgr.C
 obj/ComputeNonbondedSelf.o: \
@@ -2713,6 +2714,7 @@ obj/ComputeNonbondedCUDA.o: \
 	src/UniqueSetIter.h \
 	src/InfoStream.h \
 	inc/ProxyMgr.decl.h \
+	src/ComputeNonbondedCUDAKernel.h \
 	src/ComputeNonbondedCUDA.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
@@ -2757,10 +2759,11 @@ obj/ComputeNonbondedCUDA.o: \
 	inc/NamdNborLB.decl.h \
 	inc/NamdHybridLB.decl.h \
 	inc/NamdDummyLB.decl.h \
-	src/ComputeNonbondedCUDAKernel.h \
 	src/LJTable.h \
 	src/ObjectArena.h \
-	src/SortAtoms.h
+	src/SortAtoms.h \
+	src/DeviceCUDA.h \
+	src/CudaUtils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedCUDA.o $(COPTC) src/ComputeNonbondedCUDA.C
 obj/ComputeNonbondedCUDAExcl.o: \
 	src/ComputeNonbondedCUDAExcl.C \
@@ -3062,6 +3065,7 @@ obj/ComputePme.o: \
 	src/varsizemsg.h \
 	src/Random.h \
 	src/Priorities.h \
+	src/DeviceCUDA.h \
 	src/ComputePmeCUDAKernel.h \
 	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePme.o $(COPTC) src/ComputePme.C
@@ -3484,6 +3488,11 @@ obj/Controller.o: \
 	src/ComputeNonbondedMICKernel.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/Controller.o $(COPTC) src/Controller.C
+obj/CudaUtils.o: \
+	src/CudaUtils.C \
+	src/common.h \
+	src/CudaUtils.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/CudaUtils.o $(COPTC) src/CudaUtils.C
 obj/ccsinterface.o: \
 	src/ccsinterface.C \
 	src/ccsinterface.h
@@ -3510,6 +3519,22 @@ obj/DataStream.o: \
 	src/ProcessorPrivate.h \
 	inc/CollectionMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/DataStream.o $(COPTC) src/DataStream.C
+obj/DeviceCUDA.o: \
+	src/DeviceCUDA.C \
+	src/common.h \
+	src/DeviceCUDA.h \
+	src/WorkDistrib.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/BOCgroup.h \
+	src/ComputeMap.h \
+	src/ProcessorPrivate.h \
+	inc/WorkDistrib.decl.h \
+	src/CudaUtils.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/DeviceCUDA.o $(COPTC) src/DeviceCUDA.C
 obj/DumpBench.o: \
 	src/DumpBench.C \
 	src/InfoStream.h \
@@ -4493,7 +4518,6 @@ obj/HomePatch.o: \
 	src/ReductionMgr.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
-	src/ResizeArrayPrimIter.h \
 	src/Random.h \
 	src/ComputeNonbondedUtil.h \
 	src/ComputeGBIS.inl \
@@ -4599,7 +4623,6 @@ obj/LdbCoordinator.o: \
 	src/packmsg.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
-	src/ResizeArrayPrimIter.h \
 	inc/LdbCoordinator.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/LdbCoordinator.o $(COPTC) src/LdbCoordinator.C
 obj/LJTable.o: \
@@ -5295,7 +5318,6 @@ obj/Node.o: \
 	inc/OptPmeMgr.decl.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
-	src/ResizeArrayPrimIter.h \
 	src/BackEnd.h \
 	src/PDB.h \
 	src/PDBData.h \
@@ -5447,6 +5469,7 @@ obj/Patch.o: \
 	plugins/include/vmdplugin.h \
 	src/ResizeArrayPrimIter.h \
 	src/ComputeNonbondedMICKernel.h \
+	src/Priorities.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/Debug.h
@@ -6125,6 +6148,7 @@ obj/SimParameters.o: \
 	src/Communicate.h \
 	src/Output.h \
 	src/ComputeNonbondedMICKernel.h \
+	src/DeviceCUDA.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
 obj/SortAtoms.o: \
@@ -6168,7 +6192,6 @@ obj/Sync.o: \
 	src/ComputeMap.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
-	src/ResizeArrayPrimIter.h \
 	src/Debug.h \
 	inc/Sync.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Sync.o $(COPTC) src/Sync.C

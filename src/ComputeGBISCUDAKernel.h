@@ -2,147 +2,13 @@
 #define GBIS_CUDA
 #include "ComputeGBIS.inl"
 
-#define DORED 1
-
-/*******************************************************************************
-  These GBIS kernel was patterned after Jim's nonbonded kernel
-*******************************************************************************/
-
-/*
-  TODO
-
-  using the namd force indices to sum psi and dEda require
-  every atom to have a force, i.e., fixed atoms won't work
-  consider using numFree/numFixed atoms to correct this
-*/
-
-//00000000000000000000000000000000000000000000000000000000000
-//
-// GBIS Psi / dEda Reduction CUDA Kernal
-//
-//00000000000000000000000000000000000000000000000000000000000
-
-// Reduce Energy
-__device__ __forceinline__ static void GBIS_Energy_Reduction_Kernel (
-  const int list_index,
-  const force_list *lists,
-  const float *sumBuffers,
-  float *sum
-) {
-//one thread block (128 threads) is doing this single patch
-  int tx = threadIdx.x;
-
-  #define myList fl.fl
-  __shared__ union {
-    force_list fl;
-    unsigned int i[FORCE_LIST_SIZE];
-  } fl;
-
-  if ( tx < FORCE_LIST_USED ) {
-    unsigned int tmp = ((unsigned int*)lists)[
-                        FORCE_LIST_SIZE*list_index+tx];
-    fl.i[tx] = tmp;
-  }
-  __syncthreads();
-
-  __shared__ float energySh[BLOCK_SIZE];
-
-  if (tx < myList.force_list_size) {
-    energySh[tx] = sumBuffers[myList.virial_list_start/16 + tx];
-  }
-  __syncthreads();
-
-  float nf = 1.f * myList.force_list_size; // exact number to sum
-  float p2f = log2(nf);
-  int p2i = ceil(p2f);
-  int n2i = 1<<p2i; // next power of 2 over number to sum
-  int b = n2i / 2; // first midpoint
-  if (tx + b < myList.force_list_size) { // handle non power of 2
-    energySh[tx] += energySh[tx+b];
-  }
-  __syncthreads();
-  b /= 2;
-
-  for ( ; b > 0; b /= 2) { // handle remaining powers of 2
-    if (tx < b) {
-      energySh[tx] += energySh[tx+b];
-    }
-    __syncthreads();
-  }
-
-    if (threadIdx.x == 0) {
-      const int dest = myList.virial_output_start/16;
-      sum[dest] = energySh[0];
-    }
-} // GBIS_Energy_Reduction
-
-// Reduce Forces
-__device__ __forceinline__ static void GBIS_Force_Reduction_Kernel (
-  const int list_index,
-  const force_list *lists,
-  const float4 *sumBuffers,
-  float4 *sum
-) {
-  #define myList fl.fl
-  __shared__ union {
-    force_list fl;
-    unsigned int i[FORCE_LIST_SIZE];
-  } fl;
-
-  if ( threadIdx.x < FORCE_LIST_USED ) {
-    unsigned int tmp = ((unsigned int*)lists)[
-                        FORCE_LIST_SIZE*list_index+threadIdx.x];
-    fl.i[threadIdx.x] = tmp;
-  }
-  __syncthreads();
-  for ( int j = threadIdx.x; j < myList.patch_size; j += BLOCK_SIZE ) {
-    const float4 *sumBuf = sumBuffers + myList.force_list_start + j;
-    float4 sumOut; sumOut.x = 0.f; sumOut.y = 0.f; sumOut.z = 0.f;
-    for ( int i = 0; i < myList.force_list_size; ++i ) {
-      float4 sumVal = *sumBuf;
-      sumOut.x += sumVal.x;
-      sumOut.y += sumVal.y;
-      sumOut.z += sumVal.z;
-      sumBuf += myList.patch_stride;
-    } // i
-    const int dest = myList.force_output_start + j;
-    sum[dest].x += sumOut.x; // adding onto NAMD nonbonded, sync?
-    sum[dest].y += sumOut.y;
-    sum[dest].z += sumOut.z;
-  } // j
-} // GBIS_Force_Reduction
-
-// Reduce psi / dEda
-__device__ __forceinline__ static void GBIS_Atom_Reduction_Kernel (
-  const int list_index,
-  const force_list *lists,
-  const GBReal *sumBuffers,
-  GBReal *sum
-) {
-  #define myList fl.fl
-  __shared__ union {
-    force_list fl;
-    unsigned int i[FORCE_LIST_SIZE];
-  } fl;
-
-  if ( threadIdx.x < FORCE_LIST_USED ) {
-    unsigned int tmp = ((unsigned int*)lists)[
-                        FORCE_LIST_SIZE*list_index+threadIdx.x];
-    fl.i[threadIdx.x] = tmp;
-  }
-  __syncthreads();
-  for ( int j = threadIdx.x; j < myList.patch_size; j += BLOCK_SIZE ) {
-    const GBReal *sumBuf = sumBuffers + myList.force_list_start + j;
-    GBReal sumOut = 0.f;
-    for ( int i = 0; i < myList.force_list_size; ++i ) {
-      GBReal sumVal = *sumBuf;
-      sumOut += sumVal;
-      sumBuf += myList.patch_stride;
-    } // i
-    const int dest = myList.force_output_start + j;
-    sum[dest] = sumOut;
-  } // j
-} // GBIS_Atom_Reduction
+#undef KEPLER_SHUFFLE
+#ifdef __CUDA_ARCH__
+#define KEPLER_SHUFFLE
+#if __CUDA_ARCH__ < 300
+#undef KEPLER_SHUFFLE
+#endif
+#endif
 
 //1111111111111111111111111111111111111111111111111111111111
 //
@@ -152,182 +18,242 @@ __device__ __forceinline__ static void GBIS_Atom_Reduction_Kernel (
 __global__ static void GBIS_P1_Kernel (
   const patch_pair *patch_pairs, // atoms pointers and such
   const atom *atoms,             // position & charge
-  const atom_param *atom_params,
   const float *intRad0,          // read in intrinsic radius
   const float *intRadS,          // read in intrinsic radius
-  GBReal *psiSumBuffers,         // write out psi summation
-  GBReal *psiSum,
+  GBReal *tmp_psiSum,            // temporary device memory
+  GBReal *psiSum,                // host-mapped memory
   const float a_cut,             // P1 interaction cutoff
   const float rho_0,             // H(i,j) parameter
   float3 lata,
   float3 latb,
   float3 latc,
-  const force_list *force_lists,
   unsigned int *P1_counters
 ) {
-  int tx = threadIdx.x;
-  int bx = blockIdx.x;
-#ifdef __DEVICE_EMULATION__
-//  printf("GBIS_P1: Blk(%3i) Thd(%3i)\n",bx,tx);
-#endif
-// one block per patch_pair
-// BLOCK_SIZE 128 threads per block
-// SHARED_SIZE 32
-// PATCH_PAIR_SIZE 16
-// PATCH_PAIR_USED 15
 
-//macro for patch pair
-#ifdef __DEVICE_EMULATION__
-  #define myPatchPair (*(patch_pair*)(&pp.i))
-#else
-  #define myPatchPair pp.pp
+  // shared memory
+  __shared__ GBReal sh_psiSumJ_2d[NUM_WARP][WARPSIZE];
+  __shared__ patch_pair sh_patch_pair;
+#ifndef KEPLER_SHUFFLE
+  __shared__ atom sh_jpq_2d[NUM_WARP][WARPSIZE];
+  __shared__ float sh_intRad0j_2d[NUM_WARP][WARPSIZE];
 #endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    patch_pair pp;
-#endif
-    unsigned int i[PATCH_PAIR_SIZE];
-  } pp;
-  if ( tx < PATCH_PAIR_USED ) {
-    unsigned int tmp = ((unsigned int*)patch_pairs)[PATCH_PAIR_SIZE*bx+tx];
-    pp.i[tx] = tmp;
-  } // ?
 
-
-//macro for list of j atoms
-#ifdef __DEVICE_EMULATION__
-  #define jatoms ((atom*)(jpqu.i))
-#else
-  #define jatoms jpqu.d
+  volatile GBReal* sh_psiSumJ = sh_psiSumJ_2d[threadIdx.y];
+#ifndef KEPLER_SHUFFLE
+  volatile atom* sh_jpq = sh_jpq_2d[threadIdx.y];
+  volatile float* sh_intRad0j = sh_intRad0j_2d[threadIdx.y];
 #endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    atom d[SHARED_SIZE];
-#endif
-    int i[4*SHARED_SIZE];
-    float f[4*SHARED_SIZE];
-  } jpqu;
 
-  // convert scaled offset with current lattice
-  if ( tx == 0 ) {
-    float offx = myPatchPair.offset.x * lata.x
-               + myPatchPair.offset.y * latb.x
-               + myPatchPair.offset.z * latc.x;
-    float offy = myPatchPair.offset.x * lata.y
-               + myPatchPair.offset.y * latb.y
-               + myPatchPair.offset.z * latc.y;
-    float offz = myPatchPair.offset.x * lata.z
-               + myPatchPair.offset.y * latb.z
-               + myPatchPair.offset.z * latc.z;
-    myPatchPair.offset.x = offx;
-    myPatchPair.offset.y = offy;
-    myPatchPair.offset.z = offz;
+  // Load data into shared memory
+  {
+    const int t = threadIdx.x + threadIdx.y*WARPSIZE;
+    if (t < PATCH_PAIR_SIZE) {
+      int* src = (int *)&patch_pairs[blockIdx.x];
+      int* dst = (int *)&sh_patch_pair;
+      dst[t] = src[t];
+    }
+    __syncthreads();
+
+    // convert scaled offset with current lattice and write into shared memory
+    if (t == 0) {
+      float offx = sh_patch_pair.offset.x * lata.x 
+                  + sh_patch_pair.offset.y * latb.x
+                  + sh_patch_pair.offset.z * latc.x;
+      float offy = sh_patch_pair.offset.x * lata.y
+                  + sh_patch_pair.offset.y * latb.y
+                  + sh_patch_pair.offset.z * latc.y;
+      float offz = sh_patch_pair.offset.x * lata.z
+                  + sh_patch_pair.offset.y * latb.z
+                  + sh_patch_pair.offset.z * latc.z;
+      sh_patch_pair.offset.x = offx;
+      sh_patch_pair.offset.y = offy;
+      sh_patch_pair.offset.z = offz;
+    }
+    __syncthreads();
   }
-  __syncthreads();
-
-  int patch1size = myPatchPair.patch1_size;
-  int patch2size = myPatchPair.patch2_size;
 
   //iterate over chunks of atoms within Patch 1
-  for ( int blocki = 0; blocki < patch1size; blocki += BLOCK_SIZE ) {
+  for (int blocki = threadIdx.y*WARPSIZE; blocki < sh_patch_pair.patch1_size; blocki += NUM_WARP*WARPSIZE) {
+
+    int nloopi = sh_patch_pair.patch1_size - blocki;
+    nloopi = min(nloopi, WARPSIZE);
 
     //this thread calculates only the force on atomi; iterating over js
     atom atomi;
-    //int iindex;
+    float intRadSi;
     int i;
 
     // load BLOCK of Patch i atoms
-    if ( blocki + tx < patch1size ) {
-      i = myPatchPair.patch1_atom_start + blocki + tx;
+    if ( blocki + threadIdx.x < sh_patch_pair.patch1_size ) {
+      i = sh_patch_pair.patch1_start + blocki + threadIdx.x;
       float4 tmpa = ((float4*)atoms)[i];
-      atomi.position.x = tmpa.x + myPatchPair.offset.x;
-      atomi.position.y = tmpa.y + myPatchPair.offset.y;
-      atomi.position.z = tmpa.z + myPatchPair.offset.z;
+      atomi.position.x = tmpa.x + sh_patch_pair.offset.x;
+      atomi.position.y = tmpa.y + sh_patch_pair.offset.y;
+      atomi.position.z = tmpa.z + sh_patch_pair.offset.z;
       atomi.charge = intRad0[i]; // overwrite charge with radius
-      //iindex =  ((uint4 *)(atom_params))[i].y; // store index
+      intRadSi = intRadS[i];
     } // load patch 1
 
     //init intermediate variables
     GBReal psiSumI = 0.f; // each thread accumulating single psi
 
-    //iterate over chunks of atoms within Patch 2
-    for ( int blockj = 0; blockj < patch2size; blockj += SHARED_SIZE ) {
+    const bool diag_patch_pair = (sh_patch_pair.patch1_start) == (sh_patch_pair.patch2_start);
+    int blockj = (diag_patch_pair) ? blocki : 0;
 
-      int shared_size = patch2size - blockj;
-      if ( shared_size > SHARED_SIZE )
-        shared_size = SHARED_SIZE;
-      __syncthreads();
+    //iterate over chunks of atoms within Patch 2
+    for (; blockj < sh_patch_pair.patch2_size; blockj += WARPSIZE ) {
+
+      int nloopj = sh_patch_pair.patch2_size - blockj;
+      nloopj = min(nloopj, WARPSIZE);
+
+#ifdef KEPLER_SHUFFLE
+      float xj;
+      float yj;
+      float zj;
+      float chargej;
+      float intRad0j_val;
+#endif
 
       //load smaller chunk of j atoms into shared memory: coordinates
-
-      int j = myPatchPair.patch2_atom_start + blockj;
-      if ( tx < 4 * shared_size ) {
-        jpqu.i[tx] = ((unsigned int *)(atoms       + j))[tx];
+      if (blockj + threadIdx.x < sh_patch_pair.patch2_size) {
+        int j = sh_patch_pair.patch2_start + blockj + threadIdx.x;
+        float4 tmpa = ((float4*)atoms)[j];
+#ifdef KEPLER_SHUFFLE
+        xj = tmpa.x;
+        yj = tmpa.y;
+        zj = tmpa.z;
+        chargej = intRadS[j];
+        intRad0j_val = intRad0[j];
+#else
+        sh_jpq[threadIdx.x].position.x = tmpa.x;
+        sh_jpq[threadIdx.x].position.y = tmpa.y;
+        sh_jpq[threadIdx.x].position.z = tmpa.z;
+        sh_jpq[threadIdx.x].charge = intRadS[j];
+        sh_intRad0j[threadIdx.x] = intRad0[j];
+#endif
       }
-      __syncthreads();
 
-      //load smaller chunk of j atoms into shared memory: radii
-      if ( tx < shared_size ) { // every 4th thread
-        jatoms[tx].charge = intRadS[j+tx]; // load radius into charge float
-        //printf("jatom2 = %7.3f\n", jatoms[tx].charge);
+      const bool diag_tile = (sh_patch_pair.patch1_start + blocki == sh_patch_pair.patch2_start + blockj);
+      const int modval = diag_tile ? 2*WARPSIZE : WARPSIZE;
+
+      sh_psiSumJ[threadIdx.x] = 0.f;
+
+      //each thread loop over shared atoms
+      int t = diag_tile ? 1 : 0;
+#ifdef KEPLER_SHUFFLE
+      if (diag_tile) {
+        xj = __shfl(xj, (threadIdx.x+1) & (WARPSIZE-1) );
+        yj = __shfl(yj, (threadIdx.x+1) & (WARPSIZE-1) );
+        zj = __shfl(zj, (threadIdx.x+1) & (WARPSIZE-1) );
+        chargej = __shfl(chargej, (threadIdx.x+1) & (WARPSIZE-1) );
+        intRad0j_val = __shfl(intRad0j_val, (threadIdx.x+1) & (WARPSIZE-1) );
       }
-      __syncthreads();
+#endif
 
-      if ( blocki + tx < patch1size ) {
-        //each thread loop over shared atoms
-        for ( int j = 0; j < shared_size; ++j ) {
-          float dx = atomi.position.x - jatoms[j].position.x;
-          float dy = atomi.position.y - jatoms[j].position.y;
-          float dz = atomi.position.z - jatoms[j].position.z;
+      for (; t < WARPSIZE; ++t ) {
+        int j = (t + threadIdx.x) % modval;
+#ifndef KEPLER_SHUFFLE
+        float xj = sh_jpq[j].position.x;
+        float yj = sh_jpq[j].position.y;
+        float zj = sh_jpq[j].position.z;
+        float chargej = sh_jpq[j].charge;
+        float intRad0j_val = sh_intRad0j[j];
+#endif
+        if (j < nloopj && threadIdx.x < nloopi) {
+          float dx = atomi.position.x - xj;
+          float dy = atomi.position.y - yj;
+          float dz = atomi.position.z - zj;
           float r2 = dx*dx + dy*dy + dz*dz;
 
           // within cutoff        different atoms
           if (r2 < (a_cut+FS_MAX)*(a_cut+FS_MAX) && r2 > 0.01f) {
-            //int jj = myPatchPair.patch2_atom_start + blockj + j;
-            //int jindex =  ((uint4 *)(atom_params))[jj].y; // store index
-
             // calculate H(i,j) [and not H(j,i)]
             float r_i = 1.f / sqrt(r2);
             float r  = r2 * r_i;
             float hij;
             int dij;
-            CalcH(r,r2,r_i,a_cut,atomi.charge,jatoms[j].charge,hij,dij);
-
-          psiSumI += hij;
-
+            CalcH(r,r2,r_i,a_cut,atomi.charge,chargej,hij,dij);
+            psiSumI += hij;
+            float hji;
+            int dji;
+            CalcH(r,r2,r_i,a_cut,intRad0j_val,intRadSi,hji,dji);
+            sh_psiSumJ[j] += hji;
           } // cutoff
-        } // for j
-      } // if thread in bounds
+        } // if (j < nloopj)
+#ifdef KEPLER_SHUFFLE        
+        xj = __shfl(xj, (threadIdx.x+1) & (WARPSIZE-1) );
+        yj = __shfl(yj, (threadIdx.x+1) & (WARPSIZE-1) );
+        zj = __shfl(zj, (threadIdx.x+1) & (WARPSIZE-1) );
+        chargej = __shfl(chargej, (threadIdx.x+1) & (WARPSIZE-1) );
+        intRad0j_val = __shfl(intRad0j_val, (threadIdx.x+1) & (WARPSIZE-1) );
+#endif
+      } // for t
+
+      if (blockj + threadIdx.x < sh_patch_pair.patch2_size) {
+        int i_out = sh_patch_pair.patch2_start + blockj + threadIdx.x;
+        atomicAdd(&tmp_psiSum[i_out], sh_psiSumJ[threadIdx.x]);
+      }
+
     } // for block j
     //psiSumI now contains contributions from all j in 2nd patch
 
     // write psiSum to global memory buffer; to be accumulated later
-    if ( blocki + tx < myPatchPair.patch1_force_size) {
-      int i_out = myPatchPair.patch1_force_start + blocki + tx;
-      psiSumBuffers[i_out] = psiSumI;
+    if ( blocki + threadIdx.x < sh_patch_pair.patch1_size) {
+      int i_out = sh_patch_pair.patch1_start + blocki + threadIdx.x;
+      atomicAdd(&tmp_psiSum[i_out], psiSumI);
     }
   } // for block i
 
- { // start of force sum
-  // make sure psiSums are visible in global memory
-  __threadfence();
-  __syncthreads();
-  __shared__ bool doSum;
+  { // start of force sum
+    // make sure psiSums are visible in global memory
+    __threadfence();
+    __syncthreads();
 
-  if (threadIdx.x == 0) {
-    int fli = myPatchPair.patch1_force_list_index;
-    int fls = myPatchPair.patch1_force_list_size;
-    int old = atomicInc(P1_counters+fli,fls-1);
-    doSum = ( old == fls - 1 );
-  }
+    // Mark patch pair (patch1_ind, patch2_ind) as "done"
+    volatile bool* patch_done = (volatile bool *)&sh_patch_pair.pad1;
+    int patch1_ind = sh_patch_pair.patch1_ind;
+    int patch2_ind = sh_patch_pair.patch2_ind;
 
-  __syncthreads();
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+      patch_done[0] = false;
+      patch_done[1] = false;
 
-  if ( doSum ) {
-    GBIS_Atom_Reduction_Kernel(myPatchPair.patch1_force_list_index,
-       force_lists, psiSumBuffers, psiSum);
-  }
- } // end of force sum
+      unsigned int patch1_num_pairs = sh_patch_pair.patch1_num_pairs;
+      int patch1_old = atomicInc(&P1_counters[patch1_ind], patch1_num_pairs-1);
+      if (patch1_old+1 == patch1_num_pairs) patch_done[0] = true;
+      if (patch1_ind != patch2_ind) {
+        unsigned int patch2_num_pairs = sh_patch_pair.patch2_num_pairs;
+        int patch2_old = atomicInc(&P1_counters[patch2_ind], patch2_num_pairs-1);
+        if (patch2_old+1 == patch2_num_pairs) patch_done[1] = true;
+      }
+    }
+    // sync threads so that patch1_done and patch2_done are visible to all threads
+    __syncthreads();
+
+    if (patch_done[0]) {
+      const int start = sh_patch_pair.patch1_start;
+      for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch1_size;i+=NUM_WARP*WARPSIZE) {
+        psiSum[start+i] = tmp_psiSum[start+i];
+      }
+    }
+
+    if (patch_done[1]) {
+      const int start = sh_patch_pair.patch2_start;
+      for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch2_size;i+=NUM_WARP*WARPSIZE) {
+        psiSum[start+i] = tmp_psiSum[start+i];
+      }
+    }
+
+    if (patch_done[0] || patch_done[1]) {
+      // Make sure page-locked host forces are up-to-date
+#if __CUDA_ARCH__ < 200
+      __threadfence();
+#else
+      __threadfence_system();
+#endif
+    }
+
+  } // end of force sum
 } //GBIS_P1
 
 //2222222222222222222222222222222222222222222222222222222222
@@ -338,10 +264,9 @@ __global__ static void GBIS_P1_Kernel (
 __global__ static void GBIS_P2_Kernel (
   const patch_pair *patch_pairs,// atoms pointers and such
   const atom *atoms,            // position & charge
-  const atom_param *atom_params,
   const float *bornRad,         // read in Born radius
-  GBReal *dEdaSumBuffers,       // write out dEda summation
-  GBReal *dEdaSum,
+  GBReal *tmp_dEdaSum,          // temporary device memory
+  GBReal *dEdaSum,              // host-mapped memory
   const float a_cut,            // P1 interaction cutoff
   const float r_cut,            // P1 interaction cutoff
   const float scaling,          // scale nonbonded
@@ -354,78 +279,58 @@ __global__ static void GBIS_P2_Kernel (
   float3 latc,
   const int doEnergy,           // calculate energy too?
   const int doFullElec,         // calc dEdaSum for P3 full electrostatics
-  const force_list *force_lists,
-  float4 *forceBuffers,
-  float4 *forces,
-  float *energyBuffers,
-  float *energy,
+  float4 *tmp_forces,           // temporary  device memory
+  float4 *forces,               // host-mapped memory
+  float *tmp_energy,            // temporary device memory
+  float *energy,                // host-mapped memory
   unsigned int *P2_counters
 ) {
-  int tx = threadIdx.x;
-  int bx = blockIdx.x;
-#ifdef __DEVICE_EMULATION__
-//  printf("GBIS_P2: Blk(%3i) Thd(%3i)\n",bx,tx);
-#endif
-// one block per patch_pair
-// BLOCK_SIZE 128 threads per block
-// SHARED_SIZE 32
-// PATCH_PAIR_SIZE 16
-// PATCH_PAIR_USED 15
 
-//macro for patch pair
-#ifdef __DEVICE_EMULATION__
-  #define myPatchPair (*(patch_pair*)(&pp.i))
-#else
-  #define myPatchPair pp.pp
+  // Shared memory
+  __shared__ patch_pair sh_patch_pair;
+#ifndef KEPLER_SHUFFLE
+  __shared__ atom sh_jpq_2d[NUM_WARP][WARPSIZE];
+  __shared__ float sh_jBornRad_2d[NUM_WARP][WARPSIZE];
 #endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    patch_pair pp;
+  __shared__ float3 sh_forceJ_2d[NUM_WARP][WARPSIZE];
+  __shared__ float sh_dEdaSumJ_2d[NUM_WARP][WARPSIZE];
+
+#ifndef KEPLER_SHUFFLE
+  volatile atom* sh_jpq = sh_jpq_2d[threadIdx.y];
+  volatile float* sh_jBornRad = sh_jBornRad_2d[threadIdx.y];
 #endif
-    unsigned int i[PATCH_PAIR_SIZE];
-  } pp;
-  if ( tx < PATCH_PAIR_USED ) {
-    unsigned int tmp = ((unsigned int*)patch_pairs)[PATCH_PAIR_SIZE*bx+tx];
-    pp.i[tx] = tmp;
-  } // ?
+  volatile float3* sh_forceJ = sh_forceJ_2d[threadIdx.y];
+  volatile float* sh_dEdaSumJ = sh_dEdaSumJ_2d[threadIdx.y];
 
+  // Load data into shared memory
+  {
+    const int t = threadIdx.x + threadIdx.y*WARPSIZE;
+    if (t < PATCH_PAIR_SIZE) {
+      int* src = (int *)&patch_pairs[blockIdx.x];
+      int* dst = (int *)&sh_patch_pair;
+      dst[t] = src[t];
+    }
+    __syncthreads();
 
-//macro for list of j atoms
-#ifdef __DEVICE_EMULATION__
-  #define jatoms ((atom*)(jpqu.i))
-#else
-  #define jatoms jpqu.d
-#endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    atom d[SHARED_SIZE];
-#endif
-    int i[4*SHARED_SIZE];
-    float f[4*SHARED_SIZE];
-  } jpqu;
-
-  __shared__ float jBornRad[SHARED_SIZE];
-  float energyT = 0.f; // total energy for this thread; to be reduced
-
-  // convert scaled offset with current lattice
-  if ( tx == 0 ) {
-    float offx = myPatchPair.offset.x * lata.x
-               + myPatchPair.offset.y * latb.x
-               + myPatchPair.offset.z * latc.x;
-    float offy = myPatchPair.offset.x * lata.y
-               + myPatchPair.offset.y * latb.y
-               + myPatchPair.offset.z * latc.y;
-    float offz = myPatchPair.offset.x * lata.z
-               + myPatchPair.offset.y * latb.z
-               + myPatchPair.offset.z * latc.z;
-    myPatchPair.offset.x = offx;
-    myPatchPair.offset.y = offy;
-    myPatchPair.offset.z = offz;
+    // convert scaled offset with current lattice and write into shared memory
+    if (t == 0) {
+      float offx = sh_patch_pair.offset.x * lata.x 
+                  + sh_patch_pair.offset.y * latb.x
+                  + sh_patch_pair.offset.z * latc.x;
+      float offy = sh_patch_pair.offset.x * lata.y
+                  + sh_patch_pair.offset.y * latb.y
+                  + sh_patch_pair.offset.z * latc.y;
+      float offz = sh_patch_pair.offset.x * lata.z
+                  + sh_patch_pair.offset.y * latb.z
+                  + sh_patch_pair.offset.z * latc.z;
+      sh_patch_pair.offset.x = offx;
+      sh_patch_pair.offset.y = offy;
+      sh_patch_pair.offset.z = offz;
+    }
+    __syncthreads();
   }
-  __syncthreads();
 
-  int patch1size = myPatchPair.patch1_size;
-  int patch2size = myPatchPair.patch2_size;
+  float energyT = 0.f; // total energy for this thread; to be reduced
 
   //values used in loop
   float r_cut2 = r_cut*r_cut;
@@ -435,71 +340,100 @@ __global__ static void GBIS_P2_Kernel (
   float epsilon_p_i = 1.f / epsilon_p;
 
   //iterate over chunks of atoms within Patch 1
-  for ( int blocki = 0; blocki < patch1size; blocki += BLOCK_SIZE ) {
+  for ( int blocki = threadIdx.y*WARPSIZE; blocki < sh_patch_pair.patch1_size; blocki += BLOCK_SIZE ) {
+
+    int nloopi = sh_patch_pair.patch1_size - blocki;
+    nloopi = min(nloopi, WARPSIZE);
 
     //this thread calculates only the force on atomi; iterating over js
     atom atomi;
     float bornRadI;
-    //int iindex;
     int i;
 
     // load BLOCK of Patch i atoms
-    if ( blocki + tx < patch1size ) {
-      i = myPatchPair.patch1_atom_start + blocki + tx;
+    if ( blocki + threadIdx.x < sh_patch_pair.patch1_size ) {
+      i = sh_patch_pair.patch1_start + blocki + threadIdx.x;
       float4 tmpa = ((float4*)atoms)[i];
-      atomi.position.x = tmpa.x + myPatchPair.offset.x;
-      atomi.position.y = tmpa.y + myPatchPair.offset.y;
-      atomi.position.z = tmpa.z + myPatchPair.offset.z;
+      atomi.position.x = tmpa.x + sh_patch_pair.offset.x;
+      atomi.position.y = tmpa.y + sh_patch_pair.offset.y;
+      atomi.position.z = tmpa.z + sh_patch_pair.offset.z;
       atomi.charge = - tmpa.w * scaling;
       bornRadI = bornRad[i];
-      //iindex =  ((uint4 *)(atom_params))[i].y; // store index
     } // load patch 1
 
     //init intermediate variables
     GBReal dEdaSumI = 0.f; // each thread accumulating single psi
-    float4 forceI; forceI.x = forceI.y = forceI.z = forceI.w = 0.f;
+    float3 forceI;
+    forceI.x = 0.f;
+    forceI.y = 0.f;
+    forceI.z = 0.f;
 
+    const bool diag_patch_pair = (sh_patch_pair.patch1_start) == (sh_patch_pair.patch2_start);
+    int blockj = (diag_patch_pair) ? blocki : 0;
     //iterate over chunks of atoms within Patch 2
-    for ( int blockj = 0; blockj < patch2size; blockj += SHARED_SIZE ) {
+    for (; blockj < sh_patch_pair.patch2_size; blockj += WARPSIZE) {
 
-      int shared_size = patch2size - blockj;
-      if ( shared_size > SHARED_SIZE )
-        shared_size = SHARED_SIZE;
-      __syncthreads();
+      int nloopj = sh_patch_pair.patch2_size - blockj;
+      nloopj = min(nloopj, WARPSIZE);
+
+#ifdef KEPLER_SHUFFLE
+      float xj;
+      float yj;
+      float zj;
+      float chargej;
+      float bornRadJ;
+#endif
 
       //load smaller chunk of j atoms into shared memory: coordinates
-      int j = myPatchPair.patch2_atom_start + blockj;
-      if ( tx < 4 * shared_size ) {
-        jpqu.i[tx] = ((unsigned int *)(atoms + j))[tx];
+      if (blockj + threadIdx.x < sh_patch_pair.patch2_size) {
+        int j = sh_patch_pair.patch2_start + blockj + threadIdx.x;
+        float4 tmpa = ((float4*)atoms)[j];
+#ifdef KEPLER_SHUFFLE
+        xj = tmpa.x;
+        yj = tmpa.y;
+        zj = tmpa.z;
+        chargej = tmpa.w;
+        bornRadJ = bornRad[j];
+#else
+        sh_jpq[threadIdx.x].position.x = tmpa.x;
+        sh_jpq[threadIdx.x].position.y = tmpa.y;
+        sh_jpq[threadIdx.x].position.z = tmpa.z;
+        sh_jpq[threadIdx.x].charge = tmpa.w;
+        sh_jBornRad[threadIdx.x] = bornRad[j];
+#endif
       }
-      __syncthreads();
 
-      //load smaller chunk of j atoms into shared memory: radii
-      if ( tx < shared_size ) {
-        jBornRad[tx] = bornRad[j+tx]; // load Born radius into shared
-        //printf("BornRadius = %7.3f\n", jBornRadii[tx]);
-      }
-      __syncthreads();
+      sh_forceJ[threadIdx.x].x = 0.f;
+      sh_forceJ[threadIdx.x].y = 0.f;
+      sh_forceJ[threadIdx.x].z = 0.f;
+      sh_dEdaSumJ[threadIdx.x] = 0.f;
 
-      if ( blocki + tx < patch1size ) {
-        //each thread loop over shared atoms
-        for ( int j = 0; j < shared_size; ++j ) {
-          float dx = atomi.position.x - jatoms[j].position.x;
-          float dy = atomi.position.y - jatoms[j].position.y;
-          float dz = atomi.position.z - jatoms[j].position.z;
+      const bool diag_tile = (sh_patch_pair.patch1_start + blocki == sh_patch_pair.patch2_start + blockj);
+      const int modval = diag_tile ? 2*WARPSIZE : WARPSIZE;
+      for (int t=0; t < WARPSIZE; ++t ) {
+        int j = (t + threadIdx.x) % modval;
+#ifndef KEPLER_SHUFFLE
+        float xj = sh_jpq[j].position.x;
+        float yj = sh_jpq[j].position.y;
+        float zj = sh_jpq[j].position.z;
+        float chargej = sh_jpq[j].charge;
+        float bornRadJ = sh_jBornRad[j];
+#endif
+        if (j < nloopj && threadIdx.x < nloopi) {
+          float dx = atomi.position.x - xj;
+          float dy = atomi.position.y - yj;
+          float dz = atomi.position.z - zj;
           float r2 = dx*dx + dy*dy + dz*dz;
 
           // within cutoff different atoms
-          if (r2 < r_cut*r_cut && r2 > 0.01f) {
-            //int jj = myPatchPair.patch2_atom_start + blockj + j;
-            //int jindex =  ((uint4 *)(atom_params))[jj].y; // store index
+          if (r2 < r_cut2 && r2 > 0.01f) {
 
             float r_i = 1.f / sqrt(r2);
             float r  = r2 * r_i;
-            float bornRadJ = jBornRad[j];
+            //float bornRadJ = sh_jBornRad[j];
 
             //calculate GB energy
-            float qiqj = atomi.charge*jatoms[j].charge;
+            float qiqj = atomi.charge*chargej;
             float aiaj = bornRadI*bornRadJ;
             float aiaj4 = 4*aiaj;
             float expr2aiaj4 = exp(-r2/aiaj4);
@@ -523,31 +457,35 @@ __global__ static void GBIS_P2_Kernel (
               scale = r2 * r_cut_2 - 1.f;
               scale *= scale;
               ddrScale = r*(r2-r_cut2)*r_cut_4;
-              energyT += gbEij * scale * 0.5f;
-              //printf("PAIRENERGY = %15.7e\n", gbEij*scale*0.5);
+              energyT += gbEij * scale;
               forcedEdr = -(ddrGbEij)*scale-(gbEij)*ddrScale;
             } else {
-              energyT += gbEij * 0.5f;
-              //printf("PAIRENERGY = %15.7e\n", gbEij*0.5);
+              energyT += gbEij;
               forcedEdr = -ddrGbEij;
             }
 
             //add dEda
-            float dEdai = 0.f;
             if (doFullElec) {
-              //gbisParams->dEdaSum[0][i] += dEdai*scale;
-              dEdai = 0.5f*qiqj*f_i*f_i
-                      *(kappa*epsilon_s_i*expkappa-Dij*f_i)
-                      *(aiaj+0.25f*r2)*expr2aiaj4/bornRadI*scale;//0
+              float dEdai = 0.5f*qiqj*f_i*f_i
+                        *(kappa*epsilon_s_i*expkappa-Dij*f_i)
+                        *(aiaj+0.25f*r2)*expr2aiaj4/bornRadI*scale;//0
               dEdaSumI += dEdai;
+              float dEdaj = 0.5f*qiqj*f_i*f_i
+                        *(kappa*epsilon_s_i*expkappa-Dij*f_i)
+                        *(aiaj+0.25f*r2)*expr2aiaj4/bornRadJ*scale;//0
+              sh_dEdaSumJ[j] += dEdaj;
             }
 
             forcedEdr *= r_i;
-            forceI.x += dx*forcedEdr;
-            forceI.y += dy*forcedEdr;
-            forceI.z += dz*forcedEdr;
-
-
+            float tmpx = dx*forcedEdr;
+            float tmpy = dy*forcedEdr;
+            float tmpz = dz*forcedEdr;
+            forceI.x += tmpx;
+            forceI.y += tmpy;
+            forceI.z += tmpz;
+            sh_forceJ[j].x -= tmpx;
+            sh_forceJ[j].y -= tmpy;
+            sh_forceJ[j].z -= tmpz;
           } // within cutoff
           if (r2 < 0.01f) {
             // GB Self Energy
@@ -559,70 +497,115 @@ __global__ static void GBIS_P2_Kernel (
               energyT += 0.5f*gbEij;
             }
           } //same atom or within cutoff
-        } // for j
-      } // if thread in bounds
+        } // if (j < nloopj)
+#ifdef KEPLER_SHUFFLE
+        xj = __shfl(xj, (threadIdx.x+1) & (WARPSIZE-1) );
+        yj = __shfl(yj, (threadIdx.x+1) & (WARPSIZE-1) );
+        zj = __shfl(zj, (threadIdx.x+1) & (WARPSIZE-1) );
+        chargej = __shfl(chargej, (threadIdx.x+1) & (WARPSIZE-1) );
+        bornRadJ = __shfl(bornRadJ, (threadIdx.x+1) & (WARPSIZE-1) );
+#endif
+      } // for t
+      if ( blockj + threadIdx.x < sh_patch_pair.patch2_size) {
+        int i_out = sh_patch_pair.patch2_start + blockj + threadIdx.x;
+        atomicAdd(&tmp_dEdaSum[i_out], sh_dEdaSumJ[threadIdx.x]);
+        atomicAdd(&tmp_forces[i_out].x, sh_forceJ[threadIdx.x].x);
+        atomicAdd(&tmp_forces[i_out].y, sh_forceJ[threadIdx.x].y);
+        atomicAdd(&tmp_forces[i_out].z, sh_forceJ[threadIdx.x].z);
+      }
     } // for block j
     //psiSumI now contains contributions from all j in 2nd patch
 
     // write psiSum to global memory buffer; to be accumulated later
-    if ( blocki + tx < myPatchPair.patch1_force_size) {
-      int i_out = myPatchPair.patch1_force_start + blocki + tx;
-      dEdaSumBuffers[i_out] = dEdaSumI;
-      forceBuffers[i_out] = forceI;
+    if ( blocki + threadIdx.x < sh_patch_pair.patch1_size) {
+      int i_out = sh_patch_pair.patch1_start + blocki + threadIdx.x;
+      atomicAdd(&tmp_dEdaSum[i_out], dEdaSumI);
+      atomicAdd(&tmp_forces[i_out].x, forceI.x);
+      atomicAdd(&tmp_forces[i_out].y, forceI.y);
+      atomicAdd(&tmp_forces[i_out].z, forceI.z);
     }
   } // for block i
-  //printf("energyT[%03i,%03i] = %15.7e\n", blockIdx.x, tx, energyT);
 
-//Energy Reduction
+  //Energy Reduction
   if (doEnergy) {
-    const int i_out = myPatchPair.virial_start / 16;
-    __shared__ float energySh[BLOCK_SIZE];
-    energySh[tx] = energyT;
-    __syncthreads();
-
-    for ( unsigned int b = blockDim.x/2; b > 0 ; b >>= 1 ) {
-      if ( tx < b ) {
-        //printf("RED eSh[%i] += eSh[%i]\n", tx, tx+b);
-        energySh[tx] += energySh[tx+b];
-      }
-      __syncthreads();
+    // Do not have to sync here because each warp writes to the same
+    // portion of sh_jforce_2d as in the above force computation loop
+    volatile float* sh_energy = (float *)&sh_forceJ_2d[threadIdx.y][0].x;
+    // Reduce within warps
+    sh_energy[threadIdx.x] = (float)energyT;
+    for (int d=1;d < WARPSIZE;d*=2) {
+      int pos = threadIdx.x + d;
+      float val = (pos < WARPSIZE) ? sh_energy[pos] : 0.0f;
+      sh_energy[threadIdx.x] += val;
     }
-    //const int i_out = myPatchPair.virial_start + tx;
-    if (tx == 0) {
-      energyBuffers[i_out] = energySh[0]; // TODO
-      //printf("eB[%i] = %15.7e\n", i_out, energySh[0]);
+    __syncthreads();
+    // Reduce among warps
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+      float tot_energy = 0.0f;
+#pragma unroll
+      for (int i=0;i < NUM_WARP;++i) {
+        tot_energy += ((float *)&sh_forceJ_2d[i][0].x)[0];
+      }
+      int patch1_ind = sh_patch_pair.patch1_ind;
+      atomicAdd(&tmp_energy[patch1_ind], (float)tot_energy);
     }
   } //end Energy Reduction
 
- { // start of reduction
-  // make sure psiSums are visible in global memory
-  __threadfence();
-  __syncthreads();
+  { // start of reduction
+    // make sure tmp_forces and tmp_dEdaSum are visible in global memory
+    __threadfence();
+    __syncthreads();
 
-  __shared__ bool doSum;
+    // Mark patch pair (patch1_ind, patch2_ind) as "done"
+    volatile bool* patch_done = (volatile bool *)&sh_patch_pair.pad1;
+    int patch1_ind = sh_patch_pair.patch1_ind;
+    int patch2_ind = sh_patch_pair.patch2_ind;
 
-  if (threadIdx.x == 0) {
-    int fli = myPatchPair.patch1_force_list_index;
-    int fls = myPatchPair.patch1_force_list_size;
-    int old = atomicInc(P2_counters+fli,fls-1);
-    doSum = ( old == fls - 1 );
-  }
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+      patch_done[0] = false;
+      patch_done[1] = false;
 
-  __syncthreads();
-
-  if ( doSum ) {
-    GBIS_Atom_Reduction_Kernel(myPatchPair.patch1_force_list_index,
-       force_lists, dEdaSumBuffers, dEdaSum);
-    GBIS_Force_Reduction_Kernel(myPatchPair.patch1_force_list_index,
-       force_lists, forceBuffers, forces);
-    if ( doEnergy ) {
-      GBIS_Energy_Reduction_Kernel(myPatchPair.patch1_force_list_index,
-        force_lists, energyBuffers, energy);
+      unsigned int patch1_num_pairs = sh_patch_pair.patch1_num_pairs;
+      int patch1_old = atomicInc(&P2_counters[patch1_ind], patch1_num_pairs-1);
+      if (patch1_old+1 == patch1_num_pairs) patch_done[0] = true;
+      if (patch1_ind != patch2_ind) {
+        unsigned int patch2_num_pairs = sh_patch_pair.patch2_num_pairs;
+        int patch2_old = atomicInc(&P2_counters[patch2_ind], patch2_num_pairs-1);
+        if (patch2_old+1 == patch2_num_pairs) patch_done[1] = true;
+      }
     }
-  }
- } // end of sum
-} //GBIS_P2
+    // sync threads so that patch1_done and patch2_done are visible to all threads
+    __syncthreads();
 
+    if (patch_done[0]) {
+      const int start = sh_patch_pair.patch1_start;
+      for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch1_size;i+=NUM_WARP*WARPSIZE) {
+        forces[start+i] = tmp_forces[start+i];
+        dEdaSum[start+i] = tmp_dEdaSum[start+i];
+      }
+      energy[patch1_ind] = tmp_energy[patch1_ind];
+    }
+
+    if (patch_done[1]) {
+      const int start = sh_patch_pair.patch2_start;
+      for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch2_size;i+=NUM_WARP*WARPSIZE) {
+        forces[start+i] = tmp_forces[start+i];
+        dEdaSum[start+i] = tmp_dEdaSum[start+i];
+      }
+      energy[patch2_ind] = tmp_energy[patch2_ind];
+    }
+
+    if (patch_done[0] || patch_done[1]) {
+      // Make sure page-locked host arrays are up-to-date
+#if __CUDA_ARCH__ < 200
+      __threadfence();
+#else
+      __threadfence_system();
+#endif
+    }
+
+  } // end of sum
+} //GBIS_P2
 
 //3333333333333333333333333333333333333333333333333333333333
 //
@@ -632,7 +615,6 @@ __global__ static void GBIS_P2_Kernel (
 __global__ static void GBIS_P3_Kernel (
   const patch_pair *patch_pairs,  // atoms pointers and such
   const atom *atoms,              // position & charge
-  const atom_param *atom_params,
   const float *intRad0,           // read in intrinsic radius
   const float *intRadS,           // read in intrinsic radius
   const float *dHdrPrefix,        // read in prefix
@@ -642,172 +624,254 @@ __global__ static void GBIS_P3_Kernel (
   float3 lata,
   float3 latb,
   float3 latc,
-  const force_list *force_lists,
-  float4 *forceBuffers,
-  float4 *forces,
+  float4 *tmp_forces,             // temporary device memory
+  float4 *forces,                 // host-mapped memory
   unsigned int *P3_counters
 ) {
-  int tx = threadIdx.x;
-  int bx = blockIdx.x;
-#ifdef __DEVICE_EMULATION__
-//  printf("GBIS_P3: Blk(%3i) Thd(%3i)\n",bx,tx);
-#endif
 
-#ifdef __DEVICE_EMULATION__
-  #define myPatchPair (*(patch_pair*)(&pp.i))
-#else
-  #define myPatchPair pp.pp
+  // Shared memory
+  __shared__ patch_pair sh_patch_pair;
+#ifndef KEPLER_SHUFFLE
+  __shared__ atom sh_jpq_2d[NUM_WARP][WARPSIZE];
+  __shared__ float sh_intRadJ0_2d[NUM_WARP][WARPSIZE];
+  __shared__ float sh_jDHdrPrefix_2d[NUM_WARP][WARPSIZE];
 #endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    patch_pair pp;
-#endif
-    unsigned int i[PATCH_PAIR_SIZE];
-  } pp;
-  if ( tx < PATCH_PAIR_USED ) {
-    unsigned int tmp = ((unsigned int*)patch_pairs)[PATCH_PAIR_SIZE*bx+tx];
-    pp.i[tx] = tmp;
-  } // all threads load single shared patch pair
+  __shared__ float3 sh_forceJ_2d[NUM_WARP][WARPSIZE];
 
-//macro for list of j atoms
-#ifdef __DEVICE_EMULATION__
-  #define jatoms ((atom*)(jpqu.i))
-#else
-  #define jatoms jpqu.d
+#ifndef KEPLER_SHUFFLE
+  volatile atom* sh_jpq = sh_jpq_2d[threadIdx.y];
+  volatile float* sh_intRadJ0 = sh_intRadJ0_2d[threadIdx.y];
+  volatile float* sh_jDHdrPrefix = sh_jDHdrPrefix_2d[threadIdx.y];
 #endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    atom d[SHARED_SIZE];
-#endif
-    int i[4*SHARED_SIZE];
-    float f[4*SHARED_SIZE];
-  } jpqu;
+  volatile float3* sh_forceJ = sh_forceJ_2d[threadIdx.y];
 
-  __shared__ float jDHdrPrefix[SHARED_SIZE];
-  __shared__ float intRadJ0[SHARED_SIZE];
+  // Load data into shared memory
+  {
+    const int t = threadIdx.x + threadIdx.y*WARPSIZE;
+    if (t < PATCH_PAIR_SIZE) {
+      int* src = (int *)&patch_pairs[blockIdx.x];
+      int* dst = (int *)&sh_patch_pair;
+      dst[t] = src[t];
+    }
+    __syncthreads();
 
-  // convert scaled offset with current lattice
-  if ( tx == 0 ) {
-    float offx = myPatchPair.offset.x * lata.x
-               + myPatchPair.offset.y * latb.x
-               + myPatchPair.offset.z * latc.x;
-    float offy = myPatchPair.offset.x * lata.y
-               + myPatchPair.offset.y * latb.y
-               + myPatchPair.offset.z * latc.y;
-    float offz = myPatchPair.offset.x * lata.z
-               + myPatchPair.offset.y * latb.z
-               + myPatchPair.offset.z * latc.z;
-    myPatchPair.offset.x = offx;
-    myPatchPair.offset.y = offy;
-    myPatchPair.offset.z = offz;
+    // convert scaled offset with current lattice and write into shared memory
+    if (t == 0) {
+      float offx = sh_patch_pair.offset.x * lata.x 
+                  + sh_patch_pair.offset.y * latb.x
+                  + sh_patch_pair.offset.z * latc.x;
+      float offy = sh_patch_pair.offset.x * lata.y
+                  + sh_patch_pair.offset.y * latb.y
+                  + sh_patch_pair.offset.z * latc.y;
+      float offz = sh_patch_pair.offset.x * lata.z
+                  + sh_patch_pair.offset.y * latb.z
+                  + sh_patch_pair.offset.z * latc.z;
+      sh_patch_pair.offset.x = offx;
+      sh_patch_pair.offset.y = offy;
+      sh_patch_pair.offset.z = offz;
+    }
+    __syncthreads();
   }
-  __syncthreads();
 
   //iterate over chunks of atoms within Patch 1
-  for ( int blocki = 0; blocki < myPatchPair.patch1_size; blocki += BLOCK_SIZE ) {
+  for ( int blocki = threadIdx.y*WARPSIZE; blocki < sh_patch_pair.patch1_size; blocki += NUM_WARP*WARPSIZE ) {
+
+    int nloopi = sh_patch_pair.patch1_size - blocki;
+    nloopi = min(nloopi, WARPSIZE);
+
     //this thread calculates only the force on atomi; iterating over js
     atom atomi;
     float intRadIS;
-    //int iindex;
     int i;
     float dHdrPrefixI;
 
     // load BLOCK of Patch i atoms
-    if ( blocki + tx < myPatchPair.patch1_size ) {
-      i = myPatchPair.patch1_atom_start + blocki + tx;
+    if ( blocki + threadIdx.x < sh_patch_pair.patch1_size ) {
+      i = sh_patch_pair.patch1_start + blocki + threadIdx.x;
       float4 tmpa = ((float4*)atoms)[i];
-      atomi.position.x = tmpa.x + myPatchPair.offset.x;
-      atomi.position.y = tmpa.y + myPatchPair.offset.y;
-      atomi.position.z = tmpa.z + myPatchPair.offset.z;
+      atomi.position.x = tmpa.x + sh_patch_pair.offset.x;
+      atomi.position.y = tmpa.y + sh_patch_pair.offset.y;
+      atomi.position.z = tmpa.z + sh_patch_pair.offset.z;
       atomi.charge = intRad0[i]; // overwrite charge with radius
       intRadIS = intRadS[i];
-      //iindex =  ((uint4 *)(atom_params))[i].y; // store index
       dHdrPrefixI = dHdrPrefix[i];
     } // load patch 1
 
     //init intermediate variables
-    float4 forceI; forceI.x = forceI.y = forceI.z = forceI.w = 0.f;
+    float3 forceI;
+    forceI.x = 0.f;
+    forceI.y = 0.f;
+    forceI.z = 0.f;
 
+    const bool diag_patch_pair = (sh_patch_pair.patch1_start) == (sh_patch_pair.patch2_start);
+    int blockj = (diag_patch_pair) ? blocki : 0;
     //iterate over chunks of atoms within Patch 2
-    for ( int blockj = 0; blockj < myPatchPair.patch2_size; blockj += SHARED_SIZE ) {
+    for (; blockj < sh_patch_pair.patch2_size; blockj += WARPSIZE ) {
 
-      int shared_size = myPatchPair.patch2_size - blockj;
-      if ( shared_size > SHARED_SIZE )
-        shared_size = SHARED_SIZE;
-      __syncthreads();
+      int nloopj = sh_patch_pair.patch2_size - blockj;
+      nloopj = min(nloopj, WARPSIZE);
+
+#ifdef KEPLER_SHUFFLE
+      float xj;
+      float yj;
+      float zj;
+      float intRadSJ;
+      float dHdrPrefixJ;
+      float intRadJ0;
+#endif
 
       //load smaller chunk of j atoms into shared memory: coordinates
-
-      int j = myPatchPair.patch2_atom_start + blockj;
-      if ( tx < 4 * shared_size ) {
-        jpqu.i[tx] = ((unsigned int *)(atoms       + j))[tx];
+      if (blockj + threadIdx.x < sh_patch_pair.patch2_size) {
+        int j = sh_patch_pair.patch2_start + blockj + threadIdx.x;
+        float4 tmpa = ((float4*)atoms)[j];
+#ifdef KEPLER_SHUFFLE
+        xj = tmpa.x;
+        yj = tmpa.y;
+        zj = tmpa.z;
+        intRadSJ = intRadS[j];
+        dHdrPrefixJ = dHdrPrefix[j];
+        intRadJ0 = intRad0[j];
+#else
+        sh_jpq[threadIdx.x].position.x = tmpa.x;
+        sh_jpq[threadIdx.x].position.y = tmpa.y;
+        sh_jpq[threadIdx.x].position.z = tmpa.z;
+        sh_jpq[threadIdx.x].charge = intRadS[j];
+        sh_jDHdrPrefix[threadIdx.x] = dHdrPrefix[j]; // load dHdrPrefix into shared
+        sh_intRadJ0[threadIdx.x] = intRad0[j];
+#endif
       }
-      __syncthreads();
 
-      //load smaller chunk of j atoms into shared memory: radii
-      if ( tx < shared_size ) { // every 4th thread
-        jatoms[tx].charge = intRadS[j+tx]; // load radius into charge float
-        jDHdrPrefix[tx] = dHdrPrefix[j+tx]; // load dHdrPrefix into shared
-        intRadJ0[tx] = intRad0[j+tx];
+      sh_forceJ[threadIdx.x].x = 0.f;
+      sh_forceJ[threadIdx.x].y = 0.f;
+      sh_forceJ[threadIdx.x].z = 0.f;
+
+      const bool diag_tile = (sh_patch_pair.patch1_start + blocki == sh_patch_pair.patch2_start + blockj);
+      const int modval = diag_tile ? 2*WARPSIZE : WARPSIZE;
+#ifdef KEPLER_SHUFFLE
+      if (diag_tile) {
+        xj = __shfl(xj, (threadIdx.x+1) & (WARPSIZE-1) );
+        yj = __shfl(yj, (threadIdx.x+1) & (WARPSIZE-1) );
+        zj = __shfl(zj, (threadIdx.x+1) & (WARPSIZE-1) );
+        intRadSJ = __shfl(intRadSJ, (threadIdx.x+1) & (WARPSIZE-1) );
+        dHdrPrefixJ = __shfl(dHdrPrefixJ, (threadIdx.x+1) & (WARPSIZE-1) );
+        intRadJ0 = __shfl(intRadJ0, (threadIdx.x+1) & (WARPSIZE-1) );
       }
-      __syncthreads();
-
-      if ( blocki + tx < myPatchPair.patch1_size ) {
-        //each thread loop over shared atoms
-        for ( int j = 0; j < shared_size; ++j ) {
-          float dx = atomi.position.x - jatoms[j].position.x;
-          float dy = atomi.position.y - jatoms[j].position.y;
-          float dz = atomi.position.z - jatoms[j].position.z;
+#endif
+      int t = diag_tile ? 1 : 0;
+      for (; t < WARPSIZE; ++t ) {
+        int j = (t + threadIdx.x) % modval;
+#ifndef KEPLER_SHUFFLE
+        float xj = sh_jpq[j].position.x;
+        float yj = sh_jpq[j].position.y;
+        float zj = sh_jpq[j].position.z;
+        float intRadSJ = sh_jpq[j].charge;
+        float dHdrPrefixJ = sh_jDHdrPrefix[j];
+        float intRadJ0 = sh_intRadJ0[j];
+#endif
+        if (j < nloopj && threadIdx.x < nloopi) {
+          float dx = atomi.position.x - xj;
+          float dy = atomi.position.y - yj;
+          float dz = atomi.position.z - zj;
           float r2 = dx*dx + dy*dy + dz*dz;
 
           // within cutoff        different atoms
           if (r2 < (a_cut+FS_MAX)*(a_cut+FS_MAX) && r2 > 0.01f) {
-            //int jj = myPatchPair.patch2_atom_start + blockj + j;
-            //int jindex =  ((uint4 *)(atom_params))[jj].y; // store index
 
             float r_i = 1.f / sqrt(r2);
             float r  = r2 * r_i;
-            float dHdrPrefixJ = jDHdrPrefix[j];
             float dhij, dhji;
             int dij, dji;
-            CalcDH(r,r2,r_i,a_cut,atomi.charge,
-                    jatoms[j].charge,dhij,dij);
-            CalcDH(r,r2,r_i,a_cut,intRadJ0[j],
-                    intRadIS,dhji,dji);
+            CalcDH(r,r2,r_i,a_cut,atomi.charge,intRadSJ,dhij,dij);
+            CalcDH(r,r2,r_i,a_cut,intRadJ0,intRadIS,dhji,dji);
 
             float forceAlpha = -r_i*(dHdrPrefixI*dhij+dHdrPrefixJ*dhji);
-            forceI.x += dx * forceAlpha;
-            forceI.y += dy * forceAlpha;
-            forceI.z += dz * forceAlpha;
+            float tmpx = dx * forceAlpha;
+            float tmpy = dy * forceAlpha;
+            float tmpz = dz * forceAlpha;
+            forceI.x += tmpx;
+            forceI.y += tmpy;
+            forceI.z += tmpz;
+            sh_forceJ[j].x -= tmpx;
+            sh_forceJ[j].y -= tmpy;
+            sh_forceJ[j].z -= tmpz;
           } // cutoff
-        } // for j
-      } // if thread in bounds
+        } // if (j < nloopj...)
+#ifdef KEPLER_SHUFFLE
+        xj = __shfl(xj, (threadIdx.x+1) & (WARPSIZE-1) );
+        yj = __shfl(yj, (threadIdx.x+1) & (WARPSIZE-1) );
+        zj = __shfl(zj, (threadIdx.x+1) & (WARPSIZE-1) );
+        intRadSJ = __shfl(intRadSJ, (threadIdx.x+1) & (WARPSIZE-1) );
+        dHdrPrefixJ = __shfl(dHdrPrefixJ, (threadIdx.x+1) & (WARPSIZE-1) );
+        intRadJ0 = __shfl(intRadJ0, (threadIdx.x+1) & (WARPSIZE-1) );
+#endif
+      } // for t
+      if ( blockj + threadIdx.x < sh_patch_pair.patch2_size) {
+        int i_out = sh_patch_pair.patch2_start + blockj + threadIdx.x;
+        atomicAdd(&tmp_forces[i_out].x, sh_forceJ[threadIdx.x].x);
+        atomicAdd(&tmp_forces[i_out].y, sh_forceJ[threadIdx.x].y);
+        atomicAdd(&tmp_forces[i_out].z, sh_forceJ[threadIdx.x].z);
+      }
     } // for block j
 
     // write psiSum to global memory buffer; to be accumulated later
-    if ( blocki + tx < myPatchPair.patch1_force_size) {
-      int i_out = myPatchPair.patch1_force_start + blocki + tx;
-      forceBuffers[i_out] = forceI;
+    if ( blocki + threadIdx.x < sh_patch_pair.patch1_size) {
+      int i_out = sh_patch_pair.patch1_start + blocki + threadIdx.x;
+      atomicAdd(&tmp_forces[i_out].x, forceI.x);
+      atomicAdd(&tmp_forces[i_out].y, forceI.y);
+      atomicAdd(&tmp_forces[i_out].z, forceI.z);
     }
   } // for block i
 
- { // start of force sum
-  // make sure forces are visible in global memory
-  __threadfence();
-  __syncthreads();
-  __shared__ bool doSum;
+  { // start of force sum
+    // make sure forces are visible in global memory
+    __threadfence();
+    __syncthreads();
 
-  if (threadIdx.x == 0) {
-    int fli = myPatchPair.patch1_force_list_index;
-    int fls = myPatchPair.patch1_force_list_size;
-    int old = atomicInc(P3_counters+fli,fls-1);
-    doSum = ( old == fls - 1 );
-  }
-  __syncthreads();
+    // Mark patch pair (patch1_ind, patch2_ind) as "done"
+    volatile bool* patch_done = (volatile bool *)&sh_patch_pair.pad1;
+    int patch1_ind = sh_patch_pair.patch1_ind;
+    int patch2_ind = sh_patch_pair.patch2_ind;
 
-  if ( doSum ) {
-    GBIS_Force_Reduction_Kernel(myPatchPair.patch1_force_list_index,
-       force_lists, forceBuffers, forces);
-  }
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+      patch_done[0] = false;
+      patch_done[1] = false;
+
+      unsigned int patch1_num_pairs = sh_patch_pair.patch1_num_pairs;
+      int patch1_old = atomicInc(&P3_counters[patch1_ind], patch1_num_pairs-1);
+      if (patch1_old+1 == patch1_num_pairs) patch_done[0] = true;
+      if (patch1_ind != patch2_ind) {
+        unsigned int patch2_num_pairs = sh_patch_pair.patch2_num_pairs;
+        int patch2_old = atomicInc(&P3_counters[patch2_ind], patch2_num_pairs-1);
+        if (patch2_old+1 == patch2_num_pairs) patch_done[1] = true;
+      }
+    }
+    // sync threads so that patch1_done and patch2_done are visible to all threads
+    __syncthreads();
+
+    if (patch_done[0]) {
+      const int start = sh_patch_pair.patch1_start;
+      for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch1_size;i+=NUM_WARP*WARPSIZE) {
+        forces[start+i] = tmp_forces[start+i];
+      }
+    }
+
+    if (patch_done[1]) {
+      const int start = sh_patch_pair.patch2_start;
+      for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch2_size;i+=NUM_WARP*WARPSIZE) {
+        forces[start+i] = tmp_forces[start+i];
+      }
+    }
+
+    if (patch_done[0] || patch_done[1]) {
+      // Make sure page-locked host arrays are up-to-date
+#if __CUDA_ARCH__ < 200
+      __threadfence();
+#else
+      __threadfence_system();
+#endif
+    }
+
  } // end of force sum
+
 } //GBIS_P3
+

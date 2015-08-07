@@ -10,8 +10,8 @@
 #include "WorkDistrib.h"
 #include "ComputeMgr.h"
 #include "ProxyMgr.h"
-#include "ComputeNonbondedCUDA.h"
 #include "ComputeNonbondedCUDAKernel.h"
+#include "ComputeNonbondedCUDA.h"
 #include "LJTable.h"
 #include "ObjectArena.h"
 #include "SortAtoms.h"
@@ -19,6 +19,8 @@
 #include <algorithm>
 
 #include "NamdTypes.h"
+#include "DeviceCUDA.h"
+#include "CudaUtils.h"
 
 //#define PRINT_GBIS
 #undef PRINT_GBIS
@@ -33,6 +35,8 @@ extern __thread int max_grid_size;
 
 extern __thread cudaStream_t stream;
 extern __thread cudaStream_t stream2;
+
+extern __thread DeviceCUDA *deviceCUDA;
 
 void cuda_errcheck(const char *msg) {
   cudaError_t err;
@@ -54,6 +58,7 @@ void cuda_errcheck(const char *msg) {
   }
 }
 
+/*
 void cuda_die(const char *msg) {
     char host[128];
 #ifdef NOHOSTNAME
@@ -70,7 +75,9 @@ void cuda_die(const char *msg) {
     sprintf(errmsg,"CUDA error on Pe %d (%s%s): %s", CkMyPe(), host, devstr, msg);
     NAMD_die(errmsg);
 }
+*/
 
+/*
 char *devicelist;
 static __thread int usedevicelist;
 static __thread int ignoresharing;
@@ -117,6 +124,7 @@ bool one_cuda_device_per_node() {
   }
   return ( numPesOnNodeSharingDevice == CkMyNodeSize() );
 }
+*/
 
 static inline bool sortop_bitreverse(int a, int b) {
   if ( a == b ) return 0; 
@@ -133,6 +141,7 @@ BASE
 3 phases (1, 2, 3)
 */
 
+/*
 #define CUDA_EVENT_ID_POLL_REMOTE 98
 #define CUDA_TRACE_POLL_REMOTE \
   traceUserEvent(CUDA_EVENT_ID_POLL_REMOTE)
@@ -275,7 +284,8 @@ void cuda_initialize() {
   first_pe_sharing_gpu = CkMyPe();
   next_pe_sharing_gpu = CkMyPe();
 
- /* if ( (ndevices >= numPesOnPhysicalNode) || (nexclusive == 0) ) */ {
+ // if ( (ndevices >= numPesOnPhysicalNode) || (nexclusive == 0) ) 
+  {
 
   int dev;
   if ( numPesOnPhysicalNode > 1 ) {
@@ -382,12 +392,8 @@ void cuda_initialize() {
       cuda_die("device cannot map host memory");
   }
 
-  if ( sizeof(patch_pair) & 15 ) NAMD_bug("sizeof(patch_pair) % 16 != 0");
-  if ( sizeof(force_list) & 15 ) NAMD_bug("sizeof(force_list) % 16 != 0");
-  if ( sizeof(atom) & 15 ) NAMD_bug("sizeof(atom) % 16 != 0");
-  if ( sizeof(atom_param) & 15 ) NAMD_bug("sizeof(atom_param) % 16 != 0");
-
 }
+*/
 
 static __thread ComputeNonbondedCUDA* cudaCompute = 0;
 static __thread ComputeMgr *computeMgr = 0;
@@ -397,7 +403,7 @@ void send_build_cuda_force_table() {
 }
 
 void build_cuda_force_table() {
-  if ( devicePe != CkMyPe() ) return;
+  if ( deviceCUDA->getMasterPe() != CkMyPe() ) return;
   ComputeNonbondedCUDA::build_lj_table();
   ComputeNonbondedCUDA::build_force_table();
 }
@@ -597,7 +603,9 @@ void ComputeNonbondedCUDA::build_exclusions() {
 #else
     const int32 *mol_list = mol->get_full_exclusions_for_atom(i);
     int n = mol_list[0] + 1;
-    for ( int j=1; j<n; ++j ) { curList.add(mol_list[j] - i); }
+    for ( int j=1; j<n; ++j ) {
+      curList.add(mol_list[j] - i);
+    }
 #endif
     curList.sort();
 
@@ -708,10 +716,9 @@ void register_cuda_compute_pair(ComputeID c, PatchID pid[], int t[]) {
   cudaCompute->requirePatch(pid[0]);
   cudaCompute->requirePatch(pid[1]);
 
-  ComputeNonbondedCUDA::compute_record cr, cr2;
-  cr.c = c;  cr2.c = c;
+  ComputeNonbondedCUDA::compute_record cr;
+  cr.c = c; 
   cr.pid[0] = pid[0];  cr.pid[1] = pid[1];
-  cr2.pid[0] = pid[1];  cr2.pid[1] = pid[0];
 
   int t1 = t[0];
   int t2 = t[1];
@@ -721,17 +728,11 @@ void register_cuda_compute_pair(ComputeID c, PatchID pid[], int t[]) {
   offset.y += ((t1/3)%3-1) - ((t2/3)%3-1);
   offset.z += (t1/9-1) - (t2/9-1);
   cr.offset = offset;
-  cr2.offset = -1. * offset;
-    
+
   if ( cudaCompute->patchRecords[pid[0]].isLocal ) {
     cudaCompute->localComputeRecords.add(cr);
   } else {
     cudaCompute->remoteComputeRecords.add(cr);
-  }
-  if ( cudaCompute->patchRecords[pid[1]].isLocal ) {
-    cudaCompute->localComputeRecords.add(cr2);
-  } else {
-    cudaCompute->remoteComputeRecords.add(cr2);
   }
 }
 
@@ -747,15 +748,19 @@ static __thread cudaEvent_t end_remote_download;
 static __thread cudaEvent_t end_local_download;
 
 static __thread ResizeArray<patch_pair> *patch_pairs_ptr;
-static __thread ResizeArray<force_list> *force_lists_ptr;
-#define PATCH_PAIRS_REF ResizeArray<patch_pair> &patch_pairs(*patch_pairs_ptr);
-#define FORCE_LISTS_REF ResizeArray<force_list> &force_lists(*force_lists_ptr);
+static __thread ResizeArray<int> *patch_pair_num_ptr;
+
+void init_arrays();
 
 ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
-		ComputeNonbondedCUDA *m, int idx) : Compute(c), slaveIndex(idx) {
+					   ComputeNonbondedCUDA *m, int idx) : Compute(c), slaveIndex(idx) {
 #ifdef PRINT_GBIS
    CkPrintf("C.N.CUDA[%d]::constructor cid=%d\n", CkMyPe(), c);
 #endif
+
+  if ( sizeof(patch_pair) & 15 ) NAMD_bug("sizeof(patch_pair) % 16 != 0");
+  if ( sizeof(atom) & 15 ) NAMD_bug("sizeof(atom) % 16 != 0");
+  if ( sizeof(atom_param) & 15 ) NAMD_bug("sizeof(atom_param) % 16 != 0");
 
   // CkPrintf("create ComputeNonbondedCUDA\n");
   master = m ? m : this;
@@ -769,7 +774,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   if (params->pressureProfileOn) {
     NAMD_die("pressure profile not supported in CUDA");
   }
-  doExclusionCheck = ( CkNumNodes() == 1 && one_cuda_device_per_node() && ! params->goGroPair );
+  doExclusionCheck = ( CkNumNodes() == 1 && deviceCUDA->one_device_per_node() && ! params->goGroPair );
 
   atomsChanged = 1;
   computesChanged = 1;
@@ -785,6 +790,21 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   basePriority = PROXY_DATA_PRIORITY;
   localWorkMsg2 = new (PRIORITY_SIZE) LocalWorkMsg;
 
+  // Zero array sizes and pointers
+  init_arrays();
+
+  forces_size = 0;
+  forces = NULL;
+  
+  slow_forces_size = 0;
+  slow_forces = NULL;
+
+  psiSumH_size = 0;
+  psiSumH = NULL;
+
+  dEdaSumH_size = 0;
+  dEdaSumH = NULL;
+
   if ( master != this ) { // I am slave
     masterPe = master->masterPe;
     master->slaves[slaveIndex] = this;
@@ -796,8 +816,26 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   }
   masterPe = CkMyPe();
 
-  const bool streaming = ! (nostreaming || params->GBISOn);
-  if ( streaming && ! shared_gpu && ! nomergegrids ) mergegrids = 1;
+  const bool streaming = ! (deviceCUDA->getNoStreaming() || params->GBISOn);
+  if ( streaming && ! deviceCUDA->getSharedGpu() && ! deviceCUDA->getNoMergeGrids() )
+    deviceCUDA->setMergeGrids(1);
+
+  // Sanity checks for New CUDA kernel
+  if (params->GBISOn) {
+    // GBIS
+    if (deviceCUDA->getNoMergeGrids()) {
+      NAMD_die("CUDA kernel cannot use +nomergegrids with GBIS simulations");
+    }
+    // Set mergegrids ON as long as user hasn't defined +nomergegrids
+    if (!deviceCUDA->getNoMergeGrids()) deviceCUDA->setMergeGrids(1);
+    // Final sanity check
+    if (!deviceCUDA->getMergeGrids()) NAMD_die("CUDA GBIS kernel final sanity check failed");
+  } else {
+    // non-GBIS
+    if (deviceCUDA->getNoStreaming() && !deviceCUDA->getMergeGrids()) {
+      NAMD_die("CUDA kernel requires +mergegrids if +nostreaming is used");
+    }
+  }
 
 #if CUDA_VERSION >= 5050
   int leastPriority, greatestPriority;
@@ -810,7 +848,9 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
       cuda_errcheck("cudaGetDevice");
       CkPrintf("CUDA device %d stream priority range %d %d\n", dev, leastPriority, greatestPriority);
     }
-    if ( mergegrids && params->PMEOn && params->PMEOffload ) { greatestPriority = leastPriority; }
+    if ( deviceCUDA->getMergeGrids() && params->PMEOn && params->PMEOffload ) {
+      greatestPriority = leastPriority;
+    }
     cudaStreamCreateWithPriority(&stream,cudaStreamDefault,greatestPriority);
     cudaStreamCreateWithPriority(&stream2,cudaStreamDefault,leastPriority);
   } else
@@ -843,9 +883,9 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
 
   patchRecords.resize(patchMap->numPatches());
   patch_pairs_ptr = new ResizeArray<patch_pair>;
-  force_lists_ptr = new ResizeArray<force_list>;
+  patch_pair_num_ptr = new ResizeArray<int>;
 
-  if ( params->PMEOn && params->PMEOffload ) gpu_is_mine = 0;
+  if ( params->PMEOn && params->PMEOffload ) deviceCUDA->setGpuIsMine(0);
 }
 
 
@@ -858,7 +898,7 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
   if ( pr.refCount == 0 ) {
     pr.isSamePhysicalNode = ( CmiPhysicalNodeID(patchMap->node(pid)) == CmiPhysicalNodeID(CkMyPe()) );
     pr.isSameNode = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
-    if ( mergegrids ) {
+    if ( deviceCUDA->getMergeGrids() ) {
       pr.isLocal = 0;
     } else if ( CkNumNodes() < 2 ) {
       pr.isLocal = 1 & ( 1 ^ patchMap->index_a(pid) ^
@@ -872,13 +912,8 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
       remoteActivePatches.add(pid);
     }
     activePatches.add(pid);
-    // setNumPatches(activePatches.size());
     pr.patchID = pid;
     pr.hostPe = -1;
-    // ProxyMgr::Object()->createProxy(pid);
-    // pr.p = patchMap->patch(pid);
-    // pr.positionBox = pr.p->registerPositionPickup(this);
-    // pr.forceBox = pr.p->registerForceDeposit(this);
     pr.x = NULL;
     pr.xExt = NULL;
     pr.r = NULL;
@@ -904,9 +939,6 @@ void ComputeNonbondedCUDA::registerPatches() {
     if ( pr.hostPe == CkMyPe() ) {
       pr.slave = this;
       pr.msg = new (PRIORITY_SIZE) FinishWorkMsg;
-      //if ( ! reduction ) {
-      //  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-      //}
       hostedPatches.add(pid);
       if ( pr.isLocal ) {
         localHostedPatches.add(pid);
@@ -946,8 +978,8 @@ void ComputeNonbondedCUDA::assignPatches() {
   int *pesOnNodeSharingDevice = new int[CkMyNodeSize()];
   int numPesOnNodeSharingDevice = 0;
   int masterIndex = -1;
-  for ( int i=0; i<numPesSharingDevice; ++i ) {
-    int pe = pesSharingDevice[i];
+  for ( int i=0; i<deviceCUDA->getNumPesSharingDevice(); ++i ) {
+    int pe = deviceCUDA->getPesSharingDevice(i);
     if ( pe == CkMyPe() ) masterIndex = numPesOnNodeSharingDevice;
     if ( CkNodeOf(pe) == CkMyNode() ) {
       pesOnNodeSharingDevice[numPesOnNodeSharingDevice++] = pe;
@@ -1109,30 +1141,47 @@ void ComputeNonbondedCUDA::assignPatches() {
   delete [] table;
 }
 
-static __thread int num_atom_records_allocated;
-// static __thread int* atom_order;
+static __thread int atom_params_size;
 static __thread atom_param* atom_params;
+
+static __thread int vdw_types_size;
+static __thread int* vdw_types;
+
+static __thread int atoms_size;
 static __thread atom* atoms;
-static __thread float* dummy_dev;
+
 static __thread int dummy_size;
-// static __thread float4* forces;
-// static __thread float4* slow_forces;
-static __thread int num_virials;
-static __thread int num_virials_allocated;
-static __thread float *virials;
-static __thread float *slow_virials;
-static __thread int *block_order;
-static __thread int *force_ready_queue;
+static __thread float* dummy_dev;
+
 static __thread int force_ready_queue_size;
+static __thread int *force_ready_queue;
+static __thread int force_ready_queue_len;
 static __thread int force_ready_queue_next;
+
+static __thread int block_order_size;
+static __thread int *block_order;
+
+static __thread int num_atoms;
+static __thread int num_local_atoms;
+static __thread int num_remote_atoms;
+
+static __thread int virials_size;
+static __thread float *virials;
+static __thread int num_virials;
+// NOTE: slow_virials is a computed pointer from "virials" -do not deallocate
+static __thread float *slow_virials;
+
+static __thread int energy_gbis_size;
 static __thread float *energy_gbis;
 
 //GBIS host pointers
+static __thread int intRad0H_size;
 static __thread float *intRad0H;
+static __thread int intRadSH_size;
 static __thread float *intRadSH;
-//static __thread GBReal *psiSumH; //moved into class
+static __thread int bornRadH_size;
 static __thread float *bornRadH;
-//static __thread GBReal *dEdaSumH; //moved into class
+static __thread int dHdrPrefixH_size;
 static __thread float *dHdrPrefixH;
 
 static __thread int cuda_timer_count;
@@ -1156,18 +1205,62 @@ static __thread int check_count;
 static __thread int check_remote_count;
 static __thread int check_local_count;
 
+void init_arrays() {
+
+  atom_params_size = 0;
+  atom_params = NULL;
+
+  vdw_types_size = 0;
+  vdw_types = NULL;
+  
+  atoms_size = 0;
+  atoms = NULL;
+
+  dummy_size = 0;
+  dummy_dev = NULL;
+
+  force_ready_queue_size = 0;
+  force_ready_queue = NULL;
+  force_ready_queue_len = 0;
+  force_ready_queue_next = 0;
+  
+  block_order_size = 0;
+  block_order = NULL;
+  
+  num_atoms = 0;
+  num_local_atoms = 0;
+  num_remote_atoms = 0;
+
+  virials_size = 0;
+  virials = NULL;
+  num_virials = 0;
+
+  energy_gbis_size = 0;
+  energy_gbis = NULL;
+
+  intRad0H_size = 0;
+  intRad0H = NULL;
+  intRadSH_size = 0;
+  intRadSH = NULL;
+  bornRadH_size = 0;
+  bornRadH = NULL;
+  dHdrPrefixH_size = 0;
+  dHdrPrefixH = NULL;
+
+}
+
 void cuda_check_progress(void *arg, double walltime) {
   CUDA_TRACE_POLL_REMOTE;
 
   int flindex;
   int poll_again = 1;
   while ( -1 != (flindex = force_ready_queue[force_ready_queue_next]) ) {
-    // CkPrintf("Pe %d forces ready %d is index %d at %lf\n",
-    //           CkMyPe(), force_ready_queue_next, flindex, walltime);
+    //    CkPrintf("Pe %d forces ready %d is index %d at %lf\n",
+    //	     CkMyPe(), force_ready_queue_next, flindex, walltime);
     force_ready_queue[force_ready_queue_next] = -1;
     ++force_ready_queue_next;
     check_count = 0;
-    if ( force_ready_queue_next == force_ready_queue_size ) {
+    if ( force_ready_queue_next == force_ready_queue_len ) {
       poll_again = 0;
       CUDA_TRACE_LOCAL(kernel_time,walltime);
       kernel_time = walltime - kernel_time;
@@ -1176,7 +1269,7 @@ void cuda_check_progress(void *arg, double walltime) {
       ((ComputeNonbondedCUDA *) arg)->finishReductions();
     }
     ((ComputeNonbondedCUDA *) arg)->messageFinishPatch(flindex);
-    if ( force_ready_queue_next == force_ready_queue_size ) break;
+    if ( force_ready_queue_next == force_ready_queue_len ) break;
   }
   if ( ++check_count >= count_limit ) {
     char errmsg[256];
@@ -1199,7 +1292,7 @@ void cuda_check_remote_progress(void *arg, double walltime) {
   if ( err == cudaSuccess ) {
     local_submit_time = walltime;
     CUDA_TRACE_REMOTE(remote_submit_time,local_submit_time);
-    if ( mergegrids ) {  // no local
+    if ( deviceCUDA->getMergeGrids() ) {  // no local
       kernel_time = local_submit_time - kernel_time;
     }
     check_remote_count = 0;
@@ -1264,7 +1357,10 @@ void cuda_check_progress(void *arg, double walltime) {
 }
 #endif
 
-void ComputeNonbondedCUDA::atomUpdate() { atomsChanged = 1; }
+void ComputeNonbondedCUDA::atomUpdate() {
+  //fprintf(stderr, "%d ComputeNonbondedCUDA::atomUpdate\n",CkMyPe());
+  atomsChanged = 1;
+}
 
 static __thread int kernel_launch_state = 0;
 
@@ -1287,16 +1383,13 @@ struct cr_sortop_reverse_priority {
   const ComputeNonbondedCUDA::patch_record *pr;
   cr_sortop_reverse_priority(cr_sortop_distance &sod,
        const ComputeNonbondedCUDA::patch_record *patchrecs) : distop(sod), pr(patchrecs) { }
-  bool operator() (ComputeNonbondedCUDA::compute_record j,
-			ComputeNonbondedCUDA::compute_record i) {  // i and j reversed
-    const ComputeNonbondedCUDA::patch_record &pri = pr[i.pid[0]];
-    const ComputeNonbondedCUDA::patch_record &prj = pr[j.pid[0]];
+  bool pid_compare_priority(int pidi, int pidj) {
+    const ComputeNonbondedCUDA::patch_record &pri = pr[pidi];
+    const ComputeNonbondedCUDA::patch_record &prj = pr[pidj];
     if ( pri.isSamePhysicalNode && ! prj.isSamePhysicalNode ) return 0;
     if ( prj.isSamePhysicalNode && ! pri.isSamePhysicalNode ) return 1;
     if ( pri.isSameNode && ! prj.isSameNode ) return 0;
     if ( prj.isSameNode && ! pri.isSameNode ) return 1;
-    int pidi = pri.patchID;
-    int pidj = prj.patchID;
     if ( pri.isSameNode ) {  // and prj.isSameNode
       int rpri = pri.reversePriorityRankInPe;
       int rprj = prj.reversePriorityRankInPe;
@@ -1306,12 +1399,19 @@ struct cr_sortop_reverse_priority {
     int ppi = PATCH_PRIORITY(pidi);
     int ppj = PATCH_PRIORITY(pidj);
     if ( ppi != ppj ) return ppi < ppj;
-    if ( pidi != pidj ) return pidi < pidj;
+    return pidi < pidj;
+  }
+  bool operator() (ComputeNonbondedCUDA::compute_record j,
+			ComputeNonbondedCUDA::compute_record i) {  // i and j reversed
+    int pidi = pid_compare_priority(i.pid[0],i.pid[1]) ? i.pid[0] : i.pid[1];
+    int pidj = pid_compare_priority(j.pid[0],j.pid[1]) ? j.pid[0] : j.pid[1];
+    if ( pidi != pidj ) return pid_compare_priority(pidi, pidj);
     return distop(i,j);
   }
 };
 
 void ComputeNonbondedCUDA::skip() {
+  //fprintf(stderr, "ComputeNonbondedCUDA::skip()\n");
   SimParameters *simParams = Node::Object()->simParameters;
   for ( int i=0; i<hostedPatches.size(); ++i ) {
     patch_record &pr = master->patchRecords[hostedPatches[i]];
@@ -1328,6 +1428,7 @@ void ComputeNonbondedCUDA::skip() {
 }
 
 int ComputeNonbondedCUDA::noWork() {
+  //fprintf(stderr, "ComputeNonbondedCUDA::noWork() %d\n",CkMyPe());
 
   SimParameters *simParams = Node::Object()->simParameters;
   Flags &flags = master->patchRecords[hostedPatches[0]].p->flags;
@@ -1337,7 +1438,7 @@ int ComputeNonbondedCUDA::noWork() {
   step = flags.step;
 
   if ( ! flags.doNonbonded ) {
-GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
+    GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
     if ( master != this ) {
       computeMgr->sendNonbondedCUDASlaveReady(masterPe,
 			hostedPatches.size(),atomsChanged,sequence());
@@ -1357,25 +1458,25 @@ GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
   for ( int i=0; i<hostedPatches.size(); ++i ) {
     patch_record &pr = master->patchRecords[hostedPatches[i]];
     if (!simParams->GBISOn || gbisPhase == 1) {
-GBISP("GBIS[%d] noWork() P0[%d] open()\n",CkMyPe(), pr.patchID);
+      GBISP("GBIS[%d] noWork() P0[%d] open()\n",CkMyPe(), pr.patchID);
       pr.x = pr.positionBox->open();
       pr.xExt = pr.p->getCompAtomExtInfo();
     }
 
     if (simParams->GBISOn) {
       if (gbisPhase == 1) {
-GBISP("GBIS[%d] noWork() P1[%d] open()\n",CkMyPe(),pr.patchID);
+        GBISP("GBIS[%d] noWork() P1[%d] open()\n",CkMyPe(),pr.patchID);
         pr.intRad     = pr.intRadBox->open();
         pr.psiSum     = pr.psiSumBox->open();
       } else if (gbisPhase == 2) {
-GBISP("GBIS[%d] noWork() P2[%d] open()\n",CkMyPe(),pr.patchID);
+        GBISP("GBIS[%d] noWork() P2[%d] open()\n",CkMyPe(),pr.patchID);
         pr.bornRad    = pr.bornRadBox->open();
         pr.dEdaSum    = pr.dEdaSumBox->open();
       } else if (gbisPhase == 3) {
-GBISP("GBIS[%d] noWork() P3[%d] open()\n",CkMyPe(),pr.patchID);
+        GBISP("GBIS[%d] noWork() P3[%d] open()\n",CkMyPe(),pr.patchID);
         pr.dHdrPrefix = pr.dHdrPrefixBox->open();
       }
-GBISP("opened GBIS boxes");
+      GBISP("opened GBIS boxes");
     }
   }
 
@@ -1395,8 +1496,8 @@ void ComputeNonbondedCUDA::doWork() {
 GBISP("C.N.CUDA[%d]::doWork: seq %d, phase %d, workStarted %d, atomsChanged %d\n", \
 CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
 
-  PATCH_PAIRS_REF;
-  FORCE_LISTS_REF;
+  ResizeArray<patch_pair> &patch_pairs(*patch_pairs_ptr);
+  ResizeArray<int> &patch_pair_num(*patch_pair_num_ptr);
 
   if ( workStarted ) { //if work already started, check if finished
     if ( finishWork() ) {  // finished
@@ -1422,69 +1523,64 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
   //execute only during GBIS phase 1, or if not using GBIS
   if (!simParams->GBISOn || gbisPhase == 1) {
 
-  //bind new patches to GPU
- if ( atomsChanged || computesChanged ) {
-  int npatches = activePatches.size();
+    //bind new patches to GPU
+    if ( atomsChanged || computesChanged ) {
+      int npatches = activePatches.size();
 
-  pairlistsValid = 0;
-  pairlistTolerance = 0.;
+      pairlistsValid = 0;
+      pairlistTolerance = 0.;
 
-  if ( computesChanged ) {
-    computesChanged = 0;
+      if ( computesChanged ) {
+        computesChanged = 0;
 
-    if ( ! dummy_size ) {
-      dummy_size = 1024*1024;
-      cudaMalloc((void**)&dummy_dev,dummy_size);
-      cuda_errcheck("in cudaMalloc dummy_dev");
-    }
+        if ( ! dummy_size ) {
+          dummy_size = 1024*1024;
+          cudaMalloc((void**)&dummy_dev,dummy_size);
+          cuda_errcheck("in cudaMalloc dummy_dev");
+        }
 
-    num_virials = npatches;
-    if ( num_virials > num_virials_allocated ) {
-      if ( num_virials_allocated ) {
-        cudaFreeHost(virials);
-        cudaFreeHost(energy_gbis);
-        cuda_errcheck("in cudaFreeHost virials");
-        cudaFreeHost(force_ready_queue);
-        cuda_errcheck("in cudaFreeHost force_ready_queue");
-        cudaFreeHost(block_order);
-        cuda_errcheck("in cudaFreeHost block_order");
-      }
-      num_virials_allocated = 1.1 * num_virials + 1;
-      cudaHostAlloc((void**)&virials,2*16*sizeof(float)*num_virials_allocated,cudaHostAllocMapped);
-      cudaHostAlloc((void**)&energy_gbis,sizeof(float)*num_virials_allocated,cudaHostAllocMapped);
-      for (int i  = 0; i < num_virials_allocated; i++)
-        energy_gbis[i] = 0.f;
-      cuda_errcheck("in cudaHostAlloc virials");
-      slow_virials = virials + 16*num_virials;
-      cudaHostAlloc((void**)&force_ready_queue,sizeof(int)*num_virials_allocated,cudaHostAllocMapped /* |cudaHostAllocWriteCombined */);
-      cuda_errcheck("in cudaHostAlloc force_ready_queue");
-      for ( int k=0; k<num_virials_allocated; ++k ) { force_ready_queue[k] = -1; }
-      cudaHostAlloc((void**)&block_order,sizeof(int)*2*(localComputeRecords.size()+remoteComputeRecords.size()),cudaHostAllocMapped);
-      cuda_errcheck("in cudaHostAlloc block_order");
-    }
-    force_ready_queue_size = num_virials;
+        bool did_realloc = reallocate_host<int>(&force_ready_queue, &force_ready_queue_size, npatches,
+          1.2f, cudaHostAllocMapped);
+        if (did_realloc) {
+          for (int k=0; k < force_ready_queue_size; ++k)
+            force_ready_queue[k] = -1;
+        }
+        force_ready_queue_len = npatches;
+        reallocate_host<int>(&block_order, &block_order_size,
+          2*(localComputeRecords.size()+remoteComputeRecords.size()),
+          1.2f, cudaHostAllocMapped);
+    
+        num_virials = npatches;
+        reallocate_host<float>(&virials, &virials_size, 2*16*num_virials,
+          1.2f, cudaHostAllocMapped);
+        slow_virials = virials + 16*num_virials;
 
-    int *ap = activePatches.begin();
-    for ( int i=0; i<localActivePatches.size(); ++i ) {
-      *(ap++) = localActivePatches[i];
-    }
-    for ( int i=0; i<remoteActivePatches.size(); ++i ) {
-      *(ap++) = remoteActivePatches[i];
-    }
+        reallocate_host<float>(&energy_gbis, &energy_gbis_size, npatches,
+          1.2f, cudaHostAllocMapped);
+        for (int i  = 0; i < energy_gbis_size; i++) energy_gbis[i] = 0.f;
 
-    // sort computes by distance between patches
-    cr_sortop_distance so(lattice);
-    std::stable_sort(localComputeRecords.begin(),localComputeRecords.end(),so);
-    std::stable_sort(remoteComputeRecords.begin(),remoteComputeRecords.end(),so);
+        int *ap = activePatches.begin();
+        for ( int i=0; i<localActivePatches.size(); ++i ) {
+          *(ap++) = localActivePatches[i];
+        }
+        for ( int i=0; i<remoteActivePatches.size(); ++i ) {
+          *(ap++) = remoteActivePatches[i];
+        }
 
-    const bool streaming = ! (nostreaming || simParams->GBISOn);
+        // sort computes by distance between patches
+        cr_sortop_distance so(lattice);
+        std::stable_sort(localComputeRecords.begin(),localComputeRecords.end(),so);
+        std::stable_sort(remoteComputeRecords.begin(),remoteComputeRecords.end(),so);
 
-    if ( streaming ) {
-      // iout << "Reverse-priority sorting...\n" << endi;
-      cr_sortop_reverse_priority sorp(so,patchRecords.begin());
-      std::stable_sort(localComputeRecords.begin(),localComputeRecords.end(),sorp);
-      std::stable_sort(remoteComputeRecords.begin(),remoteComputeRecords.end(),sorp);
-      patchPairsReordered = 0;
+        const bool streaming = ! (deviceCUDA->getNoStreaming() || simParams->GBISOn);
+
+        if ( streaming ) {
+          // iout << "Reverse-priority sorting...\n" << endi;
+          cr_sortop_reverse_priority sorp(so,patchRecords.begin());
+          std::stable_sort(localComputeRecords.begin(),localComputeRecords.end(),sorp);
+          std::stable_sort(remoteComputeRecords.begin(),remoteComputeRecords.end(),sorp);
+          patchPairsReordered = 0;
+          //patchPairsReordered = 1;
       // int len = remoteComputeRecords.size();
       // for ( int i=0; i<len; ++i ) {
       //   iout << "reverse_order " << i << " " << remoteComputeRecords[i].pid[0] << "\n";
@@ -1494,214 +1590,148 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
       //   iout << "reverse_order " << (i+len) << " " << localComputeRecords[i].pid[0] << "\n";
       // }
       // iout << endi;
-    } else {
-      patchPairsReordered = 1;
-    }
+        } else {
+          patchPairsReordered = 1;
+        }
  
-    int nlc = localComputeRecords.size();
-    int nrc = remoteComputeRecords.size();
-    computeRecords.resize(nlc+nrc);
-    compute_record *cr = computeRecords.begin();
-    for ( int i=0; i<nrc; ++i ) {
-      *(cr++) = remoteComputeRecords[i];
-    }
-    for ( int i=0; i<nlc; ++i ) {
-      *(cr++) = localComputeRecords[i];
+        int nlc = localComputeRecords.size();
+        int nrc = remoteComputeRecords.size();
+        computeRecords.resize(nlc+nrc);
+        compute_record *cr = computeRecords.begin();
+        for ( int i=0; i<nrc; ++i ) {
+          *(cr++) = remoteComputeRecords[i];
+        }
+        for ( int i=0; i<nlc; ++i ) {
+          *(cr++) = localComputeRecords[i];
+        }
+
+        // patch_pair_num[i] = number of patch pairs that involve patch i
+        patch_pair_num.resize(npatches);
+        for ( int i=0; i<npatches; ++i ) {
+          patchRecords[activePatches[i]].localIndex = i;
+          patch_pair_num[i] = 0;
+        }
+
+        int ncomputes = computeRecords.size();
+        patch_pairs.resize(ncomputes);
+        for ( int i=0; i<ncomputes; ++i ) {
+          ComputeNonbondedCUDA::compute_record &cr = computeRecords[i];
+          int lp1 = patchRecords[cr.pid[0]].localIndex;
+          int lp2 = patchRecords[cr.pid[1]].localIndex;
+          patch_pair_num[lp1]++;
+          if (lp1 != lp2) patch_pair_num[lp2]++;
+          patch_pair &pp = patch_pairs[i];
+          pp.offset.x = cr.offset.x;
+          pp.offset.y = cr.offset.y;
+          pp.offset.z = cr.offset.z;
+        }
+
+        for ( int i=0; i<ncomputes; ++i ) {
+          ComputeNonbondedCUDA::compute_record &cr = computeRecords[i];
+          int lp1 = patchRecords[cr.pid[0]].localIndex;
+          int lp2 = patchRecords[cr.pid[1]].localIndex;
+          patch_pair &pp = patch_pairs[i];
+          pp.patch1_ind = lp1;
+          pp.patch2_ind = lp2;
+          pp.patch1_num_pairs = patch_pair_num[lp1];
+          pp.patch2_num_pairs = patch_pair_num[lp2];
+        }
+
+      if ( CmiPhysicalNodeID(CkMyPe()) < 2 ) {
+        CkPrintf("Pe %d has %d local and %d remote patches and %d local and %d remote computes.\n",
+	         CkMyPe(), localActivePatches.size(), remoteActivePatches.size(),
+	         localComputeRecords.size(), remoteComputeRecords.size());
+      }
+    }  // computesChanged
+    else if ( ! patchPairsReordered ) {
+      patchPairsReordered = 1;
+      int len = patch_pairs.size();
+      int nlc = localComputeRecords.size();
+      int nrc = remoteComputeRecords.size();
+      if ( len != nlc + nrc ) NAMD_bug("array size mismatch in ComputeNonbondedCUDA reordering");
+      ResizeArray<ComputeNonbondedCUDA::compute_record> new_computeRecords(len);
+      ResizeArray<patch_pair> new_patch_pairs(len);
+      int irc=nrc;
+      int ilc=len;
+      for ( int i=0; i<len; ++i ) {
+        int boi = block_order[i];
+        int dest;
+        if ( boi < nrc ) { dest = --irc; } else { dest = --ilc; }
+        new_computeRecords[dest] = computeRecords[boi];
+        new_patch_pairs[dest] = patch_pairs[boi];
+      }
+      if ( irc != 0 || ilc != nrc ) NAMD_bug("block index mismatch in ComputeNonbondedCUDA reordering");
+      computeRecords.swap(new_computeRecords);
+      patch_pairs.swap(new_patch_pairs);
     }
 
-    force_lists.resize(npatches);
-    for ( int i=0; i<npatches; ++i ) {
-      patchRecords[activePatches[i]].localIndex = i;
-      force_lists[i].force_list_size = 0;
+    int istart = 0;
+    int i;
+    for ( i=0; i<npatches; ++i ) {
+      if ( i == localActivePatches.size() ) {
+        num_local_atoms = istart;
+      }
+      patch_record &pr = patchRecords[activePatches[i]];
+      pr.localStart = istart;
+      int natoms = pr.p->getNumAtoms();
+      int nfreeatoms = natoms;
+      if ( fixedAtomsOn ) {
+        const CompAtomExt *aExt = pr.xExt;
+        for ( int j=0; j<natoms; ++j ) {
+          if ( aExt[j].atomFixed ) --nfreeatoms;
+        }
+      }
+      pr.numAtoms = natoms;
+      pr.numFreeAtoms = nfreeatoms;
+      istart += natoms;
+      istart += 16 - (natoms & 15);
     }
-
-    int ncomputes = computeRecords.size();
-    patch_pairs.resize(ncomputes);
-    for ( int i=0; i<ncomputes; ++i ) {
-      ComputeNonbondedCUDA::compute_record &cr = computeRecords[i];
-      int lp1 = patchRecords[cr.pid[0]].localIndex;
-      int lp2 = patchRecords[cr.pid[1]].localIndex;
-      force_lists[lp1].force_list_size++;
-      patch_pair &pp = patch_pairs[i];
-      pp.offset.x = cr.offset.x;
-      pp.offset.y = cr.offset.y;
-      pp.offset.z = cr.offset.z;
-    }
-
-    for ( int i=0; i<ncomputes; ++i ) {
-      ComputeNonbondedCUDA::compute_record &cr = computeRecords[i];
-      int lp1 = patchRecords[cr.pid[0]].localIndex;
-      patch_pair &pp = patch_pairs[i];
-      pp.patch1_force_list_index = lp1;
-      pp.patch1_force_list_size = force_lists[lp1].force_list_size;
-    }
-
-   if ( CmiPhysicalNodeID(CkMyPe()) < 2 ) {
-    CkPrintf("Pe %d has %d local and %d remote patches and %d local and %d remote computes.\n",
-	CkMyPe(), localActivePatches.size(), remoteActivePatches.size(),
-	localComputeRecords.size(), remoteComputeRecords.size());
-   }
-  }  // computesChanged
-  else if ( ! patchPairsReordered ) {
-    patchPairsReordered = 1;
-    int len = patch_pairs.size();
-    int nlc = localComputeRecords.size();
-    int nrc = remoteComputeRecords.size();
-    if ( len != nlc + nrc ) NAMD_bug("array size mismatch in ComputeNonbondedCUDA reordering");
-    ResizeArray<ComputeNonbondedCUDA::compute_record> new_computeRecords(len);
-    ResizeArray<patch_pair> new_patch_pairs(len);
-    int irc=nrc;
-    int ilc=len;
-    for ( int i=0; i<len; ++i ) {
-      int boi = block_order[i];
-      int dest;
-      if ( boi < nrc ) { dest = --irc; } else { dest = --ilc; }
-      new_computeRecords[dest] = computeRecords[boi];
-      new_patch_pairs[dest] = patch_pairs[boi];
-    }
-    if ( irc != 0 || ilc != nrc ) NAMD_bug("block index mismatch in ComputeNonbondedCUDA reordering");
-    computeRecords.swap(new_computeRecords);
-    patch_pairs.swap(new_patch_pairs);
-  }
-
-  int istart = 0;
-  int flstart = 0;
-  int vlstart = 0;
-  int max_atoms_per_patch = 0;
-  int i;
-  for ( i=0; i<npatches; ++i ) {
     if ( i == localActivePatches.size() ) {
-       num_local_atom_records = istart;
+      num_local_atoms = istart;
     }
-    force_lists[i].force_list_start = flstart;
-    force_lists[i].force_output_start = istart;
-    force_lists[i].atom_start = istart;
-    force_lists[i].virial_list_start = vlstart;
-    force_lists[i].virial_output_start = 16*i;
-    patch_record &pr = patchRecords[activePatches[i]];
-    pr.localStart = istart;
-    int natoms = pr.p->getNumAtoms();
-    int nfreeatoms = natoms;
-    if ( fixedAtomsOn ) {
-      const CompAtomExt *aExt = pr.xExt;
-      for ( int j=0; j<natoms; ++j ) {
-        if ( aExt[j].atomFixed ) --nfreeatoms;
-      }
-    }
-    if ( natoms > max_atoms_per_patch ) max_atoms_per_patch = natoms;
-    pr.numAtoms = natoms;
-    pr.numFreeAtoms = nfreeatoms;
-    force_lists[i].patch_size = nfreeatoms;
-    if ( natoms & 15 ) { natoms += 16 - (natoms & 15); }
-    if ( nfreeatoms & 15 ) { nfreeatoms += 16 - (nfreeatoms & 15); }
-    force_lists[i].patch_stride = nfreeatoms;
-    flstart += nfreeatoms * force_lists[i].force_list_size;
-    vlstart += 16 * force_lists[i].force_list_size;
-    istart += natoms;  // already rounded up
-    force_lists[i].force_list_size = 0;  // rebuild below
-  }
-  if ( i == localActivePatches.size() ) {
-     num_local_atom_records = istart;
-  }
-  num_force_records = flstart;
-  num_atom_records = istart;
-  num_remote_atom_records = num_atom_records - num_local_atom_records;
-  if ( num_atom_records > num_atom_records_allocated ) {
-    if ( num_atom_records_allocated ) {
-      // delete [] atom_order;
-      cudaFreeHost(atom_params);
-      cudaFreeHost(atoms);
-      cudaFreeHost(forces);
-      cudaFreeHost(slow_forces);
-      if (simParams->GBISOn) {
-        cudaFreeHost(intRad0H);//6 GBIS arrays
-        cudaFreeHost(intRadSH);
-        cudaFreeHost(psiSumH);
-        cudaFreeHost(bornRadH);
-        cudaFreeHost(dEdaSumH);
-        cudaFreeHost(dHdrPrefixH);
-      }
-      cuda_errcheck("in cudaFreeHost");
-    }
-    num_atom_records_allocated = 1.1 * num_atom_records + 1;
-    // atom_order = new int[num_atom_records_allocated];
-    cudaMallocHost((void**)&atom_params,sizeof(atom_param)*num_atom_records_allocated);
-    cudaMallocHost((void**)&atoms,sizeof(atom)*num_atom_records_allocated);
-    cuda_errcheck("in cudaMallocHost atoms");
-    cudaHostAlloc((void**)&forces,sizeof(float4)*num_atom_records_allocated,cudaHostAllocMapped);
-    cudaHostAlloc((void**)&slow_forces,sizeof(float4)*num_atom_records_allocated,cudaHostAllocMapped);
-    //allocate GBIS memory
+    num_atoms = istart;
+    num_remote_atoms = num_atoms - num_local_atoms;
+    reallocate_host<atom_param>(&atom_params, &atom_params_size, num_atoms, 1.2f);
+    reallocate_host<int>(&vdw_types, &vdw_types_size, num_atoms, 1.2f);
+    reallocate_host<atom>(&atoms, &atoms_size, num_atoms, 1.2f);
+    reallocate_host<float4>(&forces, &forces_size, num_atoms, 1.2f, cudaHostAllocMapped);
+    reallocate_host<float4>(&slow_forces, &slow_forces_size, num_atoms, 1.2f, cudaHostAllocMapped);
     if (simParams->GBISOn) {
-  cudaMallocHost((void**)&intRad0H,sizeof(float)*num_atom_records_allocated);
-  cudaMallocHost((void**)&intRadSH,sizeof(float)*num_atom_records_allocated);
-  cudaHostAlloc((void**)&psiSumH, sizeof(GBReal)*num_atom_records_allocated,cudaHostAllocMapped);
-  cudaMallocHost((void**)&bornRadH,sizeof(float)*num_atom_records_allocated);
-  cudaHostAlloc((void**)&dEdaSumH,sizeof(GBReal)*num_atom_records_allocated,cudaHostAllocMapped);
-  cudaMallocHost((void**)&dHdrPrefixH,sizeof(float)*num_atom_records_allocated);
+      reallocate_host<float>(&intRad0H, &intRad0H_size, num_atoms, 1.2f);
+      reallocate_host<float>(&intRadSH, &intRadSH_size, num_atoms, 1.2f);
+      reallocate_host<GBReal>(&psiSumH, &psiSumH_size, num_atoms, 1.2f, cudaHostAllocMapped);
+      reallocate_host<float>(&bornRadH, &bornRadH_size, num_atoms, 1.2f);
+      reallocate_host<GBReal>(&dEdaSumH, &dEdaSumH_size, num_atoms, 1.2f, cudaHostAllocMapped);
+      reallocate_host<float>(&dHdrPrefixH, &dHdrPrefixH_size, num_atoms, 1.2f);
     }
-    cuda_errcheck("in cudaHostAlloc forces");
-  }
 
-  int bfstart = 0;
-  int ncomputes = computeRecords.size();
-  for ( int i=0; i<ncomputes; ++i ) {
-    ComputeNonbondedCUDA::compute_record &cr = computeRecords[i];
-    int p1 = cr.pid[0];
-    int p2 = cr.pid[1];
-    int lp1 = patchRecords[p1].localIndex;
-    int lp2 = patchRecords[p2].localIndex;
-    patch_pair &pp = patch_pairs[i];
-    pp.patch1_atom_start = patchRecords[p1].localStart;
-    pp.patch1_force_start = force_lists[lp1].force_list_start +
-	force_lists[lp1].patch_stride * force_lists[lp1].force_list_size;
-    pp.virial_start = force_lists[lp1].virial_list_start +
-	                         16 * force_lists[lp1].force_list_size;
-    pp.patch1_size = patchRecords[p1].numAtoms;
-    pp.patch1_force_size = patchRecords[p1].numFreeAtoms;
-    pp.patch2_force_size = patchRecords[p2].numFreeAtoms;
-    pp.block_flags_start = bfstart;
-    bfstart += ((pp.patch1_force_size + 127) >> 7) << 5;
-    // istart += pp.patch1_size;
-    // if ( istart & 15 ) { istart += 16 - (istart & 15); }
-    pp.patch2_atom_start = patchRecords[p2].localStart;
-    // pp.patch2_force_start = force_lists[lp2].force_list_start +
-// 	force_lists[lp2].patch_stride * force_lists[lp2].force_list_size;
-    pp.patch2_size = patchRecords[p2].numAtoms;
-    // pp.patch2_force_size = patchRecords[p2].numFreeAtoms;
-    // this must happen at end to get self computes right
-    force_lists[lp1].force_list_size++;
-    // if ( lp1 != lp2 || cr.t[0] != cr.t[1] ) {
-    //   force_lists[lp2].force_list_size++;
-    // }
-    // istart += pp.patch2_size;
-    // if ( istart & 15 ) { istart += 16 - (istart & 15); }
-  } //for ncomputes
+    int bfstart = 0;
+    int exclmask_start = 0;
+    int ncomputes = computeRecords.size();
+    for ( int i=0; i<ncomputes; ++i ) {
+      ComputeNonbondedCUDA::compute_record &cr = computeRecords[i];
+      int p1 = cr.pid[0];
+      int p2 = cr.pid[1];
+      patch_pair &pp = patch_pairs[i];
+      pp.patch1_start = patchRecords[p1].localStart;
+      pp.patch1_size  = patchRecords[p1].numAtoms;
+      pp.patch2_start = patchRecords[p2].localStart;
+      pp.patch2_size  = patchRecords[p2].numAtoms;
+      pp.plist_start = bfstart;
+      // size1*size2 = number of patch pairs
+      int size1 = (pp.patch1_size-1)/WARPSIZE+1;
+      int size2 = (pp.patch2_size-1)/WARPSIZE+1;
+      pp.plist_size = (size1*size2-1)/32+1;
+      bfstart += pp.plist_size;
+      pp.exclmask_start = exclmask_start;
+      exclmask_start += size1*size2;
+    } //for ncomputes
 
-#if 0
-  CkPrintf("Pe %d cuda_bind_patch_pairs %d %d %d %d %d\n", CkMyPe(),
-	patch_pairs.size(), force_lists.size(),
-	num_atom_records, num_force_records,
-	max_atoms_per_patch);
-#endif
+    cuda_bind_patch_pairs(patch_pairs.begin(), patch_pairs.size(),
+      activePatches.size(), num_atoms, bfstart, 
+			exclmask_start);
 
-  int totalmem = patch_pairs.size() * sizeof(patch_pair) +
-                force_lists.size() * sizeof(force_list) +
-                num_force_records * sizeof(float4) +
-                num_atom_records * sizeof(atom) +
-                num_atom_records * sizeof(atom_param) +
-                num_atom_records * sizeof(float4);
-  int totalcopy = num_atom_records * ( sizeof(atom) + sizeof(float4) );
-/*
-  CkPrintf("Pe %d allocating %d MB of GPU memory, will copy %d kB per step\n",
-			CkMyPe(), totalmem >> 20, totalcopy >> 10);
-*/
-
-  cuda_bind_patch_pairs(patch_pairs.begin(), patch_pairs.size(),
-			force_lists.begin(), force_lists.size(),
-			num_atom_records, num_force_records,
-			bfstart, max_atoms_per_patch);
-
- }  // atomsChanged || computesChanged
+  }  // atomsChanged || computesChanged
 
   double charge_scaling = sqrt(COULOMB * scaling * dielectric_1);
 
@@ -1722,33 +1752,13 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
     int n = pr.numAtoms;
     const CompAtom *a = pr.x;
     const CompAtomExt *aExt = pr.xExt;
-    // int *ao = atom_order + start;
     if ( atomsChanged ) {
-#if 0
-      int nfree = pr.numFreeAtoms;
-      if ( nfree != n ) {
-        int k = 0;
-        for ( int j=0; j<n; ++j ) {
-          // put free atoms first
-          if ( ! aExt[j].atomFixed ) ao[k++] = j;
-        }
-        if ( fixedAtomsOn ) for ( int j=0; j<n; ++j ) {
-          // put fixed atoms at end
-          if ( aExt[j].atomFixed ) ao[k++] = j;
-        }
-      } else {
-        for ( int j=0; j<n; ++j ) {
-          ao[j] = j;
-        }
-      }
-
-      sortAtomsForCUDA(ao,a,nfree,n);
-#endif
 
       atom_param *ap = atom_params + start;
       for ( int k=0; k<n; ++k ) {
         int j = aExt[k].sortOrder;
         ap[k].vdw_type = a[j].vdwType;
+        vdw_types[start + k] = a[j].vdwType;
         ap[k].index = aExt[j].id;
 #ifdef MEM_OPT_VERSION
         ap[k].excl_index = exclusionsByAtom[aExt[j].exclId].y;
@@ -1881,37 +1891,38 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
     //open GBIS boxes depending on phase
     for ( int i=0; i<activePatches.size(); ++i ) {
       patch_record &pr = master->patchRecords[activePatches[i]];
-GBISP("doWork[%d] accessing arrays for P%d\n",CkMyPe(),gbisPhase);
-        if (gbisPhase == 1) {
-          //Copy GBIS intRadius to Host
-          if (atomsChanged) {
-            float *intRad0 = intRad0H + pr.localStart;
-            float *intRadS = intRadSH + pr.localStart;
-            for ( int k=0; k<pr.numAtoms; ++k ) {
-              int j = pr.xExt[k].sortOrder;
-              intRad0[k] = pr.intRad[2*j+0];
-              intRadS[k] = pr.intRad[2*j+1];
-            }
-          }
-        } else if (gbisPhase == 2) {
-          float *bornRad = bornRadH + pr.localStart;
+      GBISP("doWork[%d] accessing arrays for P%d\n",CkMyPe(),gbisPhase);
+      if (gbisPhase == 1) {
+        //Copy GBIS intRadius to Host
+        if (atomsChanged) {
+          float *intRad0 = intRad0H + pr.localStart;
+          float *intRadS = intRadSH + pr.localStart;
           for ( int k=0; k<pr.numAtoms; ++k ) {
             int j = pr.xExt[k].sortOrder;
-            bornRad[k] = pr.bornRad[j];
+            intRad0[k] = pr.intRad[2*j+0];
+            intRadS[k] = pr.intRad[2*j+1];
           }
-        } else if (gbisPhase == 3) {
-          float *dHdrPrefix = dHdrPrefixH + pr.localStart;
-          for ( int k=0; k<pr.numAtoms; ++k ) {
-            int j = pr.xExt[k].sortOrder;
-            dHdrPrefix[k] = pr.dHdrPrefix[j];
-          }
+        }
+      } else if (gbisPhase == 2) {
+        float *bornRad = bornRadH + pr.localStart;
+        for ( int k=0; k<pr.numAtoms; ++k ) {
+          int j = pr.xExt[k].sortOrder;
+          bornRad[k] = pr.bornRad[j];
+        }
+      } else if (gbisPhase == 3) {
+        float *dHdrPrefix = dHdrPrefixH + pr.localStart;
+        for ( int k=0; k<pr.numAtoms; ++k ) {
+          int j = pr.xExt[k].sortOrder;
+          dHdrPrefix[k] = pr.dHdrPrefix[j];
+        }
       } // end phases
     } // end for patches
   } // if GBISOn
 
   kernel_time = CkWallTimer();
   kernel_launch_state = 1;
-  if ( gpu_is_mine || ! doSlow ) recvYieldDevice(-1);
+  //if ( gpu_is_mine || ! doSlow ) recvYieldDevice(-1);
+  if ( deviceCUDA->getGpuIsMine() || ! doSlow ) recvYieldDevice(-1);
 }
 
 void cuda_check_remote_calc(void *arg, double walltime) {
@@ -1919,7 +1930,7 @@ void cuda_check_remote_calc(void *arg, double walltime) {
   // if ( cudaEventQuery(end_remote_calc) == cudaSuccess ) {
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
 // CkPrintf("Pe %d yielding to %d after remote calc\n", CkMyPe(), next_pe_sharing_gpu);
-    computeMgr->sendYieldDevice(next_pe_sharing_gpu);
+    computeMgr->sendYieldDevice(deviceCUDA->getNextPeSharingGpu());
 // CkPrintf("Pe %d yielded to %d after remote calc\n", CkMyPe(), next_pe_sharing_gpu);
   } else {
     CcdCallBacksReset(0,walltime);  // fix Charm++
@@ -1932,7 +1943,7 @@ void cuda_check_local_calc(void *arg, double walltime) {
   // if ( cudaEventQuery(end_local_calc) == cudaSuccess ) {
   if ( cudaEventQuery(end_local_download) == cudaSuccess ) {
 // CkPrintf("Pe %d yielding to %d after local calc\n", CkMyPe(), next_pe_sharing_gpu);
-    computeMgr->sendYieldDevice(next_pe_sharing_gpu);
+    computeMgr->sendYieldDevice(deviceCUDA->getNextPeSharingGpu());
 // CkPrintf("Pe %d yielded to %d after local calc\n", CkMyPe(), next_pe_sharing_gpu);
   } else {
     CcdCallBacksReset(0,walltime);  // fix Charm++
@@ -1959,7 +1970,7 @@ workStarted, gbisPhase, kernel_launch_state, pe)
   latc.z = lattice.c().z;
   SimParameters *simParams = Node::Object()->simParameters;
 
-  const bool streaming = ! (nostreaming || simParams->GBISOn);
+  const bool streaming = ! (deviceCUDA->getNoStreaming() || simParams->GBISOn);
 
   double walltime;
   if ( kernel_launch_state == 1 || kernel_launch_state == 2 ) {
@@ -1973,54 +1984,59 @@ workStarted, gbisPhase, kernel_launch_state, pe)
   case 1:
 GBISP("C.N.CUDA[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
     ++kernel_launch_state;
-    gpu_is_mine = 0;
+    //gpu_is_mine = 0;
+    deviceCUDA->setGpuIsMine(0);
     remote_submit_time = walltime;
 
     if (!simParams->GBISOn || gbisPhase == 1) {
-    // cudaEventRecord(start_upload, stream);
-    if ( atomsChanged ) {
-      cuda_bind_atom_params(atom_params);
-    }
-    if ( simParams->GBISOn) {
-      cuda_bind_GBIS_psiSum(psiSumH);
+      // cudaEventRecord(start_upload, stream);
       if ( atomsChanged ) {
-        cuda_bind_GBIS_intRad(intRad0H, intRadSH);
+        cuda_bind_atom_params(atom_params);
+        cuda_bind_vdw_types(vdw_types);
       }
-    }
-    atomsChanged = 0;
-    cuda_bind_atoms(atoms);
-    cuda_bind_forces(forces, slow_forces);
-    cuda_bind_virials(virials, force_ready_queue, block_order);
-    cuda_bind_GBIS_energy(energy_gbis);
-    if ( stream2 != stream ) cudaEventRecord(start_calc, stream);
-    //call CUDA Kernels
-    cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
-	0,remoteComputeRecords.size(),
-	remoteComputeRecords.size()+localComputeRecords.size(),
-	doSlow, doEnergy, usePairlists, savePairlists, streaming, ! patchPairsReordered, stream);
-    if (simParams->GBISOn) {
-      cuda_GBIS_P1(
-        0,remoteComputeRecords.size(),
-        localActivePatches.size(),remoteActivePatches.size(),
-        simParams->alpha_cutoff-simParams->fsMax,
-        simParams->coulomb_radius_offset,
-        lata, latb, latc, stream);
-    }
-    //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
-    //    num_local_atom_records,num_remote_atom_records);
-    if ( ( ! streaming ) || ( shared_gpu && ! mergegrids ) ) {
-      cudaEventRecord(end_remote_download, stream);
-    }
-    if ( streaming ) {
-      force_ready_queue_next = 0;
-      CUDA_POLL(cuda_check_progress,this);
-    } else {
-      CUDA_POLL(cuda_check_remote_progress,this);
-    }
-    if ( shared_gpu && ! mergegrids ) {
-      CUDA_POLL(cuda_check_remote_calc,this);
-      break;
-    }
+      if ( simParams->GBISOn) {
+        cuda_bind_GBIS_psiSum(psiSumH);
+	       if ( atomsChanged ) {
+	         cuda_bind_GBIS_intRad(intRad0H, intRadSH);
+	       }
+      }
+      atomsChanged = 0;
+      cuda_bind_atoms(atoms);
+      cuda_bind_forces(forces, slow_forces);
+      cuda_bind_virials(virials, force_ready_queue, block_order);
+      if ( simParams->GBISOn) {
+        cuda_bind_GBIS_energy(energy_gbis);
+      }
+      if ( stream2 != stream ) cudaEventRecord(start_calc, stream);
+      //call CUDA Kernels
+
+      cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
+			    0,remoteComputeRecords.size(),
+			    remoteComputeRecords.size()+localComputeRecords.size(),
+			    doSlow, doEnergy, usePairlists, savePairlists, streaming, ! patchPairsReordered, stream);
+      if (simParams->GBISOn) {
+        cuda_GBIS_P1(
+          0,remoteComputeRecords.size(),
+		      localActivePatches.size(),remoteActivePatches.size(),
+		      simParams->alpha_cutoff-simParams->fsMax,
+		      simParams->coulomb_radius_offset,
+		      lata, latb, latc, stream);
+      }
+      //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
+      //    num_local_atom_records,num_remote_atom_records);
+      if ( ( ! streaming ) || ( deviceCUDA->getSharedGpu() && ! deviceCUDA->getMergeGrids() ) ) {
+        cudaEventRecord(end_remote_download, stream);
+      }
+      if ( streaming ) {
+        force_ready_queue_next = 0;
+        CUDA_POLL(cuda_check_progress,this);
+      } else {
+        CUDA_POLL(cuda_check_remote_progress,this);
+      }
+      if ( deviceCUDA->getSharedGpu() && ! deviceCUDA->getMergeGrids() ) {
+        CUDA_POLL(cuda_check_remote_calc,this);
+        break;
+      }
     } // !GBIS or gbisPhase==1
     if (simParams->GBISOn) {
       if (gbisPhase == 1) {
@@ -2067,7 +2083,8 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P3>>>\n", CkMyPe())
   case 2:
 GBISP("C.N.CUDA[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
     ++kernel_launch_state;
-    gpu_is_mine = 0;
+    //gpu_is_mine = 0;
+    deviceCUDA->setGpuIsMine(0);
 
     if ( stream2 != stream ) {
       // needed to ensure that upload is finished
@@ -2080,34 +2097,34 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
     if (!simParams->GBISOn || gbisPhase == 1) {
 
       cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
-	      remoteComputeRecords.size(),localComputeRecords.size(),
-	      remoteComputeRecords.size()+localComputeRecords.size(),
-	      doSlow, doEnergy, usePairlists, savePairlists, streaming, ! patchPairsReordered, stream2);
+			    remoteComputeRecords.size(),localComputeRecords.size(),
+			    remoteComputeRecords.size()+localComputeRecords.size(),
+			    doSlow, doEnergy, usePairlists, savePairlists, streaming, ! patchPairsReordered, stream2);
       if (simParams->GBISOn) {
         cuda_GBIS_P1(
-          remoteComputeRecords.size(),localComputeRecords.size(),
-          0,localActivePatches.size(),
-          simParams->alpha_cutoff-simParams->fsMax,
-          simParams->coulomb_radius_offset,
-          lata, latb, latc, stream2 );
+		     remoteComputeRecords.size(),localComputeRecords.size(),
+		     0,localActivePatches.size(),
+		     simParams->alpha_cutoff-simParams->fsMax,
+		     simParams->coulomb_radius_offset,
+		     lata, latb, latc, stream2 );
       }
-    //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
-    //    0,num_local_atom_records);
-    //cuda_load_virials(virials, doSlow);  // slow_virials follows virials
-    if ( ( ! streaming ) || ( shared_gpu && ! mergegrids ) ) {
-      cudaEventRecord(end_local_download, stream2);
-    }
-    if ( ! streaming && workStarted == 2 ) {
-GBISP("C.N.CUDA[%d]::recvYieldDeviceL: adding POLL \
+      //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
+      //    0,num_local_atom_records);
+      //cuda_load_virials(virials, doSlow);  // slow_virials follows virials
+      if ( ( ! streaming ) || ( deviceCUDA->getSharedGpu() && ! deviceCUDA->getMergeGrids() ) ) {
+        cudaEventRecord(end_local_download, stream2);
+      }
+      if ( ! streaming && workStarted == 2 ) {
+        GBISP("C.N.CUDA[%d]::recvYieldDeviceL: adding POLL \
 cuda_check_local_progress\n", CkMyPe())
-      CUDA_POLL(cuda_check_local_progress,this);
-    }
-    if ( shared_gpu && ! mergegrids ) {
-GBISP("C.N.CUDA[%d]::recvYieldDeviceL: adding POLL \
+        CUDA_POLL(cuda_check_local_progress,this);
+      }
+      if ( deviceCUDA->getSharedGpu() && ! deviceCUDA->getMergeGrids() ) {
+	GBISP("C.N.CUDA[%d]::recvYieldDeviceL: adding POLL \
 cuda_check_local_calc\n", CkMyPe())
-      CUDA_POLL(cuda_check_local_calc,this);
-      break;
-    }
+	  CUDA_POLL(cuda_check_local_calc,this);
+	break;
+      }
 
     } // !GBIS or gbisPhase==1
     if (simParams->GBISOn) {
@@ -2148,23 +2165,24 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P3>>>\n", CkMyPe())
     } // GBISOn
     if ( simParams->PMEOn && simParams->PMEOffload ) break;
 
-
   default:
 GBISP("C.N.CUDA[%d]::recvYieldDevice: case default\n", CkMyPe())
-    gpu_is_mine = 1;
+    //gpu_is_mine = 1;
+    deviceCUDA->setGpuIsMine(1);
     break;
   } // switch
 GBISP("C.N.CUDA[%d]::recvYieldDevice: DONE\n", CkMyPe())
 }
 
-
 void ComputeNonbondedCUDA::messageFinishPatch(int flindex) {
   int pid = activePatches[flindex];
   patch_record &pr = patchRecords[pid];
+  //fprintf(stderr, "%d ComputeNonbondedCUDA::messageFinishPatch %d\n",CkMyPe(),pr.hostPe);
   computeMgr->sendNonbondedCUDASlaveEnqueuePatch(pr.slave,pr.hostPe,sequence(),PROXY_DATA_PRIORITY,flindex,pr.msg);
 }
 
 void ComputeNonbondedCUDA::finishPatch(int flindex) {
+  //fprintf(stderr, "%d ComputeNonbondedCUDA::finishPatch \n",CkMyPe());
   patch_record &pr = master->patchRecords[master->activePatches[flindex]];
   pr.r = pr.forceBox->open();
   finishPatch(pr);
@@ -2173,54 +2191,36 @@ void ComputeNonbondedCUDA::finishPatch(int flindex) {
 }
 
 void ComputeNonbondedCUDA::finishPatch(patch_record &pr) {
-    int start = pr.localStart;
-    const CompAtomExt *aExt = pr.xExt;
-    int nfree = pr.numFreeAtoms;
-    pr.f = pr.r->f[Results::nbond];
-    Force *f = pr.f;
-    Force *f_slow = pr.r->f[Results::slow];
-    const CompAtom *a = pr.x;
-    // int *ao = atom_order + start;
-    float4 *af = master->forces + start;
-    float4 *af_slow = master->slow_forces + start;
-    // only free atoms return forces
-    for ( int k=0; k<nfree; ++k ) {
-      int j = aExt[k].sortOrder;
-      f[j].x += af[k].x;
-      f[j].y += af[k].y;
-      f[j].z += af[k].z;
-      // wcount += af[k].w;
-      // virial += af[k].w;
-      if ( doSlow ) {
-        f_slow[j].x += af_slow[k].x;
-        f_slow[j].y += af_slow[k].y;
-        f_slow[j].z += af_slow[k].z;
-        // virial_slow += af_slow[k].w;
-      }
+  int start = pr.localStart;
+  const CompAtomExt *aExt = pr.xExt;
+  int nfree = pr.numFreeAtoms;
+  pr.f = pr.r->f[Results::nbond];
+  Force *f = pr.f;
+  Force *f_slow = pr.r->f[Results::slow];
+  const CompAtom *a = pr.x;
+  // int *ao = atom_order + start;
+  float4 *af = master->forces + start;
+  float4 *af_slow = master->slow_forces + start;
+  // only free atoms return forces
+  for ( int k=0; k<nfree; ++k ) {
+    int j = aExt[k].sortOrder;
+    f[j].x += af[k].x;
+    f[j].y += af[k].y;
+    f[j].z += af[k].z;
+    // wcount += af[k].w;
+    // virial += af[k].w;
+    if ( doSlow ) {
+      f_slow[j].x += af_slow[k].x;
+      f_slow[j].y += af_slow[k].y;
+      f_slow[j].z += af_slow[k].z;
+      // virial_slow += af_slow[k].w;
     }
-
-#if 1
-    // check exclusions reported as w
-    if ( doExclusionCheck ) {
-      const CompAtomExt *aExt = pr.xExt;
-      for ( int k=0; k<nfree; ++k ) {
-        int j = aExt[k].sortOrder;
-#ifdef MEM_OPT_VERSION
-        int excl_expected = mol->exclSigPool[aExt[j].exclId].fullExclCnt + 1;
-#else
-        int excl_expected = mol->get_full_exclusions_for_atom(aExt[j].id)[0] + 1;
-#endif
-        if ( af[k].w != excl_expected ) {
-          CkPrintf("%d:%d(%d) atom %d found %d exclusions but expected %d\n",
-		pr.patchID, j, k, aExt[j].id, (int)af[k].w, excl_expected );
-        }
-      }
-    }
-#endif
+  }
 }
 
 //dtanner
 int ComputeNonbondedCUDA::finishWork() {
+  //fprintf(stderr, "%d ComputeNonbondedCUDA::finishWork() \n",CkMyPe());
 
   if ( master == this ) {
     for ( int i = 0; i < numSlaves; ++i ) {
@@ -2314,7 +2314,7 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
   }
 #endif
 
-  if ( workStarted == 1 && ! mergegrids &&
+  if ( workStarted == 1 && ! deviceCUDA->getMergeGrids() &&
        ( localHostedPatches.size() || master == this ) ) {
     GBISP("not finished, call again\n");
     return 0;  // not finished, call again
@@ -2346,6 +2346,7 @@ GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
 
 
 void ComputeNonbondedCUDA::finishReductions() {
+  //fprintf(stderr, "%d ComputeNonbondedCUDA::finishReductions \n",CkMyPe());
 
   basePriority = PROXY_DATA_PRIORITY;  // higher to aid overlap
 
@@ -2422,35 +2423,35 @@ void ComputeNonbondedCUDA::finishReductions() {
   if ( simParams->outputCudaTiming &&
 	step % simParams->outputCudaTiming == 0 ) {
 
-  // int natoms = mol->numAtoms; 
-  // double wpa = wcount;  wpa /= natoms;
+    // int natoms = mol->numAtoms; 
+    // double wpa = wcount;  wpa /= natoms;
 
-  // CkPrintf("Pe %d CUDA kernel %f ms, total %f ms, wpa %f\n", CkMyPe(),
-	// 	kernel_time * 1.e3, time * 1.e3, wpa);
+    // CkPrintf("Pe %d CUDA kernel %f ms, total %f ms, wpa %f\n", CkMyPe(),
+    // 	kernel_time * 1.e3, time * 1.e3, wpa);
 
 #if 0
-  float upload_ms, remote_calc_ms;
-  float local_calc_ms, total_ms;
-  cuda_errcheck("before event timers");
-  cudaEventElapsedTime(&upload_ms, start_upload, start_calc);
-  cuda_errcheck("in event timer 1");
-  cudaEventElapsedTime(&remote_calc_ms, start_calc, end_remote_download);
-  cuda_errcheck("in event timer 2");
-  cudaEventElapsedTime(&local_calc_ms, end_remote_download, end_local_download);
-  cuda_errcheck("in event timer 3");
-  cudaEventElapsedTime(&total_ms, start_upload, end_local_download);
-  cuda_errcheck("in event timer 4");
-  cuda_errcheck("in event timers");
+    float upload_ms, remote_calc_ms;
+    float local_calc_ms, total_ms;
+    cuda_errcheck("before event timers");
+    cudaEventElapsedTime(&upload_ms, start_upload, start_calc);
+    cuda_errcheck("in event timer 1");
+    cudaEventElapsedTime(&remote_calc_ms, start_calc, end_remote_download);
+    cuda_errcheck("in event timer 2");
+    cudaEventElapsedTime(&local_calc_ms, end_remote_download, end_local_download);
+    cuda_errcheck("in event timer 3");
+    cudaEventElapsedTime(&total_ms, start_upload, end_local_download);
+    cuda_errcheck("in event timer 4");
+    cuda_errcheck("in event timers");
 
     CkPrintf("CUDA EVENT TIMING: %d %f %f %f %f\n",
-	CkMyPe(), upload_ms, remote_calc_ms,
-			local_calc_ms, total_ms);
+	     CkMyPe(), upload_ms, remote_calc_ms,
+	     local_calc_ms, total_ms);
 #endif
 
     if ( cuda_timer_count >= simParams->outputCudaTiming ) {
       cuda_timer_total /= cuda_timer_count;
       CkPrintf("CUDA TIMING: %d  %f ms/step on node %d\n",
-		step, cuda_timer_total * 1.e3, CkMyPe());
+	       step, cuda_timer_total * 1.e3, CkMyPe());
     }
     cuda_timer_count = 0;
     cuda_timer_total = 0;

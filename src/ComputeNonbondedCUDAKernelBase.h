@@ -38,10 +38,18 @@
 
 #define LAST(X) X
 
+#undef KEPLER_SHUFFLE
 #ifdef __CUDA_ARCH__
 #define KEPLER_SHUFFLE
 #if __CUDA_ARCH__ < 300
 #undef KEPLER_SHUFFLE
+#endif
+#endif
+
+#undef REG_JFORCE
+#ifdef KEPLER_SHUFFLE
+#ifndef MAKE_PAIRLIST
+#define REG_JFORCE
 #endif
 #endif
 
@@ -64,521 +72,726 @@ __device__ __forceinline__ static void NAME(shfl_reduction)(
 }
 #endif /* KEPLER_SHUFFLE */
 
-__device__ __forceinline__ static void NAME(dev_sum_forces)(
-        const int force_list_index,
-	const atom *atoms,
-	const force_list *force_lists,
-	const float4 *force_buffers,
-	const float *virial_buffers,
-	float4 *forces, float *virials);
-
-__global__ static void NAME(dev_nonbonded)(
-	const patch_pair *patch_pairs,
-	const atom *atoms,
-	const atom_param *atom_params,
-	float4 *force_buffers,
-	float4 *slow_force_buffers,
-	unsigned int *block_flags,
-	float *virial_buffers,
-	float *slow_virial_buffers,
-        const unsigned int *overflow_exclusions,
-        unsigned int *force_list_counters,
-        int block_begin,
-        int total_block_count,
-        int *block_order,
-        int *force_ready_queue,
-        const force_list *force_lists,
-        float4 *forces, float *virials,
-        float4 *slow_forces, float *slow_virials,
-        int force_lists_size,
-        int lj_table_size,
-        float3 lata, float3 latb, float3 latc,
-	float cutoff2, float plcutoff2, int doSlow) {
-// call with one block per patch_pair
-// call with BLOCK_SIZE threads per block
-// call with no shared memory
-
-#ifdef __DEVICE_EMULATION__
-  #define myPatchPair (*(patch_pair*)(&pp.i))
-#else
-  #define myPatchPair pp.pp
+__device__ __forceinline__ 
+static void NAME(finish_forces_virials)(const int start, const int size, const int patch_ind,
+					const atom* atoms,
+					volatile float* sh_buf,
+#ifndef KEPLER_SHUFFLE
+					volatile float* sh_slow_buf, volatile float* sh_vcc,
 #endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    patch_pair pp;
+					float4* tmpforces, float4* slow_tmpforces,
+					float4* forces, float4* slow_forces,
+					float* tmpvirials, float* slow_tmpvirials, 
+					float* virials, float* slow_virials);
+
+//
+// Called with 2d thread setting:
+// x-threadblock = warpSize = 32
+// y-threadblock = NUM_WARP = 4
+//
+__global__ static void
+GENPAIRLIST(__launch_bounds__(NUM_WARP*WARPSIZE, 10) )
+USEPAIRLIST(__launch_bounds__(NUM_WARP*WARPSIZE, 12) )
+NAME(dev_nonbonded)
+     (const patch_pair* patch_pairs,
+      const atom *atoms, const atom_param *atom_params,
+      const int* vdw_types, unsigned int* plist,
+      float4 *tmpforces, float4 *slow_tmpforces,
+      float4 *forces, float4 *slow_forces,
+      float* tmpvirials, float* slow_tmpvirials,
+      float* virials, float* slow_virials,
+      unsigned int* global_counters, int* force_ready_queue,
+      const unsigned int *overflow_exclusions,
+      const int npatches,
+      const int block_begin, const int total_block_count, int* block_order,
+      exclmask* exclmasks, const int lj_table_size,
+      const float3 lata, const float3 latb, const float3 latc,
+      const float cutoff2, const float plcutoff2, const int doSlow) {
+
+  // Local structure definitions
+  GENPAIRLIST(struct vdw_index {
+    int vdw_type;
+    int index;
+  };)
+
+  // Shared memory
+  __shared__ patch_pair sh_patch_pair;
+#ifndef REG_JFORCE
+  __shared__ float3 sh_jforce_2d[NUM_WARP][WARPSIZE];
+  SLOW(__shared__ float3 sh_jforce_slow_2d[NUM_WARP][WARPSIZE];)
 #endif
-    unsigned int i[PATCH_PAIR_SIZE];
-  } pp;
-
- { // start of nonbonded calc
-
-  #define pl plu.c
-  __shared__ union {
-    unsigned int i[BLOCK_SIZE];
-    char c[4*BLOCK_SIZE];
-  } plu;
-
-  __shared__ volatile union {
-    float a2d[32][3];
-    float a1d[32*3];
-  } sumf;
-
-  __shared__ volatile union {
-    float a2d[32][3];
-    float a1d[32*3];
-  } sumf_slow;
-
-#ifdef __DEVICE_EMULATION__
-  #define jpqs ((atom*)(jpqu.i))
-#else
-  #define jpqs jpqu.d
+#ifndef KEPLER_SHUFFLE
+  __shared__ atom sh_jpq_2d[NUM_WARP][WARPSIZE];
 #endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    atom d[SHARED_SIZE];
-#endif
-    unsigned int i[4*SHARED_SIZE];
-    float f[4*SHARED_SIZE];
-  } jpqu;
-
-#ifdef __DEVICE_EMULATION__
-  #define japs ((atom_param*)(japu.i))
-#else
-  #define japs japu.d
-#endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    atom_param d[SHARED_SIZE];
-#endif
-    unsigned int i[4*SHARED_SIZE];
-  } japu;
-
-  if ( threadIdx.x < PATCH_PAIR_USED ) {
-    unsigned int tmp = ((unsigned int*)patch_pairs)[
-			PATCH_PAIR_SIZE*(block_begin+blockIdx.x)+threadIdx.x];
-    pp.i[threadIdx.x] = tmp;
-  }
-
-  if ( threadIdx.x < 96 ) { // initialize net force in shared memory
-    sumf.a1d[threadIdx.x] = 0.f;
-    sumf_slow.a1d[threadIdx.x] = 0.f;
-  }
-
-  __syncthreads();
-
-  // convert scaled offset with current lattice
-  if ( threadIdx.x == 0 ) {
-    float offx = myPatchPair.offset.x * lata.x
-               + myPatchPair.offset.y * latb.x
-               + myPatchPair.offset.z * latc.x;
-    float offy = myPatchPair.offset.x * lata.y
-               + myPatchPair.offset.y * latb.y
-               + myPatchPair.offset.z * latc.y;
-    float offz = myPatchPair.offset.x * lata.z
-               + myPatchPair.offset.y * latb.z
-               + myPatchPair.offset.z * latc.z;
-    myPatchPair.offset.x = offx;
-    myPatchPair.offset.y = offy;
-    myPatchPair.offset.z = offz;
-  }
-
-  __syncthreads();
+  __shared__ float3 sh_iforcesum[SLOW(NUM_WARP+) NUM_WARP];
 
   ENERGY(
-  float totalev = 0.f;
-  float totalee = 0.f;
-  SLOW( float totales = 0.f; )
-  )
+	 float totalev = 0.f;
+	 float totalee = 0.f;
+	 SLOW( float totales = 0.f; )
+	)
 
-  for ( int blocki = 0;
-        blocki < myPatchPair.patch1_force_size;
-        blocki += BLOCK_SIZE ) {
-
-  atom ipq;
-  struct {
-    int vdw_type;
-    int index; } iap;
-
-  // load patch 1
-  if ( blocki + threadIdx.x < myPatchPair.patch1_force_size ) {
-    int i = myPatchPair.patch1_atom_start + blocki + threadIdx.x;
-    float4 tmpa = ((float4*)atoms)[i];
-
-    ipq.position.x = tmpa.x + myPatchPair.offset.x;
-    ipq.position.y = tmpa.y + myPatchPair.offset.y;
-    ipq.position.z = tmpa.z + myPatchPair.offset.z;
-    ipq.charge = tmpa.w;
-
-    uint4 tmpap = ((uint4*)atom_params)[i];
-
-    iap.vdw_type = tmpap.x;
-    iap.index = tmpap.y;
-  }
-
-  // avoid syncs by having all warps load pairlist
-  USEPAIRLIST( {
-    int i_pl = (blocki >> 2) + myPatchPair.block_flags_start;
-    plu.i[threadIdx.x] = block_flags[i_pl + (threadIdx.x & 31)];
-  } )
-  GENPAIRLIST(
-    plu.i[threadIdx.x] = 0;
-  )
-  int pli = 4 * ( threadIdx.x & 96 );
-
-  float4 ife, ife_slow;
-  ife.x = 0.f;
-  ife.y = 0.f;
-  ife.z = 0.f;
-  ife.w = 0.f;
-  ife_slow.x = 0.f;
-  ife_slow.y = 0.f;
-  ife_slow.z = 0.f;
-  ife_slow.w = 0.f;
-
-  for ( int blockj = 0;
-        blockj < myPatchPair.patch2_size;
-        blockj += SHARED_SIZE, ++pli ) {
-
-#ifdef __DEVICE_EMULATION__
-  USEPAIRLIST( if ( threadIdx.x == 0 ) printf("%d %d %d %d %d %d %d\n", blockIdx.x, blocki, blockj, pli, pl[pli], (pli+128)&255, pl[(pli+128)&255]); )
-#endif
-  USEPAIRLIST( if ( pl[pli] == 0 ) continue; )
-
-  int shared_size = myPatchPair.patch2_size - blockj;
-  if ( shared_size > SHARED_SIZE ) shared_size = SHARED_SIZE;
-
-  // load patch 2
-  __syncthreads();
-
-  if ( threadIdx.x < 4 * shared_size ) {
-    int j = myPatchPair.patch2_atom_start + blockj;
-    jpqu.i[threadIdx.x] = ((unsigned int *)(atoms + j))[threadIdx.x];
-    int aptmp = ((unsigned int *)(atom_params + j))[threadIdx.x];
-    // scale vdw_type field, which is first in struct
-    if ( (threadIdx.x & 3) == 0 ) aptmp *= lj_table_size;
-    japu.i[threadIdx.x] = aptmp;
-  }
-  __syncthreads();
-
-  USEPAIRLIST( if ( (pl[pli] & (1 << (threadIdx.x >> 5))) == 0 ) continue; )
-
-  // calc forces on patch 1
-  if ( blocki + threadIdx.x < myPatchPair.patch1_force_size ) {
-
-    GENPAIRLIST( bool plpli = 0; )
-
-    for ( int j = 0; j < shared_size; ++j ) {
-      /* actually calculate force */
-      float tmpx = jpqs[j].position.x - ipq.position.x;
-      float tmpy = jpqs[j].position.y - ipq.position.y;
-      float tmpz = jpqs[j].position.z - ipq.position.z;
-      float r2 = tmpx*tmpx + tmpy*tmpy + tmpz*tmpz;
-      GENPAIRLIST( if(r2<plcutoff2) ) { GENPAIRLIST( plpli=1; )
-      if ( r2 < cutoff2 ) {
-        ENERGY( float rsqrtfr2; )
-        float4 fi = tex1D(force_table, ENERGY(rsqrtfr2 =) rsqrtf(r2));
-        ENERGY( float4 ei = tex1D(energy_table, rsqrtfr2); )
-        float2 ljab = tex1Dfetch(lj_table,
-                /* lj_table_size * */ japs[j].vdw_type + iap.vdw_type);
-        bool excluded = false;
-        int indexdiff = (int)(iap.index) - (int)(japs[j].index);
-        if ( abs(indexdiff) <= (int) japs[j].excl_maxdiff ) {
-          indexdiff += japs[j].excl_index;
-          int indexword = ((unsigned int) indexdiff) >> 5;
-          if ( indexword < MAX_CONST_EXCLUSIONS )
-               indexword = const_exclusions[indexword];
-          else indexword = overflow_exclusions[indexword];
-          excluded = ((indexword & (1<<(indexdiff&31))) != 0);
-        }
-        float f_slow = ipq.charge * jpqs[j].charge;
-        float f = ljab.x * fi.z + ljab.y * fi.y + f_slow * fi.x;
-        ENERGY(
-        float ev = ljab.x * ei.z + ljab.y * ei.y;
-        float ee = f_slow * ei.x;
-        SLOW( float es = f_slow * ei.w; )
-        )
-        SLOW( f_slow *= fi.w; )
-        if ( ! excluded ) { \
-          ENERGY(
-          totalev += ev;
-          totalee += ee;
-          SLOW( totales += es; )
-          if ( blockj + j >= myPatchPair.patch2_force_size ) {
-            /* add fixed atoms twice */
-            totalev += ev;
-            totalee += ee;
-            SLOW( totales += es; )
-          }
-          )
-          /* ife.w += r2 * f; */
-          ife.x += tmpx * f;
-          ife.y += tmpy * f;
-          ife.z += tmpz * f;
-          SLOW(
-          /* ife_slow.w += r2 * f_slow; */
-          ife_slow.x += tmpx * f_slow;
-          ife_slow.y += tmpy * f_slow;
-          ife_slow.z += tmpz * f_slow;
-          )
-        } else ife.w += 1.f;
-      } }  /* cutoff */
-    }
-
-    GENPAIRLIST ( if ( plpli ) pl[pli] = 1; )
-
-/*
-    if ( plcutoff2 == 0 ) {  // use pairlist
-      if ( doSlow ) {
-        FORCE_INNER_LOOP(ipq,iap,1,{)
-      } else {
-        FORCE_INNER_LOOP(ipq,iap,0,{)
-      }
-    } else {  // create pairlist
-      bool plpli = 0;
-      if ( doSlow ) {
-        FORCE_INNER_LOOP(ipq,iap,1,if(r2<plcutoff2){plpli=1;)
-      } else {
-        FORCE_INNER_LOOP(ipq,iap,0,if(r2<plcutoff2){plpli=1;)
-      }
-      if ( plpli ) pl[pli] = 1;
-    }
-*/
-
-  } // if
-  } // blockj loop
-
-  if ( blocki + threadIdx.x < myPatchPair.patch1_force_size ) {
-    int i_out = myPatchPair.patch1_force_start + blocki + threadIdx.x;
-    force_buffers[i_out] = ife;
-    if ( doSlow ) {
-      slow_force_buffers[i_out] = ife_slow;
-    }
-    // accumulate net force to shared memory, warp-synchronous
-    const int subwarp = threadIdx.x >> 2;  // 32 entries in table
-    const int thread = threadIdx.x & 3;  // 4 threads share each entry
-    for ( int g = 0; g < 4; ++g ) {
-      if ( thread == g ) {
-        sumf.a2d[subwarp][0] += ife.x;
-        sumf.a2d[subwarp][1] += ife.y;
-        sumf.a2d[subwarp][2] += ife.z;
-        if ( doSlow ) {
-          sumf_slow.a2d[subwarp][0] += ife_slow.x;
-          sumf_slow.a2d[subwarp][1] += ife_slow.y;
-          sumf_slow.a2d[subwarp][2] += ife_slow.z;
-        }
-      }
-    }
-  }
-  if ( plcutoff2 != 0 ) {
-    __syncthreads();  // all shared pairlist writes complete
-    unsigned int pltmp;
-    if ( threadIdx.x < 32 ) {
-      pltmp = plu.i[threadIdx.x];
-      pltmp |= plu.i[threadIdx.x+32] << 1;
-      pltmp |= plu.i[threadIdx.x+64] << 2;
-      pltmp |= plu.i[threadIdx.x+96] << 3;
-    }
-    __syncthreads();  // all shared pairlist reads complete
-    if ( threadIdx.x < 32 ) {
-      int i_pl = (blocki >> 2) + myPatchPair.block_flags_start;
-      block_flags[i_pl + threadIdx.x] = pltmp;
-    }
-  }
-
-  } // blocki loop
-
-  __syncthreads();
-  if ( threadIdx.x < 24 ) { // reduce forces, warp-synchronous
-                            // 3 components, 8 threads per component
-    const int i_out = myPatchPair.virial_start + threadIdx.x;
-    {
-      float f;
-      f = sumf.a1d[threadIdx.x] + sumf.a1d[threadIdx.x + 24] + 
-          sumf.a1d[threadIdx.x + 48] + sumf.a1d[threadIdx.x + 72];
-      sumf.a1d[threadIdx.x] = f;
-      f += sumf.a1d[threadIdx.x + 12];
-      sumf.a1d[threadIdx.x] = f;
-      f += sumf.a1d[threadIdx.x + 6];
-      sumf.a1d[threadIdx.x] = f;
-      f += sumf.a1d[threadIdx.x + 3];
-      f *= 0.5f;  // compensate for double-counting
-      // calculate virial contribution on first 3 threads
-      sumf.a2d[threadIdx.x][0] = f * myPatchPair.offset.x;
-      sumf.a2d[threadIdx.x][1] = f * myPatchPair.offset.y;
-      sumf.a2d[threadIdx.x][2] = f * myPatchPair.offset.z;
-      if ( threadIdx.x < 9 ) {  // write out output buffer
-        virial_buffers[i_out] = sumf.a1d[threadIdx.x];
-      }
-    }
-    if ( doSlow ) { // repeat above for slow forces
-      float fs;
-      fs = sumf_slow.a1d[threadIdx.x] + sumf_slow.a1d[threadIdx.x + 24] + 
-           sumf_slow.a1d[threadIdx.x + 48] + sumf_slow.a1d[threadIdx.x + 72];
-      sumf_slow.a1d[threadIdx.x] = fs;
-      fs += sumf_slow.a1d[threadIdx.x + 12];
-      sumf_slow.a1d[threadIdx.x] = fs;
-      fs += sumf_slow.a1d[threadIdx.x + 6];
-      sumf_slow.a1d[threadIdx.x] = fs;
-      fs += sumf_slow.a1d[threadIdx.x + 3];
-      fs *= 0.5f;
-      sumf_slow.a2d[threadIdx.x][0] = fs * myPatchPair.offset.x;
-      sumf_slow.a2d[threadIdx.x][1] = fs * myPatchPair.offset.y;
-      sumf_slow.a2d[threadIdx.x][2] = fs * myPatchPair.offset.z;
-      if ( threadIdx.x < 9 ) {
-        slow_virial_buffers[i_out] = sumf_slow.a1d[threadIdx.x];
-      }
-    }
-  }
-#if ENERGY(1 +) 0
-  if ( threadIdx.x < 512 )  // workaround for compiler bug
   {
-    __syncthreads();
-    // accumulate energies to shared memory, warp-synchronous
-    const int subwarp = threadIdx.x >> 2;  // 32 entries in table
-    const int thread = threadIdx.x & 3;  // 4 threads share each entry
-#ifdef KEPLER_SHUFFLE
-    totalev  += __shfl_xor(totalev, 2, 4);
-    totalev  += __shfl_xor(totalev, 1, 4);
-    totalee  += __shfl_xor(totalee, 2, 4);
-    totalee  += __shfl_xor(totalee, 1, 4);
-    SLOW( totales  += __shfl_xor(totales, 2, 4) );
-    SLOW( totales  += __shfl_xor(totales, 1, 4) );
-#endif /* KEPLER_SHUFFLE */
-    if ( thread == 0 ) {
-      sumf.a2d[subwarp][0] = totalev;
-      sumf.a2d[subwarp][1] = totalee;
-      sumf.a2d[subwarp][2] = 0.f SLOW( + totales ) ;
-    }
 #ifndef KEPLER_SHUFFLE
-    for ( int g = 1; g < 4; ++g ) {
-      if ( thread == g ) {
-        sumf.a2d[subwarp][0] += totalev;
-        sumf.a2d[subwarp][1] += totalee;
-        SLOW( sumf.a2d[subwarp][2] += totales; )
-      }
+  GENPAIRLIST(__shared__ atom_param sh_jap_2d[NUM_WARP][WARPSIZE];)
+  USEPAIRLIST(__shared__ int sh_jap_vdw_type_2d[NUM_WARP][WARPSIZE];)
+#endif
+  USEPAIRLIST(__shared__ int sh_plist_ind[NUM_WARP];
+              __shared__ unsigned int sh_plist_val[NUM_WARP];);
+
+  // Load patch_pair -data into shared memory
+  {
+    const int t = threadIdx.x + threadIdx.y*WARPSIZE;
+
+    if (t < 3*(SLOW(NUM_WARP+) NUM_WARP)) {
+      float *p = (float *)sh_iforcesum;
+      p[threadIdx.x] = 0.0f;
     }
-#endif /* KEPLER_SHUFFLE */
+
+    if (t < PATCH_PAIR_SIZE) {
+      int* src = (int *)&patch_pairs[block_begin + blockIdx.x];
+      int* dst = (int *)&sh_patch_pair;
+      dst[t] = src[t];
+    }
+    // Need to sync here to make sure sh_patch_pair is ready
     __syncthreads();
-    if ( threadIdx.x < 24 ) { // reduce energies, warp-synchronous
-                             // 3 components, 8 threads per component
-      const int i_out = myPatchPair.virial_start + threadIdx.x;
-      float f;
-      f = sumf.a1d[threadIdx.x] + sumf.a1d[threadIdx.x + 24] + 
-          sumf.a1d[threadIdx.x + 48] + sumf.a1d[threadIdx.x + 72];
-      sumf.a1d[threadIdx.x] = f;
-      f += sumf.a1d[threadIdx.x + 12];
-      sumf.a1d[threadIdx.x] = f;
-      f += sumf.a1d[threadIdx.x + 6];
-      sumf.a1d[threadIdx.x] = f;
-      f += sumf.a1d[threadIdx.x + 3];
-      f *= 0.5f;  // compensate for double-counting
-      if ( threadIdx.x < 3 ) {  // write out output buffer
-        virial_buffers[i_out+9] = f;
-      }
+
+    // Initialize pairlist index to impossible value
+    USEPAIRLIST(if (threadIdx.x == 0) sh_plist_ind[threadIdx.y] = -1;);
+
+    // Initialize pair list to "no interactions"
+    GENPAIRLIST({
+	if (t < sh_patch_pair.plist_size)
+	  plist[sh_patch_pair.plist_start + t] = 0;
+      })
+
+    // convert scaled offset with current lattice and write into shared memory
+    if (t == 0) {
+      float offx = sh_patch_pair.offset.x * lata.x
+	+ sh_patch_pair.offset.y * latb.x
+	+ sh_patch_pair.offset.z * latc.x;
+      float offy = sh_patch_pair.offset.x * lata.y
+	+ sh_patch_pair.offset.y * latb.y
+	+ sh_patch_pair.offset.z * latc.y;
+      float offz = sh_patch_pair.offset.x * lata.z
+	+ sh_patch_pair.offset.y * latb.z
+	+ sh_patch_pair.offset.z * latc.z;
+      sh_patch_pair.offset.x = offx;
+      sh_patch_pair.offset.y = offy;
+      sh_patch_pair.offset.z = offz;
     }
+
+    __syncthreads();
   }
+
+  // Compute pointers to shared memory to avoid point computation later on
+#ifndef REG_JFORCE
+  volatile float3* sh_jforce      = &sh_jforce_2d[threadIdx.y][0];
+  SLOW(volatile float3* sh_jforce_slow = &sh_jforce_slow_2d[threadIdx.y][0];)
 #endif
 
- } // end of nonbonded calc
+#ifndef KEPLER_SHUFFLE
+  atom* sh_jpq       = &sh_jpq_2d[threadIdx.y][0];
+  GENPAIRLIST(atom_param* sh_jap = &sh_jap_2d[threadIdx.y][0];);
+  USEPAIRLIST(int* sh_jap_vdw_type = &sh_jap_vdw_type_2d[threadIdx.y][0];);
+#endif
 
- { // start of force sum
+  for (int blocki = threadIdx.y*WARPSIZE;blocki < sh_patch_pair.patch1_size;blocki += WARPSIZE*NUM_WARP) {
 
-  // make sure forces are visible in global memory
+    atom ipq;
+    GENPAIRLIST(vdw_index iap;);
+    USEPAIRLIST(int iap_vdw_type;);
+    // Load i atom data
+    if (blocki + threadIdx.x < sh_patch_pair.patch1_size) {
+      int i = sh_patch_pair.patch1_start + blocki + threadIdx.x;
+      float4 tmpa = ((float4*)atoms)[i];
+      ipq.position.x = tmpa.x + sh_patch_pair.offset.x;
+      ipq.position.y = tmpa.y + sh_patch_pair.offset.y;
+      ipq.position.z = tmpa.z + sh_patch_pair.offset.z;
+      ipq.charge = tmpa.w;
+      GENPAIRLIST(uint4 tmpap = ((uint4*)atom_params)[i];
+		  iap.vdw_type = tmpap.x*lj_table_size;
+		  iap.index = tmpap.y;);
+      USEPAIRLIST(iap_vdw_type = vdw_types[i]*lj_table_size;);
+    }
+
+    // i-forces in registers
+    float3 iforce;
+    iforce.x = 0.0f;
+    iforce.y = 0.0f;
+    iforce.z = 0.0f;
+    SLOW(float3 iforce_slow;
+	 iforce_slow.x = 0.0f;
+	 iforce_slow.y = 0.0f;
+	 iforce_slow.z = 0.0f;)
+
+    const bool diag_patch_pair = (sh_patch_pair.patch1_start == sh_patch_pair.patch2_start);
+    int blockj = (diag_patch_pair) ? blocki : 0;
+    for (;blockj < sh_patch_pair.patch2_size;blockj += WARPSIZE) {
+
+      USEPAIRLIST({
+	  const int size2 = (sh_patch_pair.patch2_size-1)/WARPSIZE+1;
+	  int pos = (blockj/WARPSIZE) + (blocki/WARPSIZE)*size2;
+	  int plist_ind = pos/32;
+	  unsigned int plist_bit = 1 << (pos % 32);
+	  // Check if we need to load next entry in the pairlist
+	  if (plist_ind != sh_plist_ind[threadIdx.y]) {
+	  	sh_plist_val[threadIdx.y] = plist[sh_patch_pair.plist_start + plist_ind];
+	  	sh_plist_ind[threadIdx.y] = plist_ind;
+	  }
+	  if ((sh_plist_val[threadIdx.y] & plist_bit) == 0) continue;
+	})
+
+      // Load j atom data
+#ifdef KEPLER_SHUFFLE
+      atom jpq;
+      GENPAIRLIST(atom_param jap;);
+      USEPAIRLIST(int jap_vdw_type;);
+#endif
+
+      GENPAIRLIST(
+		  int nloopj = sh_patch_pair.patch2_size - blockj;
+		  if (nloopj > WARPSIZE) nloopj = WARPSIZE;
+		  );
+
+      //GENPAIRLIST(bool inside_plcutoff = false;)
+      if (blockj + threadIdx.x < sh_patch_pair.patch2_size) {
+	int j = sh_patch_pair.patch2_start + blockj + threadIdx.x;
+	float4 tmpa = ((float4*)atoms)[j];
+#ifdef KEPLER_SHUFFLE
+	jpq.position.x = tmpa.x;
+	jpq.position.y = tmpa.y;
+	jpq.position.z = tmpa.z;
+	jpq.charge = tmpa.w;
+#else
+	sh_jpq[threadIdx.x].position.x = tmpa.x;
+	sh_jpq[threadIdx.x].position.y = tmpa.y;
+	sh_jpq[threadIdx.x].position.z = tmpa.z;
+	sh_jpq[threadIdx.x].charge = tmpa.w;
+#endif
+
+#ifdef KEPLER_SHUFFLE
+	GENPAIRLIST(jap = atom_params[j];)
+        USEPAIRLIST(jap_vdw_type = vdw_types[j];)
+#else
+	GENPAIRLIST(sh_jap[threadIdx.x] = atom_params[j];)
+        USEPAIRLIST(sh_jap_vdw_type[threadIdx.x] = vdw_types[j];)
+#endif
+      }
+
+      // j-forces in shared memory
+#ifdef REG_JFORCE
+      float3 jforce;
+      jforce.x = 0.0f;
+      jforce.y = 0.0f;
+      jforce.z = 0.0f;
+      SLOW(float3 jforce_slow;
+	   jforce_slow.x = 0.0f;
+	   jforce_slow.y = 0.0f;
+	   jforce_slow.z = 0.0f;
+	   );
+#else
+      sh_jforce[threadIdx.x].x = 0.0f;
+      sh_jforce[threadIdx.x].y = 0.0f;
+      sh_jforce[threadIdx.x].z = 0.0f;
+      SLOW(sh_jforce_slow[threadIdx.x].x = 0.0f;
+	   sh_jforce_slow[threadIdx.x].y = 0.0f;
+	   sh_jforce_slow[threadIdx.x].z = 0.0f;)
+#endif
+
+      GENPAIRLIST(unsigned int excl = 0;)
+      USEPAIRLIST(
+		  //const int size1 = (sh_patch_pair.patch1_size-1)/WARPSIZE+1;
+		  const int size2 = (sh_patch_pair.patch2_size-1)/WARPSIZE+1;
+		  //const int pos = (blocki/WARPSIZE) + (blockj/WARPSIZE)*size1;
+		  const int pos = (blockj/WARPSIZE) + (blocki/WARPSIZE)*size2;
+		  unsigned int excl = exclmasks[sh_patch_pair.exclmask_start+pos].excl[threadIdx.x];
+		  );
+      GENPAIRLIST(
+		  int nloopi = sh_patch_pair.patch1_size - blocki;
+		  if (nloopi > WARPSIZE) nloopi = WARPSIZE;
+		  )
+      const bool diag_tile = (sh_patch_pair.patch1_start + blocki == sh_patch_pair.patch2_start + blockj);
+      // Loop through tile diagonals. Local tile indices are:
+      // i = threadIdx.x % WARPSIZE = constant
+      // j = (t + threadIdx.x) % WARPSIZE
+      const int modval = (diag_tile) ? 2*WARPSIZE-1 : WARPSIZE-1;
+      int t = (diag_tile) ? 1 : 0;
+      if (diag_tile) {
+	USEPAIRLIST(excl >>= 1;);
+#ifdef KEPLER_SHUFFLE
+	jpq.charge = __shfl(jpq.charge, (threadIdx.x+1) & (WARPSIZE-1) );
+	USEPAIRLIST(jap_vdw_type = __shfl(jap_vdw_type, (threadIdx.x+1) & (WARPSIZE-1) ););
+	GENPAIRLIST(jap.vdw_type     = __shfl(jap.vdw_type, (threadIdx.x+1) & (WARPSIZE-1) );
+		    jap.index        = __shfl(jap.index, (threadIdx.x+1) & (WARPSIZE-1) );
+		    jap.excl_maxdiff = __shfl(jap.excl_maxdiff, (threadIdx.x+1) & (WARPSIZE-1) );
+		    jap.excl_index   = __shfl(jap.excl_index, (threadIdx.x+1) & (WARPSIZE-1) );
+		    );
+#endif
+      }
+
+      for (; t < WARPSIZE; ++t) {
+      	USEPAIRLIST(if (__any(excl & 1)))
+      	{
+	GENPAIRLIST(excl >>= 1;);
+	int j = (t + threadIdx.x) & modval;
+#ifdef KEPLER_SHUFFLE
+	float tmpx = __shfl(jpq.position.x,j) - ipq.position.x;
+	float tmpy = __shfl(jpq.position.y,j) - ipq.position.y;
+	float tmpz = __shfl(jpq.position.z,j) - ipq.position.z;
+	GENPAIRLIST(
+		    int j_vdw_type     = jap.vdw_type;
+		    int j_index        = jap.index;
+		    int j_excl_maxdiff = jap.excl_maxdiff;
+		    int j_excl_index   = jap.excl_index;
+		    );
+	float j_charge = jpq.charge;
+	USEPAIRLIST(
+		    int j_vdw_type = jap_vdw_type;
+		    );
+#endif
+	GENPAIRLIST(if (j < nloopj && threadIdx.x < nloopi))
+	  {
+#ifndef KEPLER_SHUFFLE
+	  float tmpx = sh_jpq[j].position.x - ipq.position.x;
+	  float tmpy = sh_jpq[j].position.y - ipq.position.y;
+	  float tmpz = sh_jpq[j].position.z - ipq.position.z;
+	  GENPAIRLIST(
+		      int j_vdw_type     = sh_jap[j].vdw_type;
+		      int j_index        = sh_jap[j].index;
+		      int j_excl_maxdiff = sh_jap[j].excl_maxdiff;
+		      int j_excl_index   = sh_jap[j].excl_index;
+		      );
+	  float j_charge = sh_jpq[j].charge;
+	  USEPAIRLIST(
+		      int j_vdw_type = sh_jap_vdw_type[j];
+		      );
+#endif
+	  float r2 = tmpx*tmpx + tmpy*tmpy + tmpz*tmpz;
+	  GENPAIRLIST(if (r2 < plcutoff2))
+	  USEPAIRLIST(if ((excl & 1) && r2 < cutoff2))
+	    {
+	    GENPAIRLIST(
+			bool excluded = false;
+			int indexdiff = (int)(iap.index) - j_index;
+			if ( abs(indexdiff) <= j_excl_maxdiff) {
+			    indexdiff += j_excl_index;
+			    int indexword = ((unsigned int) indexdiff) >> 5;
+			    //indexword = tex1Dfetch(tex_exclusions, indexword);
+			    if ( indexword < MAX_CONST_EXCLUSIONS )
+			      indexword = const_exclusions[indexword];
+			    else {
+			      indexword = overflow_exclusions[indexword];
+			    }
+			    excluded = ((indexword & (1<<(indexdiff&31))) != 0);
+			}
+			if (!excluded) excl |= 0x80000000;
+			)
+	    GENPAIRLIST(if ( ! excluded && r2 < cutoff2))
+	    {
+	    ENERGY( float rsqrtfr2; );
+	    float4 fi = tex1D(force_table, ENERGY(rsqrtfr2 =) rsqrtf(r2));
+	    ENERGY( float4 ei = tex1D(energy_table, rsqrtfr2); );
+	    GENPAIRLIST(float2 ljab = tex1Dfetch(lj_table, j_vdw_type + iap.vdw_type););
+	    USEPAIRLIST(float2 ljab = tex1Dfetch(lj_table, j_vdw_type + iap_vdw_type););
+
+	      float f_slow = ipq.charge * j_charge;
+	      float f = ljab.x * fi.z + ljab.y * fi.y + f_slow * fi.x;
+	      ENERGY(
+		     float ev = ljab.x * ei.z + ljab.y * ei.y;
+		     float ee = f_slow * ei.x;
+		     SLOW( float es = f_slow * ei.w; )
+		     )
+	      SLOW( f_slow *= fi.w; )
+	      ENERGY(
+		     totalev += ev;
+		     totalee += ee;
+		     SLOW( totales += es; )
+		     )
+	      float fx = tmpx * f;
+	      float fy = tmpy * f;
+	      float fz = tmpz * f;
+	      //iforce.x += 1.0f;
+	      iforce.x += fx;
+	      iforce.y += fy;
+	      iforce.z += fz;
+#ifdef REG_JFORCE
+	      //jforce.x += 1.0f;
+	      jforce.x -= fx;
+	      jforce.y -= fy;
+	      jforce.z -= fz;
+#else
+	      //sh_jforce[j].x += 1.0f;
+	      sh_jforce[j].x -= fx;
+	      sh_jforce[j].y -= fy;
+	      sh_jforce[j].z -= fz;
+#endif
+	      SLOW(
+		   float fx_slow = tmpx * f_slow;
+		   float fy_slow = tmpy * f_slow;
+		   float fz_slow = tmpz * f_slow;
+		   iforce_slow.x += fx_slow;
+		   iforce_slow.y += fy_slow;
+		   iforce_slow.z += fz_slow;
+#ifdef REG_JFORCE
+		   jforce_slow.x -= fx_slow;
+		   jforce_slow.y -= fy_slow;
+		   jforce_slow.z -= fz_slow;
+#else
+		   sh_jforce_slow[j].x -= fx_slow;
+		   sh_jforce_slow[j].y -= fy_slow;
+		   sh_jforce_slow[j].z -= fz_slow;
+#endif
+		   );
+	    }
+	    } // cutoff
+	} // if (j < nloopj...)
+}
+	USEPAIRLIST(excl >>= 1;);
+#ifdef KEPLER_SHUFFLE
+	jpq.charge = __shfl(jpq.charge, (threadIdx.x+1) & (WARPSIZE-1) );
+	USEPAIRLIST(jap_vdw_type = __shfl(jap_vdw_type, (threadIdx.x+1) & (WARPSIZE-1) ););
+	GENPAIRLIST(jap.vdw_type     = __shfl(jap.vdw_type, (threadIdx.x+1) & (WARPSIZE-1) );
+		    jap.index        = __shfl(jap.index, (threadIdx.x+1) & (WARPSIZE-1) );
+		    jap.excl_maxdiff = __shfl(jap.excl_maxdiff, (threadIdx.x+1) & (WARPSIZE-1) );
+		    jap.excl_index   = __shfl(jap.excl_index, (threadIdx.x+1) & (WARPSIZE-1) );
+		    );
+#ifdef REG_JFORCE
+	jforce.x = __shfl(jforce.x, (threadIdx.x+1)&(WARPSIZE-1));
+	jforce.y = __shfl(jforce.y, (threadIdx.x+1)&(WARPSIZE-1));
+	jforce.z = __shfl(jforce.z, (threadIdx.x+1)&(WARPSIZE-1));
+	SLOW(
+	     jforce_slow.x = __shfl(jforce_slow.x, (threadIdx.x+1)&(WARPSIZE-1));
+	     jforce_slow.y = __shfl(jforce_slow.y, (threadIdx.x+1)&(WARPSIZE-1));
+	     jforce_slow.z = __shfl(jforce_slow.z, (threadIdx.x+1)&(WARPSIZE-1));
+	     );
+#endif
+#endif
+      } // t
+      // Write j-forces
+      GENPAIRLIST(if (__any(excl != 0))) {
+	if ( blockj + threadIdx.x < sh_patch_pair.patch2_size ) {
+	  int jforce_pos = sh_patch_pair.patch2_start + blockj + threadIdx.x;
+#ifdef REG_JFORCE
+	  atomicAdd(&tmpforces[jforce_pos].x, jforce.x);
+	  atomicAdd(&tmpforces[jforce_pos].y, jforce.y);
+	  atomicAdd(&tmpforces[jforce_pos].z, jforce.z);
+	  SLOW(atomicAdd(&slow_tmpforces[jforce_pos].x, jforce_slow.x);
+	       atomicAdd(&slow_tmpforces[jforce_pos].y, jforce_slow.y);
+	       atomicAdd(&slow_tmpforces[jforce_pos].z, jforce_slow.z););
+#else
+	  atomicAdd(&tmpforces[jforce_pos].x, sh_jforce[threadIdx.x].x);
+	  atomicAdd(&tmpforces[jforce_pos].y, sh_jforce[threadIdx.x].y);
+	  atomicAdd(&tmpforces[jforce_pos].z, sh_jforce[threadIdx.x].z);
+	  SLOW(atomicAdd(&slow_tmpforces[jforce_pos].x, sh_jforce_slow[threadIdx.x].x);
+	       atomicAdd(&slow_tmpforces[jforce_pos].y, sh_jforce_slow[threadIdx.x].y);
+	       atomicAdd(&slow_tmpforces[jforce_pos].z, sh_jforce_slow[threadIdx.x].z););
+#endif
+	}
+
+      GENPAIRLIST(
+		  //const int size1 = (sh_patch_pair.patch1_size-1)/WARPSIZE+1;
+		  const int size2 = (sh_patch_pair.patch2_size-1)/WARPSIZE+1;
+		  //int pos = (blocki/WARPSIZE) + (blockj/WARPSIZE)*size1;
+		  int pos = (blockj/WARPSIZE) + (blocki/WARPSIZE)*size2;
+		  exclmasks[sh_patch_pair.exclmask_start+pos].excl[threadIdx.x] = excl;
+		  if (threadIdx.x == 0) {
+		    int plist_ind = pos/32;
+		    unsigned int plist_bit = 1 << (pos % 32);
+		    atomicOr(&plist[sh_patch_pair.plist_start + plist_ind], plist_bit);
+		  }
+		  );
+      }
+
+    } // for (blockj)
+
+    // Write i-forces
+    if (blocki + threadIdx.x < sh_patch_pair.patch1_size) {
+      int iforce_pos = sh_patch_pair.patch1_start + blocki + threadIdx.x;
+      atomicAdd(&tmpforces[iforce_pos].x, iforce.x);
+      atomicAdd(&tmpforces[iforce_pos].y, iforce.y);
+      atomicAdd(&tmpforces[iforce_pos].z, iforce.z);
+      SLOW(atomicAdd(&slow_tmpforces[iforce_pos].x, iforce_slow.x);
+	   atomicAdd(&slow_tmpforces[iforce_pos].y, iforce_slow.y);
+	   atomicAdd(&slow_tmpforces[iforce_pos].z, iforce_slow.z););
+    }
+    // Accumulate total forces for virial (warp synchronous)
+#ifdef KEPLER_SHUFFLE
+    for (int i=WARPSIZE/2;i >= 1;i/=2) {
+      iforce.x += __shfl_xor(iforce.x, i);
+      iforce.y += __shfl_xor(iforce.y, i);
+      iforce.z += __shfl_xor(iforce.z, i);
+      SLOW(
+	   iforce_slow.x += __shfl_xor(iforce_slow.x, i);
+	   iforce_slow.y += __shfl_xor(iforce_slow.y, i);
+	   iforce_slow.z += __shfl_xor(iforce_slow.z, i);
+	   );
+    }
+    if (threadIdx.x == 0) {
+      sh_iforcesum[threadIdx.y].x += iforce.x;
+      sh_iforcesum[threadIdx.y].y += iforce.y;
+      sh_iforcesum[threadIdx.y].z += iforce.z;
+      SLOW(
+	   sh_iforcesum[threadIdx.y+NUM_WARP].x += iforce_slow.x;
+	   sh_iforcesum[threadIdx.y+NUM_WARP].y += iforce_slow.y;
+	   sh_iforcesum[threadIdx.y+NUM_WARP].z += iforce_slow.z;
+	   );
+    }
+#else
+    sh_jforce[threadIdx.x].x = iforce.x;
+    sh_jforce[threadIdx.x].y = iforce.y;
+    sh_jforce[threadIdx.x].z = iforce.z;
+    SLOW(
+	 sh_jforce_slow[threadIdx.x].x = iforce_slow.x;
+	 sh_jforce_slow[threadIdx.x].y = iforce_slow.y;
+	 sh_jforce_slow[threadIdx.x].z = iforce_slow.z;
+	 );
+    for (int d=1;d < WARPSIZE;d*=2) {
+      int pos = threadIdx.x + d;
+      float valx = (pos < WARPSIZE) ? sh_jforce[pos].x : 0.0f;
+      float valy = (pos < WARPSIZE) ? sh_jforce[pos].y : 0.0f;
+      float valz = (pos < WARPSIZE) ? sh_jforce[pos].z : 0.0f;
+      SLOW(
+	   float slow_valx = (pos < WARPSIZE) ? sh_jforce_slow[pos].x : 0.0f;
+	   float slow_valy = (pos < WARPSIZE) ? sh_jforce_slow[pos].y : 0.0f;
+	   float slow_valz = (pos < WARPSIZE) ? sh_jforce_slow[pos].z : 0.0f;
+	   );
+      sh_jforce[threadIdx.x].x += valx;
+      sh_jforce[threadIdx.x].y += valy;
+      sh_jforce[threadIdx.x].z += valz;
+      SLOW(
+	   sh_jforce_slow[threadIdx.x].x += slow_valx;
+	   sh_jforce_slow[threadIdx.x].y += slow_valy;
+	   sh_jforce_slow[threadIdx.x].z += slow_valz;
+	   );
+    }
+    if (threadIdx.x == 0) {
+      sh_iforcesum[threadIdx.y].x += sh_jforce[threadIdx.x].x;
+      sh_iforcesum[threadIdx.y].y += sh_jforce[threadIdx.x].y;
+      sh_iforcesum[threadIdx.y].z += sh_jforce[threadIdx.x].z;
+      SLOW(
+	   sh_iforcesum[threadIdx.y+NUM_WARP].x += sh_jforce_slow[threadIdx.x].x;
+	   sh_iforcesum[threadIdx.y+NUM_WARP].y += sh_jforce_slow[threadIdx.x].y;
+	   sh_iforcesum[threadIdx.y+NUM_WARP].z += sh_jforce_slow[threadIdx.x].z;
+	   );
+    }
+#endif
+
+  } // for (blocki)
+
+  }
+
+  {
+
+#ifdef REG_JFORCE
+    __shared__ float sh_buf[NUM_WARP*(SLOW(9)+9)];
+#endif
+
+  // Reduce energies (totalev, totalee, SLOW(totales))
+#if ENERGY(1 +) 0
+  // Reduce within warp
+#ifdef KEPLER_SHUFFLE
+  // Requires NUM_WARP*(SLOW(1+)2)*sizeof(float) shared memory
+  for (int i=WARPSIZE/2;i >= 1;i/=2) {
+    totalev += __shfl_xor(totalev, i);
+    totalee += __shfl_xor(totalee, i);
+    SLOW(totales += __shfl_xor(totales, i););
+  }
+#ifndef REG_JFORCE
+  volatile float* sh_buf = (float *)&sh_jforce_2d[0][0];
+#endif
+  // Must sync here so that we can write to sh_jforce_2d
+  __syncthreads();
+  if (threadIdx.x == 0) {
+    sh_buf[threadIdx.y*(SLOW(1+)2)+0] = totalev;
+    sh_buf[threadIdx.y*(SLOW(1+)2)+1] = totalee;
+    SLOW(sh_buf[threadIdx.y*(SLOW(1+)2)+2] = totales;);
+  }
+  __syncthreads();
+  if (threadIdx.x < SLOW(1+)2 && threadIdx.y == 0) {
+    float finalval = 0.0f;
+#pragma unroll
+    for (int i=0;i < NUM_WARP;++i) {
+      finalval += sh_buf[i*(SLOW(1+)2)+threadIdx.x];
+    }
+    int patch1_ind = sh_patch_pair.patch1_ind;
+    atomicAdd(&tmpvirials[patch1_ind*16 + 9 + threadIdx.x], finalval);
+  }
+#else // ! KEPLER_SHUFFLE
+  // Do not have to sync here because each warp writes to the same
+  // portion of sh_jforce_2d as in the above force computation loop
+  volatile float* sh_totalev = (float *)&sh_jforce_2d[threadIdx.y][0];
+  volatile float* sh_totalee = sh_totalev + WARPSIZE;
+  SLOW(volatile float* sh_totales = sh_totalev + 2*WARPSIZE;)
+  sh_totalev[threadIdx.x] = totalev;
+  sh_totalee[threadIdx.x] = totalee;
+  SLOW(sh_totales[threadIdx.x] = totales;)
+  for (int d=1;d < WARPSIZE;d*=2) {
+    int pos = threadIdx.x + d;
+    float val_ev = (pos < WARPSIZE) ? sh_totalev[pos] : 0.0f;
+    float val_ee = (pos < WARPSIZE) ? sh_totalee[pos] : 0.0f;
+    SLOW(float val_es = (pos < WARPSIZE) ? sh_totales[pos] : 0.0f;)
+    sh_totalev[threadIdx.x] += val_ev;
+    sh_totalee[threadIdx.x] += val_ee;
+    SLOW(sh_totales[threadIdx.x] += val_es;)
+  }
+  __syncthreads();
+  // Reduce among warps
+  if (threadIdx.x == 0 && threadIdx.y == 0) {
+    float* sh_p = (float *)&sh_jforce_2d[0][0];
+    float finalev = 0.0f;
+    float finalee = 0.0f;
+    SLOW(float finales = 0.0f;)
+#pragma unroll
+    for (int i=0;i < NUM_WARP;++i) {
+      finalev += sh_p[i*3*WARPSIZE];
+      finalee += sh_p[i*3*WARPSIZE + WARPSIZE];
+      SLOW(finales += sh_p[i*3*WARPSIZE + 2*WARPSIZE];)
+    }
+    int patch1_ind = sh_patch_pair.patch1_ind;
+    atomicAdd(&tmpvirials[patch1_ind*16 + 9], finalev);
+    atomicAdd(&tmpvirials[patch1_ind*16 + 10], finalee);
+    SLOW(atomicAdd(&tmpvirials[patch1_ind*16 + 11], finales);)
+  }
+#endif // KEPLER_SHUFFLE
+#endif // ENERGY
+
+  // Virials
+  __syncthreads();
+  if (threadIdx.x < SLOW(3+)3 && threadIdx.y == 0) {
+    float* sh_virials = (float *)sh_iforcesum + (threadIdx.x % 3) + (threadIdx.x/3)*3*NUM_WARP;
+    float iforcesum = 0.0f;
+#pragma unroll
+    for (int i=0;i < 3*NUM_WARP;i+=3) iforcesum += sh_virials[i];
+    float vx = iforcesum*sh_patch_pair.offset.x;
+    float vy = iforcesum*sh_patch_pair.offset.y;
+    float vz = iforcesum*sh_patch_pair.offset.z;
+    sh_iforcesum[threadIdx.x].x = vx;
+    sh_iforcesum[threadIdx.x].y = vy;
+    sh_iforcesum[threadIdx.x].z = vz;
+  }
+  if (threadIdx.x < SLOW(9+)9 && threadIdx.y == 0) {
+    // virials are in sh_virials[0...8] and slow virials in sh_virials[9...17]
+    float* sh_virials = (float *)sh_iforcesum;
+    int patch1_ind = sh_patch_pair.patch1_ind;
+    float *dst = (threadIdx.x < 9) ? tmpvirials : slow_tmpvirials;
+    atomicAdd(&dst[patch1_ind*16 + (threadIdx.x % 9)], sh_virials[threadIdx.x]);
+  }
+
+  // Make sure forces are up-to-date in device global memory
   __threadfence();
   __syncthreads();
 
-  __shared__ bool sumForces;
-
-  if (threadIdx.x == 0) {
-    int fli = myPatchPair.patch1_force_list_index + 3;
-    int fls = myPatchPair.patch1_force_list_size;
-    int old = atomicInc(force_list_counters+fli,fls-1);
-    sumForces = ( old == fls - 1 );
+  // Mark patch pair (patch1_ind, patch2_ind) as "done"
+  volatile bool* patch_done = (volatile bool *)&sh_patch_pair.pad1;
+  int patch1_ind = sh_patch_pair.patch1_ind;
+  int patch2_ind = sh_patch_pair.patch2_ind;
+  if (threadIdx.x == 0 && threadIdx.y == 0) {
+    patch_done[0] = false;
+    patch_done[1] = false;
+    //
+    // global_counters[0]: force_ready_queue
+    // global_counters[1]: block_order
+    // global_counters[2...npatches+1]: number of pairs finished for patch i+2
+    //
+    unsigned int patch1_num_pairs = sh_patch_pair.patch1_num_pairs;
+    int patch1_old = atomicInc(&global_counters[patch1_ind+2], patch1_num_pairs-1);
+    if (patch1_old+1 == patch1_num_pairs) patch_done[0] = true;
+    if (patch1_ind != patch2_ind) {
+      unsigned int patch2_num_pairs = sh_patch_pair.patch2_num_pairs;
+      int patch2_old = atomicInc(&global_counters[patch2_ind+2], patch2_num_pairs-1);
+      if (patch2_old+1 == patch2_num_pairs) patch_done[1] = true;
+    }
   }
-
+  // sync threads so that patch1_done and patch2_done are visible to all threads
   __syncthreads();
 
-  if ( sumForces ) {
-    NAME(dev_sum_forces)(myPatchPair.patch1_force_list_index,
-       atoms,force_lists,force_buffers,
-       virial_buffers,forces,virials);
+  if (patch_done[0]) {
+#ifndef REG_JFORCE
+    volatile float* sh_buf = (float *)&sh_jforce_2d[0][0];
+#endif
+#ifndef KEPLER_SHUFFLE
+    volatile float* sh_vcc = (volatile float*)&sh_jpq_2d[0][0];
+    volatile float* sh_slow_buf = NULL;
+    SLOW(sh_slow_buf = (volatile float*)&sh_jforce_slow_2d[0][0];)
+#endif
+    NAME(finish_forces_virials)(sh_patch_pair.patch1_start, sh_patch_pair.patch1_size,
+				patch1_ind, atoms, sh_buf,
+#ifndef KEPLER_SHUFFLE
+				sh_slow_buf, sh_vcc,
+#endif
+				tmpforces, slow_tmpforces, forces, slow_forces,
+				tmpvirials, slow_tmpvirials, virials, slow_virials);
+  }
 
-    if ( doSlow ) {
-      NAME(dev_sum_forces)(myPatchPair.patch1_force_list_index,
-         atoms,force_lists,slow_force_buffers,
-         slow_virial_buffers,slow_forces,slow_virials);
-    }
+  if (patch_done[1]) {
+#ifndef REG_JFORCE
+    volatile float* sh_buf = (float *)&sh_jforce_2d[0][0];
+#endif
+#ifndef KEPLER_SHUFFLE
+    volatile float* sh_vcc = (volatile float*)&sh_jpq_2d[0][0];
+    volatile float* sh_slow_buf = NULL;
+    SLOW(sh_slow_buf = (volatile float*)&sh_jforce_slow_2d[0][0];)
+#endif
+    NAME(finish_forces_virials)(sh_patch_pair.patch2_start, sh_patch_pair.patch2_size,
+				patch2_ind, atoms, sh_buf,
+#ifndef KEPLER_SHUFFLE
+				sh_slow_buf, sh_vcc,
+#endif
+				tmpforces, slow_tmpforces, forces, slow_forces,
+				tmpvirials, slow_tmpvirials, virials, slow_virials);
+  }
 
-   if ( force_ready_queue ) {
+  if (force_ready_queue != NULL && (patch_done[0] || patch_done[1])) {
+  	// Make sure page-locked host forces are up-to-date
 #if __CUDA_ARCH__ < 200
     __threadfence();
 #else
     __threadfence_system();
 #endif
     __syncthreads();
-    if (threadIdx.x == 0) {
-      int old = atomicInc(force_list_counters,force_lists_size-1);
-      force_ready_queue[old] = myPatchPair.patch1_force_list_index;
+    // Add patch into "force_ready_queue"
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+    	if (patch_done[0]) {
+        int ind = atomicInc(&global_counters[0], npatches-1);
+        force_ready_queue[ind] = patch1_ind;
+      }
+      if (patch_done[1]) {
+        int ind = atomicInc(&global_counters[0], npatches-1);
+        force_ready_queue[ind] = patch2_ind;
+      }
+      // Make sure "force_ready_queue" is visible in page-locked host memory
 #if __CUDA_ARCH__ < 200
-    __threadfence();
+      __threadfence();
 #else
-    __threadfence_system();
+      __threadfence_system();
 #endif
     }
-   }
   }
 
- } // end of force sum
-
-    if (threadIdx.x == 0 && block_order) {
-      int old = atomicInc(force_list_counters+1,total_block_count-1);
-      block_order[old] = block_begin + blockIdx.x;
-    }
+  if (threadIdx.x == 0 && threadIdx.y == 0 && block_order != NULL) {
+    int old = atomicInc(&global_counters[1], total_block_count-1);
+    block_order[old] = block_begin + blockIdx.x;
+  }
+  }
 
 }
 
-
-__device__ __forceinline__ static void NAME(dev_sum_forces)(
-        const int force_list_index,
-	const atom *atoms,
-	const force_list *force_lists,
-	const float4 *force_buffers,
-	const float *virial_buffers,
-	float4 *forces, float *virials) {
-// call with one block per patch
-// call BLOCK_SIZE threads per block
-// call with no shared memory
-
-  #define myForceList fl.fl
-  __shared__ union {
-    force_list fl;
-    unsigned int i[FORCE_LIST_SIZE];
-  } fl;
-
-  if ( threadIdx.x < FORCE_LIST_USED ) {
-    unsigned int tmp = ((unsigned int*)force_lists)[
-                        FORCE_LIST_SIZE*force_list_index+threadIdx.x];
-    fl.i[threadIdx.x] = tmp;
-  }
-
+//
+// Copy patch forces to their final resting place in page-locked host memory
+// and reduce virials
+//
+__device__ __forceinline__ 
+static void NAME(finish_forces_virials)(const int start, const int size, const int patch_ind,
+					const atom* atoms,
+					volatile float* sh_buf,
 #ifndef KEPLER_SHUFFLE
-  __shared__ volatile union {
-    float a3d[32][3 ENERGY(+1)][3];
-    float a2d[32][9 ENERGY(+3)];
-    float a1d[32*(9 ENERGY(+3))];
-  } virial;
-
-  for ( int i = threadIdx.x; i < 32*(9 ENERGY(+3)); i += BLOCK_SIZE ) {
-    virial.a1d[i] = 0.f;
-#else /* KEPLER_SHUFFLE */
-  __shared__ float virial[9 ENERGY(+3)];
-  for ( int i = threadIdx.x; i < (9 ENERGY(+3)); i += BLOCK_SIZE ) {
-    virial[i] = 0.f;
-#endif /* KEPLER_SHUFFLE */
-  }
-
-  __syncthreads();
-
+					volatile float* sh_slow_buf, volatile float* sh_vcc,
+#endif
+					float4* tmpforces, float4* slow_tmpforces,
+					float4* forces, float4* slow_forces,
+					float* tmpvirials, float* slow_tmpvirials, 
+					float* virials, float* slow_virials) {
   float vxx = 0.f;
   float vxy = 0.f;
   float vxz = 0.f;
@@ -588,168 +801,254 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
   float vzx = 0.f;
   float vzy = 0.f;
   float vzz = 0.f;
-
+  SLOW(
+       float slow_vxx = 0.f;
+       float slow_vxy = 0.f;
+       float slow_vxz = 0.f;
+       float slow_vyx = 0.f;
+       float slow_vyy = 0.f;
+       float slow_vyz = 0.f;
+       float slow_vzx = 0.f;
+       float slow_vzy = 0.f;
+       float slow_vzz = 0.f;
+       )
+  for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < size;i+=NUM_WARP*WARPSIZE) {
+    const int p = start+i;
+    float4 f = tmpforces[p];
+    forces[p] = f;
+    float4 pos = ((float4*)atoms)[p];
+    vxx += f.x * pos.x;
+    vxy += f.x * pos.y;
+    vxz += f.x * pos.z;
+    vyx += f.y * pos.x;
+    vyy += f.y * pos.y;
+    vyz += f.y * pos.z;
+    vzx += f.z * pos.x;
+    vzy += f.z * pos.y;
+    vzz += f.z * pos.z;
+    SLOW(
+	 float4 slow_f = slow_tmpforces[p];
+	 slow_forces[p] = slow_f;
+	 slow_vxx += slow_f.x * pos.x;
+	 slow_vxy += slow_f.x * pos.y;
+	 slow_vxz += slow_f.x * pos.z;
+	 slow_vyx += slow_f.y * pos.x;
+	 slow_vyy += slow_f.y * pos.y;
+	 slow_vyz += slow_f.y * pos.z;
+	 slow_vzx += slow_f.z * pos.x;
+	 slow_vzy += slow_f.z * pos.y;
+	 slow_vzz += slow_f.z * pos.z;
+ 	 )
+  }
 #ifdef KEPLER_SHUFFLE
-  /*
-  {
-    float tmp = 0.f;
-    const int halfwarp = threadIdx.x >> 4;  // 8 half-warps
-    const int thread = threadIdx.x & 15;
-    for ( int i = halfwarp; i < myForceList.force_list_size; i ++ ) {
-      tmp += virial_buffers[myForceList.virial_list_start + 16*i + thread];
-    }
+  // Reduce within warps
+  for (int i=WARPSIZE/2;i >= 1;i/=2) {
+    vxx += __shfl_xor(vxx, i);
+    vxy += __shfl_xor(vxy, i);
+    vxz += __shfl_xor(vxz, i);
+    vyx += __shfl_xor(vyx, i);
+    vyy += __shfl_xor(vyy, i);
+    vyz += __shfl_xor(vyz, i);
+    vzx += __shfl_xor(vzx, i);
+    vzy += __shfl_xor(vzy, i);
+    vzz += __shfl_xor(vzz, i);
+    SLOW(
+	 slow_vxx += __shfl_xor(slow_vxx, i);
+	 slow_vxy += __shfl_xor(slow_vxy, i);
+	 slow_vxz += __shfl_xor(slow_vxz, i);
+	 slow_vyx += __shfl_xor(slow_vyx, i);
+	 slow_vyy += __shfl_xor(slow_vyy, i);
+	 slow_vyz += __shfl_xor(slow_vyz, i);
+	 slow_vzx += __shfl_xor(slow_vzx, i);
+	 slow_vzy += __shfl_xor(slow_vzy, i);
+	 slow_vzz += __shfl_xor(slow_vzz, i);
+	 )
   }
-  */
-
-#endif /* KEPLER_SHUFFLE */
-  for ( int j = threadIdx.x; j < myForceList.patch_size; j += BLOCK_SIZE ) {
-
-    const float4 *fbuf = force_buffers + myForceList.force_list_start + j;
-#ifdef KEPLER_SHUFFLE
-      const float4 *fbuf2 = fbuf + myForceList.patch_stride;
-      int i = 0;
-#endif /* KEPLER_SHUFFLE */
-    float4 fout;
-    fout.x = 0.f;
-    fout.y = 0.f;
-    fout.z = 0.f;
-    fout.w = 0.f;
-#ifndef KEPLER_SHUFFLE
-    for ( int i=0; i < myForceList.force_list_size; ++i ) {
-#else /* KEPLER_SHUFFLE */
-
-      for ( i=0; i < myForceList.force_list_size && i +1 < myForceList.force_list_size ; i = i + 2 ) {
-         float4 f = *fbuf;
-         float4 f2 = *fbuf2;
-         fout.x += (f.x + f2.x);
-         fout.y += (f.y + f2.y);
-         fout.z += (f.z + f2.z);
-         fout.w += (f.w + f2.w);
-         fbuf   = fbuf2 + myForceList.patch_stride;
-         fbuf2  = fbuf  + myForceList.patch_stride;
-      }
-     
-      if (i < myForceList.force_list_size) {
-#endif /* KEPLER_SHUFFLE */
-      float4 f = *fbuf;
-      fout.x += f.x;
-      fout.y += f.y;
-      fout.z += f.z;
-      fout.w += f.w;
-#ifndef KEPLER_SHUFFLE
-      fbuf += myForceList.patch_stride;
-#endif /* ! KEPLER_SHUFFLE */
-    }
-
-    // compiler will use st.global.f32 instead of st.global.v4.f32
-    // if forcedest is directly substituted in the assignment
-    const int forcedest = myForceList.force_output_start + j;
-    forces[forcedest] = fout;
-
-    float4 pos = ((float4*)atoms)[myForceList.atom_start + j];
-
-    // accumulate per-atom virials to registers
-    vxx += fout.x * pos.x;
-    vxy += fout.x * pos.y;
-    vxz += fout.x * pos.z;
-    vyx += fout.y * pos.x;
-    vyy += fout.y * pos.y;
-    vyz += fout.y * pos.z;
-    vzx += fout.z * pos.x;
-    vzy += fout.z * pos.y;
-    vzz += fout.z * pos.z;
-
-  }
-
-#ifndef KEPLER_SHUFFLE
-  { // accumulate per-atom virials to shared memory, warp-synchronous
-    const int subwarp = threadIdx.x >> 2;  // 32 entries in table
-    const int thread = threadIdx.x & 3;  // 4 threads share each entry
-    for ( int g = 0; g < 4; ++g ) {
-      if ( thread == g ) {
-        virial.a3d[subwarp][0][0] += vxx;
-        virial.a3d[subwarp][0][1] += vxy;
-        virial.a3d[subwarp][0][2] += vxz;
-        virial.a3d[subwarp][1][0] += vyx;
-        virial.a3d[subwarp][1][1] += vyy;
-        virial.a3d[subwarp][1][2] += vyz;
-        virial.a3d[subwarp][2][0] += vzx;
-        virial.a3d[subwarp][2][1] += vzy;
-        virial.a3d[subwarp][2][2] += vzz;
-      }
-    }
-  }
-#else /* KEPLER_SHUFFLE */
-  // Patric: To make sure that each thread involves the correct data
-#endif /* KEPLER_SHUFFLE */
-  __syncthreads();
-#ifndef KEPLER_SHUFFLE
-  { // accumulate per-compute virials to shared memory, data-parallel
-#else /* KEPLER_SHUFFLE */
-
-  //Patric : SHLF reduction 
-  NAME(shfl_reduction)(&vxx,&virial[0]);
-  NAME(shfl_reduction)(&vxy,&virial[1]);
-  NAME(shfl_reduction)(&vxz,&virial[2]);
-  NAME(shfl_reduction)(&vyx,&virial[3]);
-  NAME(shfl_reduction)(&vyy,&virial[4]);
-  NAME(shfl_reduction)(&vyz,&virial[5]);
-  NAME(shfl_reduction)(&vzx,&virial[6]);
-  NAME(shfl_reduction)(&vzy,&virial[7]);
-  NAME(shfl_reduction)(&vzz,&virial[8]);
-  __syncthreads();
-
-  {
-    float tmp = 0.f;
-#endif /* KEPLER_SHUFFLE */
-    const int halfwarp = threadIdx.x >> 4;  // 8 half-warps
-    const int thread = threadIdx.x & 15;
-    if ( thread < (9 ENERGY(+3)) ) {
-      for ( int i = halfwarp; i < myForceList.force_list_size; i += 8 ) {
-#ifndef KEPLER_SHUFFLE
-        virial.a2d[halfwarp][thread] +=
-          virial_buffers[myForceList.virial_list_start + 16*i + thread];
-      }
-#else /* KEPLER_SHUFFLE */
-        tmp += virial_buffers[myForceList.virial_list_start + 16*i + thread];
-#endif /* KEPLER_SHUFFLE */
-    }
-#ifdef KEPLER_SHUFFLE
-      atomicAdd(&virial[thread],tmp);
-#endif /* KEPLER_SHUFFLE */
+  // Reduce between warps
+  // Requires NUM_WARP*(SLOW(9)+9)*sizeof(float) amount of shared memory
+  if (threadIdx.x == 0) {
+    sh_buf[threadIdx.y*(SLOW(9)+9) + 0] = vxx;
+    sh_buf[threadIdx.y*(SLOW(9)+9) + 1] = vxy;
+    sh_buf[threadIdx.y*(SLOW(9)+9) + 2] = vxz;
+    sh_buf[threadIdx.y*(SLOW(9)+9) + 3] = vyx;
+    sh_buf[threadIdx.y*(SLOW(9)+9) + 4] = vyy;
+    sh_buf[threadIdx.y*(SLOW(9)+9) + 5] = vyz;
+    sh_buf[threadIdx.y*(SLOW(9)+9) + 6] = vzx;
+    sh_buf[threadIdx.y*(SLOW(9)+9) + 7] = vzy;
+    sh_buf[threadIdx.y*(SLOW(9)+9) + 8] = vzz;
+    SLOW(
+	 sh_buf[threadIdx.y*(SLOW(9)+9) + 9]  = slow_vxx;
+	 sh_buf[threadIdx.y*(SLOW(9)+9) + 10] = slow_vxy;
+	 sh_buf[threadIdx.y*(SLOW(9)+9) + 11] = slow_vxz;
+	 sh_buf[threadIdx.y*(SLOW(9)+9) + 12] = slow_vyx;
+	 sh_buf[threadIdx.y*(SLOW(9)+9) + 13] = slow_vyy;
+	 sh_buf[threadIdx.y*(SLOW(9)+9) + 14] = slow_vyz;
+	 sh_buf[threadIdx.y*(SLOW(9)+9) + 15] = slow_vzx;
+	 sh_buf[threadIdx.y*(SLOW(9)+9) + 16] = slow_vzy;
+	 sh_buf[threadIdx.y*(SLOW(9)+9) + 17] = slow_vzz;
+	 )
   }
   __syncthreads();
-#ifndef KEPLER_SHUFFLE
-  { // reduce virials in shared memory, warp-synchronous
-    const int subwarp = threadIdx.x >> 3;  // 16 quarter-warps
-    const int thread = threadIdx.x & 7;  // 8 threads per component
-    if ( subwarp < (9 ENERGY(+3)) ) {  // 9 components
-      float v;
-      v = virial.a2d[thread][subwarp] + virial.a2d[thread+8][subwarp] +
-          virial.a2d[thread+16][subwarp] + virial.a2d[thread+24][subwarp];
-      virial.a2d[thread][subwarp] = v;
-      v += virial.a2d[thread+4][subwarp];
-      virial.a2d[thread][subwarp] = v;
-      v += virial.a2d[thread+2][subwarp];
-      virial.a2d[thread][subwarp] = v;
-      v += virial.a2d[thread+1][subwarp];
-      virial.a2d[thread][subwarp] = v;
-    }
-#else /* KEPLER_SHUFFLE */
-
-    if ( threadIdx.x < (9 ENERGY(+3)) ) {
-      virials[myForceList.virial_output_start + threadIdx.x] = virial[threadIdx.x];
-#endif /* KEPLER_SHUFFLE */
+  // Write final virials into global memory
+  if (threadIdx.x < SLOW(9+)9 && threadIdx.y == 0) {
+    float v = 0.0f;
+#pragma unroll
+    for (int i=0;i < NUM_WARP;i++) v += sh_buf[i*(SLOW(9)+9) + threadIdx.x];
+    float* dst = (threadIdx.x < 9) ? virials : slow_virials;
+    const float* src = (threadIdx.x < 9) ? tmpvirials : slow_tmpvirials;
+    int pos = patch_ind*16 + (threadIdx.x % 9);
+    dst[pos] = v + src[pos];
   }
-#ifndef KEPLER_SHUFFLE
-  __syncthreads();
-  if ( threadIdx.x < (9 ENERGY(+3)) ) {  // 9 components
-    virials[myForceList.virial_output_start + threadIdx.x] =
-                                              virial.a2d[0][threadIdx.x];
-#endif /* ! KEPLER_SHUFFLE */
-  }
+#else // ! KEPLER_SHUFFLE
+  // We have total of NUM_WARP*WARPSIZE*3 floats, reduce in sets of three
+  // (NOTE: we do have more shared memory available, so this could be optimized further
+  //        for pre-Kepler architectures.)
+  const int t = threadIdx.x + threadIdx.y*WARPSIZE;
+  volatile float* sh_v1 = &sh_buf[0];
+  volatile float* sh_v2 = &sh_buf[NUM_WARP*WARPSIZE];
+  volatile float* sh_v3 = &sh_buf[2*NUM_WARP*WARPSIZE];
+  SLOW(
+       volatile float* sh_slow_v1 = &sh_slow_buf[0];
+       volatile float* sh_slow_v2 = &sh_slow_buf[NUM_WARP*WARPSIZE];
+       volatile float* sh_slow_v3 = &sh_slow_buf[2*NUM_WARP*WARPSIZE];
+       )
 
-}
+  // vxx, vxy, vxz
+  sh_v1[t] = vxx;
+  sh_v2[t] = vxy;
+  sh_v3[t] = vxz;
+  SLOW(
+       sh_slow_v1[t] = slow_vxx;
+       sh_slow_v2[t] = slow_vxy;
+       sh_slow_v3[t] = slow_vxz;
+       )
+  for (int d=1;d < NUM_WARP*WARPSIZE;d*=2) {
+    int pos = t + d;
+    float v1 = (pos < NUM_WARP*WARPSIZE) ? sh_v1[pos] : 0.0f;
+    float v2 = (pos < NUM_WARP*WARPSIZE) ? sh_v2[pos] : 0.0f;
+    float v3 = (pos < NUM_WARP*WARPSIZE) ? sh_v3[pos] : 0.0f;
+    SLOW(
+	 float slow_v1 = (pos < NUM_WARP*WARPSIZE) ? sh_slow_v1[pos] : 0.0f;
+	 float slow_v2 = (pos < NUM_WARP*WARPSIZE) ? sh_slow_v2[pos] : 0.0f;
+	 float slow_v3 = (pos < NUM_WARP*WARPSIZE) ? sh_slow_v3[pos] : 0.0f;
+	 )
+    __syncthreads();
+    sh_v1[t] += v1;
+    sh_v2[t] += v2;
+    sh_v3[t] += v3;
+    SLOW(
+	 sh_slow_v1[t] += slow_v1;
+	 sh_slow_v2[t] += slow_v2;
+	 sh_slow_v3[t] += slow_v3;
+	 )
+    __syncthreads();
+  }
+  if (threadIdx.x == 0 && threadIdx.y == 0) {
+    sh_vcc[0] = sh_v1[0];
+    sh_vcc[1] = sh_v2[0];
+    sh_vcc[2] = sh_v3[0];
+    SLOW(
+	 sh_vcc[9+0] = sh_slow_v1[0];
+	 sh_vcc[9+1] = sh_slow_v2[0];
+	 sh_vcc[9+2] = sh_slow_v3[0];
+	 )
+  }
+  // vyx, vyy, vyz
+  sh_v1[t] = vyx;
+  sh_v2[t] = vyy;
+  sh_v3[t] = vyz;
+  SLOW(
+       sh_slow_v1[t] = slow_vyx;
+       sh_slow_v2[t] = slow_vyy;
+       sh_slow_v3[t] = slow_vyz;
+       )
+  for (int d=1;d < NUM_WARP*WARPSIZE;d*=2) {
+    int pos = t + d;
+    float v1 = (pos < NUM_WARP*WARPSIZE) ? sh_v1[pos] : 0.0f;
+    float v2 = (pos < NUM_WARP*WARPSIZE) ? sh_v2[pos] : 0.0f;
+    float v3 = (pos < NUM_WARP*WARPSIZE) ? sh_v3[pos] : 0.0f;
+    SLOW(
+	 float slow_v1 = (pos < NUM_WARP*WARPSIZE) ? sh_slow_v1[pos] : 0.0f;
+	 float slow_v2 = (pos < NUM_WARP*WARPSIZE) ? sh_slow_v2[pos] : 0.0f;
+	 float slow_v3 = (pos < NUM_WARP*WARPSIZE) ? sh_slow_v3[pos] : 0.0f;
+	 )
+    __syncthreads();
+    sh_v1[t] += v1;
+    sh_v2[t] += v2;
+    sh_v3[t] += v3;
+    SLOW(
+	 sh_slow_v1[t] += slow_v1;
+	 sh_slow_v2[t] += slow_v2;
+	 sh_slow_v3[t] += slow_v3;
+	 )
+    __syncthreads();
+  }
+  if (threadIdx.x == 0 && threadIdx.y == 0) {
+    sh_vcc[3] = sh_v1[0];
+    sh_vcc[4] = sh_v2[0];
+    sh_vcc[5] = sh_v3[0];
+    SLOW(
+	 sh_vcc[9+3] = sh_slow_v1[0];
+	 sh_vcc[9+4] = sh_slow_v2[0];
+	 sh_vcc[9+5] = sh_slow_v3[0];
+	 )
+  }
+  // vzx, vzy, vzz
+  sh_v1[t] = vzx;
+  sh_v2[t] = vzy;
+  sh_v3[t] = vzz;
+  SLOW(
+       sh_slow_v1[t] = slow_vzx;
+       sh_slow_v2[t] = slow_vzy;
+       sh_slow_v3[t] = slow_vzz;
+       )
+  for (int d=1;d < NUM_WARP*WARPSIZE;d*=2) {
+    int pos = t + d;
+    float v1 = (pos < NUM_WARP*WARPSIZE) ? sh_v1[pos] : 0.0f;
+    float v2 = (pos < NUM_WARP*WARPSIZE) ? sh_v2[pos] : 0.0f;
+    float v3 = (pos < NUM_WARP*WARPSIZE) ? sh_v3[pos] : 0.0f;
+    SLOW(
+	 float slow_v1 = (pos < NUM_WARP*WARPSIZE) ? sh_slow_v1[pos] : 0.0f;
+	 float slow_v2 = (pos < NUM_WARP*WARPSIZE) ? sh_slow_v2[pos] : 0.0f;
+	 float slow_v3 = (pos < NUM_WARP*WARPSIZE) ? sh_slow_v3[pos] : 0.0f;
+	 )
+    __syncthreads();
+    sh_v1[t] += v1;
+    sh_v2[t] += v2;
+    sh_v3[t] += v3;
+    SLOW(
+	 sh_slow_v1[t] += slow_v1;
+	 sh_slow_v2[t] += slow_v2;
+	 sh_slow_v3[t] += slow_v3;
+	 )
+    __syncthreads();
+  }
+  if (threadIdx.x == 0 && threadIdx.y == 0) {
+    sh_vcc[6] = sh_v1[0];
+    sh_vcc[7] = sh_v2[0];
+    sh_vcc[8] = sh_v3[0];
+    SLOW(
+	 sh_vcc[9+6] = sh_slow_v1[0];
+	 sh_vcc[9+7] = sh_slow_v2[0];
+	 sh_vcc[9+8] = sh_slow_v3[0];
+	 )
+  }
+  // Write final virials and energies into global memory
+  if (threadIdx.x < SLOW(9+)9 && threadIdx.y == 0) {
+    float* dst = (threadIdx.x < 9) ? virials : slow_virials;
+    const float* src = (threadIdx.x < 9) ? tmpvirials : slow_tmpvirials;
+    int pos = patch_ind*16 + (threadIdx.x % 9);
+    dst[pos] = sh_vcc[threadIdx.x] + src[pos];
+  }
+#endif // KEPLER_SHUFFLE
+  ENERGY(
+	 // Write final energies into global memory
+	 if (threadIdx.x < 3 && threadIdx.y == 0) {
+	   int pos = patch_ind*16 + 9 + threadIdx.x;
+	   virials[pos] = tmpvirials[pos];
+	 }
+	 )
+} 
 
 #endif // NAMD_CUDA
 

@@ -8,5 +8,5 @@ CUDAFLAGS=-DNAMD_CUDA
 CUDAOBJS=$(CUDAOBJSRAW)
 CUDA=$(CUDAFLAGS) -I. $(CUDAINCL)
 CUDACC=$(CUDADIR)/bin/nvcc -O3 --maxrregcount 32 $(CUDAGENCODE) -Xcompiler "-m64" $(CUDA)
-CUDAGENCODE=-gencode arch=compute_11,code=sm_11 -gencode arch=compute_20,code=sm_20 -gencode arch=compute_20,code=compute_20 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_35,code=compute_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50
+CUDAGENCODE=-gencode arch=compute_20,code=sm_20 -gencode arch=compute_20,code=compute_20 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_35,code=compute_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50
 

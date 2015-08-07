@@ -62,12 +62,12 @@ using namespace std;
 //#define     USE_CKLOOP                1
 //#include "TopoManager.h"
 
+#include "DeviceCUDA.h"
 #ifdef NAMD_CUDA
 #include <cuda_runtime.h>
 #include <cuda.h>
 void cuda_errcheck(const char *msg);
-int cuda_device_pe();
-bool one_cuda_device_per_node();
+extern __thread DeviceCUDA *deviceCUDA;
 #endif
 
 #include "ComputePmeCUDAKernel.h"
@@ -862,7 +862,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   offload = simParams->PMEOffload;
 #ifdef NAMD_CUDA
-  if ( offload && ! one_cuda_device_per_node() ) {
+  if ( offload && ! deviceCUDA->one_device_per_node() ) {
     NAMD_die("PME offload requires exactly one CUDA device per process.  Use \"PMEOffload no\".");
   }
   if ( offload ) {
@@ -1766,7 +1766,7 @@ void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
       if ( pencilActive[i*yBlocks+j] ) {
         ++numPencilsActive;
 #ifdef NAMD_CUDA
-        if ( CkMyPe() == cuda_device_pe() || ! offload )
+        if ( CkMyPe() == deviceCUDA->getMasterPe() || ! offload )
 #endif
         zPencil(i,j,0).dummyRecvGrid(CkMyPe(),0);
       }
@@ -2685,14 +2685,14 @@ void ComputePmeMgr::initialize_computes() {
  PatchMap *patchMap = PatchMap::Object();
  int pe = master_pe = CkNodeFirst(CkMyNode());
  for ( int i=0; i<CkMyNodeSize(); ++i, ++pe ) {
-   if ( ! patchMap->numPatchesOnNode(master_pe) ) master_pe = pe;
-   if ( ! patchMap->numPatchesOnNode(pe) ) continue;
-   if ( master_pe < 1 && pe != cuda_device_pe() ) master_pe = pe;
-   if ( master_pe == cuda_device_pe() ) master_pe = pe;
-   if ( WorkDistrib::pe_sortop_diffuse()(pe,master_pe)
-        && pe != cuda_device_pe() ) {
-     master_pe = pe;
-   }
+    if ( ! patchMap->numPatchesOnNode(master_pe) ) master_pe = pe;
+    if ( ! patchMap->numPatchesOnNode(pe) ) continue;
+    if ( master_pe < 1 && pe != deviceCUDA->getMasterPe() ) master_pe = pe;
+    if ( master_pe == deviceCUDA->getMasterPe() ) master_pe = pe;
+    if ( WorkDistrib::pe_sortop_diffuse()(pe,master_pe)
+        && pe != deviceCUDA->getMasterPe() ) {
+      master_pe = pe;
+    }
  }
  if ( ! patchMap->numPatchesOnNode(master_pe) ) {
    NAMD_bug("ComputePmeMgr::initialize_computes() master_pe has no patches.");
@@ -3260,7 +3260,7 @@ void ComputePme::doWork()
     CmiLock(ComputePmeMgr::cuda_lock);
     if ( ComputePmeMgr::cuda_busy ) {
       ComputePmeMgr::cuda_submit_charges_deque.push_back(args);
-    } else if ( CkMyPe() == cuda_device_pe() ) {
+    } else if ( CkMyPe() == deviceCUDA->getMasterPe() ) {
       // avoid adding work to nonbonded data preparation pe
       args.mgr->cuda_submit_charges(*args.lattice, args.sequence);
     } else {
@@ -3371,7 +3371,7 @@ void ComputePmeMgr::chargeGridSubmitted(Lattice &lattice, int sequence) {
   // cuda_errcheck("after memcpy grid to host");
 
   CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
-  cm[cuda_device_pe()].recvYieldDevice(-1);
+  cm[deviceCUDA->getMasterPe()].recvYieldDevice(-1);
 
   pmeProxy[master_pe].pollChargeGridReady();
  }
