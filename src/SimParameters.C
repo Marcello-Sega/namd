@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2015/08/07 20:34:32 $
- * $Revision: 1.1450 $
+ * $Date: 2015/08/07 20:52:11 $
+ * $Revision: 1.1451 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3662,6 +3662,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
    if ( pairInteractionOn && !pairInteractionSelf && !config->find("pairInteractionGroup2")) 
      NAMD_die("pairInteractionGroup2 must be specified");
+
+   if (fixedAtomsOn && ! fixedAtomsForces) {
+#ifdef NAMD_CUDA
+     iout << iWARN << "ENABLING FIXED ATOMS FORCES FOR COMPATIBILITY WITH CUDA\n" << endi;
+     fixedAtomsForces = TRUE;
+#endif
+   }
 
    if ( ! fixedAtomsOn ) {
      fixedAtomsForces = 0;
