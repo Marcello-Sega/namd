@@ -77,6 +77,7 @@ void ProcessorPrivateInit(void)
   CkpvInitialize(PatchMgr*, PatchMap_patchMgr);
   CkpvAccess(PatchMap_patchMgr) = 0;
   CkpvInitialize(BOCgroup, BOCclass_group);
+  CkpvAccess(BOCclass_group).dataExchanger.setZero();
   CkpvInitialize(Communicate*, comm);
   CkpvAccess(comm) = 0;
   CkpvInitialize(Sync*, Sync_instance);
