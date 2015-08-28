@@ -52,6 +52,14 @@ CkpvExtern(PatchMgr*, PatchMap_patchMgr);
 CkpvExtern(BOCgroup, BOCclass_group);
 CkpvExtern(Communicate*, comm);
 
+//handlers for replica communication
+CkpvExtern(int, recv_data_idx);
+CkpvExtern(int, recv_ack_idx);
+CkpvExtern(int, recv_bcast_idx);
+CkpvExtern(int, recv_red_idx);
+CkpvExtern(int, recv_eval_command_idx);
+CkpvExtern(int, recv_eval_result_idx);
+
 void ProcessorPrivateInit(void);
 
 #endif

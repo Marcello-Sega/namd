@@ -37,6 +37,16 @@ CkpvDeclare(Communicate*, comm);
 CkpvDeclare(Sync*, Sync_instance);
 CkpvDeclare(infostream, iout_obj);
 
+//handlers for replica communication
+CkpvDeclare(int, recv_data_idx);
+CkpvDeclare(int, recv_ack_idx);
+CkpvDeclare(int, recv_bcast_idx);
+CkpvDeclare(int, recv_red_idx);
+CkpvDeclare(int, recv_eval_command_idx);
+CkpvDeclare(int, recv_eval_result_idx);
+
+extern void initializeReplicaConverseHandlers();
+
 /*
  * Initialization Function to be called on every processor
  */
@@ -72,6 +82,8 @@ void ProcessorPrivateInit(void)
   CkpvInitialize(Sync*, Sync_instance);
   CkpvAccess(Sync_instance) = 0;
   CkpvInitialize(infostream, iout_obj);
+
+  initializeReplicaConverseHandlers();
 
 #ifdef PROCTRACE_DEBUG
   CkpvInitialize(DebugFileTrace*, DebugFileTrace_instance);

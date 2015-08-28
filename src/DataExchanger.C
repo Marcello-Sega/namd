@@ -21,6 +21,8 @@ extern "C" {
 #endif
 #endif
 
+static int recvRedCalledEarly;
+
 CpvDeclare(int, breakScheduler);
 
 //functions to receive and invoke chare's entry methods
@@ -38,31 +40,41 @@ extern "C" {
 
   void recvData(DataMessage *dmsg) {
     Pointer msg(dmsg);
+    if ( CkpvAccess(BOCclass_group).dataExchanger.isZero() ) NAMD_bug("BOCgroup::dataExchanger is zero in recvData!");
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv_data(msg);
   }
 
   void recvAck(DataMessage *dmsg) {
+    if ( CkpvAccess(BOCclass_group).dataExchanger.isZero() ) NAMD_bug("BOCgroup::dataExchanger is zero in recvAck!");
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv_ack();
     CmiFree(dmsg);
   }
 
   void recvBcast(DataMessage *dmsg) {
+    if ( CkpvAccess(BOCclass_group).dataExchanger.isZero() ) NAMD_bug("BOCgroup::dataExchanger is zero in recvBcast!");
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv_bcast();
     CmiFree(dmsg);
   }
 
   void recvRed(DataMessage *dmsg) {
+    if ( CkpvAccess(BOCclass_group).dataExchanger.isZero() ) {
+      ++recvRedCalledEarly;
+      CmiFree(dmsg);
+      return;
+    }
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv_red();
     CmiFree(dmsg);
   }
 
   void recvEvalCommand(DataMessage *dmsg) {
     Pointer msg(dmsg);
+    if ( CkpvAccess(BOCclass_group).dataExchanger.isZero() ) NAMD_bug("BOCgroup::dataExchanger is zero in recvEvalCommand!");
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv_eval_command(msg);
   }
 
   void recvEvalResult(DataMessage *dmsg) {
     Pointer msg(dmsg);
+    if ( CkpvAccess(BOCclass_group).dataExchanger.isZero() ) NAMD_bug("BOCgroup::dataExchanger is zero in recvEvalResult!");
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv_eval_result(msg);
   }
 
@@ -98,6 +110,7 @@ extern "C" {
   }
 
   void replica_barrier() {
+    for ( ; recvRedCalledEarly > 0; --recvRedCalledEarly ) CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv_red();
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].barrier();
     CpvAccess(breakScheduler) = 0;
     while(!CpvAccess(breakScheduler)) CsdSchedulePoll();
@@ -161,6 +174,22 @@ extern "C" {
   }
 } //endof extern C
 
+void initializeReplicaConverseHandlers() {
+  CkpvInitialize(int, recv_data_idx);
+  CkpvInitialize(int, recv_ack_idx);
+  CkpvInitialize(int, recv_bcast_idx);
+  CkpvInitialize(int, recv_red_idx);
+  CkpvInitialize(int, recv_eval_command_idx);
+  CkpvInitialize(int, recv_eval_result_idx);
+
+  CkpvAccess(recv_data_idx) = CmiRegisterHandler((CmiHandler)recvData);                   
+  CkpvAccess(recv_ack_idx) = CmiRegisterHandler((CmiHandler)recvAck);                     
+  CkpvAccess(recv_red_idx) = CmiRegisterHandler((CmiHandler)recvRed);                     
+  CkpvAccess(recv_bcast_idx) = CmiRegisterHandler((CmiHandler)recvBcast);                 
+  CkpvAccess(recv_eval_command_idx) = CmiRegisterHandler((CmiHandler)recvEvalCommand);    
+  CkpvAccess(recv_eval_result_idx) = CmiRegisterHandler((CmiHandler)recvEvalResult);      
+}
+
 //======================================================================
 // Public functions
 //----------------------------------------------------------------------
@@ -176,12 +205,13 @@ DataExchanger::DataExchanger()
   numChildren = CmiNumPartitions() - firstChild;
   if(numChildren > TREE_WIDTH)
     numChildren = TREE_WIDTH;
-  recv_data_idx = CmiRegisterHandler((CmiHandler)recvData);
-  recv_ack_idx = CmiRegisterHandler((CmiHandler)recvAck);
-  recv_red_idx = CmiRegisterHandler((CmiHandler)recvRed);
-  recv_bcast_idx = CmiRegisterHandler((CmiHandler)recvBcast);
-  recv_eval_command_idx = CmiRegisterHandler((CmiHandler)recvEvalCommand);
-  recv_eval_result_idx = CmiRegisterHandler((CmiHandler)recvEvalResult);
+  
+  recv_data_idx = CkpvAccess(recv_data_idx);
+  recv_ack_idx = CkpvAccess(recv_ack_idx);
+  recv_red_idx = CkpvAccess(recv_red_idx);
+  recv_bcast_idx = CkpvAccess(recv_bcast_idx);
+  recv_eval_command_idx = CkpvAccess(recv_eval_command_idx);
+  recv_eval_result_idx = CkpvAccess(recv_eval_result_idx);
 }
 
 //----------------------------------------------------------------------
