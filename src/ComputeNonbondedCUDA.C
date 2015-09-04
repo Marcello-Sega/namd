@@ -1715,8 +1715,10 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
       patch_pair &pp = patch_pairs[i];
       pp.patch1_start = patchRecords[p1].localStart;
       pp.patch1_size  = patchRecords[p1].numAtoms;
+      pp.patch1_free_size = patchRecords[p1].numFreeAtoms;
       pp.patch2_start = patchRecords[p2].localStart;
       pp.patch2_size  = patchRecords[p2].numAtoms;
+      pp.patch2_free_size = patchRecords[p2].numFreeAtoms;
       pp.plist_start = bfstart;
       // size1*size2 = number of patch pairs
       int size1 = (pp.patch1_size-1)/WARPSIZE+1;
@@ -1738,6 +1740,8 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
   Flags &flags = patchRecords[hostedPatches[0]].p->flags;
   float maxAtomMovement = 0.;
   float maxPatchTolerance = 0.;
+
+   if (doExclusionCheck && atomsChanged) numExcludedTot = 0;
 
   for ( int i=0; i<activePatches.size(); ++i ) {
     patch_record &pr = patchRecords[activePatches[i]];
@@ -1763,10 +1767,12 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
 #ifdef MEM_OPT_VERSION
         ap[k].excl_index = exclusionsByAtom[aExt[j].exclId].y;
         ap[k].excl_maxdiff = exclusionsByAtom[aExt[j].exclId].x;
-#else
+        if (doExclusionCheck) numExcludedTot += mol->exclSigPool[aExt[j].exclId].fullExclCnt;
+#else // ! MEM_OPT_VERSION
         ap[k].excl_index = exclusionsByAtom[aExt[j].id].y;
         ap[k].excl_maxdiff = exclusionsByAtom[aExt[j].id].x;
-#endif
+        if (doExclusionCheck) numExcludedTot += mol->get_full_exclusions_for_atom(aExt[j].id)[0];
+#endif // MEM_OPT_VERSION
       }
     }
     {
@@ -1788,6 +1794,10 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
 #endif
     }
   }
+
+  // Divide by two since we were double counting the exclusions
+  if (doExclusionCheck && atomsChanged) numExcludedTot /= 2;
+
 //GBISP("finished active patches\n")
 
   //CkPrintf("maxMovement = %f  maxTolerance = %f  save = %d  use = %d\n",
@@ -2193,7 +2203,7 @@ void ComputeNonbondedCUDA::finishPatch(int flindex) {
 void ComputeNonbondedCUDA::finishPatch(patch_record &pr) {
   int start = pr.localStart;
   const CompAtomExt *aExt = pr.xExt;
-  int nfree = pr.numFreeAtoms;
+  int nfree = pr.numAtoms;
   pr.f = pr.r->f[Results::nbond];
   Force *f = pr.f;
   Force *f_slow = pr.r->f[Results::slow];
@@ -2377,6 +2387,7 @@ void ComputeNonbondedCUDA::finishReductions() {
     BigReal energyv = 0.;
     BigReal energye = 0.;
     BigReal energys = 0.;
+    int nexcluded = 0;
     for ( int i = 0; i < num_virials; ++i ) {
       virial_tensor.xx += virials[16*i];
       virial_tensor.xy += virials[16*i+1];
@@ -2390,8 +2401,15 @@ void ComputeNonbondedCUDA::finishReductions() {
       energyv += virials[16*i+9];
       energye += virials[16*i+10];
       energys += virials[16*i+11];
+      if (doExclusionCheck) nexcluded += ((int *)virials)[16*i+12];
       if (simParams->GBISOn) {
         energye += energy_gbis[i];
+      }
+    }
+    if (doExclusionCheck) {
+      if (nexcluded != numExcludedTot) {
+        CkPrintf("Exclusions: detected %d expected %d\n",nexcluded,numExcludedTot);
+        NAMD_bug("Incorrect number of exclusions detected");
       }
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NBOND,virial_tensor);

@@ -85,6 +85,67 @@ static void NAME(finish_forces_virials)(const int start, const int size, const i
 					float* virials, float* slow_virials);
 
 //
+// Reduces up to three variables into global memory locations dst[0], dst[1], dst[2]
+//
+template<typename T, int n, int sh_buf_size>
+__device__ __forceinline__
+void NAME(reduceVariables)(volatile T* sh_buf, T* dst, T val1, T val2, T val3) {
+	// Sanity check
+	cuda_static_assert(n > 0 && n <= NUM_WARP);
+#ifdef KEPLER_SHUFFLE
+  // Requires NUM_WARP*n*sizeof(float) shared memory
+  cuda_static_assert(sh_buf_size >= NUM_WARP*n*sizeof(T));
+  // Reduce within warp
+  for (int i=WARPSIZE/2;i >= 1;i/=2) {
+    if (n >= 1) val1 += __shfl_xor(val1, i);
+    if (n >= 2) val2 += __shfl_xor(val2, i);
+    if (n >= 3) val3 += __shfl_xor(val3, i);
+  }
+  if (threadIdx.x == 0) {
+    if (n >= 1) sh_buf[threadIdx.y*n + 0] = val1;
+    if (n >= 2) sh_buf[threadIdx.y*n + 1] = val2;
+    if (n >= 3) sh_buf[threadIdx.y*n + 2] = val3;
+  }
+  __syncthreads();
+  if (threadIdx.x < n && threadIdx.y == 0) {
+    T finalval = (T)0;
+#pragma unroll
+    for (int i=0;i < NUM_WARP;++i) {
+      finalval += sh_buf[i*n + threadIdx.x];
+    }
+    atomicAdd(&dst[threadIdx.x], finalval);
+  }
+#else // ! KEPLER_SHUFFLE
+  // Requires NUM_WARP*n*WARPSIZE*sizeof(float) shared memory
+  cuda_static_assert(sh_buf_size >= NUM_WARP*n*WARPSIZE*sizeof(T));
+  volatile T* sh_bufy = &sh_buf[threadIdx.y*n*WARPSIZE];
+  if (n >= 1) sh_bufy[threadIdx.x*n + 0] = val1;
+  if (n >= 2) sh_bufy[threadIdx.x*n + 1] = val2;
+  if (n >= 3) sh_bufy[threadIdx.x*n + 2] = val3;
+  // Reducue within warp
+  for (int d=1;d < WARPSIZE;d*=2) {
+    int pos = threadIdx.x + d;
+    T val1t, val2t, val3t;
+    if (n >= 1) val1t = (pos < WARPSIZE) ? sh_bufy[pos*n + 0] : (T)0;
+    if (n >= 2) val2t = (pos < WARPSIZE) ? sh_bufy[pos*n + 1] : (T)0;
+    if (n >= 3) val3t = (pos < WARPSIZE) ? sh_bufy[pos*n + 2] : (T)0;
+    if (n >= 1) sh_bufy[threadIdx.x*n + 0] += val1t;
+    if (n >= 2) sh_bufy[threadIdx.x*n + 1] += val2t;
+    if (n >= 3) sh_bufy[threadIdx.x*n + 2] += val3t;
+  }
+  __syncthreads();
+  if (threadIdx.x < n && threadIdx.y == 0) {
+    T finalval = (T)0;
+#pragma unroll
+    for (int i=0;i < NUM_WARP;++i) {
+      finalval += sh_buf[i*n*WARPSIZE + threadIdx.x];
+    }
+    atomicAdd(&dst[threadIdx.x], finalval);
+  }
+#endif // KEPLER_SHUFFLE
+}
+
+//
 // Called with 2d thread setting:
 // x-threadblock = warpSize = 32
 // y-threadblock = NUM_WARP = 4
@@ -130,6 +191,8 @@ NAME(dev_nonbonded)
 	 float totalee = 0.f;
 	 SLOW( float totales = 0.f; )
 	)
+
+  GENPAIRLIST(int nexcluded=0;);
 
   {
 #ifndef KEPLER_SHUFFLE
@@ -250,8 +313,10 @@ NAME(dev_nonbonded)
 #endif
 
       GENPAIRLIST(
-		  int nloopj = sh_patch_pair.patch2_size - blockj;
-		  if (nloopj > WARPSIZE) nloopj = WARPSIZE;
+  		// Avoid calculating pairs of blocks where all atoms on both blocks are fixed
+   		if (blocki >= sh_patch_pair.patch1_free_size && blockj >= sh_patch_pair.patch2_free_size) continue;
+		  int nfreej = sh_patch_pair.patch2_free_size - blockj;
+		  int nloopj = min(sh_patch_pair.patch2_size - blockj, WARPSIZE);
 		  );
 
       //GENPAIRLIST(bool inside_plcutoff = false;)
@@ -301,15 +366,15 @@ NAME(dev_nonbonded)
 
       GENPAIRLIST(unsigned int excl = 0;)
       USEPAIRLIST(
-		  //const int size1 = (sh_patch_pair.patch1_size-1)/WARPSIZE+1;
 		  const int size2 = (sh_patch_pair.patch2_size-1)/WARPSIZE+1;
-		  //const int pos = (blocki/WARPSIZE) + (blockj/WARPSIZE)*size1;
 		  const int pos = (blockj/WARPSIZE) + (blocki/WARPSIZE)*size2;
 		  unsigned int excl = exclmasks[sh_patch_pair.exclmask_start+pos].excl[threadIdx.x];
 		  );
       GENPAIRLIST(
 		  int nloopi = sh_patch_pair.patch1_size - blocki;
 		  if (nloopi > WARPSIZE) nloopi = WARPSIZE;
+		  // NOTE: We must truncate nfreei to be non-negative number since we're comparing to threadIdx.x (unsigned int) later on
+		  int nfreei = max(sh_patch_pair.patch1_free_size - blocki, 0);
 		  )
       const bool diag_tile = (sh_patch_pair.patch1_start + blocki == sh_patch_pair.patch2_start + blockj);
       // Loop through tile diagonals. Local tile indices are:
@@ -350,8 +415,9 @@ NAME(dev_nonbonded)
 		    int j_vdw_type = jap_vdw_type;
 		    );
 #endif
-	GENPAIRLIST(if (j < nloopj && threadIdx.x < nloopi))
+	GENPAIRLIST(if (j < nloopj && threadIdx.x < nloopi && (j < nfreej || threadIdx.x < nfreei) ))
 	  {
+
 #ifndef KEPLER_SHUFFLE
 	  float tmpx = sh_jpq[j].position.x - ipq.position.x;
 	  float tmpy = sh_jpq[j].position.y - ipq.position.y;
@@ -384,6 +450,7 @@ NAME(dev_nonbonded)
 			      indexword = overflow_exclusions[indexword];
 			    }
 			    excluded = ((indexword & (1<<(indexdiff&31))) != 0);
+			    if (excluded) nexcluded++;
 			}
 			if (!excluded) excl |= 0x80000000;
 			)
@@ -411,17 +478,14 @@ NAME(dev_nonbonded)
 	      float fx = tmpx * f;
 	      float fy = tmpy * f;
 	      float fz = tmpz * f;
-	      //iforce.x += 1.0f;
 	      iforce.x += fx;
 	      iforce.y += fy;
 	      iforce.z += fz;
 #ifdef REG_JFORCE
-	      //jforce.x += 1.0f;
 	      jforce.x -= fx;
 	      jforce.y -= fy;
 	      jforce.z -= fz;
 #else
-	      //sh_jforce[j].x += 1.0f;
 	      sh_jforce[j].x -= fx;
 	      sh_jforce[j].y -= fy;
 	      sh_jforce[j].z -= fz;
@@ -468,6 +532,7 @@ NAME(dev_nonbonded)
 #endif
 #endif
       } // t
+
       // Write j-forces
       GENPAIRLIST(if (__any(excl != 0))) {
 	if ( blockj + threadIdx.x < sh_patch_pair.patch2_size ) {
@@ -490,9 +555,7 @@ NAME(dev_nonbonded)
 	}
 
       GENPAIRLIST(
-		  //const int size1 = (sh_patch_pair.patch1_size-1)/WARPSIZE+1;
 		  const int size2 = (sh_patch_pair.patch2_size-1)/WARPSIZE+1;
-		  //int pos = (blocki/WARPSIZE) + (blockj/WARPSIZE)*size1;
 		  int pos = (blockj/WARPSIZE) + (blocki/WARPSIZE)*size2;
 		  exclmasks[sh_patch_pair.exclmask_start+pos].excl[threadIdx.x] = excl;
 		  if (threadIdx.x == 0) {
@@ -584,77 +647,25 @@ NAME(dev_nonbonded)
   {
 
 #ifdef REG_JFORCE
+#undef SH_BUF_SIZE
+#define SH_BUF_SIZE NUM_WARP*(SLOW(9)+9)*sizeof(float)
     __shared__ float sh_buf[NUM_WARP*(SLOW(9)+9)];
+#else // ! REG_JFORCE
+#undef SH_BUF_SIZE
+#define SH_BUF_SIZE NUM_WARP*WARPSIZE*3*sizeof(float)
+    volatile float* sh_buf = (float *)&sh_jforce_2d[0][0];
+  	// Sync here to make sure we can write into shared memory (sh_jforce_2d)
+   	__syncthreads();
 #endif
 
-  // Reduce energies (totalev, totalee, SLOW(totales))
-#if ENERGY(1 +) 0
-  // Reduce within warp
-#ifdef KEPLER_SHUFFLE
-  // Requires NUM_WARP*(SLOW(1+)2)*sizeof(float) shared memory
-  for (int i=WARPSIZE/2;i >= 1;i/=2) {
-    totalev += __shfl_xor(totalev, i);
-    totalee += __shfl_xor(totalee, i);
-    SLOW(totales += __shfl_xor(totales, i););
-  }
-#ifndef REG_JFORCE
-  volatile float* sh_buf = (float *)&sh_jforce_2d[0][0];
+#if ENERGY(1+)0
+   	NAME(reduceVariables)<float, SLOW(1+)2, SH_BUF_SIZE>(sh_buf, &tmpvirials[sh_patch_pair.patch1_ind*16 + 9], totalev, totalee, SLOW(totales+)0.0f);
 #endif
-  // Must sync here so that we can write to sh_jforce_2d
-  __syncthreads();
-  if (threadIdx.x == 0) {
-    sh_buf[threadIdx.y*(SLOW(1+)2)+0] = totalev;
-    sh_buf[threadIdx.y*(SLOW(1+)2)+1] = totalee;
-    SLOW(sh_buf[threadIdx.y*(SLOW(1+)2)+2] = totales;);
-  }
-  __syncthreads();
-  if (threadIdx.x < SLOW(1+)2 && threadIdx.y == 0) {
-    float finalval = 0.0f;
-#pragma unroll
-    for (int i=0;i < NUM_WARP;++i) {
-      finalval += sh_buf[i*(SLOW(1+)2)+threadIdx.x];
-    }
-    int patch1_ind = sh_patch_pair.patch1_ind;
-    atomicAdd(&tmpvirials[patch1_ind*16 + 9 + threadIdx.x], finalval);
-  }
-#else // ! KEPLER_SHUFFLE
-  // Do not have to sync here because each warp writes to the same
-  // portion of sh_jforce_2d as in the above force computation loop
-  volatile float* sh_totalev = (float *)&sh_jforce_2d[threadIdx.y][0];
-  volatile float* sh_totalee = sh_totalev + WARPSIZE;
-  SLOW(volatile float* sh_totales = sh_totalev + 2*WARPSIZE;)
-  sh_totalev[threadIdx.x] = totalev;
-  sh_totalee[threadIdx.x] = totalee;
-  SLOW(sh_totales[threadIdx.x] = totales;)
-  for (int d=1;d < WARPSIZE;d*=2) {
-    int pos = threadIdx.x + d;
-    float val_ev = (pos < WARPSIZE) ? sh_totalev[pos] : 0.0f;
-    float val_ee = (pos < WARPSIZE) ? sh_totalee[pos] : 0.0f;
-    SLOW(float val_es = (pos < WARPSIZE) ? sh_totales[pos] : 0.0f;)
-    sh_totalev[threadIdx.x] += val_ev;
-    sh_totalee[threadIdx.x] += val_ee;
-    SLOW(sh_totales[threadIdx.x] += val_es;)
-  }
-  __syncthreads();
-  // Reduce among warps
-  if (threadIdx.x == 0 && threadIdx.y == 0) {
-    float* sh_p = (float *)&sh_jforce_2d[0][0];
-    float finalev = 0.0f;
-    float finalee = 0.0f;
-    SLOW(float finales = 0.0f;)
-#pragma unroll
-    for (int i=0;i < NUM_WARP;++i) {
-      finalev += sh_p[i*3*WARPSIZE];
-      finalee += sh_p[i*3*WARPSIZE + WARPSIZE];
-      SLOW(finales += sh_p[i*3*WARPSIZE + 2*WARPSIZE];)
-    }
-    int patch1_ind = sh_patch_pair.patch1_ind;
-    atomicAdd(&tmpvirials[patch1_ind*16 + 9], finalev);
-    atomicAdd(&tmpvirials[patch1_ind*16 + 10], finalee);
-    SLOW(atomicAdd(&tmpvirials[patch1_ind*16 + 11], finales);)
-  }
-#endif // KEPLER_SHUFFLE
-#endif // ENERGY
+
+#if GENPAIRLIST(1+)0
+   	ENERGY(__syncthreads());
+    NAME(reduceVariables)<int, 1, SH_BUF_SIZE>((int *)sh_buf, (int *)&tmpvirials[sh_patch_pair.patch1_ind*16 + 12], nexcluded, 0, 0);
+#endif
 
   // Virials
   __syncthreads();
@@ -683,12 +694,11 @@ NAME(dev_nonbonded)
   __syncthreads();
 
   // Mark patch pair (patch1_ind, patch2_ind) as "done"
-  volatile bool* patch_done = (volatile bool *)&sh_patch_pair.pad1;
   int patch1_ind = sh_patch_pair.patch1_ind;
   int patch2_ind = sh_patch_pair.patch2_ind;
   if (threadIdx.x == 0 && threadIdx.y == 0) {
-    patch_done[0] = false;
-    patch_done[1] = false;
+    sh_patch_pair.patch_done[0] = false;
+    sh_patch_pair.patch_done[1] = false;
     //
     // global_counters[0]: force_ready_queue
     // global_counters[1]: block_order
@@ -696,20 +706,21 @@ NAME(dev_nonbonded)
     //
     unsigned int patch1_num_pairs = sh_patch_pair.patch1_num_pairs;
     int patch1_old = atomicInc(&global_counters[patch1_ind+2], patch1_num_pairs-1);
-    if (patch1_old+1 == patch1_num_pairs) patch_done[0] = true;
+    if (patch1_old+1 == patch1_num_pairs) sh_patch_pair.patch_done[0] = true;
     if (patch1_ind != patch2_ind) {
       unsigned int patch2_num_pairs = sh_patch_pair.patch2_num_pairs;
       int patch2_old = atomicInc(&global_counters[patch2_ind+2], patch2_num_pairs-1);
-      if (patch2_old+1 == patch2_num_pairs) patch_done[1] = true;
+      if (patch2_old+1 == patch2_num_pairs) sh_patch_pair.patch_done[1] = true;
     }
   }
   // sync threads so that patch1_done and patch2_done are visible to all threads
   __syncthreads();
 
-  if (patch_done[0]) {
-#ifndef REG_JFORCE
-    volatile float* sh_buf = (float *)&sh_jforce_2d[0][0];
-#endif
+  if (sh_patch_pair.patch_done[0]) {
+
+// #ifndef REG_JFORCE
+//     volatile float* sh_buf = (float *)&sh_jforce_2d[0][0];
+// #endif
 #ifndef KEPLER_SHUFFLE
     volatile float* sh_vcc = (volatile float*)&sh_jpq_2d[0][0];
     volatile float* sh_slow_buf = NULL;
@@ -722,12 +733,13 @@ NAME(dev_nonbonded)
 #endif
 				tmpforces, slow_tmpforces, forces, slow_forces,
 				tmpvirials, slow_tmpvirials, virials, slow_virials);
+
   }
 
-  if (patch_done[1]) {
-#ifndef REG_JFORCE
-    volatile float* sh_buf = (float *)&sh_jforce_2d[0][0];
-#endif
+  if (sh_patch_pair.patch_done[1]) {
+// #ifndef REG_JFORCE
+//     volatile float* sh_buf = (float *)&sh_jforce_2d[0][0];
+// #endif
 #ifndef KEPLER_SHUFFLE
     volatile float* sh_vcc = (volatile float*)&sh_jpq_2d[0][0];
     volatile float* sh_slow_buf = NULL;
@@ -742,7 +754,7 @@ NAME(dev_nonbonded)
 				tmpvirials, slow_tmpvirials, virials, slow_virials);
   }
 
-  if (force_ready_queue != NULL && (patch_done[0] || patch_done[1])) {
+  if (force_ready_queue != NULL && (sh_patch_pair.patch_done[0] || sh_patch_pair.patch_done[1])) {
   	// Make sure page-locked host forces are up-to-date
 #if __CUDA_ARCH__ < 200
     __threadfence();
@@ -752,11 +764,11 @@ NAME(dev_nonbonded)
     __syncthreads();
     // Add patch into "force_ready_queue"
     if (threadIdx.x == 0 && threadIdx.y == 0) {
-    	if (patch_done[0]) {
+    	if (sh_patch_pair.patch_done[0]) {
         int ind = atomicInc(&global_counters[0], npatches-1);
         force_ready_queue[ind] = patch1_ind;
       }
-      if (patch_done[1]) {
+      if (sh_patch_pair.patch_done[1]) {
         int ind = atomicInc(&global_counters[0], npatches-1);
         force_ready_queue[ind] = patch2_ind;
       }
@@ -1047,7 +1059,13 @@ static void NAME(finish_forces_virials)(const int start, const int size, const i
 	   int pos = patch_ind*16 + 9 + threadIdx.x;
 	   virials[pos] = tmpvirials[pos];
 	 }
-	 )
+	 );
+  GENPAIRLIST(
+  	if (threadIdx.x == 0 && threadIdx.y == 0) {
+	  	int pos = patch_ind*16 + 12;
+	   	virials[pos] = tmpvirials[pos];  		
+  	}
+  	);
 } 
 
 #endif // NAMD_CUDA

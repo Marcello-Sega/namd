@@ -1,6 +1,6 @@
 
-#include "ComputeNonbondedCUDAKernel.h"
 #include "CudaUtils.h"
+#include "ComputeNonbondedCUDAKernel.h"
 #include <stdio.h>
 
 #ifdef NAMD_CUDA

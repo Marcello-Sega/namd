@@ -91,6 +91,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
   void requirePatch(int pid);
   void assignPatches();
   void registerPatches();
+  int numExcludedTot;
   ResizeArray<int> activePatches, localActivePatches, remoteActivePatches;
   ResizeArray<int> hostedPatches, localHostedPatches, remoteHostedPatches;
   ResizeArray<patch_record> patchRecords;

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2015/08/07 20:52:11 $
- * $Revision: 1.1451 $
+ * $Date: 2015/09/04 22:20:03 $
+ * $Revision: 1.1452 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1404,6 +1404,9 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
      "default is 'O'", PARSE_STRING);
    opts.optional("fixedatoms", "fixedAtomListFile", "the text input file for fixed atoms "
                  "used for parallel input IO", PARSE_STRING);
+   opts.optionalB("fixedatoms", "fixedAtomsForceOutput",
+     "Do we write out forces acting on fixed atoms?",
+     &fixedAtomsForceOutput, FALSE);
 
    ////  Harmonic Constraints
    opts.optionalB("main", "constraints", "Are harmonic constraints active?",
@@ -2939,12 +2942,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       if (drudeOn) {
         NAMD_die("GBIS not compatible with Drude Polarization");
       }
-      if (fixedAtomsOn && ! fixedAtomsForces) {
-#ifdef NAMD_CUDA
-        iout << iWARN << "ENABLING FIXED ATOMS FORCES FOR COMPATIBILITY WITH GBIS CUDA\n" << endi;
-        fixedAtomsForces = TRUE;
-#endif
-      }
 
       if (alpha_cutoff > patchDimension) {
         patchDimension = alpha_cutoff; 
@@ -3662,13 +3659,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
    if ( pairInteractionOn && !pairInteractionSelf && !config->find("pairInteractionGroup2")) 
      NAMD_die("pairInteractionGroup2 must be specified");
-
-   if (fixedAtomsOn && ! fixedAtomsForces) {
-#ifdef NAMD_CUDA
-     iout << iWARN << "ENABLING FIXED ATOMS FORCES FOR COMPATIBILITY WITH CUDA\n" << endi;
-     fixedAtomsForces = TRUE;
-#endif
-   }
 
    if ( ! fixedAtomsOn ) {
      fixedAtomsForces = 0;

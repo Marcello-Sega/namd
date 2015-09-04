@@ -103,8 +103,7 @@ __global__ static void GBIS_P1_Kernel (
     //iterate over chunks of atoms within Patch 2
     for (; blockj < sh_patch_pair.patch2_size; blockj += WARPSIZE ) {
 
-      int nloopj = sh_patch_pair.patch2_size - blockj;
-      nloopj = min(nloopj, WARPSIZE);
+      int nloopj = min(sh_patch_pair.patch2_size - blockj, WARPSIZE);
 
 #ifdef KEPLER_SHUFFLE
       float xj;
@@ -159,7 +158,8 @@ __global__ static void GBIS_P1_Kernel (
         float chargej = sh_jpq[j].charge;
         float intRad0j_val = sh_intRad0j[j];
 #endif
-        if (j < nloopj && threadIdx.x < nloopi) {
+        if (j < nloopj && threadIdx.x < nloopi)
+        {
           float dx = atomi.position.x - xj;
           float dy = atomi.position.y - yj;
           float dz = atomi.position.z - zj;
@@ -210,41 +210,40 @@ __global__ static void GBIS_P1_Kernel (
     __syncthreads();
 
     // Mark patch pair (patch1_ind, patch2_ind) as "done"
-    volatile bool* patch_done = (volatile bool *)&sh_patch_pair.pad1;
     int patch1_ind = sh_patch_pair.patch1_ind;
     int patch2_ind = sh_patch_pair.patch2_ind;
 
     if (threadIdx.x == 0 && threadIdx.y == 0) {
-      patch_done[0] = false;
-      patch_done[1] = false;
+      sh_patch_pair.patch_done[0] = false;
+      sh_patch_pair.patch_done[1] = false;
 
       unsigned int patch1_num_pairs = sh_patch_pair.patch1_num_pairs;
       int patch1_old = atomicInc(&P1_counters[patch1_ind], patch1_num_pairs-1);
-      if (patch1_old+1 == patch1_num_pairs) patch_done[0] = true;
+      if (patch1_old+1 == patch1_num_pairs) sh_patch_pair.patch_done[0] = true;
       if (patch1_ind != patch2_ind) {
         unsigned int patch2_num_pairs = sh_patch_pair.patch2_num_pairs;
         int patch2_old = atomicInc(&P1_counters[patch2_ind], patch2_num_pairs-1);
-        if (patch2_old+1 == patch2_num_pairs) patch_done[1] = true;
+        if (patch2_old+1 == patch2_num_pairs) sh_patch_pair.patch_done[1] = true;
       }
     }
     // sync threads so that patch1_done and patch2_done are visible to all threads
     __syncthreads();
 
-    if (patch_done[0]) {
+    if (sh_patch_pair.patch_done[0]) {
       const int start = sh_patch_pair.patch1_start;
       for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch1_size;i+=NUM_WARP*WARPSIZE) {
         psiSum[start+i] = tmp_psiSum[start+i];
       }
     }
 
-    if (patch_done[1]) {
+    if (sh_patch_pair.patch_done[1]) {
       const int start = sh_patch_pair.patch2_start;
       for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch2_size;i+=NUM_WARP*WARPSIZE) {
         psiSum[start+i] = tmp_psiSum[start+i];
       }
     }
 
-    if (patch_done[0] || patch_done[1]) {
+    if (sh_patch_pair.patch_done[0] || sh_patch_pair.patch_done[1]) {
       // Make sure page-locked host forces are up-to-date
 #if __CUDA_ARCH__ < 200
       __threadfence();
@@ -373,8 +372,7 @@ __global__ static void GBIS_P2_Kernel (
     //iterate over chunks of atoms within Patch 2
     for (; blockj < sh_patch_pair.patch2_size; blockj += WARPSIZE) {
 
-      int nloopj = sh_patch_pair.patch2_size - blockj;
-      nloopj = min(nloopj, WARPSIZE);
+      int nloopj = min(sh_patch_pair.patch2_size - blockj, WARPSIZE);
 
 #ifdef KEPLER_SHUFFLE
       float xj;
@@ -419,7 +417,8 @@ __global__ static void GBIS_P2_Kernel (
         float chargej = sh_jpq[j].charge;
         float bornRadJ = sh_jBornRad[j];
 #endif
-        if (j < nloopj && threadIdx.x < nloopi) {
+        if (j < nloopj && threadIdx.x < nloopi)
+        {
           float dx = atomi.position.x - xj;
           float dy = atomi.position.y - yj;
           float dz = atomi.position.z - zj;
@@ -557,27 +556,26 @@ __global__ static void GBIS_P2_Kernel (
     __syncthreads();
 
     // Mark patch pair (patch1_ind, patch2_ind) as "done"
-    volatile bool* patch_done = (volatile bool *)&sh_patch_pair.pad1;
     int patch1_ind = sh_patch_pair.patch1_ind;
     int patch2_ind = sh_patch_pair.patch2_ind;
 
     if (threadIdx.x == 0 && threadIdx.y == 0) {
-      patch_done[0] = false;
-      patch_done[1] = false;
+      sh_patch_pair.patch_done[0] = false;
+      sh_patch_pair.patch_done[1] = false;
 
       unsigned int patch1_num_pairs = sh_patch_pair.patch1_num_pairs;
       int patch1_old = atomicInc(&P2_counters[patch1_ind], patch1_num_pairs-1);
-      if (patch1_old+1 == patch1_num_pairs) patch_done[0] = true;
+      if (patch1_old+1 == patch1_num_pairs) sh_patch_pair.patch_done[0] = true;
       if (patch1_ind != patch2_ind) {
         unsigned int patch2_num_pairs = sh_patch_pair.patch2_num_pairs;
         int patch2_old = atomicInc(&P2_counters[patch2_ind], patch2_num_pairs-1);
-        if (patch2_old+1 == patch2_num_pairs) patch_done[1] = true;
+        if (patch2_old+1 == patch2_num_pairs) sh_patch_pair.patch_done[1] = true;
       }
     }
     // sync threads so that patch1_done and patch2_done are visible to all threads
     __syncthreads();
 
-    if (patch_done[0]) {
+    if (sh_patch_pair.patch_done[0]) {
       const int start = sh_patch_pair.patch1_start;
       for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch1_size;i+=NUM_WARP*WARPSIZE) {
         forces[start+i] = tmp_forces[start+i];
@@ -586,7 +584,7 @@ __global__ static void GBIS_P2_Kernel (
       energy[patch1_ind] = tmp_energy[patch1_ind];
     }
 
-    if (patch_done[1]) {
+    if (sh_patch_pair.patch_done[1]) {
       const int start = sh_patch_pair.patch2_start;
       for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch2_size;i+=NUM_WARP*WARPSIZE) {
         forces[start+i] = tmp_forces[start+i];
@@ -595,7 +593,7 @@ __global__ static void GBIS_P2_Kernel (
       energy[patch2_ind] = tmp_energy[patch2_ind];
     }
 
-    if (patch_done[0] || patch_done[1]) {
+    if (sh_patch_pair.patch_done[0] || sh_patch_pair.patch_done[1]) {
       // Make sure page-locked host arrays are up-to-date
 #if __CUDA_ARCH__ < 200
       __threadfence();
@@ -708,8 +706,7 @@ __global__ static void GBIS_P3_Kernel (
     //iterate over chunks of atoms within Patch 2
     for (; blockj < sh_patch_pair.patch2_size; blockj += WARPSIZE ) {
 
-      int nloopj = sh_patch_pair.patch2_size - blockj;
-      nloopj = min(nloopj, WARPSIZE);
+      int nloopj = min(sh_patch_pair.patch2_size - blockj, WARPSIZE);
 
 #ifdef KEPLER_SHUFFLE
       float xj;
@@ -768,7 +765,8 @@ __global__ static void GBIS_P3_Kernel (
         float dHdrPrefixJ = sh_jDHdrPrefix[j];
         float intRadJ0 = sh_intRadJ0[j];
 #endif
-        if (j < nloopj && threadIdx.x < nloopi) {
+        if (j < nloopj && threadIdx.x < nloopi)
+        {
           float dx = atomi.position.x - xj;
           float dy = atomi.position.y - yj;
           float dz = atomi.position.z - zj;
@@ -828,41 +826,40 @@ __global__ static void GBIS_P3_Kernel (
     __syncthreads();
 
     // Mark patch pair (patch1_ind, patch2_ind) as "done"
-    volatile bool* patch_done = (volatile bool *)&sh_patch_pair.pad1;
     int patch1_ind = sh_patch_pair.patch1_ind;
     int patch2_ind = sh_patch_pair.patch2_ind;
 
     if (threadIdx.x == 0 && threadIdx.y == 0) {
-      patch_done[0] = false;
-      patch_done[1] = false;
+      sh_patch_pair.patch_done[0] = false;
+      sh_patch_pair.patch_done[1] = false;
 
       unsigned int patch1_num_pairs = sh_patch_pair.patch1_num_pairs;
       int patch1_old = atomicInc(&P3_counters[patch1_ind], patch1_num_pairs-1);
-      if (patch1_old+1 == patch1_num_pairs) patch_done[0] = true;
+      if (patch1_old+1 == patch1_num_pairs) sh_patch_pair.patch_done[0] = true;
       if (patch1_ind != patch2_ind) {
         unsigned int patch2_num_pairs = sh_patch_pair.patch2_num_pairs;
         int patch2_old = atomicInc(&P3_counters[patch2_ind], patch2_num_pairs-1);
-        if (patch2_old+1 == patch2_num_pairs) patch_done[1] = true;
+        if (patch2_old+1 == patch2_num_pairs) sh_patch_pair.patch_done[1] = true;
       }
     }
     // sync threads so that patch1_done and patch2_done are visible to all threads
     __syncthreads();
 
-    if (patch_done[0]) {
+    if (sh_patch_pair.patch_done[0]) {
       const int start = sh_patch_pair.patch1_start;
       for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch1_size;i+=NUM_WARP*WARPSIZE) {
         forces[start+i] = tmp_forces[start+i];
       }
     }
 
-    if (patch_done[1]) {
+    if (sh_patch_pair.patch_done[1]) {
       const int start = sh_patch_pair.patch2_start;
       for (int i=threadIdx.x+threadIdx.y*WARPSIZE;i < sh_patch_pair.patch2_size;i+=NUM_WARP*WARPSIZE) {
         forces[start+i] = tmp_forces[start+i];
       }
     }
 
-    if (patch_done[0] || patch_done[1]) {
+    if (sh_patch_pair.patch_done[0] || sh_patch_pair.patch_done[1]) {
       // Make sure page-locked host arrays are up-to-date
 #if __CUDA_ARCH__ < 200
       __threadfence();

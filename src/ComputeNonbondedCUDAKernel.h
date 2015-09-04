@@ -29,14 +29,20 @@ struct __align__(16) patch_pair {
   int patch2_ind;
   int patch1_num_pairs;  // Number of pairs that involve this patch
   int patch2_num_pairs;
-  int plist_start;       // Pair list start
-  int plist_size;        // Pair list size
+  union {
+    bool patch_done[2];      // After-GPU-computation shared memory temporary storage
+    struct {
+      int plist_start;       // Pair list start
+      int plist_size;        // Pair list size
+    };
+  };
   int exclmask_start;    // Exclusion mask start
-  int pad1, pad2;
+  int patch1_free_size;  // Size of the free atoms in patch
+  int patch2_free_size;  // Size of the free atoms in patch
+//  int pad1, pad2;
 };
 
 #define PATCH_PAIR_SIZE (sizeof(patch_pair)/4)
-#define PATCH_PAIR_USED 14
 
 struct __align__(16) atom {  // must be multiple of 16!
   float3 position;

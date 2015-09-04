@@ -168,7 +168,7 @@ void CollectionMgr::submitForces(int seq, FullAtomList &a, int maxForceUsed, For
       d[i] += fptr[i];
     }
   }
-  if ( Node::Object()->simParameters->fixedAtomsOn ) {
+  if ( Node::Object()->simParameters->fixedAtomsOn && !Node::Object()->simParameters->fixedAtomsForceOutput) {
     for ( int i=0; i<numAtoms; ++i ) {
       if ( a[i].atomFixed ) d[i] = 0.;
     }
@@ -281,7 +281,7 @@ void CollectionMgr::submitForces(int seq, FullAtomList &a, int maxForceUsed, For
       d[i] += fptr[i];
     }
   }
-  if ( Node::Object()->simParameters->fixedAtomsOn ) {
+  if ( Node::Object()->simParameters->fixedAtomsOn && !Node::Object()->simParameters->fixedAtomsForceOutput) {
     for ( int i=0; i<numAtoms; ++i ) {
       if ( a[i].atomFixed ) d[i] = 0.;
     }

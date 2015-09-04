@@ -5,6 +5,19 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+//
+// Cuda static assert, copied from Facebook FFT sources. Remove once nvcc has c++11
+//
+template <bool>
+struct CudaStaticAssert;
+
+template <>
+struct CudaStaticAssert<true> {
+};
+
+#define cuda_static_assert(expr) \
+  (CudaStaticAssert<(expr) != 0>())
+
 void cudaDie(const char *msg, cudaError_t err=cudaSuccess);
 
 //
