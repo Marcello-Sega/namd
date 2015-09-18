@@ -3,10 +3,10 @@ CHARMARCH = multicore-linux64-iccstatic
 
 FLOATOPTS = -ip -no-vec
 
-CXX = icpc
-CXXOPTS = -i-static -O2 $(FLOATOPTS)
+CXX = icpc -std=c++11
+CXXOPTS = -static-intel -O2 $(FLOATOPTS)
 CXXNOALIASOPTS = -O2 -fno-alias $(FLOATOPTS)
 
 CC = icc
-COPTS = -i-static -O2 $(FLOATOPTS)
+COPTS = -static-intel -O2 $(FLOATOPTS)
 
