@@ -3,7 +3,7 @@ CHARMARCH = gni-crayxc-persistent-smp
 
 FLOATOPTS = -ip -no-vec
 
-CXX = CC -DNOHOSTNAME -DNO_GETPWUID
+CXX = CC -std=c++11 -DNOHOSTNAME -DNO_GETPWUID
 CXXOPTS = -O2 $(FLOATOPTS)
 CXXNOALIASOPTS = -O2 -fno-alias $(FLOATOPTS)
 
