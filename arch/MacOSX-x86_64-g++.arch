@@ -1,9 +1,2 @@
-NAMD_ARCH = MacOSX-x86_64
-CHARMARCH = multicore-darwin-x86_64
-
-CXX = g++ -arch x86_64 -fPIC -dynamic -fno-common -D_NO_MALLOC_H
-FLOATOPTS = -O3 -fomit-frame-pointer -msse3 -ffast-math
-CXXOPTS = $(FLOATOPTS)
-CC = gcc -arch x86_64 -fPIC -dynamic -fno-common
-COPTS = $(FLOATOPTS)
+include .rootdir/arch/MacOSX-x86_64-clang.arch
 
