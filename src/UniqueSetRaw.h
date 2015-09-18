@@ -371,7 +371,7 @@ template <class Elem> class UniqueSetRaw {
 
     void freeListClean(void) {
       EntryGlob<Elem> *tmp = globHead;
-      while(globHead = tmp) {
+      while( (globHead = tmp) ) {
         tmp = globHead->next();
         delete globHead; // delete's glob
       } 
