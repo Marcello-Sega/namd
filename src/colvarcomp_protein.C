@@ -97,7 +97,7 @@ colvar::alpha_angles::alpha_angles(std::string const &conf)
       cvm::log("The hBondCoeff specified will disable the hydrogen bond terms.\n");
     }
   }
-  
+
   if (cvm::debug())
     cvm::log("Done initializing alpha_angles object.\n");
 }

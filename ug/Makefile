@@ -29,6 +29,7 @@ namd_title.tex namd_version.tex ug.tex ug_accel.tex ug_avail.tex \
 ug_dynamics.tex ug_forcefield.tex ug_performance.tex ug_userdef.tex \
 ug_intro.tex ug_io.tex ug_macros.tex ug_runit.tex ug_sample.tex ug_start.tex \
 ug_xplor.tex ug_fenergy.tex ug_psfgen.tex psfgen_macros.tex ug_alchemy.tex \
+colvars-cv.tex ug_colvars.bib ug_colvars_macros.tex \
 ug_colvars.tex ug_analysis.tex ug_gbis.tex
 
 PDFFIGS = figures/fmaOn.pdf figures/pairlistdist.pdf \

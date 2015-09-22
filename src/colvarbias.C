@@ -6,7 +6,7 @@
 
 
 colvarbias::colvarbias(std::string const &conf, char const *key)
-  : colvarparse(), has_data(false)
+  : colvarparse(conf), bias_energy(0.), has_data(false)
 {
   cvm::log("Initializing a new \""+std::string(key)+"\" instance.\n");
 
@@ -97,6 +97,13 @@ void colvarbias::add_colvar(std::string const &cv_name)
     cvm::error("Error: cannot find a colvar named \""+
                cv_name+"\".\n");
   }
+}
+
+
+cvm::real colvarbias::update()
+{
+  has_data = true;
+  return 0.0;
 }
 
 

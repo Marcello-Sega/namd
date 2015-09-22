@@ -9,19 +9,27 @@
 #include <algorithm>
 
 
+/// Compare two cvcs using their names
+/// Used to sort CVC array in scripted coordinates
+bool compare(colvar::cvc *i, colvar::cvc *j) {
+  return i->name < j->name;
+}
+
 
 colvar::colvar(std::string const &conf)
+  : colvarparse(conf)
 {
-  size_t i, j;
+  size_t i;
   cvm::log("Initializing a new collective variable.\n");
 
   get_keyval(conf, "name", this->name,
               (std::string("colvar")+cvm::to_str(cvm::colvars.size()+1)));
 
   if (cvm::colvar_by_name(this->name) != NULL) {
-     cvm::error("Error: this colvar cannot have the same name, \""+this->name+
+    cvm::error("Error: this colvar cannot have the same name, \""+this->name+
                       "\", as another colvar.\n",
                INPUT_ERROR);
+    return;
   }
 
   // all tasks disabled by default
@@ -79,9 +87,12 @@ colvar::colvar(std::string const &conf)
           return;                                                       \
         }                                                               \
       }                                                                 \
-      if ( ! cvcs.back()->name.size())                                  \
-        cvcs.back()->name = std::string(def_config_key)+               \
-          (cvm::to_str(++def_count));                                  \
+      if ( ! cvcs.back()->name.size()){                                 \
+        std::ostringstream s;                                           \
+        s << def_config_key << std::setfill('0') << std::setw(4) << ++def_count;\
+        cvcs.back()->name = s.str();                                    \
+          /* pad cvc number for correct ordering when sorting by name */\
+      }                                                                 \
       if (cvm::debug())                                                 \
         cvm::log("Done initializing a \""+                             \
                   std::string(def_config_key)+                         \
@@ -151,6 +162,7 @@ colvar::colvar(std::string const &conf)
     cvm::error("Error: no valid components were provided "
                       "for this collective variable.\n",
               INPUT_ERROR);
+    return;
   }
 
   cvm::log("All components initialized.\n");
@@ -190,27 +202,21 @@ colvar::colvar(std::string const &conf)
       x.vector1d_value.resize(size);
     }
 
-    // Sort array of cvcs based on values of componentExp
-    std::vector<cvc *> temp_vec;
-    for (i = 1; i <= cvcs.size(); i++) {
-      for (j = 0; j < cvcs.size(); j++) {
-        if (cvcs[j]->sup_np == int(i)) {
-          temp_vec.push_back(cvcs[j]);
-          break;
-        }
+    // Sort array of cvcs based on their names
+    // Note: default CVC names are in input order for same type of CVC
+    std::sort(cvcs.begin(), cvcs.end(), compare);
+
+    if(cvcs.size() > 1) {
+      cvm::log("Sorted list of components for this scripted colvar:");
+      for (i = 0; i < cvcs.size(); i++) {
+        cvm::log(cvm::to_str(i+1) + " " + cvcs[i]->name);
       }
     }
-    if (temp_vec.size() != cvcs.size()) {
-      cvm::error("Could not find order numbers for all components "
-                  "in componentExp values.");
-      return;
-    }
-    cvcs = temp_vec;
 
     // Build ordered list of component values that will be
     // passed to the script
-    for (j = 0; j < cvcs.size(); j++) {
-      sorted_cvc_values.push_back(&(cvcs[j]->value()));
+    for (i = 0; i < cvcs.size(); i++) {
+      sorted_cvc_values.push_back(&(cvcs[i]->value()));
     }
 
     b_homogeneous = false;
@@ -232,7 +238,6 @@ colvar::colvar(std::string const &conf)
     x.type(cvc_value);
     x_reported.type(cvc_value);
   }
-
   // If using scripted biases, any colvar may receive bias forces
   // and will need its gradient
   if (cvm::scripted_forces()) {
@@ -319,6 +324,10 @@ colvar::colvar(std::string const &conf)
     }
   }
 
+  // at this point, the colvar's type is defined
+  f.type(value());
+  fb.type(value());
+
   get_keyval(conf, "width", width, 1.0);
   if (width <= 0.0) {
     cvm::error("Error: \"width\" must be positive.\n", INPUT_ERROR);
@@ -374,10 +383,10 @@ colvar::colvar(std::string const &conf)
   if (tasks[task_lower_wall] && tasks[task_upper_wall]) {
     if (lower_wall >= upper_wall) {
       cvm::error("Error: the upper wall, "+
-                        cvm::to_str(upper_wall)+
-                        ", is not higher than the lower wall, "+
-                        cvm::to_str(lower_wall)+".\n",
-                INPUT_ERROR);
+                 cvm::to_str(upper_wall)+
+                 ", is not higher than the lower wall, "+
+                 cvm::to_str(lower_wall)+".\n",
+                 INPUT_ERROR);
     }
 
     if (dist2(lower_wall, upper_wall) < 1.0E-12) {
@@ -391,15 +400,15 @@ colvar::colvar(std::string const &conf)
   get_keyval(conf, "expandBoundaries", expand_boundaries, false);
   if (expand_boundaries && periodic_boundaries()) {
     cvm::error("Error: trying to expand boundaries that already "
-                      "cover a whole period of a periodic colvar.\n",
-              INPUT_ERROR);
+               "cover a whole period of a periodic colvar.\n",
+               INPUT_ERROR);
   }
   if (expand_boundaries && hard_lower_boundary && hard_upper_boundary) {
     cvm::error("Error: inconsistent configuration "
-                      "(trying to expand boundaries with both "
-                      "hardLowerBoundary and hardUpperBoundary enabled).\n",
-              INPUT_ERROR);
-}
+               "(trying to expand boundaries with both "
+               "hardLowerBoundary and hardUpperBoundary enabled).\n",
+               INPUT_ERROR);
+  }
 
   {
     bool b_extended_lagrangian;
@@ -722,11 +731,7 @@ int colvar::enable(colvar::task const &t)
   case task_langevin:
   case task_output_energy:
   case task_scripted:
-    break;
-
   case task_gradients:
-    f.type(value());
-    fb.type(value());
     break;
 
   case task_collect_gradients:
@@ -843,7 +848,23 @@ void colvar::calc()
   // prepare atom groups for calculation
   if (cvm::debug())
     cvm::log("Collecting data from atom groups.\n");
+
+  // Update the enabled/disabled status of cvcs if necessary
+  if (cvc_flags.size()) {
+    bool any = false;
+    for (i = 0; i < cvcs.size(); i++) {
+      cvcs[i]->b_enabled = cvc_flags[i];
+      any = any || cvc_flags[i];
+    }
+    if (!any) {
+      cvm::error("ERROR: All CVCs are disabled for colvar " + this->name +"\n");
+      return;
+    }
+    cvc_flags.resize(0);
+  }
+
   for (i = 0; i < cvcs.size(); i++) {
+    if (!cvcs[i]->b_enabled) continue;
     for (ig = 0; ig < cvcs[i]->atom_groups.size(); ig++) {
       cvm::atom_group &atoms = *(cvcs[i]->atom_groups[ig]);
       atoms.reset_atoms_data();
@@ -854,6 +875,7 @@ void colvar::calc()
       // each atom group will take care of its own ref_pos_group, if defined
     }
   }
+
 ////  Don't try to get atom velocities, as no back-end currently implements it
 //   if (tasks[task_output_velocity] && !tasks[task_fdiff_velocity]) {
 //     for (i = 0; i < cvcs.size(); i++) {
@@ -862,6 +884,7 @@ void colvar::calc()
 //       }
 //     }
 //   }
+
   if (tasks[task_system_force]) {
     for (i = 0; i < cvcs.size(); i++) {
       for (ig = 0; ig < cvcs[i]->atom_groups.size(); ig++) {
@@ -878,6 +901,7 @@ void colvar::calc()
 
   // First, update component values
   for (i = 0; i < cvcs.size(); i++) {
+    if (!cvcs[i]->b_enabled) continue;
     cvm::increase_depth();
     (cvcs[i])->calc_value();
     cvm::decrease_depth();
@@ -903,6 +927,7 @@ void colvar::calc()
   } else if (x.type() == colvarvalue::type_scalar) {
     // polynomial combination allowed
     for (i = 0; i < cvcs.size(); i++) {
+      if (!cvcs[i]->b_enabled) continue;
       x += (cvcs[i])->sup_coeff *
       ( ((cvcs[i])->sup_np != 1) ?
         std::pow((cvcs[i])->value().real_value, (cvcs[i])->sup_np) :
@@ -911,6 +936,7 @@ void colvar::calc()
   } else {
     // only linear combination allowed
     for (i = 0; i < cvcs.size(); i++) {
+      if (!cvcs[i]->b_enabled) continue;
       x += (cvcs[i])->sup_coeff * (cvcs[i])->value();
     }
   }
@@ -926,17 +952,15 @@ void colvar::calc()
 
     for (i = 0; i < cvcs.size(); i++) {
       // calculate the gradients of each component
+      if (!cvcs[i]->b_enabled) continue;
       cvm::increase_depth();
-
       (cvcs[i])->calc_gradients();
-
       // if requested, propagate (via chain rule) the gradients above
       // to the atoms used to define the roto-translation
       for (ig = 0; ig < cvcs[i]->atom_groups.size(); ig++) {
         if (cvcs[i]->atom_groups[ig]->b_fit_gradients)
           cvcs[i]->atom_groups[ig]->calc_fit_gradients();
       }
-
       cvm::decrease_depth();
     }
 
@@ -956,6 +980,7 @@ void colvar::calc()
         atomic_gradients[a].reset();
       }
       for (i = 0; i < cvcs.size(); i++) {
+        if (!cvcs[i]->b_enabled) continue;
         // Coefficient: d(a * x^n) = a * n * x^(n-1) * dx
         cvm::real coeff = (cvcs[i])->sup_coeff * cvm::real((cvcs[i])->sup_np) *
           std::pow((cvcs[i])->value().real_value, (cvcs[i])->sup_np-1);
@@ -1081,59 +1106,25 @@ cvm::real colvar::update()
   f += fb;
 
 
-  if (tasks[task_lower_wall] || tasks[task_upper_wall]) {
-
-    // wall force
-    colvarvalue fw(value());
-    fw.reset();
-
-    if (cvm::debug())
-      cvm::log("Calculating wall forces for colvar \""+this->name+"\".\n");
-
-    // if the two walls are applied concurrently, decide which is the
-    // closer one (on a periodic colvar, both walls may be applicable
-    // at the same time)
-    if ( (!tasks[task_upper_wall]) ||
-         (this->dist2(x, lower_wall) < this->dist2(x, upper_wall)) ) {
-
-      cvm::real const grad = this->dist2_lgrad(x, lower_wall);
-      if (grad < 0.0) {
-        fw = -0.5 * lower_wall_k * grad;
-        if (cvm::debug())
-          cvm::log("Applying a lower wall force("+
-                    cvm::to_str(fw)+") to \""+this->name+"\".\n");
-        f += fw;
-
-      }
-
-    } else {
-
-      cvm::real const grad = this->dist2_lgrad(x, upper_wall);
-      if (grad > 0.0) {
-        fw = -0.5 * upper_wall_k * grad;
-        if (cvm::debug())
-          cvm::log("Applying an upper wall force("+
-                    cvm::to_str(fw)+") to \""+this->name+"\".\n");
-        f += fw;
-      }
-    }
-  }
-
   if (tasks[task_Jacobian_force]) {
     size_t i;
-    cvm::increase_depth();
     for (i = 0; i < cvcs.size(); i++) {
+      if (!cvcs[i]->b_enabled) continue;
+      cvm::increase_depth();
       (cvcs[i])->calc_Jacobian_derivative();
+      cvm::decrease_depth();
     }
-    cvm::decrease_depth();
 
+    size_t ncvc = 0;
     fj.reset();
     for (i = 0; i < cvcs.size(); i++) {
+      if (!cvcs[i]->b_enabled) continue;
       // linear combination is assumed
-      fj += 1.0 / ( cvm::real(cvcs.size()) *  cvm::real((cvcs[i])->sup_coeff) ) *
+      fj += 1.0 / cvm::real((cvcs[i])->sup_coeff) *
         (cvcs[i])->Jacobian_derivative();
+      ncvc++;
     }
-    fj *= cvm::boltzmann() * cvm::temperature();
+    fj *= (1.0/cvm::real(ncvc)) * cvm::boltzmann() * cvm::temperature();
 
     // the instantaneous Jacobian force was not included in the reported system force;
     // instead, it is subtracted from the applied force (silent Jacobian correction)
@@ -1149,10 +1140,11 @@ cvm::real colvar::update()
 
     // the total force is applied to the fictitious mass, while the
     // atoms only feel the harmonic force
-    // fr: extended coordinate force (without harmonic spring), for output in trajectory
+    // fr: bias force on extended coordinate (without harmonic spring), for output in trajectory
     // f_ext: total force on extended coordinate (including harmonic spring)
     // f: - initially, external biasing force
-    //    -  after this code block, colvar force to be applied to atomic coordinates, ie. spring force
+    //    - after this code block, colvar force to be applied to atomic coordinates, ie. spring force
+    //      (note: wall potential is added to f after this block)
     fr    = f;
     f_ext = f + (-0.5 * ext_force_k) * this->dist2_lgrad(xr, x);
     f     =     (-0.5 * ext_force_k) * this->dist2_rgrad(xr, x);
@@ -1171,6 +1163,44 @@ cvm::real colvar::update()
     xr  += dt * vr;
     xr.apply_constraints();
     if (this->b_periodic) this->wrap(xr);
+  }
+
+
+  // Adding wall potential to "true" colvar force, whether or not an extended coordinate is in use
+  if (tasks[task_lower_wall] || tasks[task_upper_wall]) {
+
+    // Wall force
+    colvarvalue fw(x);
+    fw.reset();
+
+    if (cvm::debug())
+      cvm::log("Calculating wall forces for colvar \""+this->name+"\".\n");
+
+    // For a periodic colvar, both walls may be applicable at the same time
+    // in which case we pick the closer one
+    if ( (!tasks[task_upper_wall]) ||
+         (this->dist2(x, lower_wall) < this->dist2(x, upper_wall)) ) {
+
+      cvm::real const grad = this->dist2_lgrad(x, lower_wall);
+      if (grad < 0.0) {
+        fw = -0.5 * lower_wall_k * grad;
+        f += fw;
+        if (cvm::debug())
+          cvm::log("Applying a lower wall force("+
+                    cvm::to_str(fw)+") to \""+this->name+"\".\n");
+      }
+
+    } else {
+
+      cvm::real const grad = this->dist2_lgrad(x, upper_wall);
+      if (grad > 0.0) {
+        fw = -0.5 * upper_wall_k * grad;
+        f += fw;
+        if (cvm::debug())
+          cvm::log("Applying an upper wall force("+
+                    cvm::to_str(fw)+") to \""+this->name+"\".\n");
+      }
+    }
   }
 
 
@@ -1194,6 +1224,7 @@ void colvar::communicate_forces()
   if (tasks[task_scripted]) {
     std::vector<cvm::matrix2d<cvm::real> > func_grads;
     for (i = 0; i < cvcs.size(); i++) {
+      if (!cvcs[i]->b_enabled) continue;
       func_grads.push_back(cvm::matrix2d<cvm::real> (x.size(),
                                                      cvcs[i]->value().size()));
     }
@@ -1208,17 +1239,20 @@ void colvar::communicate_forces()
       return;
     }
 
+    int grad_index = 0; // index in the scripted gradients, to account for some components being disabled
     for (i = 0; i < cvcs.size(); i++) {
+      if (!cvcs[i]->b_enabled) continue;
       cvm::increase_depth();
       // cvc force is colvar force times colvar/cvc Jacobian
       // (vector-matrix product)
-      (cvcs[i])->apply_force(colvarvalue(f.as_vector() * func_grads[i],
+      (cvcs[i])->apply_force(colvarvalue(f.as_vector() * func_grads[grad_index++],
                              cvcs[i]->value().type()));
       cvm::decrease_depth();
     }
   } else if (x.type() == colvarvalue::type_scalar) {
 
     for (i = 0; i < cvcs.size(); i++) {
+      if (!cvcs[i]->b_enabled) continue;
       cvm::increase_depth();
       (cvcs[i])->apply_force(f * (cvcs[i])->sup_coeff *
                               cvm::real((cvcs[i])->sup_np) *
@@ -1230,6 +1264,7 @@ void colvar::communicate_forces()
   } else {
 
     for (i = 0; i < cvcs.size(); i++) {
+      if (!cvcs[i]->b_enabled) continue;
       cvm::increase_depth();
       (cvcs[i])->apply_force(f * (cvcs[i])->sup_coeff);
       cvm::decrease_depth();
@@ -1240,6 +1275,18 @@ void colvar::communicate_forces()
     cvm::log("Done communicating forces from colvar \""+this->name+"\".\n");
 }
 
+
+int colvar::set_cvc_flags(std::vector<bool> const &flags) {
+
+  if (flags.size() != cvcs.size()) {
+    cvm::error("ERROR: Wrong number of CVC flags provided.");
+    return COLVARS_ERROR;
+  }
+  // We cannot enable or disable cvcs in the middle of a timestep or colvar evaluation sequence
+  // so we store the flags that will be enforced at the next call to calc()
+  cvc_flags = flags;
+  return COLVARS_OK;
+}
 
 
 // ******************** METRIC FUNCTIONS ********************
@@ -1615,7 +1662,7 @@ int colvar::write_output_files()
 
 // ******************** ANALYSIS FUNCTIONS ********************
 
-void colvar::analyse()
+void colvar::analyze()
 {
   if (tasks[task_runave]) {
     calc_runave();

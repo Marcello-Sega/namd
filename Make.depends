@@ -4155,6 +4155,19 @@ obj/colvarbias_alb.o: \
 	src/colvarbias_restraint.h \
 	src/colvarbias.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_alb.o $(COPTC) src/colvarbias_alb.C
+obj/colvarbias_histogram.o: \
+	src/colvarbias_histogram.C \
+	src/colvarmodule.h \
+	src/fstream_namd.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvar.h \
+	src/colvarparse.h \
+	src/colvarbias_histogram.h \
+	src/colvarbias.h \
+	src/colvargrid.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_histogram.o $(COPTC) src/colvarbias_histogram.C
 obj/colvarbias_meta.o: \
 	src/colvarbias_meta.C \
 	src/colvar.h \
@@ -4275,11 +4288,12 @@ obj/colvarmodule.o: \
 	src/colvarparse.h \
 	src/colvar.h \
 	src/colvarbias.h \
+	src/colvarbias_abf.h \
+	src/colvargrid.h \
 	src/colvarbias_alb.h \
 	src/colvarbias_restraint.h \
+	src/colvarbias_histogram.h \
 	src/colvarbias_meta.h \
-	src/colvargrid.h \
-	src/colvarbias_abf.h \
 	src/colvarscript.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarmodule.o $(COPTC) src/colvarmodule.C
 obj/colvarparse.o: \

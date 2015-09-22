@@ -8,9 +8,10 @@
 #include "colvarproxy.h"
 #include "colvar.h"
 #include "colvarbias.h"
-#include "colvarbias_alb.h"
-#include "colvarbias_meta.h"
 #include "colvarbias_abf.h"
+#include "colvarbias_alb.h"
+#include "colvarbias_histogram.h"
+#include "colvarbias_meta.h"
 #include "colvarbias_restraint.h"
 #include "colvarscript.h"
 
@@ -41,7 +42,10 @@ colvarmodule::colvarmodule(colvarproxy *proxy_in)
   colvarmodule::use_scripted_forces = false;
 
   colvarmodule::b_analysis = false;
+
   colvarmodule::debug_gradients_step_size = 1.0e-07;
+
+  colvarmodule::rotation::monitor_crossings = false;
   colvarmodule::rotation::crossing_threshold = 1.0e-02;
 
   colvarmodule::cv_traj_freq = 100;
@@ -52,7 +56,7 @@ colvarmodule::colvarmodule(colvarproxy *proxy_in)
 }
 
 
-int colvarmodule::config_file(char const  *config_filename)
+int colvarmodule::read_config_file(char const  *config_filename)
 {
   cvm::log(cvm::line_marker);
   cvm::log("Reading new configuration from file \""+
@@ -75,11 +79,11 @@ int colvarmodule::config_file(char const  *config_filename)
   }
   config_s.close();
 
-  return config(conf);
+  return parse_config(conf);
 }
 
 
-int colvarmodule::config_string(std::string const &config_str)
+int colvarmodule::read_config_string(std::string const &config_str)
 {
   cvm::log(cvm::line_marker);
   cvm::log("Reading new configuration:\n");
@@ -91,10 +95,10 @@ int colvarmodule::config_string(std::string const &config_str)
   while (colvarparse::getline_nocomments(config_s, line)) {
     conf.append(line+"\n");
   }
-  return config(conf);
+  return parse_config(conf);
 }
 
-int colvarmodule::config(std::string &conf)
+int colvarmodule::parse_config(std::string &conf)
 {
   int error_code = 0;
 
@@ -156,6 +160,10 @@ int colvarmodule::parse_global_params(std::string const &conf)
                     debug_gradients_step_size,
                     colvarparse::parse_silent);
 
+  parse->get_keyval(conf, "monitorEigenvalueCrossing",
+                    colvarmodule::rotation::monitor_crossings,
+                    colvarmodule::rotation::monitor_crossings,
+                    colvarparse::parse_silent);
   parse->get_keyval(conf, "eigenvalueCrossingThreshold",
                     colvarmodule::rotation::crossing_threshold,
                     colvarmodule::rotation::crossing_threshold,
@@ -516,13 +524,13 @@ int colvarmodule::calc() {
       cvm::log("Perform runtime analyses.\n");
     cvm::increase_depth();
     for (cvi = colvars.begin(); cvi != colvars.end(); cvi++) {
-      (*cvi)->analyse();
+      (*cvi)->analyze();
       if (cvm::get_error()) {
         return COLVARS_ERROR;
       }
     }
     for (bi = biases.begin(); bi != biases.end(); bi++) {
-      (*bi)->analyse();
+      (*bi)->analyze();
       if (cvm::get_error()) {
         return COLVARS_ERROR;
       }
@@ -591,7 +599,7 @@ int colvarmodule::calc() {
       write_traj(cv_traj_os);
     }
 
-    if (restart_out_freq) {
+    if (restart_out_freq && cv_traj_os.is_open()) {
       // flush the trajectory file if we are at the restart frequency
       if ( (cvm::step_relative() > 0) &&
            ((cvm::step_absolute() % restart_out_freq) == 0) ) {
@@ -620,7 +628,7 @@ int colvarmodule::analyze()
        cvi != colvars.end();
        cvi++) {
     cvm::increase_depth();
-    (*cvi)->analyse();
+    (*cvi)->analyze();
     cvm::decrease_depth();
   }
 
@@ -629,7 +637,7 @@ int colvarmodule::analyze()
        bi != biases.end();
        bi++) {
     cvm::increase_depth();
-    (*bi)->analyse();
+    (*bi)->analyze();
     cvm::decrease_depth();
   }
 
@@ -676,8 +684,10 @@ int colvarmodule::reset()
   index_groups.clear();
   index_group_names.clear();
 
-  // Do not close file here, as we might not be done with it yet.
-  cv_traj_os.flush();
+  if (cv_traj_os.is_open()) {
+    // Do not close file here, as we might not be done with it yet.
+    cv_traj_os.flush();
+  }
 
   return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
 }
@@ -708,13 +718,15 @@ int colvarmodule::setup_input()
       cvm::log(cvm::line_marker);
     }
   }
-  return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
 
+  return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
 }
 
 
 int colvarmodule::setup_output()
 {
+  int error_code = 0;
+
   // output state file (restart)
   restart_out_name = proxy->restart_output_prefix().size() ?
     std::string(proxy->restart_output_prefix()+".colvars.state") :
@@ -739,7 +751,17 @@ int colvarmodule::setup_output()
      std::string(""));
 
   if (cv_traj_freq && cv_traj_name.size()) {
-    open_traj_file(cv_traj_name);
+    error_code |= open_traj_file(cv_traj_name);
+  }
+
+  for (std::vector<colvarbias *>::iterator bi = biases.begin();
+       bi != biases.end();
+       bi++) {
+    error_code |= (*bi)->setup_output();
+  }
+
+  if (error_code != COLVARS_OK || cvm::get_error()) {
+    set_error_bits(FILE_ERROR);
   }
 
   return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
@@ -760,6 +782,7 @@ std::istream & colvarmodule::read_restart(std::istream &is)
       }
     }
     is.clear();
+    parse->clear_keyword_registry();
   }
 
   // colvars restart
@@ -819,16 +842,27 @@ int colvarmodule::write_output_files()
   }
   cvm::decrease_depth();
 
-  // do not close to avoid problems with multiple NAMD runs
-  cv_traj_os.flush();
+  cvm::increase_depth();
+  for (std::vector<colvarbias *>::iterator bi = biases.begin();
+       bi != biases.end();
+       bi++) {
+    (*bi)->write_output_files();
+  }
+  cvm::decrease_depth();
+
+  if (cv_traj_os.is_open()) {
+    // do not close to avoid problems with multiple NAMD runs
+    cv_traj_os.flush();
+  }
+
   return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
 }
 
 
 
 int colvarmodule::read_traj(char const *traj_filename,
-                            size_t      traj_read_begin,
-                            size_t      traj_read_end)
+                            long        traj_read_begin,
+                            long        traj_read_end)
 {
   cvm::log("Opening trajectory file \""+
            std::string(traj_filename)+"\".\n");
@@ -978,8 +1012,9 @@ std::ostream & colvarmodule::write_traj_label(std::ostream &os)
     (*bi)->write_traj_label(os);
   }
   os << "\n";
-  if (cvm::debug())
+  if (cvm::debug()) {
     os.flush();
+  }
   cvm::decrease_depth();
   return os;
 }
@@ -1003,8 +1038,9 @@ std::ostream & colvarmodule::write_traj(std::ostream &os)
     (*bi)->write_traj(os);
   }
   os << "\n";
-  if (cvm::debug())
+  if (cvm::debug()) {
     os.flush();
+  }
   cvm::decrease_depth();
   return os;
 }
@@ -1190,13 +1226,12 @@ colvarproxy              *colvarmodule::proxy = NULL;
 // static runtime data
 cvm::real colvarmodule::debug_gradients_step_size = 1.0e-03;
 int       colvarmodule::errorCode = 0;
-size_t    colvarmodule::it = 0;
-size_t    colvarmodule::it_restart = 0;
+long      colvarmodule::it = 0;
+long      colvarmodule::it_restart = 0;
 size_t    colvarmodule::restart_out_freq = 0;
 size_t    colvarmodule::cv_traj_freq = 0;
 size_t    colvarmodule::depth = 0;
 bool      colvarmodule::b_analysis = false;
-cvm::real colvarmodule::rotation::crossing_threshold = 1.0E-04;
 std::list<std::string> colvarmodule::index_group_names;
 std::list<std::vector<int> > colvarmodule::index_groups;
 bool     colvarmodule::use_scripted_forces = false;

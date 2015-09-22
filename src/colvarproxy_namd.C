@@ -34,10 +34,8 @@ colvarproxy_namd::colvarproxy_namd()
   if (cvm::debug())
     iout << "Info: initializing the colvars proxy object.\n" << endi;
 
-  // find the configuration file
+  // find the configuration file, if provided
   StringList *config = Node::Object()->configList->find("colvarsConfig");
-  if (!config)
-    NAMD_die("No configuration file for collective variables: exiting.\n");
 
   // find the input state file
   StringList *input_restart = Node::Object()->configList->find("colvarsInput");
@@ -98,7 +96,9 @@ colvarproxy_namd::colvarproxy_namd()
   cvm::log("Using NAMD interface, version "+
            cvm::to_str(COLVARPROXY_VERSION)+".\n");
 
-  colvars->config_file(config->data);
+  if (config) {
+    colvars->read_config_file(config->data);
+  }
   colvars->setup_input();
   colvars->setup_output();
 
@@ -366,7 +366,8 @@ int colvarproxy_namd::run_colvar_gradient_callback(std::string const &name,
   Tcl_ListObjGetElements(interp, Tcl_GetObjResult(interp),
                          &n, &list);
   if (n != int(gradient.size())) {
-    cvm::error("Error parsing list of gradient values from script");
+    cvm::error("Error parsing list of gradient values from script: found "
+        + cvm::to_str(n) + " values instead of " + cvm::to_str(gradient.size()));
     return COLVARS_ERROR;
   }
   for (i = 0; i < gradient.size(); i++) {
