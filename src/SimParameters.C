@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2015/09/04 22:26:30 $
- * $Revision: 1.1453 $
+ * $Date: 2015/09/23 12:57:58 $
+ * $Revision: 1.1454 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1628,7 +1628,7 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
     //// Collective variables
     opts.optionalB("main", "colvars", "Is the colvars module enabled?",
       &colvarsOn, FALSE);
-    opts.require("colvars", "colvarsConfig",
+    opts.optional("colvars", "colvarsConfig",
       "configuration for the collective variables", PARSE_STRING);
     opts.optional("colvars", "colvarsInput",
       "input restart file for the collective variables", PARSE_STRING);
