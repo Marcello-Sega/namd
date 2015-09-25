@@ -127,16 +127,14 @@ static void namdInitPapiCounters(){
 		int retval = PAPI_library_init(PAPI_VER_CURRENT);
 		if(retval != PAPI_VER_CURRENT) {
 			if(CkMyPe()==0){
-				CkPrintf("ERROR: PAPI library is not compatitible!");
-				CkExit();
+				NAMD_die("PAPI library is not compatitible!");
 			}
 		}
 	#if CMK_SMP
 		//now only consider systems that are compatible with POSIX
 		if(PAPI_thread_init(pthread_self)!=PAPI_OK) {
 			if(CkMyPe()==0){
-				CkPrintf("ERROR: multi-thread mode in PAPI could not be initialized!");
-				CkExit();
+				NAMD_die("Multi-thread mode in PAPI could not be initialized!");
 			}
 		}
 	#endif
@@ -628,7 +626,7 @@ void Node::startup() {
 			  << " PEs with " << simParameters->simulatedNodeSize << " PEs per node\n" << endi;
 		  outputPatchComputeMaps("init_mapping", 0);
 		  iout << iINFO << "Simulating initial mapping is done, now NAMD exits\n" << endi;
-		  CkExit();
+		  BackEnd::exit();
 	  }
 
       registerUserEventsForAllComputeObjs();

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2013/11/20 21:50:15 $
- * $Revision: 1.125 $
+ * $Date: 2015/09/25 20:07:01 $
+ * $Revision: 1.126 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -120,9 +120,7 @@ LdbCoordinator::LdbCoordinator()
   if (CkpvAccess(LdbCoordinator_instance) == NULL) {
     CkpvAccess(LdbCoordinator_instance) = this;
   } else {
-    iout << iFILE << iERROR << iPE 
-	 << "LdbCoordinator instanced twice on same node!" << endi;
-    CkExit();
+    NAMD_bug("LdbCoordinator instanced twice on same node!");
   }
   
 #if 0
@@ -338,9 +336,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	elemID.id[1] = elemID.id[2] = elemID.id[3] = -2;
 
 	if (patch_count >= nLocalPatches) {
-	  iout << iFILE << iERROR << iPE 
-	       << "LdbCoordinator found too many local patches!" << endi;
-	  CkExit();
+	  NAMD_bug("LdbCoordinator found too many local patches!");
 	}
         HomePatch *p = patchMap->homePatch(i);
         p->ldObjHandle = 

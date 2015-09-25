@@ -39,9 +39,7 @@ PatchMgr::PatchMgr()
     if (CkpvAccess(PatchMgr_instance) == NULL) {
 	CkpvAccess(PatchMgr_instance) = this;
     } else {
-	iout << iFILE << iERROR << iPE 
-	  << "PatchMgr instanced twice on same processor!" << endi;
-	CkExit();
+	NAMD_bug("PatchMgr instanced twice on same processor!");
     }
 
     // Get PatchMap singleton started

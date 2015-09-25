@@ -136,9 +136,7 @@ void ComputeMgr::updateComputes(int ep, CkGroupID chareID)
 
     if (CkMyPe())
     {
-        iout << iPE << iERRORF << "updateComputes signaled on wrong Pe!\n" << endi;
-        CkExit();
-        return;
+        NAMD_bug("updateComputes signaled on wrong Pe!");
     }
 
     CkStartQD(CkIndex_ComputeMgr::updateComputes2((CkQdMsg*)0),&thishandle);

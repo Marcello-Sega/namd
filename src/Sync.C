@@ -44,9 +44,7 @@ Sync::Sync(): INCREASE(600), step(0), counter(0), homeReady(0)
     if (CkpvAccess(Sync_instance) == NULL) {
         CkpvAccess(Sync_instance) = this;
     } else {
-	iout << iFILE << iERROR << iPE
-	  << "Sync instanced twice on same processor!" << endi;
-	CkExit();
+	NAMD_bug("Sync instanced twice on same processor!");
     }
     capacity = INCREASE;
     clist = new _clist[capacity];

@@ -29,6 +29,7 @@
 
 #include "CompressPsf.h"
 #include "PluginIOMgr.h"
+#include "BackEnd.h"
 
 NamdState::NamdState()
 {
@@ -318,7 +319,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
       double fileReadTime = CmiWallTimer();
       compress_molecule_info(molecule, molInfoFilename->data, parameters, simParameters, configList);
       iout << "Finished compressing molecule information, which takes " << CmiWallTimer()-fileReadTime <<"(s)\n"<<endi;
-      CkExit();
+      BackEnd::exit();
   }
 
   //If using plugin-based IO, the PDB object is already created!
