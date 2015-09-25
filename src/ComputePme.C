@@ -86,7 +86,7 @@ extern __thread DeviceCUDA *deviceCUDA;
 #define X_PERSIST 1
 #endif
 
-#if defined(NAMD_CUDA) and defined(MEM_OPT_VERSION)
+#if defined(NAMD_CUDA) && defined(MEM_OPT_VERSION)
 #define USE_NODE_PAR_RECEIVE    1
 #endif
 
