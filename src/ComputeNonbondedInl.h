@@ -29,6 +29,8 @@
 #include "Random.h"
 // END LA
 
+#include <algorithm>
+
 inline int pairlist_from_pairlist(BigReal cutoff2,
 				  BigReal p_i_x, BigReal p_i_y, BigReal p_i_z,
 				  const CompAtom *p_j,
