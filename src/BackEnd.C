@@ -41,6 +41,10 @@
 #include "ParallelIOMgr.decl.h"
 #endif
 
+#ifdef NAMD_TCL
+#include <tcl.h>
+#endif
+
 extern void _initCharm(int, char**);
 
 float cpuTime_start;
@@ -250,6 +254,9 @@ void BackEnd::exit(void) {
   CmiPrintf("====================================================\n\n"
 	    "WallClock: %f  CPUTime: %f  Memory: %f MB\n",
 	    wallTime, cpuTime, memusage_MB());
+#ifdef NAMD_TCL
+  Tcl_Finalize();
+#endif
   CkExit();
 }
 
