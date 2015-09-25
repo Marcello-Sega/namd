@@ -15,6 +15,10 @@
   do { int dev; cudaGetDevice(&dev); traceUserBracketEvent( \
        CUDA_EVENT_ID_BASE + 2 * dev + 1, START, END); } while (0)
 
+#ifdef WIN32
+#define __thread __declspec(thread)
+#endif
+
 //
 // Class that handles PE <=> CUDA device mapping
 //
