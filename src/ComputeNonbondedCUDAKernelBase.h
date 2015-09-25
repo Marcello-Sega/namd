@@ -497,16 +497,20 @@ NAME(dev_nonbonded)
 		   iforce_slow.x += fx_slow;
 		   iforce_slow.y += fy_slow;
 		   iforce_slow.z += fz_slow;
+		   )
 #ifdef REG_JFORCE
+	      SLOW(
 		   jforce_slow.x -= fx_slow;
 		   jforce_slow.y -= fy_slow;
 		   jforce_slow.z -= fz_slow;
+		   )
 #else
+	      SLOW(
 		   sh_jforce_slow[j].x -= fx_slow;
 		   sh_jforce_slow[j].y -= fy_slow;
 		   sh_jforce_slow[j].z -= fz_slow;
+		   )
 #endif
-		   );
 	    }
 	    } // cutoff
 	} // if (j < nloopj...)
