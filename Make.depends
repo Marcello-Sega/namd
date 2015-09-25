@@ -5185,7 +5185,8 @@ obj/NamdState.o: \
 	src/Debug.h \
 	src/CompressPsf.h \
 	src/PluginIOMgr.h \
-	plugins/include/libmolfile_plugin.h
+	plugins/include/libmolfile_plugin.h \
+	src/BackEnd.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdState.o $(COPTC) src/NamdState.C
 obj/NamdOneTools.o: \
 	src/NamdOneTools.C \
