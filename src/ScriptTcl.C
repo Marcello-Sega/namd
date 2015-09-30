@@ -1727,6 +1727,7 @@ int ScriptTcl::eval(const char *script, const char **resultPtr) {
   return code;
 #else
   NAMD_bug("ScriptTcl::eval called without Tcl.");
+  return -1;  // appease compiler
 #endif
 }
 
