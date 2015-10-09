@@ -76,7 +76,7 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
   return 0;
 }
 
-int topo_mol_write_namdbin(topo_mol *mol, FILE *file, void *v, 
+int topo_mol_write_namdbin(topo_mol *mol, FILE *file, FILE *velfile, void *v, 
                                 void (*print_msg)(void *, const char *)) {
 
   char static_assert_int_is_32_bits[sizeof(int) == 4 ? 1 : -1];
@@ -106,6 +106,12 @@ int topo_mol_write_namdbin(topo_mol *mol, FILE *file, void *v,
   if ( fwrite(&numatoms, sizeof(int), 1, file) != 1 ) {
     print_msg(v, "error writing namdbin file");
     return -2;
+  }
+  if ( velfile ) {
+    if ( fwrite(&numatoms, sizeof(int), 1, velfile) != 1 ) {
+      print_msg(v, "error writing velnamdbin file");
+      return -4;
+    }
   }
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
@@ -137,6 +143,15 @@ int topo_mol_write_namdbin(topo_mol *mol, FILE *file, void *v,
         if ( fwrite(xyz, sizeof(double), 3, file) != 3 ) {
           print_msg(v, "error writing namdbin file");
           return -3;
+        }
+        if ( velfile ) {
+          xyz[0] = atom->vx;
+          xyz[1] = atom->vy;
+          xyz[2] = atom->vz;
+          if ( fwrite(xyz, sizeof(double), 3, velfile) != 3 ) {
+            print_msg(v, "error writing velnamdbin file");
+            return -5;
+          }
         }
       }
     }

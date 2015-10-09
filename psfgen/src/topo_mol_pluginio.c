@@ -619,6 +619,9 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
           atomtmp->z = 0;
           atomtmp->xyz_state = TOPO_MOL_XYZ_VOID;
         }
+        atomtmp->vx = 0;
+        atomtmp->vy = 0;
+        atomtmp->vz = 0;
         atomtmp->partition = 0;
         atomtmp->copy = 0;
         atomtmp->atomid = 0;

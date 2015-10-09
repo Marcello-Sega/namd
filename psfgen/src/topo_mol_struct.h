@@ -70,6 +70,7 @@ typedef struct topo_mol_atom_t {
   double mass;
   double charge;
   double x,y,z;
+  double vx,vy,vz;
   int xyz_state;
   int partition;
   int atomid;

@@ -154,17 +154,23 @@ int topo_defs_residue(topo_defs *defs, const char *rname, int patch) {
   defs->buildres_no_errors = 0;
   if ( NAMETOOLONG(rname) ) return -2;
   if ( ( i = hasharray_index(defs->residue_hash,rname) ) != HASHARRAY_FAIL ) {
-    sprintf(errmsg,"duplicate residue key %s will be ignored",rname);
-    topo_defs_log_error(defs,errmsg);
-    /* newitem = &defs->residue_array[i]; */
-    defs->buildres_no_errors = 1;
-    return 0;
-  } else {
-    i = hasharray_insert(defs->residue_hash,rname);
-    if ( i == HASHARRAY_FAIL ) return -4;
-    newitem = &defs->residue_array[i];
-    strcpy(newitem->name,rname);
+    char *oldname = defs->residue_array[i].name;
+    if ( strcmp(rname,oldname) ) {
+      sprintf(errmsg,"replacing residue alias %s for %s with new residue %s",rname,oldname,rname);
+      topo_defs_log_error(defs,errmsg);
+      hasharray_delete(defs->residue_hash,rname);
+    } else {
+      sprintf(errmsg,"duplicate residue key %s will be ignored",rname);
+      topo_defs_log_error(defs,errmsg);
+      /* newitem = &defs->residue_array[i]; */
+      defs->buildres_no_errors = 1;
+      return 0;
+    }
   }
+  i = hasharray_insert(defs->residue_hash,rname);
+  if ( i == HASHARRAY_FAIL ) return -4;
+  newitem = &defs->residue_array[i];
+  strcpy(newitem->name,rname);
   newitem->patch = patch;
   newitem->atoms = 0;
   newitem->bonds = 0;
@@ -517,8 +523,8 @@ int topo_defs_add_topofile(topo_defs *defs, const char *filename) {
   char errmsg[64 + NAMEMAXLEN];
   if ( ! defs ) return -1;
   if ( strlen(filename)>=256 ) return -2;
-  if ( ( i = hasharray_index(defs->type_hash,filename) ) != HASHARRAY_FAIL ) {
-    sprintf(errmsg,"duplicate type key %s",filename);
+  if ( ( i = hasharray_index(defs->topo_hash,filename) ) != HASHARRAY_FAIL ) {
+    sprintf(errmsg,"duplicate topology file %s",filename);
     topo_defs_log_error(defs,errmsg);
     newitem = &defs->topo_array[i];
   } else {

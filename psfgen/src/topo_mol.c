@@ -340,6 +340,9 @@ static int topo_mol_add_atom(topo_mol *mol, topo_mol_atom_t **atoms,
     atomtmp->x = 0;
     atomtmp->y = 0;
     atomtmp->z = 0;
+    atomtmp->vx = 0;
+    atomtmp->vy = 0;
+    atomtmp->vz = 0;
     atomtmp->xyz_state = TOPO_MOL_XYZ_VOID;
     atomtmp->partition = 0;
     atomtmp->atomid = 0;

@@ -279,7 +279,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.6.2");
+  Tcl_PkgProvide(interp, "psfgen", "1.6.3");
 
 #ifdef NAMD_VERSION
   {
@@ -535,6 +535,40 @@ int tcl_topology(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
+  if ( argc >= 2 && !strcasecmp(argv[1], "alias") ) {
+    psfgen_data *psf = *(psfgen_data **)data;
+    topo_defs *defs = psf->defs;
+    int pos,pos2;
+    const char *name;
+    if ( argc != 4 ) {
+      Tcl_SetResult(interp,"usage: topology alias newname oldname",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    pos = hasharray_index(defs->residue_hash, argv[3]);
+    if ( pos == HASHARRAY_FAIL ) {
+      sprintf(msg,"ERROR: unknown residue name %s in topology alias\n",argv[3]);
+      Tcl_SetResult(interp,msg,TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    pos2 = hasharray_index(defs->residue_hash, argv[2]);
+    if ( pos2 != HASHARRAY_FAIL ) {
+      if ( pos2 == pos ) {
+        sprintf(msg,"redundant alias of residue %s to %s in topology definitions",argv[2],argv[3]);
+        newhandle_msg(interp,msg);
+        return TCL_OK;
+      }
+      sprintf(msg,"ERROR: existing residue name %s in topology alias\n",argv[2]);
+      Tcl_SetResult(interp,msg,TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    sprintf(msg,"aliasing residue %s to %s in topology definitions",argv[2],argv[3]);
+    newhandle_msg(interp,msg);
+    hasharray_reinsert(defs->residue_hash, argv[2], pos);
+    return TCL_OK;
+  }
   if ( argc > 2 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
@@ -591,9 +625,9 @@ int tcl_topology(ClientData data, Tcl_Interp *interp,
 
 int tcl_readpsf(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  FILE *psf_file, *pdb_file, *namdbin_file;
-  int retval;
-  const char *filename, *pdbfilename, *namdbinfilename;
+  FILE *psf_file, *pdb_file, *namdbin_file, *velnamdbin_file;
+  int retval, i;
+  const char *filename, *pdbfilename, *namdbinfilename, *velnamdbinfilename;
   char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
   PSFGEN_TEST_MOL(interp,psf);
@@ -603,7 +637,7 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  if ( argc > 6 ) {
+  if ( argc > 8 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
@@ -613,15 +647,24 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  if ( argc > 4 && (argc < 6 || strcmp(argv[2],"pdb") || strcmp(argv[4],"namdbin") ) ) {
+  if ( argc > 4 && (argc < 6 || (strcmp(argv[2],"pdb")&&strcmp(argv[2],"namdbin"))
+                             || (strcmp(argv[4],"namdbin")&&strcmp(argv[4],"velnamdbin")) ) ) {
     Tcl_SetResult(interp,"binary coordinate file arguments should be \"namdbin <filename>\"",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
+  if ( argc > 6 && (argc < 8 || strcmp(argv[2],"pdb") || strcmp(argv[4],"namdbin") || strcmp(argv[6],"velnamdbin") ) ) {
+    Tcl_SetResult(interp,"binary velocity file arguments should be \"velnamdbin <filename>\"",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
   filename = argv[1];
-  namdbinfilename = ( (argc == 4 && ! strcmp(argv[2],"namdbin") ) ? argv[3] : 0 );
-  pdbfilename = ( (argc >= 4 && ! strcmp(argv[2],"pdb") ) ? argv[3] : 0 );
-  if ( argc == 6 ) namdbinfilename = argv[5];
+  pdbfilename = 0;
+  for ( i=3; i<argc; i+=2 ) if ( ! strcmp(argv[i-1],"pdb") ) pdbfilename = argv[i];
+  namdbinfilename = 0;
+  for ( i=3; i<argc; i+=2 ) if ( ! strcmp(argv[i-1],"namdbin") ) namdbinfilename = argv[i];
+  velnamdbinfilename = 0;
+  for ( i=3; i<argc; i+=2 ) if ( ! strcmp(argv[i-1],"velnamdbin") ) velnamdbinfilename = argv[i];
   /* Open psf as a binary file because the reading code uses ftell and
      fseek which do not work properly if the file is opened as text
      on Windows.  fgetpos/fsetpos misbehave in the exact same way.    */
@@ -658,10 +701,25 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
     sprintf(msg,"reading coordinates from namdbin file %s",namdbinfilename);
     newhandle_msg(interp,msg);
   }
-  retval = psf_file_extract(psf->mol, psf_file, pdb_file, namdbin_file, interp, newhandle_msg);
+  velnamdbin_file = 0;
+  if ( velnamdbinfilename ) {
+    if ( ! ( velnamdbin_file = fopen(velnamdbinfilename,"rb") ) ) {
+      fclose(psf_file);
+      if ( pdb_file ) fclose(pdb_file);
+      if ( namdbin_file ) fclose(namdbin_file);
+      sprintf(msg,"ERROR: Unable to open velnamdbin file %s",velnamdbinfilename);
+      Tcl_SetResult(interp,msg,TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    sprintf(msg,"reading velocities from velnamdbin file %s",velnamdbinfilename);
+    newhandle_msg(interp,msg);
+  }
+  retval = psf_file_extract(psf->mol, psf_file, pdb_file, namdbin_file, velnamdbin_file, interp, newhandle_msg);
   fclose(psf_file);
   if ( pdb_file ) fclose(pdb_file);
   if ( namdbin_file ) fclose(namdbin_file);
+  if ( velnamdbin_file ) fclose(velnamdbin_file);
   if (retval) {
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
@@ -1290,7 +1348,7 @@ int tcl_pdb(ClientData data, Tcl_Interp *interp,
 
 int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  FILE *res_file;
+  FILE *res_file, *namdbin_file;
   const char *filename;
   char msg[2048];
   int rc;
@@ -1298,11 +1356,16 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
   PSFGEN_TEST_MOL(interp,psf);
 
   if ( argc < 2 ) {
-    Tcl_SetResult(interp,"arguments: pdbfile ?segid?",TCL_VOLATILE);
+    Tcl_SetResult(interp,"arguments: pdbfile ?segid? [namdbin <file>]",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  if ( argc > 3 ) {
+  if ( argc > 3 && strcmp(argv[argc-2],"namdbin") ) {
+    Tcl_SetResult(interp,"arguments: pdbfile ?segid? [namdbin <file>]",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  if ( argc > 5 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
@@ -1315,7 +1378,8 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   } else {
     char *segid;
-    if (argc == 3) {
+    namdbin_file = 0;
+    if (argc == 3 || argc == 5) {
       /* Read only coordinates for given segid */
       sprintf(msg,"reading coordinates from pdb file %s for segment %s",filename,argv[2]);
       newhandle_msg(interp,msg);
@@ -1326,10 +1390,23 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
       newhandle_msg(interp,msg);
       segid = NULL;
     } 
-    rc=pdb_file_extract_coordinates(psf->mol,res_file,segid,psf->aliases,psf->all_caps,interp,newhandle_msg);
+    if ( argc > 3 ) {
+      const char *namdbinfilename = argv[argc-1];
+      if ( ! ( namdbin_file = fopen(namdbinfilename,"rb") ) ) {
+        fclose(res_file);
+        sprintf(msg,"ERROR: Unable to open namdbin file %s",namdbinfilename);
+        Tcl_SetResult(interp,msg,TCL_VOLATILE);
+        psfgen_kill_mol(interp,psf);
+        return TCL_ERROR;
+      }
+      sprintf(msg,"reading coordinates from namdbin file %s",namdbinfilename);
+      newhandle_msg(interp,msg);
+    }
+    rc=pdb_file_extract_coordinates(psf->mol,res_file,namdbin_file,segid,psf->aliases,psf->all_caps,interp,newhandle_msg);
     if (segid) free(segid);
     if (rc) {
       Tcl_AppendResult(interp,"ERROR: failed on reading coordinates from pdb file",NULL);
+      if ( namdbin_file ) Tcl_AppendResult(interp," and namdbin file",NULL);
       fclose(res_file);
       psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
@@ -1459,8 +1536,8 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
 
 int tcl_writenamdbin(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  FILE *res_file;
-  const char *filename;
+  FILE *res_file, *vel_file;
+  const char *filename, *velfilename;
   char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
   PSFGEN_TEST_MOL(interp,psf);
@@ -1470,12 +1547,19 @@ int tcl_writenamdbin(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  if ( argc > 2 ) {
+  if ( argc > 4 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   filename = argv[1];
+  if ( argc == 3 || ( argc == 4 && strcmp(argv[2],"velnamdbin") ) ) {
+    Tcl_SetResult(interp,"usage: writenamdbin <filename> [velnamdbin <filename>]",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  velfilename = 0;
+  if ( argc == 4 ) velfilename = argv[3];
 
   if ( ! ( res_file = fopen(filename,"wb") ) ) {
     sprintf(msg,"ERROR: Unable to open namdbin file %s to write coordinates\n",filename);
@@ -1483,16 +1567,32 @@ int tcl_writenamdbin(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
+  vel_file = 0;
+  if ( velfilename ) {
+    if ( ! ( vel_file = fopen(velfilename,"wb") ) ) {
+      sprintf(msg,"ERROR: Unable to open velnamdbin file %s to write velocities\n",velfilename);
+      Tcl_SetResult(interp,msg,TCL_VOLATILE);
+      fclose(res_file);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+  }
   sprintf(msg,"Info: writing namdbin file %s",filename);
+  if ( vel_file ) sprintf(msg,"Info: writing velnamdbin file %s",velfilename);
   newhandle_msg(interp,msg);
-  if ( topo_mol_write_namdbin(psf->mol,res_file,interp,newhandle_msg) ) {
+  if ( topo_mol_write_namdbin(psf->mol,res_file,vel_file,interp,newhandle_msg) ) {
     Tcl_AppendResult(interp,"ERROR: failed on writing coordinates to namdbin file",NULL);
     fclose(res_file);
+    if ( vel_file ) fclose(vel_file);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   fclose(res_file);
   newhandle_msg(interp, "Info: namdbin file complete.");
+  if ( vel_file ) {
+    fclose(vel_file);
+    newhandle_msg(interp, "Info: velnamdbin file complete.");
+  }
 
   return TCL_OK;
 }
