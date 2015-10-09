@@ -27,6 +27,10 @@
 #   define CONST84
 #endif
 
+void newhandle_msg(void *v, const char *msg);
+void newhandle_msg_ex(void *v, const char *msg, int prepend, int newline);
+
+#ifndef NAMD_VERSION
 /* 
  * Provide user feedback and warnings beyond result values.
  * If we are running interactively, Tcl_Main will take care of echoing results
@@ -77,7 +81,7 @@ void newhandle_msg_ex(void *v, const char *msg, int prepend, int newline) {
   Tcl_Eval(interp,script);
   Tcl_Free(script);
 }
-
+#endif
 
 /*
  * Kills molecule to prevent user from saving bogus output.
@@ -291,6 +295,11 @@ int Psfgen_Init(Tcl_Interp *interp) {
 #endif
 
   return TCL_OK;
+}
+
+int psfgen_static_init(Tcl_Interp *interp) {
+  Tcl_StaticPackage(0,"psfgen",Psfgen_Init,0);
+  return Tcl_Eval(interp,"package ifneeded psfgen 1.6.3 {load {} psfgen}");
 }
 
 char *strtoupper(const char *str, int all_caps) {
