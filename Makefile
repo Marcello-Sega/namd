@@ -377,8 +377,9 @@ $(DSTDIR)/ComputeNonbondedCUDAKernel.o: \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.h
 	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO) "`$(NATIVEPATH) $(DSTDIR)/`ComputeNonbondedCUDAKernel.o" $(COPTC) "`$(NATIVEPATH) $(SRCDIR)/`ComputeNonbondedCUDAKernel.cu"
 
-SBOBJS = \
-	$(DSTDIR)/tcl_main.o \
+SBOBJS = $(DSTDIR)/tcl_main.o $(SBLIB)
+
+SBLIB = \
 	$(DSTDIR)/tcl_psfgen.o \
 	$(DSTDIR)/charmm_file.o \
 	$(DSTDIR)/charmm_parse_topo_defs.o \
@@ -407,7 +408,7 @@ CHARM_MODULES = -module NeighborLB -module HybridLB -module RefineLB -module Gre
 #MSA = -DCHARM_HAS_MSA
 
 # Libraries we may have changed
-LIBS = $(CUDAOBJS) $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(FMMLIBS) $(TCLDLL)
+LIBS = $(CUDAOBJS) $(PLUGINLIB) $(SBLIB) $(DPMTALIBS) $(DPMELIBS) $(FMMLIBS) $(TCLDLL)
 
 # CXX is platform dependent
 CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(FMM) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MIC) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS) $(MSA) $(CKLOOP)
@@ -453,6 +454,7 @@ namd2:	$(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
+	$(SBLIB) \
 	$(CHARMOPTS) \
 	$(EXTRALINKLIBS) \
 	-lm -o namd2
@@ -481,6 +483,7 @@ namd2.exe:  $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
+	$(SBLIB) \
 	$(CHARMOPTS) \
 	-o namd2
 
@@ -554,6 +557,7 @@ tracecomputes: updatefiles $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
+	$(SBLIB) \
 	$(CHARMOPTS) \
 	$(EXTRALINKLIBS) \
 	-lm -o namd2.tc.prj
@@ -574,6 +578,7 @@ projections: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
+	$(SBLIB) \
 	$(CHARMOPTS) \
 	$(EXTRALINKLIBS) \
 	-lm -o namd2.prj
@@ -594,6 +599,7 @@ summary: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
+	$(SBLIB) \
 	$(CHARMOPTS) \
 	$(EXTRALINKLIBS) \
 	-lm -o namd2.sum

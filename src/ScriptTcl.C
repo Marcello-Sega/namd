@@ -1595,6 +1595,18 @@ int ScriptTcl::Tcl_reloadGridforceGrid(ClientData clientData,
 }
 // END gf
 
+
+extern "C" void newhandle_msg(void *v, const char *msg) {
+  CkPrintf("psfgen) %s\n",msg);
+}
+
+extern "C" void newhandle_msg_ex(void *v, const char *msg, int prepend, int newline) {
+  CkPrintf("%s%s%s", (prepend ? "psfgen) " : ""), msg, (newline ? "\n" : ""));
+}
+
+extern "C" int psfgen_static_init(Tcl_Interp *);
+
+
 #endif  // NAMD_TCL
 
 
@@ -1618,6 +1630,7 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
 
   // Create interpreter
   interp = Tcl_CreateInterp();
+  psfgen_static_init(interp);
   tcl_vector_math_init(interp);
   Tcl_CreateCommand(interp, "exit", Tcl_exit,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
