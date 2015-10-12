@@ -28,7 +28,7 @@ public:
     int    localIndex[size];
     TuplePatchElem *p[size];
     Real scale;
-    void computeForce(BigReal*, BigReal *);
+    static void computeForce(GromacsPairElem*, int, BigReal*, BigReal *);
     //void doWork();
 
     static void getMoleculePointers(Molecule*, int*, int32***, GromacsPair**);

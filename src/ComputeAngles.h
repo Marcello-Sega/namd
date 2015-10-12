@@ -21,7 +21,7 @@ public:
     int    localIndex[size];
     TuplePatchElem *p[size];
     Real scale;
-    void computeForce(BigReal*, BigReal *);
+    static void computeForce(AngleElem*, int, BigReal*, BigReal *);
 
     static void getMoleculePointers(Molecule*, int*, int32***, Angle**);
     static void getParameterPointers(Parameters*, const AngleValue**);

@@ -395,9 +395,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       // take triplet and pass with tuple info to force eval
       T *al = tupleList.begin();
       const int ntuple = tupleList.size();
-      for (int i=0; i<ntuple; ++i) {
-        al[i].computeForce(reductionData, pressureProfileData);
-      }
+      if ( ntuple ) T::computeForce(al, ntuple, reductionData, pressureProfileData);
       tupleCount += ntuple;
       }
  

@@ -50,9 +50,20 @@ void CrosstermElem::getParameterPointers(Parameters *p, const CrosstermValue **v
   *v = p->crossterm_array;
 }
 
-void CrosstermElem::computeForce(BigReal *reduction,
+void CrosstermElem::computeForce(CrosstermElem *tuples, int ntuple, BigReal *reduction,
                                 BigReal *pressureProfileData)
 {
+ const Lattice & lattice = tuples[0].p[0]->p->lattice;
+
+ for ( int ituple=0; ituple<ntuple; ++ituple ) {
+  const CrosstermElem &tup = tuples[ituple];
+  enum { size = 8 };
+  const AtomID (&atomID)[size](tup.atomID);
+  const int    (&localIndex)[size](tup.localIndex);
+  TuplePatchElem * const(&p)[size](tup.p);
+  const Real (&scale)(tup.scale);
+  const CrosstermValue * const(&value)(tup.value);
+
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << " " <<
 	       localIndex[3] << std::endl);
@@ -84,7 +95,6 @@ void CrosstermElem::computeForce(BigReal *reduction,
   const Position & pos5 = p[5]->x[localIndex[5]].position;
   const Position & pos6 = p[6]->x[localIndex[6]].position;
   const Position & pos7 = p[7]->x[localIndex[7]].position;
-  const Lattice & lattice = p[0]->p->lattice;
   const Vector r12 = lattice.delta(pos0,pos1);
   const Vector r23 = lattice.delta(pos1,pos2);
   const Vector r34 = lattice.delta(pos2,pos3);
@@ -508,6 +518,7 @@ CkPrintf("%d %d-%d-%d-%d %d-%d-%d-%d\n", CkMyPe(),
                 pressureProfileData);
   }
 
+ }
 }
 
 void CrosstermElem::submitReductionData(BigReal *data, SubmitReduction *reduction)

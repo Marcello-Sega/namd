@@ -37,14 +37,26 @@ void BondElem::getParameterPointers(Parameters *p, const BondValue **v) {
   *v = p->bond_array;
 }
 
-void BondElem::computeForce(BigReal *reduction, 
+void BondElem::computeForce(BondElem *tuples, int ntuple, BigReal *reduction, 
                             BigReal *pressureProfileData)
 {
+ const SimParameters *const simParams = Node::Object()->simParameters;
+ const Lattice & lattice = tuples[0].p[0]->p->lattice;
+
+ for ( int ituple=0; ituple<ntuple; ++ituple ) {
+  const BondElem &tup = tuples[ituple];
+  enum { size = 2 };
+  const AtomID (&atomID)[size](tup.atomID);
+  const int    (&localIndex)[size](tup.localIndex);
+  TuplePatchElem * const(&p)[size](tup.p);
+  const Real (&scale)(tup.scale);
+  const BondValue * const(&value)(tup.value);
+
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << std::endl);
 
   // skip Lonepair bonds (other k=0. bonds have been filtered out)
-  if (0. == value->k) return;
+  if (0. == value->k) continue;
 
   BigReal scal;         // force scaling
   BigReal energy;	// energy from the bond
@@ -56,12 +68,10 @@ void BondElem::computeForce(BigReal *reduction,
   Real x0 = value->x0;
 
   // compute vectors between atoms and their distances
-  const Lattice & lattice = p[0]->p->lattice;
   const Vector r12 = lattice.delta(p[0]->x[localIndex[0]].position,
 					p[1]->x[localIndex[1]].position);
 
   if (0. == x0) {  // for Drude bonds
-    SimParameters *simParams = Node::Object()->simParameters;
     BigReal drudeBondLen = simParams->drudeBondLen;
     BigReal drudeBondConst = simParams->drudeBondConst;
 
@@ -129,6 +139,8 @@ void BondElem::computeForce(BigReal *reduction,
                 f12.x * r12.x, f12.y * r12.y, f12.z * r12.z,
                 pressureProfileData);
   } 
+
+ }
 }
 
 void BondElem::submitReductionData(BigReal *data, SubmitReduction *reduction)

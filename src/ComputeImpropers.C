@@ -37,9 +37,20 @@ void ImproperElem::getParameterPointers(Parameters *p, const ImproperValue **v) 
   *v = p->improper_array;
 }
 
-void ImproperElem::computeForce(BigReal *reduction,
+void ImproperElem::computeForce(ImproperElem *tuples, int ntuple, BigReal *reduction,
                                 BigReal *pressureProfileData)
 {
+ const Lattice & lattice = tuples[0].p[0]->p->lattice;
+
+ for ( int ituple=0; ituple<ntuple; ++ituple ) {
+  const ImproperElem &tup = tuples[ituple];
+  enum { size = 4 };
+  const AtomID (&atomID)[size](tup.atomID);
+  const int    (&localIndex)[size](tup.localIndex);
+  TuplePatchElem * const(&p)[size](tup.p);
+  const Real (&scale)(tup.scale);
+  const ImproperValue * const(&value)(tup.value);
+
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << " " <<
 	       localIndex[3] << std::endl);
@@ -69,7 +80,6 @@ void ImproperElem::computeForce(BigReal *reduction,
   const Position & pos1 = p[1]->x[localIndex[1]].position;
   const Position & pos2 = p[2]->x[localIndex[2]].position;
   const Position & pos3 = p[3]->x[localIndex[3]].position;
-  const Lattice & lattice = p[0]->p->lattice;
   const Vector r12 = lattice.delta(pos0,pos1);
   const Vector r23 = lattice.delta(pos1,pos2);
   const Vector r34 = lattice.delta(pos2,pos3);
@@ -248,6 +258,8 @@ void ImproperElem::computeForce(BigReal *reduction,
                 f3.x * r34.x, f3.y * r34.y, f3.z * r34.z,
                 pressureProfileData);
   }
+
+ }
 }
 
 void ImproperElem::submitReductionData(BigReal *data, SubmitReduction *reduction)

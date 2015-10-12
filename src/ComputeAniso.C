@@ -38,9 +38,20 @@ void AnisoElem::getParameterPointers(Parameters *p, const AnisoValue **v) {
   *v = NULL;  // parameters are stored in the structure
 }
 
-void AnisoElem::computeForce(BigReal *reduction, 
+void AnisoElem::computeForce(AnisoElem *tuples, int ntuple, BigReal *reduction, 
                                 BigReal *pressureProfileData)
 {
+ const Lattice & lattice = tuples[0].p[0]->p->lattice;
+
+ for ( int ituple=0; ituple<ntuple; ++ituple ) {
+  const AnisoElem &tup = tuples[ituple];
+  enum { size = 4 };
+  const AtomID (&atomID)[size](tup.atomID);
+  const int    (&localIndex)[size](tup.localIndex);
+  TuplePatchElem * const(&p)[size](tup.p);
+  const Real (&scale)(tup.scale);
+  const AnisoValue * const(&value)(tup.value);
+
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << " "
                << localIndex[3] << std::endl);
@@ -59,7 +70,6 @@ void AnisoElem::computeForce(BigReal *reduction,
   const Position & rn = p[3]->x[localIndex[3]].position;    // atom N
 
   // calculate parallel and perpendicular displacement vectors
-  const Lattice & lattice = p[0]->p->lattice;
   Vector r_il = lattice.delta(ri,rl);  // shortest vector image:  ri - rl
   Vector r_mn = lattice.delta(rm,rn);  // shortest vector image:  rm - rn
 
@@ -152,6 +162,8 @@ void AnisoElem::computeForce(BigReal *reduction,
         pressureProfileData);
   }
 #endif
+
+ }
 }
 
 

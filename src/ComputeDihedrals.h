@@ -22,7 +22,7 @@ public:
     int    localIndex[size];
     TuplePatchElem *p[size];
     Real scale;
-    void computeForce(BigReal*, BigReal *);
+    static void computeForce(DihedralElem*, int, BigReal*, BigReal *);
 
     static void getMoleculePointers(Molecule*, int*, int32***, Dihedral**);
     static void getParameterPointers(Parameters*, const DihedralValue**);

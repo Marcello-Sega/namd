@@ -38,21 +38,32 @@ void ExclElem::getParameterPointers(Parameters *p, const int **v) {
   *v = 0;
 }
 
-void ExclElem::computeForce(BigReal *reduction, 
+void ExclElem::computeForce(ExclElem *tuples, int ntuple, BigReal *reduction, 
                             BigReal *pressureProfileData)
 {
-    const Flags &flags = p[0]->p->flags;
-    if ( ! flags.doNonbonded ) return;
+  const Lattice & lattice = tuples[0].p[0]->p->lattice;
+  const Flags &flags = tuples[0].p[0]->p->flags;
+  if ( ! flags.doNonbonded ) return;
+  const int doFull = flags.doFullElectrostatics;
+  const int doEnergy = flags.doEnergy;
+
+  for ( int ituple=0; ituple<ntuple; ++ituple ) {
+    const ExclElem &tup = tuples[ituple];
+    enum { size = 2 };
+    const AtomID (&atomID)[size](tup.atomID);
+    const int    (&localIndex)[size](tup.localIndex);
+    TuplePatchElem * const(&p)[size](tup.p);
+    const Real (&scale)(tup.scale);
+    const int (&modified)(tup.modified);
 
     const CompAtom &p_i = p[0]->x[localIndex[0]];
     const CompAtom &p_j = p[1]->x[localIndex[1]];
 
     // compute vectors between atoms and their distances
-    const Lattice & lattice = p[0]->p->lattice;
     const Vector r12 = lattice.delta(p_i.position, p_j.position);
     BigReal r2 = r12.length2();
 
-    if ( r2 > cutoff2 ) return;
+    if ( r2 > cutoff2 ) continue;
 
     if ( modified && r2 < 1.0 ) r2 = 1.0;  // match CUDA interpolation
 
@@ -66,9 +77,6 @@ void ExclElem::computeForce(BigReal *reduction,
     const BigReal* const table_four_i = table_noshort + 16*table_i;
 
     BigReal diffa = r2 - r2_table[table_i];
-
-    const int doFull = flags.doFullElectrostatics;
-    const int doEnergy = flags.doEnergy;
 
     BigReal fast_a = 0., fast_b = 0., fast_c = 0., fast_d = 0.;
     BigReal slow_a, slow_b, slow_c, slow_d;
@@ -179,6 +187,7 @@ void ExclElem::computeForce(BigReal *reduction,
     reduction[slowVirialIndex_ZZ] += slow_f12.z * r12.z;
   }
 
+  }
 }
 
 void ExclElem::submitReductionData(BigReal *data, SubmitReduction *reduction)

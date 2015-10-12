@@ -44,13 +44,23 @@ void AngleElem::getParameterPointers(Parameters *p, const AngleValue **v) {
   *v = p->angle_array;
 }
 
-void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
+void AngleElem::computeForce(AngleElem *tuples, int ntuple, BigReal *reduction, BigReal *pressureProfileData)
 {
+ const Lattice & lattice = tuples[0].p[0]->p->lattice;
+
+ for ( int ituple=0; ituple<ntuple; ++ituple ) {
+  const AngleElem &tup = tuples[ituple];
+  enum { size = 3 };
+  const AtomID (&atomID)[size](tup.atomID);
+  const int    (&localIndex)[size](tup.localIndex);
+  TuplePatchElem * const(&p)[size](tup.p);
+  const Real (&scale)(tup.scale);
+  const AngleValue * const(&value)(tup.value);
+
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << std::endl);
 
   const Position & pos1 = p[0]->x[localIndex[0]].position;
-  const Lattice & lattice = p[0]->p->lattice;
   const Position & pos2 = p[1]->x[localIndex[1]].position;
   Vector r12 = lattice.delta(pos1,pos2);
   register BigReal d12inv = r12.rlength();
@@ -183,6 +193,8 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
                 force3.x * r32.x, force3.y * r32.y, force3.z * r32.z,
                 pressureProfileData);
   }
+
+ }
 }
 
 

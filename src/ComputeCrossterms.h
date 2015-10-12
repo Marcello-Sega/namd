@@ -22,7 +22,7 @@ public:
     int    localIndex[size];
     TuplePatchElem *p[size];
     Real scale;
-    void computeForce(BigReal*, BigReal *);
+    static void computeForce(CrosstermElem*, int, BigReal*, BigReal *);
 
     static void getMoleculePointers(Molecule*, int*, int32***, Crossterm**);
     static void getParameterPointers(Parameters*, const CrosstermValue**);

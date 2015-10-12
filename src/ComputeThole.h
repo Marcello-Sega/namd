@@ -23,7 +23,7 @@ public:
     int    localIndex[size];
     TuplePatchElem *p[size];
     Real scale;
-    void computeForce(BigReal*, BigReal *);
+    static void computeForce(TholeElem*, int, BigReal*, BigReal *);
 
     static void getMoleculePointers(Molecule*, int*, int32***, Thole**);
     static void getParameterPointers(Parameters*, const TholeValue**);

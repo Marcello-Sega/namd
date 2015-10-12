@@ -41,26 +41,36 @@ void GromacsPairElem::getParameterPointers(Parameters *p, const GromacsPairValue
     *v=p->gromacsPair_array;
 }
 
-void GromacsPairElem::computeForce(BigReal *reduction, 
+void GromacsPairElem::computeForce(GromacsPairElem *tuples, int ntuple, BigReal *reduction, 
                             BigReal *pressureProfileData)
 {
+ const Lattice & lattice = tuples[0].p[0]->p->lattice;
+
+ for ( int ituple=0; ituple<ntuple; ++ituple ) {
+  const GromacsPairElem &tup = tuples[ituple];
+  enum { size = 2 };
+  const AtomID (&atomID)[size](tup.atomID);
+  const int    (&localIndex)[size](tup.localIndex);
+  TuplePatchElem * const(&p)[size](tup.p);
+  const Real (&scale)(tup.scale);
+  const GromacsPairValue * const(&value)(tup.value);
+
     DebugM(1, "::computeforce() localIndex = " << localIndex [0] << " "
 	   << localIndex[1] << std::endl);
 
     // compute vectors between atoms and their distances
-    const Lattice & lattice = p[0]->p->lattice;
     const Vector r12 = lattice.delta(p[0]->x[localIndex[0]].position,
 				     p[1]->x[localIndex[1]].position);
 
     if ( p[0]->patchID == p[1]->patchID && localIndex[0] == localIndex[1] ) {
-	return;
+	continue;
     }
     SimParameters *simParams = Node::Object()->simParameters;
     BigReal cutoff = simParams->cutoff;
     BigReal r12_len = r12.length2();
-    if ( r12_len == 0 ) return;
+    if ( r12_len == 0 ) continue;
     //if ( r12_len > cutoff) {
-	//return;
+	//continue;
     //}
     BigReal ri2 = 1.0/r12_len;
     BigReal ri = sqrt(ri2);
@@ -126,6 +136,8 @@ void GromacsPairElem::computeForce(BigReal *reduction,
 		     f12.x * r12.x, f12.y * r12.y, f12.z * r12.z,
 		     pressureProfileData);
     } 
+
+ }
 }
 
 void GromacsPairElem::submitReductionData(BigReal *data, SubmitReduction *reduction)

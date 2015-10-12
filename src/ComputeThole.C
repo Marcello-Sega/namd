@@ -38,9 +38,20 @@ void TholeElem::getParameterPointers(Parameters *p, const TholeValue **v) {
   *v = NULL;  // parameters are stored in the structure
 }
 
-void TholeElem::computeForce(BigReal *reduction, 
+void TholeElem::computeForce(TholeElem *tuples, int ntuple, BigReal *reduction, 
                                 BigReal *pressureProfileData)
 {
+ const Lattice & lattice = tuples[0].p[0]->p->lattice;
+
+ for ( int ituple=0; ituple<ntuple; ++ituple ) {
+  const TholeElem &tup = tuples[ituple];
+  enum { size = 4 };
+  const AtomID (&atomID)[size](tup.atomID);
+  const int    (&localIndex)[size](tup.localIndex);
+  TuplePatchElem * const(&p)[size](tup.p);
+  const Real (&scale)(tup.scale);
+  const TholeValue * const(&value)(tup.value);
+
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << " "
                << localIndex[3] << std::endl);
@@ -56,7 +67,6 @@ void TholeElem::computeForce(BigReal *reduction,
   const Position & rdj = p[3]->x[localIndex[3]].position;  // atom j's Drude
 
   // r_ij = r_i - r_j
-  const Lattice & lattice = p[0]->p->lattice;
   Vector raa = lattice.delta(rai,raj);  // shortest vector image:  rai - raj
   Vector rad = lattice.delta(rai,rdj);  // shortest vector image:  rai - rdj
   Vector rda = lattice.delta(rdi,raj);  // shortest vector image:  rdi - raj
@@ -174,6 +184,8 @@ void TholeElem::computeForce(BigReal *reduction,
         pressureProfileData);
   }
 #endif
+
+ }
 }
 
 

@@ -37,15 +37,25 @@ void DihedralElem::getParameterPointers(Parameters *p, const DihedralValue **v) 
   *v = p->dihedral_array;
 }
 
-void DihedralElem::computeForce(BigReal *reduction, 
+void DihedralElem::computeForce(DihedralElem *tuples, int ntuple, BigReal *reduction, 
                                 BigReal *pressureProfileData)
 {
+ const Lattice & lattice = tuples[0].p[0]->p->lattice;
+
+ for ( int ituple=0; ituple<ntuple; ++ituple ) {
+  const DihedralElem &tup = tuples[ituple];
+  enum { size = 4 };
+  const AtomID (&atomID)[size](tup.atomID);
+  const int    (&localIndex)[size](tup.localIndex);
+  TuplePatchElem * const(&p)[size](tup.p);
+  const Real (&scale)(tup.scale);
+  const DihedralValue * const(&value)(tup.value);
+
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << std::endl);
 
   //  Calculate the vectors between atoms
   const Position & pos0 = p[0]->x[localIndex[0]].position;
-  const Lattice & lattice = p[0]->p->lattice;
   const Position & pos1 = p[1]->x[localIndex[1]].position;
   const Vector r12 = lattice.delta(pos0,pos1);
   const Position & pos2 = p[2]->x[localIndex[2]].position;
@@ -278,6 +288,8 @@ void DihedralElem::computeForce(BigReal *reduction,
                 f3.x * r34.x, f3.y * r34.y, f3.z * r34.z,
                 pressureProfileData);
   }
+
+ }
 }
 
 
