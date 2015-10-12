@@ -92,6 +92,7 @@ protected:
     void printDynamicsEnergies(int);
     void printEnergies(int step, int minimize);
       int numDegFreedom;
+      int stepInFullRun;
       BigReal totalEnergy;
       BigReal electEnergy;
       BigReal electEnergySlow;

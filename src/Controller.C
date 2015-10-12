@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2015/03/18 23:14:39 $
- * $Revision: 1.1308 $
+ * $Date: 2015/10/12 15:48:41 $
+ * $Revision: 1.1309 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -135,6 +135,7 @@ Controller::Controller(NamdState *s) :
         startWTime(0),
         firstWTime(CmiWallTimer()),
         startBenchTime(0),
+        stepInFullRun(0),
 	ldbSteps(0),
 	fflush_count(3)
 {
@@ -2371,9 +2372,9 @@ void Controller::printEnergies(int step, int minimize)
       delete [] total;
     }
   
-    int stepInRun = step - simParams->firstTimestep;
-    if ( stepInRun % simParams->firstLdbStep == 0 ) {
-     int benchPhase = stepInRun / simParams->firstLdbStep;
+   if ( step != simParams->firstTimestep || stepInFullRun == 0 ) {  // skip repeated first step
+    if ( stepInFullRun % simParams->firstLdbStep == 0 ) {
+     int benchPhase = stepInFullRun / simParams->firstLdbStep;
      if ( benchPhase > 0 && benchPhase < 10 ) {
 #ifdef NAMD_CUDA
       if ( simParams->outputEnergies < 60 ) {
@@ -2396,6 +2397,8 @@ void Controller::printEnergies(int step, int minimize)
      }
      startBenchTime = CmiWallTimer();
     }
+    ++stepInFullRun;
+   }
 
     printTiming(step);
 
