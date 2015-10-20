@@ -20,6 +20,8 @@ void GlobalMaster::processData(AtomIDList::iterator a_i,
 			       PositionList::iterator g_e,
 			       BigRealList::iterator gm_i,
 			       BigRealList::iterator gm_e,
+			       ForceList::iterator gtf_i,
+			       ForceList::iterator gtf_e,
 			       AtomIDList::iterator last_atoms_forced_i,
 			       AtomIDList::iterator last_atoms_forced_e,
 			       ForceList::iterator last_forces_i,
@@ -33,6 +35,8 @@ void GlobalMaster::processData(AtomIDList::iterator a_i,
   groupPositionEnd = g_e;
   groupMassBegin = gm_i;
   groupMassEnd = gm_e;
+  groupTotalForceBegin = gtf_i;
+  groupTotalForceEnd = gtf_e;
   lastAtomsForcedBegin = last_atoms_forced_i;
   lastAtomsForcedEnd = last_atoms_forced_e;
   lastForcesBegin = last_forces_i;
@@ -73,6 +77,7 @@ void GlobalMaster::calculate() {
 
 GlobalMaster::GlobalMaster() {
   step = -1;
+  old_num_groups_requested = 0;
   clearChanged();
   atomIdBegin = 0;
   atomIdEnd = 0;
@@ -167,6 +172,14 @@ PositionList::const_iterator GlobalMaster::getGroupPositionBegin() {
 
 PositionList::const_iterator GlobalMaster::getGroupPositionEnd() {
   return groupPositionEnd;
+}
+
+ForceList::const_iterator GlobalMaster::getGroupTotalForceBegin() {
+  return groupTotalForceBegin;
+}
+
+ForceList::const_iterator GlobalMaster::getGroupTotalForceEnd() {
+  return groupTotalForceEnd;
 }
 
 BigRealList::const_iterator GlobalMaster::getGroupMassBegin()

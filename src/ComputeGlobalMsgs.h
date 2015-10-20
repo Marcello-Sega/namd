@@ -42,6 +42,7 @@ public:
   BigRealList gmass;  // group total mass
   AtomIDList fid;
   ForceList tf;
+  ForceList gtf;  // group total force
   ResizeArray<Lattice> lat;
 
   // constructor and destructor

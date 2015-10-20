@@ -64,12 +64,21 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
   int i=0;
   for ( ; g_i != g_e; ++g_i, ++gm_i ) {
     DebugM(1,"Received center of mass "<<*g_i<<"\n");
-    if(i >= totalGroupsRequested) NAMD_die("Received too many groups.");
+    if(i >= totalGroupsRequested) NAMD_bug("Received too many groups.");
     receivedGroupPositions[i] += (*g_i);
     receivedGroupMasses[i] += (*gm_i);
     i++;
   }
-  if(i!=totalGroupsRequested) NAMD_die("Received too few groups.");
+  if(i!=totalGroupsRequested) NAMD_bug("Received too few groups.");
+
+  /* iterate over each member of group total force lists */
+  int ntf = msg->gtf.size();
+  if ( ntf && ntf != receivedGroupTotalForces.size() ) NAMD_bug("Received wrong number of group forces.");
+  ForceList::iterator gf_i=msg->gtf.begin();
+  ForceList::iterator gf_e=msg->gtf.end();
+  for ( i=0 ; gf_i != gf_e; ++gf_i, ++i ) {
+    receivedGroupTotalForces[i] += (*gf_i);
+  }
 
   if ( msg->lat.size() ) {
     if ( latticeCount ) {
@@ -93,8 +102,10 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
       NAMD_bug("GlobalMasterServer::recvData did not receive lattice.");
     }
 
+    int oldTotalGroupsRequested = totalGroupsRequested;
+
     DebugM(3,"received messages from each of the ComputeGlobals\n");
-    callClients();
+    int resendCoordinates = callClients();
 
     /* now restart */
     step = -1;
@@ -104,10 +115,16 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
     receivedGroupPositions.setall(Vector(0,0,0));
     receivedGroupMasses.resize(totalGroupsRequested);
     receivedGroupMasses.setall(0);
-    receivedForceIDs.resize(0);
-    receivedTotalForces.resize(0);
     latticeCount = 0;
     recvCount = 0;
+    if ( resendCoordinates ) {
+      recvCount += numForceSenders;
+    } else {
+      receivedGroupTotalForces.resize(totalGroupsRequested);
+      receivedGroupTotalForces.setall(0);
+      receivedForceIDs.resize(0);
+      receivedTotalForces.resize(0);
+    }
   }
 }
 
@@ -214,8 +231,18 @@ struct atomID_less {
 }
 };
 
-void GlobalMasterServer::callClients() {
+int GlobalMasterServer::callClients() {
   DebugM(3,"Calling clients\n");
+  {
+    GlobalMaster **m_i = clientList.begin();
+    GlobalMaster **m_e = clientList.end();
+    for ( ; m_i != m_e; ++m_i ) {
+      if ( (*m_i)->changedAtoms() ) firstTime = 1;
+      if ( (*m_i)->changedGroups() ) firstTime = 1;
+      (*m_i)->clearChanged();
+    }
+  }
+
   if(firstTime) {
     /* the first time we just get the requested atom ids from the
        clients and send messages to the compute globals requesting
@@ -224,7 +251,7 @@ void GlobalMasterServer::callClients() {
     DebugM(1,"first time.\n");
     ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;
     resetAtomList(msg->newaid); // add any atom IDs made in constructors
-    resetForceList(msg->aid,msg->f,msg->gforce); // same for forces
+    // resetForceList(msg->aid,msg->f,msg->gforce); // same for forces
     resetGroupList(msg->newgdef,&totalGroupsRequested);
     msg->resendCoordinates = 1;
     msg->reconfig = 1;
@@ -242,23 +269,23 @@ void GlobalMasterServer::callClients() {
     myComputeManager->sendComputeGlobalResults(msg);
 
     firstTime = 0;
-    return;
+    return 1;
   }
 
   /* check to make sure we've got everything */
   if(receivedAtomIDs.size() != totalAtomsRequested) {
     DebugM(3,"Requested " << totalAtomsRequested << " atoms.\n");
-    NAMD_die("Got the wrong number of atoms");
+    NAMD_bug("Got the wrong number of atoms");
   }
   if(receivedGroupPositions.size() != totalGroupsRequested) {
     DebugM(3,"Requested " << totalGroupsRequested << " groups.\n");
     DebugM(3,"Got " << receivedGroupPositions.size() << " group positions.\n");
-    NAMD_die("Got the wrong number of groups");
+    NAMD_bug("Got the wrong number of groups");
   }
   if(receivedGroupMasses.size() != totalGroupsRequested) {
     DebugM(3,"Requested " << totalGroupsRequested << " groups.\n");
     DebugM(3,"Got " << receivedGroupMasses.size() << " group masses.\n");
-    NAMD_die("Got the wrong number of group masses");
+    NAMD_bug("Got the wrong number of group masses");
   }
 
   /* get the beginning and end of the lists */
@@ -267,6 +294,8 @@ void GlobalMasterServer::callClients() {
   PositionList::iterator p_i = receivedAtomPositions.begin();
   PositionList::iterator g_i = receivedGroupPositions.begin();
   PositionList::iterator g_e = receivedGroupPositions.end();
+  ForceList::iterator gtf_i = receivedGroupTotalForces.begin();
+  ForceList::iterator gtf_e = receivedGroupTotalForces.end();
   AtomIDList::iterator forced_atoms_i = lastAtomsForced.begin();
   AtomIDList::iterator forced_atoms_e = lastAtomsForced.end();
   ForceList::iterator forces_i = lastForces.begin();
@@ -338,20 +367,21 @@ void GlobalMasterServer::callClients() {
     /* check to make sure we have some atoms left.  This must work for
      zero requested atoms, as well! */
    // if(a_i+num_atoms_requested > a_e)
-   //   NAMD_die("GlobalMasterServer ran out of atom IDs!");
+   //   NAMD_bug("GlobalMasterServer ran out of atom IDs!");
 
     /* update this master */
-    master->clearChanged();
     master->step = step;
     master->processData(ma_i,ma_e,
 			mp_i,g_i,g_i+num_groups_requested,
 			gm_i,gm_i+num_groups_requested,
+			gtf_i,gtf_i+master->old_num_groups_requested,
 			forced_atoms_i,forced_atoms_e,forces_i,
       receivedForceIDs.begin(),receivedForceIDs.end(),receivedTotalForces.begin());
 
     a_i = receivedAtomIDs.begin();
     p_i = receivedAtomPositions.begin();
 //}
+
     /* check to see if anything changed */
     if(master->changedAtoms()) {
       requested_atoms_changed = true;
@@ -362,19 +392,18 @@ void GlobalMasterServer::callClients() {
     if(master->changedGroups()) {
       requested_groups_changed = true;
     }
+    master->clearChanged();
 
     /* go to next master */
     m_i++;
 
     g_i += num_groups_requested;
     gm_i += num_groups_requested;
-
-// XXX Completely wrong if multiple clients request atoms in parallel! XXX
-
-    /* next atoms/groups start farther down the lists
-    a_i += num_atoms_requested;
-    p_i += num_atoms_requested;  */
+    gtf_i += master->old_num_groups_requested;
+    master->old_num_groups_requested = master->requestedGroups().size();  // include changes
   } 
+
+  if ( gtf_i != gtf_e ) NAMD_bug("GlobalMasterServer::callClients bad group total force count");
 
   /* make a new message */
   ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;
@@ -392,7 +421,7 @@ void GlobalMasterServer::callClients() {
       if ( *g_i != -1 ) ++numDataSenders;
     }
   }
-  numForceSenders = (forceSendEnabled ? totalAtomsRequested : 0);
+  numForceSenders = (forceSendEnabled ? numDataSenders : 0);
   resetForceList(msg->aid,msg->f,msg->gforce); // could this be more efficient?
 
   /* get group acceleration by renormalizing group net force by group total mass */
@@ -407,6 +436,7 @@ void GlobalMasterServer::callClients() {
 	 <<msg->f.size()<<" forces set)\n");
   myComputeManager->sendComputeGlobalResults(msg);
   DebugM(3,"Sent.\n");
+  return 0;
 }
 
 GlobalMasterServer::GlobalMasterServer(ComputeMgr *m,

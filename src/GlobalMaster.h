@@ -39,6 +39,8 @@ class GlobalMaster {
 		   PositionList::iterator g_e,
 		   BigRealList::iterator gm_i,
 		   BigRealList::iterator gm_e,
+		   ForceList::iterator gtf_i,
+		   ForceList::iterator gtf_e,
 		   AtomIDList::iterator last_atoms_forced_i,
 		   AtomIDList::iterator last_atoms_forced_e,
 		   ForceList::iterator last_forces_i,
@@ -47,6 +49,7 @@ class GlobalMaster {
 		   ForceList::iterator);
 
   int step;  // set by server to current timestep before processData
+  int old_num_groups_requested;  // used for group forces
 
   bool changedAtoms(); // false if the atom IDs haven't changed
   const AtomIDList &requestedAtoms(); // the atom ids requested
@@ -95,6 +98,8 @@ class GlobalMaster {
   PositionList::const_iterator getAtomPositionBegin();
   PositionList::const_iterator getGroupPositionBegin();
   PositionList::const_iterator getGroupPositionEnd();
+  ForceList::const_iterator getGroupTotalForceBegin();
+  ForceList::const_iterator getGroupTotalForceEnd();
   
   /* these give you all the global forces being applied by masters */
   /* again, here we only need one end iterator */
@@ -128,6 +133,8 @@ class GlobalMaster {
   PositionList::iterator groupPositionEnd;
   BigRealList::iterator groupMassBegin;
   BigRealList::iterator groupMassEnd;
+  ForceList::iterator groupTotalForceBegin;
+  ForceList::iterator groupTotalForceEnd;
 
   /* these store all the global forces being applied by masters */
   AtomIDList::iterator lastAtomsForcedBegin;

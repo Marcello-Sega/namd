@@ -22,6 +22,7 @@
 #include "ComputeMgr.decl.h"
 #include "SimParameters.h"
 #include <stdio.h>
+#include <algorithm>
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 1
@@ -40,6 +41,7 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   isRequested = 0;
   isRequestedAllocSize = 0;
   endRequested = 0;
+  numGroupsRequested = 0;
   SimParameters *sp = Node::Object()->simParameters;
   dofull = (sp->GBISserOn || sp->GBISOn || sp->fullDirectOn || sp->FMAOn || sp->PMEOn);
   forceSendEnabled = 0;
@@ -47,6 +49,8 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   if ( sp->colvarsOn ) forceSendEnabled = 1;
   fid.resize(0);
   totalForce.resize(0);
+  gfcount = 0;
+  groupTotalForce.resize(0);
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
   int numPatches = PatchMap::Object()->numPatches();
   forcePtrs = new Force*[numPatches];
@@ -74,6 +78,9 @@ void ComputeGlobal::configure(AtomIDList &newaid, AtomIDList &newgdef) {
   for (a=newaid.begin(),a_e=newaid.end(); a!=a_e; ++a) {
     if ( *a > max ) max = *a;
   }
+  for (a=newgdef.begin(),a_e=newgdef.end(); a!=a_e; ++a) {
+    if ( *a > max ) max = *a;
+  }
   endRequested = max+1;
   if ( endRequested > isRequestedAllocSize ) {
     delete [] isRequested;
@@ -84,7 +91,14 @@ void ComputeGlobal::configure(AtomIDList &newaid, AtomIDList &newgdef) {
     for (a=aid.begin(),a_e=aid.end(); a!=a_e; ++a) {
       isRequested[*a] = 0;
     }
+    for (a=gdef.begin(),a_e=gdef.end(); a!=a_e; ++a) {
+      if ( *a != -1 ) isRequested[*a] = 0;
+    }
   }
+  // reserve space
+  gpair.resize(0);
+  gpair.resize(newgdef.size());
+  gpair.resize(0);
  }
 
   // store data
@@ -92,9 +106,19 @@ void ComputeGlobal::configure(AtomIDList &newaid, AtomIDList &newgdef) {
   gdef.swap(newgdef);
   
  if ( forceSendEnabled ) {
+  int newgcount = 0;
   for (a=aid.begin(),a_e=aid.end(); a!=a_e; ++a) {
     isRequested[*a] = 1;
   }
+  for (a=gdef.begin(),a_e=gdef.end(); a!=a_e; ++a) {
+    if ( *a == -1 ) ++newgcount;
+    else {
+      isRequested[*a] |= 2;
+      gpair.add(intpair(*a,newgcount));
+    }
+  }
+  std::sort(gpair.begin(),gpair.end());
+  numGroupsRequested = newgcount;
  }
 }
 
@@ -173,17 +197,11 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
     }
     DebugM(1,"done with the groups\n");
 
-    for (ap = ap.begin(); ap != ap.end(); ap++) {
-      (*ap).forceBox->close(&((*ap).r));
-      f[(*ap).patchID] = 0;
-      t[(*ap).patchID] = 0;
-    }
-
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,extForce);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,extVirial);
     reduction->submit();
   }
-  // done setting the forces
+  // done setting the forces, close boxes below
 
   // Get reconfiguration if present
   if ( msg->reconfig ) configure(msg->newaid, msg->newgdef);
@@ -195,6 +213,22 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
     sendData();
   }
 
+  groupTotalForce.resize(numGroupsRequested);
+  for ( int i=0; i<numGroupsRequested; ++i ) groupTotalForce[i] = 0;
+
+  if(setForces) {
+    ResizeArrayIter<PatchElem> ap(patchList);
+    Force **f = forcePtrs;
+    FullAtom **t = atomPtrs;
+    for (ap = ap.begin(); ap != ap.end(); ap++) {
+      CompAtom *x;
+      (*ap).positionBox->close(&x);
+      (*ap).forceBox->close(&((*ap).r));
+      f[(*ap).patchID] = 0;
+      t[(*ap).patchID] = 0;
+    }
+  }
+
   delete msg;
   DebugM(3,"Done processing results\n");
 }
@@ -202,6 +236,15 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
 void ComputeGlobal::doWork()
 {
   DebugM(2,"doWork\n");
+
+  ResizeArrayIter<PatchElem> ap(patchList);
+  FullAtom **t = atomPtrs;
+
+  for (ap = ap.begin(); ap != ap.end(); ap++) {
+    CompAtom *x = (*ap).positionBox->open();
+    t[(*ap).patchID] = (*ap).p->getAtomList().begin();
+  }
+
   if(!firsttime) sendData();
   else {
     if ( hasPatchZero ) {
@@ -226,17 +269,10 @@ void ComputeGlobal::sendData()
   ResizeArrayIter<PatchElem> ap(patchList);
   FullAtom **t = atomPtrs;
 
-  int step = -1;
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
-    CompAtom *x = (*ap).positionBox->open();
-    t[(*ap).patchID] = (*ap).p->getAtomList().begin();
-    step = (*ap).p->flags.step;
-  }
-
   ComputeGlobalDataMsg *msg = new  ComputeGlobalDataMsg;
 
   msg->count = 0;
-  msg->step = step;
+  msg->step = patchList[0].p->flags.step;
 
   AtomIDList::iterator a = aid.begin();
   AtomIDList::iterator a_e = aid.end();
@@ -272,17 +308,14 @@ void ComputeGlobal::sendData()
     msg->gmass.add(mass);
   }
 
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
-    CompAtom *x;
-    (*ap).positionBox->close(&x);
-  }
-  
   msg->fid.swap(fid);
   msg->tf.swap(totalForce);
   fid.resize(0);
   totalForce.resize(0);
 
-  msg->count += msg->fid.size();
+  if ( gfcount ) msg->gtf.swap(groupTotalForce);
+  msg->count += ( msg->fid.size() + gfcount );
+  gfcount = 0;
 
   DebugM(3,"Sending data (" << msg->aid.size() << " positions) on client\n");
   if ( hasPatchZero ) { msg->count++;  msg->lat.add(lattice); }
@@ -311,7 +344,7 @@ void ComputeGlobal::saveTotalForces(HomePatch *homePatch)
 
     for (int i=0; i<num; ++i) {
       int index = atoms[i].id;
-      if (index < endRequested && isRequested[index]) {
+      if (index < endRequested && isRequested[index] & 1) {
         fid.add(index);
         totalForce.add(af[i]);
       }
@@ -328,13 +361,26 @@ void ComputeGlobal::saveTotalForces(HomePatch *homePatch)
   
   for (int i=0; i<num; ++i) {
     int index = atoms[i].id;
-    if (index < endRequested && isRequested[index]) {
-      f_sum = f1[i]+f2[i];
-      if (dofull)
-        f_sum += f3[i];
-      if ( fixedAtomsOn && atoms[i].atomFixed ) f_sum = 0.;
+    char reqflag;
+    if (index < endRequested && (reqflag = isRequested[index])) {
+     f_sum = f1[i]+f2[i];
+     if (dofull)
+       f_sum += f3[i];
+     if ( fixedAtomsOn && atoms[i].atomFixed ) f_sum = 0.;
+     if ( reqflag  & 1 ) {  // individual atom
       fid.add(index);
       totalForce.add(f_sum);
+     }
+     if ( reqflag  & 2 ) {  // part of group
+       intpair *gpend = gpair.end();
+       intpair *gpi = std::lower_bound(gpair.begin(),gpend,intpair(index,0));
+       if ( gpi == gpend || gpi->first != index )
+         NAMD_bug("ComputeGlobal::saveTotalForces gpair corrupted.");
+       do {
+         ++gfcount;
+         groupTotalForce[gpi->second] += f_sum;
+       } while ( ++gpi != gpend && gpi->first == index );
+     }
     }
   }
 }

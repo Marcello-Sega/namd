@@ -20,6 +20,18 @@ class ComputeGlobalResultsMsg;
 class ComputeMgr;
 class SubmitReduction;
 
+struct intpair {
+  int first, second;
+  intpair() {;}
+  intpair(int f, int s) : first(f), second(s) {;}
+};
+
+inline bool operator<(const intpair &lhs, const intpair &rhs) {
+  return lhs.first < rhs.first ? true :
+         lhs.first != rhs.first ? false :
+         lhs.second < rhs.second;
+}
+
 class ComputeGlobal : public ComputeHomePatches {
 public:
   ComputeGlobal(ComputeID, ComputeMgr*);
@@ -38,6 +50,7 @@ private:
 
   AtomIDList aid;
   AtomIDList gdef;  // definitions of groups
+  ResizeArray<intpair> gpair;
   
   // (For "loadtotalforces" TCL command)
   // The atom IDs and forces of the requested atoms on the node
@@ -45,11 +58,14 @@ private:
   // from "aid", since the latter is after atom migration.
   AtomIDList fid;
   ForceList totalForce;
+  ForceList groupTotalForce;
+  int numGroupsRequested;
 
   Force **forcePtrs;
   FullAtom **atomPtrs;
   
   int forceSendEnabled; // are total forces received?
+  int gfcount;  // count of atoms contributing to group forces
   char *isRequested;  // whether this atom is requested by the TCL script
   int isRequestedAllocSize;  // size of array
   int endRequested;  // starting at this point assume not requested

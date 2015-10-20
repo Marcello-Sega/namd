@@ -56,6 +56,7 @@ class GlobalMasterServer {
   PositionList receivedAtomPositions;
   PositionList receivedGroupPositions; // the group positions
   BigRealList receivedGroupMasses; // the group positions
+  ForceList receivedGroupTotalForces;
   AtomIDList receivedForceIDs;
   ForceList receivedTotalForces;
 
@@ -78,7 +79,7 @@ class GlobalMasterServer {
    Only because we are dealing with the unwritten rule made by the
    ComputeGlobals that they must not be sent forces before they are
    "configured" */
-  void callClients();
+  int callClients();
 
   /* puts all the info requested by the clients into a single list */
   void resetAtomList(AtomIDList &atomsRequested);

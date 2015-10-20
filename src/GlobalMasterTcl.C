@@ -165,10 +165,7 @@ int GlobalMasterTcl::Tcl_clearconfig(ClientData clientData,
   }
   GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
   self->modifyRequestedGroups().resize(0);
-  self->modifyGroupForces().resize(0);
   self->modifyRequestedAtoms().resize(0);
-  self->modifyForcedAtoms().resize(0);
-  self->modifyAppliedForces().resize(0);
   return TCL_OK;
 }
 
@@ -296,6 +293,31 @@ int GlobalMasterTcl::Tcl_loadtotalforces(ClientData clientData,
     // go to the next atom
     forced_ids_i++;
     forces_i++;
+  }
+
+  /* do the group stuff */
+  ForceList::const_iterator tf_i = self->getGroupTotalForceBegin();
+  ForceList::const_iterator tf_e = self->getGroupTotalForceEnd();
+  int gcount = 1;
+  for ( ; tf_i != tf_e; ++tf_i, ++gcount ) {
+    Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
+    char buf[10];
+    sprintf(buf, "g%d", gcount);
+    Tcl_Obj *arrkey = Tcl_NewStringObj(buf, -1);
+    Tcl_IncrRefCount(arrkey);
+ 
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*tf_i).x)));
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*tf_i).y)));
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*tf_i).z)));
+   
+    if (!Tcl_ObjSetVar2(interp, force_array_name, arrkey, newlist, 0)) {
+      NAMD_die("TCL error in loadtotalforces for groups!");
+      return TCL_ERROR;
+    }
+    Tcl_DecrRefCount(arrkey);
   }
   return TCL_OK;
 }
