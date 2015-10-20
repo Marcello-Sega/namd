@@ -247,6 +247,8 @@ void BackEnd::init(int argc, char **argv) {
   master_init(argc, argv);
 }
 
+void cuda_finalize();
+
 // called on proc 0 by front end
 void BackEnd::exit(void) {
   float cpuTime = CmiCpuTimer() - cpuTime_start;
@@ -256,6 +258,9 @@ void BackEnd::exit(void) {
 	    wallTime, cpuTime, memusage_MB());
 #ifdef NAMD_TCL
   Tcl_Finalize();
+#endif
+#ifdef NAMD_CUDA
+  cuda_finalize();
 #endif
   CkExit();
 }

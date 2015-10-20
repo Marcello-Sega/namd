@@ -22,6 +22,16 @@ void cuda_initialize() {
 	deviceCUDA->initialize();
 }
 
+// kill all service threads
+void cuda_finalize() {
+    int ndevs = 0;
+    cudaGetDeviceCount(&ndevs);
+    for ( int dev=0; dev < ndevs; ++dev ) {
+        cudaSetDevice(dev);
+        cudaDeviceReset();
+    }
+}
+
 // -------------------------------------------------------------------------------------------------
 // Called from BackEnd.C by all processes to read command line arguments
 // These argument settings are used by DeviceCUDA -class
