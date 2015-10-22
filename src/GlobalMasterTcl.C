@@ -253,6 +253,33 @@ int GlobalMasterTcl::Tcl_loadforces(ClientData clientData,
 }
 
 
+int GlobalMasterTcl::Tcl_enabletotalforces(ClientData clientData,
+	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[])
+{
+  DebugM(2,"Tcl_enabletotalforces called\n");
+  if (objc != 1) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  self->requestTotalForce(true);
+  return TCL_OK;
+}
+
+int GlobalMasterTcl::Tcl_disabletotalforces(ClientData clientData,
+	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[])
+{
+  DebugM(2,"Tcl_disabletotalforces called\n");
+  if (objc != 1) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  self->requestTotalForce(false);
+  return TCL_OK;
+}
+
+
 // Here I simply copied the code from "Tcl_loadforces" above. The
 // only difference is the source data.
 int GlobalMasterTcl::Tcl_loadtotalforces(ClientData clientData,
@@ -265,6 +292,11 @@ int GlobalMasterTcl::Tcl_loadtotalforces(ClientData clientData,
   Tcl_Obj * const force_array_name = objv[1];
   
   GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  if ( ! self->requestedTotalForces() ) {
+    Tcl_SetResult(interp,"must call enabletotalforces before loadtotalforces",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
   AtomIDList::const_iterator forced_ids_i = self->getForceIdBegin();
   AtomIDList::const_iterator forced_ids_e = self->getForceIdEnd();
   ForceList::const_iterator forces_i = self->getTotalForce();
@@ -528,6 +560,10 @@ void GlobalMasterTcl::initialize() {
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "addgroup", Tcl_addgroup,
       (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, (char *)"enabletotalforces", Tcl_enabletotalforces,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, (char *)"disabletotalforces", Tcl_disabletotalforces,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 
   DebugM(1,"here\n");
   // Get the script
@@ -553,9 +589,6 @@ void GlobalMasterTcl::initialize() {
   }
 
   DebugM(1,"here\n");
-  Tcl_DeleteCommand(interp, "addatom");
-  Tcl_DeleteCommand(interp, "addgroup");
-
   Tcl_CreateObjCommand(interp, (char *)"loadforces", Tcl_loadforces,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateObjCommand(interp, (char *)"loadtotalforces", Tcl_loadtotalforces,
@@ -572,10 +605,6 @@ void GlobalMasterTcl::initialize() {
       (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, (char *)"clearconfig", Tcl_clearconfig,
       (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, (char *)"addatom", Tcl_addatom,
-    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, (char *)"addgroup", Tcl_addgroup,
-    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, (char *)"getstep", Tcl_getstep,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #else

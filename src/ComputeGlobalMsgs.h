@@ -63,6 +63,7 @@ public:
   ForceList gforce;  // force on group
 
   int seq;
+  int totalforces;  // send total forces?
   int reconfig;
 
   /* If <resendCoordinates> is 1, this message indicates a request for

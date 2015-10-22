@@ -867,6 +867,11 @@ calcforces} procedure.
 For example, ``{\tt loadforces f}'' and ``{\tt print \$f(4)}''.
 
 \item
+{\tt enabletotalforces}/{\tt disabletotalforces} \\
+Enables/disables the ``{\tt loadtotalforces}'' command, described below,
+which is disabled by default to avoid unneeded work and communication.
+
+\item
 {\tt loadtotalforces <varname>} \\
 Loads the total forces on each requested atom and group in the previous
 time step (in kcal mol$^{-1}$\AA$^{-1}$) into a local array. The
@@ -875,6 +880,7 @@ total force also includes external forces. Note that the
 the user. Therefore, one can subtract the external force on an
 atom from the total force on this atom to get the pure force
 arising from the simulation system.
+Note that ``{\tt enabletotalforces}'' must be called first.
 
 \item
 {\tt loadmasses <varname>} \\

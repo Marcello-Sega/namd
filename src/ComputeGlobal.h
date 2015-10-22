@@ -65,6 +65,7 @@ private:
   FullAtom **atomPtrs;
   
   int forceSendEnabled; // are total forces received?
+  int forceSendActive; // are total forces received this step?
   int gfcount;  // count of atoms contributing to group forces
   char *isRequested;  // whether this atom is requested by the TCL script
   int isRequestedAllocSize;  // size of array

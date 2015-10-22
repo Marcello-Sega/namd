@@ -59,6 +59,7 @@ class GlobalMaster {
   bool changedGroups(); // false if the groups haven't changed
   const ResizeArray<AtomIDList> &requestedGroups(); // the requested groups
   const ForceList &groupForces(); // the corresponding forces on groups
+  bool requestedTotalForces() { return totalForceRequested; }
 
   /* sets changedAtoms and changedForces to false again */
   void clearChanged(); 
@@ -112,6 +113,9 @@ class GlobalMaster {
   AtomIDList::const_iterator getForceIdBegin();
   AtomIDList::const_iterator getForceIdEnd();
   ForceList::const_iterator getTotalForce();
+
+  bool totalForceRequested;
+  void requestTotalForce(bool yesno = true) { totalForceRequested = yesno; }
   
   /* This helpful function returns an array with the masses of each of
      the groups whose positions we have.  */
@@ -145,7 +149,7 @@ class GlobalMaster {
   AtomIDList::iterator forceIdBegin;
   AtomIDList::iterator forceIdEnd;
   ForceList::iterator totalForceBegin;
-  
+
   /* These store the requested atoms and forces, and the booleans
      indicate whether they (may) have changed. */
   bool reqAtomsChanged;

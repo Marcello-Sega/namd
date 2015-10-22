@@ -47,6 +47,7 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   forceSendEnabled = 0;
   if ( sp->tclForcesOn ) forceSendEnabled = 1;
   if ( sp->colvarsOn ) forceSendEnabled = 1;
+  forceSendActive = 0;
   fid.resize(0);
   totalForce.resize(0);
   gfcount = 0;
@@ -134,6 +135,9 @@ void ComputeGlobal::recvConfig(ComputeGlobalConfigMsg *msg) {
 void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   DebugM(3,"Receiving results (" << msg->aid.size() << " forces, "
 	 << msg->newgdef.size() << " new group atoms) on client\n");
+
+  forceSendActive = msg->totalforces;
+  if ( forceSendActive && ! forceSendEnabled ) NAMD_bug("ComputeGlobal::recvResults forceSendActive without forceSendEnabled");
 
   // set the forces only if we aren't going to resend the data
   int setForces = !msg->resendCoordinates;
@@ -336,6 +340,7 @@ void ComputeGlobal::sendData()
 void ComputeGlobal::saveTotalForces(HomePatch *homePatch)
 {
   if ( ! forceSendEnabled ) NAMD_bug("ComputeGlobal::saveTotalForces called unexpectedly");
+  if ( ! forceSendActive ) return;
 
   if ( Node::Object()->simParameters->accelMDOn && Node::Object()->simParameters->accelMDDebugOn && Node::Object()->simParameters->accelMDdihe ) {
     int num=homePatch->numAtoms;

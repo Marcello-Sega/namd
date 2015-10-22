@@ -67,6 +67,7 @@ PACK_MSG(ComputeGlobalResultsMsg,
   PACK_RESIZE(f);
   PACK_RESIZE(gforce);
   PACK(seq);
+  PACK(totalforces);
   PACK(reconfig);
   PACK(resendCoordinates);
   if ( packmsg_msg->reconfig ) {

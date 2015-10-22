@@ -93,6 +93,7 @@ GlobalMaster::GlobalMaster() {
   forceIdEnd = 0;
   totalForceBegin = 0;
   lattice = 0;
+  totalForceRequested = false;
 }
 
 bool GlobalMaster::changedAtoms() {

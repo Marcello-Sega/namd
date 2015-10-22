@@ -233,17 +233,20 @@ struct atomID_less {
 
 int GlobalMasterServer::callClients() {
   DebugM(3,"Calling clients\n");
+  bool forceSendActive = false;
   {
     GlobalMaster **m_i = clientList.begin();
     GlobalMaster **m_e = clientList.end();
     for ( ; m_i != m_e; ++m_i ) {
       if ( (*m_i)->changedAtoms() ) firstTime = 1;
       if ( (*m_i)->changedGroups() ) firstTime = 1;
+      if ( (*m_i)->requestedTotalForces() ) forceSendActive = true;
       (*m_i)->clearChanged();
     }
   }
 
   if(firstTime) {
+ 
     /* the first time we just get the requested atom ids from the
        clients and send messages to the compute globals requesting
        those atoms, so they can have coordinates for the first time
@@ -255,6 +258,7 @@ int GlobalMasterServer::callClients() {
     resetGroupList(msg->newgdef,&totalGroupsRequested);
     msg->resendCoordinates = 1;
     msg->reconfig = 1;
+    msg->totalforces = forceSendActive;
     totalAtomsRequested = msg->newaid.size(); // record the atom total
 
     numDataSenders = totalAtomsRequested;
@@ -314,6 +318,7 @@ int GlobalMasterServer::callClients() {
   bool requested_atoms_changed=false;
   bool requested_forces_changed=false;
   bool requested_groups_changed=false;
+  forceSendActive = false;
   
   vector <position_index> positions;
   for (int j = 0; a_i != a_e; ++a_i, ++j) {
@@ -374,7 +379,7 @@ int GlobalMasterServer::callClients() {
     master->processData(ma_i,ma_e,
 			mp_i,g_i,g_i+num_groups_requested,
 			gm_i,gm_i+num_groups_requested,
-			gtf_i,gtf_i+master->old_num_groups_requested,
+			gtf_i,gtf_i+(numForceSenders?master->old_num_groups_requested:0),
 			forced_atoms_i,forced_atoms_e,forces_i,
       receivedForceIDs.begin(),receivedForceIDs.end(),receivedTotalForces.begin());
 
@@ -393,17 +398,18 @@ int GlobalMasterServer::callClients() {
       requested_groups_changed = true;
     }
     master->clearChanged();
+    if(master->requestedTotalForces()) forceSendActive = true;
 
     /* go to next master */
     m_i++;
 
     g_i += num_groups_requested;
     gm_i += num_groups_requested;
-    gtf_i += master->old_num_groups_requested;
+    if ( numForceSenders ) gtf_i += master->old_num_groups_requested;
     master->old_num_groups_requested = master->requestedGroups().size();  // include changes
   } 
 
-  if ( gtf_i != gtf_e ) NAMD_bug("GlobalMasterServer::callClients bad group total force count");
+  if ( numForceSenders && gtf_i != gtf_e ) NAMD_bug("GlobalMasterServer::callClients bad group total force count");
 
   /* make a new message */
   ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;
@@ -421,7 +427,8 @@ int GlobalMasterServer::callClients() {
       if ( *g_i != -1 ) ++numDataSenders;
     }
   }
-  numForceSenders = (forceSendEnabled ? numDataSenders : 0);
+  msg->totalforces = forceSendActive;
+  numForceSenders = (forceSendActive ? numDataSenders : 0);
   resetForceList(msg->aid,msg->f,msg->gforce); // could this be more efficient?
 
   /* get group acceleration by renormalizing group net force by group total mass */
