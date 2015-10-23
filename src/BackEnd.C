@@ -262,6 +262,15 @@ void BackEnd::exit(void) {
 #ifdef NAMD_CUDA
   cuda_finalize();
 #endif
+#ifdef NAMD_MIC
+#if CMK_MULTICORE
+  CmiPrintf("EXITING ABNORMALLY TO AVOID HANGING MIC OFFLOAD THREADS\n");
+#pragma offload target(mic)
+  {
+    ::exit(0);
+  }
+#endif
+#endif
   CkExit();
 }
 
