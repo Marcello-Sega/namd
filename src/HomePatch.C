@@ -1031,9 +1031,10 @@ void HomePatch::positionsReady(int doMigration)
       #endif
     }
   }
+#else
+  doMigration = doMigration && numNeighbors;
 #endif
-
-  doMigration = (doMigration && numNeighbors) || ! patchMapRead;
+  doMigration = doMigration || ! patchMapRead;
 
   // Workaround for oversize groups
   doGroupSizeCheck();
