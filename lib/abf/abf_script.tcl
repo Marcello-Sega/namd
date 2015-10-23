@@ -8,6 +8,7 @@
 # Separate source files for coordinate-specific stuff #
 #######################################################
 
+enabletotalforces
 
 namespace eval ::ABF {
 

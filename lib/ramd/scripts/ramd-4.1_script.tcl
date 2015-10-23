@@ -39,6 +39,8 @@
 #   http://projects.eml.org/mcm/software                                           *
 #***********************************************************************************
 
+enabletotalforces
+
 namespace eval ::RAMD {
  print RAMD:
  print RAMD:   -------------------------------------------------------------------  
