@@ -13,6 +13,7 @@
 
 #define CPROXY_DE(x) ((CProxy_DataExchanger)(x))
 CpvExtern(int, breakScheduler);
+CpvExtern(int, inEval);
 
 class DataMessage {
   public:

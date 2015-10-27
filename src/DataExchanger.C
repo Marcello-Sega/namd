@@ -24,6 +24,7 @@ extern "C" {
 static int recvRedCalledEarly;
 
 CpvDeclare(int, breakScheduler);
+CpvDeclare(int, inEval);
 
 //functions to receive and invoke chare's entry methods
 extern "C" {
@@ -79,6 +80,10 @@ extern "C" {
   }
 
   void replica_send(char *sndbuf, int sendcount, int destPart, int destPE) {
+    if ( CpvAccess(inEval) ) {
+      packSend(destPE,destPart,sndbuf,sendcount,CkpvAccess(recv_data_idx),1);
+      return;
+    }
     Pointer sendPointer(sndbuf);
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].send(sendPointer,sendcount,destPart,destPE); 
     CpvAccess(breakScheduler) = 0;
@@ -197,6 +202,8 @@ DataExchanger::DataExchanger()
 {
   CpvInitialize(int, breakScheduler);
   CpvAccess(breakScheduler) = 1;
+  CpvInitialize(int, inEval);
+  CpvAccess(inEval) = 0;
   if(CmiMyPartition() == 0) 
     parent = -1;
   else 

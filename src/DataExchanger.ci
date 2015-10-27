@@ -27,7 +27,7 @@ module DataExchanger {
           DataMessage *dmsg = (DataMessage*)p.data;
           if((srcPart < 0) || (dmsg->src == src && dmsg->srcPart == srcPart)) {
             *((DataMessage**)recvPointer.data) = dmsg;
-            packSend(dmsg->src,dmsg->srcPart,NULL,0,recv_ack_idx);
+            if ( ! dmsg->code ) packSend(dmsg->src,dmsg->srcPart,NULL,0,recv_ack_idx);
             loop = 0;
             CpvAccess(breakScheduler) = 1;
           } else {
@@ -47,7 +47,7 @@ module DataExchanger {
           DataMessage *dmsg = (DataMessage*)p.data;
           if((srcPart < 0) || (dmsg->src == src && dmsg->srcPart == srcPart)) {
             *((DataMessage**)recvPointer.data) = dmsg;
-            packSend(dmsg->src,dmsg->srcPart,NULL,0,recv_ack_idx);
+            if ( ! dmsg->code ) packSend(dmsg->src,dmsg->srcPart,NULL,0,recv_ack_idx);
             loop = 0;
           }else {
             thisProxy[CkMyPe()].recv_data(p);
@@ -74,7 +74,9 @@ module DataExchanger {
       serial {
         DataMessage *dmsg = (DataMessage*)p.data;
         const char *resultPtr = 0;
+        CpvAccess(inEval) = 1;
         int code = Node::Object()->getScript()->eval(dmsg->data, &resultPtr);
+        CpvAccess(inEval) = 0;
         int resultSize = strlen(resultPtr);
         packSend(dmsg->src,dmsg->srcPart,resultPtr,resultSize,recv_eval_result_idx,code);
       }
