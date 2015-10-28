@@ -364,6 +364,9 @@ begin:
 
     if ( $CHARM_ARCH_TEST =~ mpi-* ) then
       set charm_arch_mpi = 1
+      if ( $CHARM_ARCH_TEST =~ *-win32* || $CHARM_ARCH_TEST =~ *-win64* ) then
+        set charm_arch_mpi = 0
+      endif
     else
       set charm_arch_mpi = 0
     endif
