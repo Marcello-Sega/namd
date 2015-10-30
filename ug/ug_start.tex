@@ -274,6 +274,9 @@ which utilize two-sided semantics modeled on MPI:
 The replicaSend/Sendrecv {\em data} argument may be any string,
 and hence any Tcl object (e.g., a list) that can be represented as a string.
 Data received from the {\em source} replica is returned by replicaRecv/Sendrecv.
+In order to ensure message ordering, replicaSend/Sendrecv will block
+until the corresponding remote receive call (except when replicaSend
+is called from inside replicaEval, as discussed below).
 
 The parameter {\iparam{replicaUniformPatchGrids}} must be true for 
 atom exchange (replicaAtom...) or remote checkpointing (checkpoint... with a second argument, see below).
@@ -312,6 +315,13 @@ This should be general enough to build any kind of work scheduler or shared data
 If you want to call replicaEval repeatedly, e.g., to check if some value has been set,
 you should call ``replicaYield {\em seconds}'' in between, as this will introduce a delay but
 still enable processing of asynchronous calls from other replicas.
+Potentially blocking functions such as replicaRecv should not be called from within replicaEval,
+nor should functions such as run, checkpointLoad/Store, and replicaAtomSend/Recv that would
+require the simulation of the remote replica to be halted.
+It is allowed to call replicaSend (but not replicaSendrecv) from within replicaEval, since
+replicaSend is non-blocking and one-sided (but potentially overtaking) in this context.
+Rather than polling a remote replica (e.g., for work) via replicaEval, it is more efficient
+to register a request via replicaEval and then call replicaRecv to wait for notification.
 
 
 \subsubsection{Required \NAMD\ configuration parameters}
