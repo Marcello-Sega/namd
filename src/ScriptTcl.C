@@ -136,6 +136,17 @@ void ScriptTcl::reinitAtoms(const char *basename) {
 
 #ifdef NAMD_TCL
 
+int ScriptTcl::Tcl_startup(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if ( argc > 1 ) {
+    Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_exit(ClientData clientData,
 	Tcl_Interp *, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -1632,6 +1643,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   interp = Tcl_CreateInterp();
   psfgen_static_init(interp);
   tcl_vector_math_init(interp);
+  Tcl_CreateCommand(interp, "startup", Tcl_startup,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "exit", Tcl_exit,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "abort", Tcl_abort,
@@ -1786,7 +1799,7 @@ void ScriptTcl::run(char *scriptFile) {
   }
 #endif
 
-  if (runWasCalled == 0) {
+  if (initWasCalled == 0) {
     initcheck();
     SimParameters *simParams = Node::Object()->simParameters;
     if ( simParams->minimizeCGOn ) runController(SCRIPT_MINIMIZE);
