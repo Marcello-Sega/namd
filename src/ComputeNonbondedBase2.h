@@ -218,12 +218,14 @@ MODIFIED(
         // tidy the code
 
         FEP(fep_vdw_forceandenergies(A,B,r2,myVdwShift,myVdwShift2,switchdist2,
-          cutoff2, myVdwLambda, myVdwLambda2, Fep_WCA_repuOn, Fep_WCA_dispOn, Fep_Wham,
-          WCA_rcut1, WCA_rcut2, WCA_rcut3, switchfactor, &alch_vdw_energy, 
-          &alch_vdw_force,&alch_vdw_energy_2,&alch_vdw_energy_2_Left);)
+          cutoff2, myVdwLambda, myVdwLambda2, Fep_WCA_repuOn, Fep_WCA_dispOn,
+          Fep_Wham, WCA_rcut1, WCA_rcut2, WCA_rcut3, switchfactor,
+          vdwForceSwitching, LJcorrection, &alch_vdw_energy, &alch_vdw_force,
+          &alch_vdw_energy_2, &alch_vdw_energy_2_Left);)
         TI(ti_vdw_force_energy_dUdl(A,B,r2,myVdwShift,switchdist2,
-          cutoff2, myVdwLambda, alchVdwShiftCoeff, switchfactor, 
-          &alch_vdw_energy, &alch_vdw_force, &alch_vdw_dUdl);)
+          cutoff2, myVdwLambda, alchVdwShiftCoeff, switchfactor,
+          vdwForceSwitching, LJcorrection, &alch_vdw_energy, &alch_vdw_force,
+          &alch_vdw_dUdl);)
       )
       
 	//NOT_ALCHPAIR(

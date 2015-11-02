@@ -9125,12 +9125,6 @@ void Molecule::build_atom_status(void) {
       BigReal LJAvgA = sumOfAs / count;
       BigReal LJAvgB = sumOfBs / count;
       if ( ! CkMyPe() ) {
-        if ( simParams->switchingActive && simParams->vdwForceSwitching ) {
-          iout << iWARN << "**************************************************************\n";
-          iout << iWARN << "LONG-RANGE LJ: CORRECTION FOR FORCE SWITCHING NOT IMPLEMENTED,\n";
-          iout << iWARN << "LONG-RANGE LJ: USING CORRECTION FOR ENERGY SWITCHING INSTEAD!\n";
-          iout << iWARN << "**************************************************************\n" << endi;
-        }
         iout << iINFO << "LONG-RANGE LJ: APPLYING ANALYTICAL CORRECTIONS TO "
           << "ENERGY AND PRESSURE\n" << endi; 
         iout << iINFO << "LONG-RANGE LJ: AVERAGE A AND B COEFFICIENTS " 
@@ -9138,22 +9132,40 @@ void Molecule::build_atom_status(void) {
       }
 
       BigReal rcut = simParams->cutoff;
-      BigReal rcut2= rcut * rcut;
-      BigReal rcut3= rcut2 * rcut;
-      BigReal rcut4= rcut2 * rcut2;
-      BigReal rcut5= rcut2 * rcut3;
+      BigReal rcut2 = rcut*rcut;
+      BigReal rcut3 = rcut*rcut2;
+      BigReal rcut4 = rcut2*rcut2;
+      BigReal rcut5 = rcut2*rcut3;
+      BigReal rcut6 = rcut3*rcut3;
+      BigReal rcut9 = rcut5*rcut4;
       BigReal rswitch = simParams->switchingDist;
-      BigReal rswitch2 = rswitch * rswitch;
-      BigReal rswitch3 = rswitch2 * rswitch;
-      BigReal rswitch4 = rswitch2 * rswitch2;
-      BigReal rswitch5 = rswitch2 * rswitch3;
+      BigReal rswitch2 = rswitch*rswitch;
+      BigReal rswitch3 = rswitch*rswitch2;
+      BigReal rswitch4 = rswitch2*rswitch2;
+      BigReal rswitch5 = rswitch2*rswitch3;
+      BigReal rswitch6 = rswitch3*rswitch3;
 
       if (simParams->switchingActive) {
-        tail_corr_ener = tail_corr_virial = (16*numAtoms*numAtoms*PI*(-105*LJAvgB*rcut5*rswitch5 + LJAvgA*(3*rcut4 + 9*rcut3*rswitch + 11*rcut2*rswitch2 + 9*rcut*rswitch3 + 3*rswitch4)))/(315*rcut5*rswitch5*((rcut + rswitch)*(rcut + rswitch)*(rcut + rswitch)));
+	if (!simParams->vdwForceSwitching) {
+          tail_corr_ener = tail_corr_virial = 16*numAtoms*numAtoms*PI*(LJAvgA*(3*rcut4 + 9*rcut3*rswitch + 11*rcut2*rswitch2 + 9*rcut*rswitch3 + 3*rswitch4) - 105*LJAvgB*rcut5*rswitch5)/(315*rcut5*rswitch5*(rcut + rswitch)*(rcut + rswitch)*(rcut + rswitch)); 
+        }
+        else {
+          /* BKR - This also requires re-definition of the force switched LJ
+             potential such that the potential is unmodified within the
+             switching distance (see ComputeNonbondedUtil.C). If that is not
+             done, then the tail correction is difficult to define (in fact,
+             it is no longer a "tail" correction but rather a correction to
+             the "core").  For backwards consistency, this change is only made
+             when the correction defined here is used.
+          */
+          BigReal lnr = log(rswitch/rcut);
+          tail_corr_virial = 4*numAtoms*numAtoms*PI*(4*LJAvgA*(rcut3 - rswitch3) + 9*LJAvgB*rswitch3*rcut3*(rcut3 + rswitch3)*lnr)/(9*rswitch3*rcut3*(rcut6-rswitch6));
+          tail_corr_ener = 2*numAtoms*numAtoms*PI*(LJAvgA*(5*rswitch3 - 3*rcut3)*(rcut3 - rswitch3) - 3*LJAvgB*rswitch3*rcut3*(rswitch6 - rcut6 - 6*rswitch3*(rcut3+rswitch3)*lnr))/(9*rswitch6*rcut3*(rcut6-rswitch6));
+        }
       }
       else {
-        tail_corr_virial = -4 * numAtoms * numAtoms * PI * (3 * LJAvgB * rcut3 * rcut3 - 2 * LJAvgA) / (9 * rcut3 * rcut3 * rcut3);
-        tail_corr_ener = 2 * numAtoms * numAtoms * PI * (LJAvgA - 3 * LJAvgB * rcut3 * rcut3) / (9 * rcut3 * rcut3 * rcut3); 
+        tail_corr_virial = 4*numAtoms*numAtoms*PI*(2*LJAvgA - 3*LJAvgB*rcut6) / (9*rcut9);
+        tail_corr_ener = 2*numAtoms*numAtoms*PI*(LJAvgA - 3*LJAvgB*rcut6) / (9*rcut9);
       }
 
     } // LJcorrection 

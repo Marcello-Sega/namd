@@ -373,6 +373,8 @@ void ComputeNonbondedUtil :: NAME
     const BigReal alchElecLambdaStart = ComputeNonbondedUtil::alchElecLambdaStart;
     const BigReal alchVdwLambdaEnd = ComputeNonbondedUtil::alchVdwLambdaEnd;
     const BigReal alchVdwShiftCoeff = ComputeNonbondedUtil::alchVdwShiftCoeff;
+    const Bool vdwForceSwitching = ComputeNonbondedUtil::vdwForceSwitching;
+    const Bool LJcorrection = ComputeNonbondedUtil::LJcorrection;
     const Bool Fep_WCA_repuOn = ComputeNonbondedUtil::Fep_WCA_repuOn;
     const Bool Fep_WCA_dispOn = ComputeNonbondedUtil::Fep_WCA_dispOn;
     const Bool Fep_ElecOn = ComputeNonbondedUtil::Fep_ElecOn;
