@@ -12,10 +12,14 @@
 #define OUTPUT_H
 
 #include "common.h"
+#include <string>
+#include <map>
 
 class Vector;
 class FloatVector;
 class Lattice;
+class ReplicaDcdInitMsg;
+class ReplicaDcdDataMsg;
 
 // semaphore "steps", must be negative
 #define FILE_OUTPUT -1
@@ -64,6 +68,16 @@ friend class SimParameters;
    void scale_vels(Vector *, int, Real);	//  scale velocity vectors before output
    void write_binary_file(char *, int, Vector *); // Write a binary restart file with
 						//  coordinates or velocities
+
+   struct replicaDcdFile {
+     std::string filename;
+     int fileid;
+     replicaDcdFile() : fileid(0) { ; }
+   };
+   std::map<int,replicaDcdFile> replicaDcdFiles;
+   int replicaDcdActive;
+   int replicaDcdIndex;
+
 public :
    Output();					//  Constructor
    ~Output();					//  Destructor
@@ -82,6 +96,11 @@ public :
    void force(int, int, Vector *);		//  Produce appropriate force
 						//  output for the current 
 						//  timestep
+
+  void setReplicaDcdIndex(int index);
+  void replicaDcdInit(int index, const char *filename);
+  void recvReplicaDcdInit(ReplicaDcdInitMsg *msg);
+  void recvReplicaDcdData(ReplicaDcdDataMsg *msg);
 };
 
 #ifdef MEM_OPT_VERSION

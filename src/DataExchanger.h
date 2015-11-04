@@ -31,6 +31,30 @@ class DataMessage {
   }
 };
 
+class ReplicaDcdInitMsg {
+  public:
+  char core[CmiMsgHeaderSizeBytes];
+  int srcPart;
+  int dcdIndex;
+  char data[1];
+};
+
+class ReplicaDcdDataMsg {
+  public:
+  char core[CmiMsgHeaderSizeBytes];
+  int srcPart;
+  int dcdIndex;
+  int NSAVC, NPRIV, NSTEP, NFILE, with_unitcell, numAtoms;
+  double DELTA;
+  double unitcell[6];
+  char data[1];
+};
+
+class ReplicaDcdAckMsg {
+  public:
+  char core[CmiMsgHeaderSizeBytes];
+};
+
 class DataExchanger : public CBase_DataExchanger
 {
   public:
@@ -53,6 +77,12 @@ class DataExchanger : public CBase_DataExchanger
 
 extern "C" {
 void packSend(int dest, int partition, const char *data, int size, int handler, int code=0);
+void sendReplicaDcdInit(int dstPart, ReplicaDcdInitMsg *msg, int msgsize);
+void sendReplicaDcdData(int dstPart, ReplicaDcdDataMsg *msg, int msgsize);
+void sendReplicaDcdAck(int dstPart, ReplicaDcdAckMsg *msg);
+void recvReplicaDcdInit(ReplicaDcdInitMsg *msg);
+void recvReplicaDcdData(ReplicaDcdDataMsg *msg);
+void recvReplicaDcdAck(ReplicaDcdAckMsg *msg);
 void recvData(DataMessage *dmsg); 
 void recvAck(DataMessage *dmsg); 
 

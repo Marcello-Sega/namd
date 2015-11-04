@@ -44,6 +44,9 @@ CkpvDeclare(int, recv_bcast_idx);
 CkpvDeclare(int, recv_red_idx);
 CkpvDeclare(int, recv_eval_command_idx);
 CkpvDeclare(int, recv_eval_result_idx);
+CkpvDeclare(int, recv_replica_dcd_init_idx);
+CkpvDeclare(int, recv_replica_dcd_data_idx);
+CkpvDeclare(int, recv_replica_dcd_ack_idx);
 
 extern void initializeReplicaConverseHandlers();
 

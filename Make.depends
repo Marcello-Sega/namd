@@ -5406,7 +5406,10 @@ obj/Output.o: \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	inc/NamdHybridLB.decl.h \
-	inc/NamdDummyLB.decl.h
+	inc/NamdDummyLB.decl.h \
+	src/DataExchanger.h \
+	inc/DataExchanger.decl.h \
+	src/Pointer.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Output.o $(COPTC) src/Output.C
 obj/Parameters.o: \
 	src/Parameters.C \
@@ -5994,6 +5997,7 @@ obj/ScriptTcl.o: \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
 	src/NamdState.h \
+	src/Output.h \
 	src/Controller.h \
 	src/fstream_namd.h \
 	src/SimParameters.h \
@@ -6410,20 +6414,57 @@ obj/DataExchanger.o: \
 	src/common.h \
 	src/Node.h \
 	inc/Node.decl.h \
-	src/ScriptTcl.h \
+	src/CollectionMaster.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/Broadcasts.h \
 	src/Lattice.h \
 	src/Tensor.h \
-	src/BroadcastObject.h \
-	src/BroadcastMgr.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	inc/CollectionMaster.decl.h \
+	inc/ParallelIOMgr.decl.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/structures.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
-	src/InfoStream.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/ConfigList.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/Output.h \
+	src/ScriptTcl.h \
+	src/Broadcasts.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
 	src/LdbCoordinator.h \

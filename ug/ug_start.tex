@@ -54,7 +54,7 @@ configuration file so that all file paths in the configuration file
 are relative to the configuration file directory.
 Multiple configuration files may be specified on the command line
 and the will be read in order, but all file paths will be relative
-to the first configuration file to call a ``run'' command, or
+to the first configuration file to call a ``run'' (or ``minimize'' or ``startup'') command, or
 to the last configuration file if ``run'' is not called.
 
 Commands or parameters may also be specified directly on the
@@ -294,6 +294,7 @@ fewer NAMD replica partitions than logical replicas:
   \item \icommand{checkpointFree} {\em key} ?{\em replica} or global?
   \item \icommand{replicaEval} {\em replica} {\em script}
   \item \icommand{replicaYield} ?{\em seconds}?
+  \item \icommand{replicaDcdFile} {\em index} ?{\em filename}?
 \end{itemize}
 
 The {\em key} can be any string.
@@ -309,7 +310,7 @@ If two replicas try to store a checkpoint with the same key on the same replica 
 time you may end up with a mix of the two (and probably duplicate/missing atoms).
 If one replica tries to load a checkpoint while another replica is storing it the same may happen.
 You cannot store a checkpoint on a replica until that replica has created its own patch data structures.
-This can be guaranteed by calling "run 0" and "replicaBarrier" before any remote checkpoint calls.
+This can be guaranteed by calling ``startup'' and ``replicaBarrier'' before any remote checkpoint calls.
 
 The replicaEval command asynchronously executes its script in the top-level context
 of the target replica's Tcl interpreter and returns the result or error.
@@ -325,6 +326,15 @@ replicaSend is non-blocking and one-sided (but potentially overtaking) in this c
 Rather than polling a remote replica (e.g., for work) via replicaEval, it is more efficient
 to register a request via replicaEval and then call replicaRecv to wait for notification.
 
+The replicaDcdFile command is similar to the \icommand{dcdFile} command in that it changes the
+trajectory output file, but the file is actually opened by a different replica partition
+and may be written to by any other partition that calls replicaDcdFile with the same index
+but no filename argument.  If a filename argument is given, any file currently associated
+with the index is closed and a new file created, even if the new and old filenames are the same.
+The new file is created only when the next trajectory frame is written,
+not during the replicaDcdFile command itself.
+The caller must ensure that an index is not used before it is associated with a filename,
+and that each index is in use by only one replica at a time.
 
 \subsubsection{Required \NAMD\ configuration parameters}
 \label{section:requiredparams}

@@ -8,7 +8,10 @@
 #include "ProcessorPrivate.h"
 #include "common.h"
 #include "Node.h"
+#include "CollectionMaster.h"
+#include "Output.h"
 #include "ScriptTcl.h"
+#include "qd.h"
 
 #if CMK_HAS_PARTITION
 #ifdef CmiMyPartitionSize
@@ -37,6 +40,54 @@ extern "C" {
 #else
     CmiSyncSendAndFree(dst,msgsize,(char*)dmsg);
 #endif
+  }
+
+  void sendReplicaDcdInit(int dstPart, ReplicaDcdInitMsg *msg, int msgsize) {
+    CmiSetHandler(msg->core, CkpvAccess(recv_replica_dcd_init_idx));
+#if CMK_HAS_PARTITION
+    CmiInterSyncSendAndFree(0,dstPart,msgsize,(char*)msg);
+#else
+    CmiSyncSendAndFree(0,msgsize,(char*)msg);
+#endif
+    CollectionMaster::Object()->blockPositions();  // ensure ordering
+    CkpvAccess(_qd)->create();  // ensure completion
+  }
+
+  void sendReplicaDcdData(int dstPart, ReplicaDcdDataMsg *msg, int msgsize) {
+    CmiSetHandler(msg->core, CkpvAccess(recv_replica_dcd_data_idx));
+#if CMK_HAS_PARTITION
+    CmiInterSyncSendAndFree(0,dstPart,msgsize,(char*)msg);
+#else
+    CmiSyncSendAndFree(0,msgsize,(char*)msg);
+#endif
+    CollectionMaster::Object()->blockPositions();  // ensure ordering
+    CkpvAccess(_qd)->create();  // ensure completion
+  }
+
+  void sendReplicaDcdAck(int dstPart, ReplicaDcdAckMsg *msg) {
+    CmiSetHandler(msg->core, CkpvAccess(recv_replica_dcd_ack_idx));
+    int msgsize = sizeof(ReplicaDcdAckMsg);
+#if CMK_HAS_PARTITION
+    CmiInterSyncSendAndFree(0,dstPart,msgsize,(char*)msg);
+#else
+    CmiSyncSendAndFree(0,msgsize,(char*)msg);
+#endif
+  }
+
+  void recvReplicaDcdInit(ReplicaDcdInitMsg *msg) {
+    Node::Object()->output->recvReplicaDcdInit(msg);
+    CmiFree(msg);
+  }
+
+  void recvReplicaDcdData(ReplicaDcdDataMsg *msg) {
+    Node::Object()->output->recvReplicaDcdData(msg);
+    CmiFree(msg);
+  }
+
+  void recvReplicaDcdAck(ReplicaDcdAckMsg *msg) {
+    CmiFree(msg);
+    CollectionMaster::Object()->unblockPositions();
+    CkpvAccess(_qd)->process();
   }
 
   void recvData(DataMessage *dmsg) {
@@ -186,6 +237,9 @@ void initializeReplicaConverseHandlers() {
   CkpvInitialize(int, recv_red_idx);
   CkpvInitialize(int, recv_eval_command_idx);
   CkpvInitialize(int, recv_eval_result_idx);
+  CkpvInitialize(int, recv_replica_dcd_init_idx);
+  CkpvInitialize(int, recv_replica_dcd_data_idx);
+  CkpvInitialize(int, recv_replica_dcd_ack_idx);
 
   CkpvAccess(recv_data_idx) = CmiRegisterHandler((CmiHandler)recvData);                   
   CkpvAccess(recv_ack_idx) = CmiRegisterHandler((CmiHandler)recvAck);                     
@@ -193,6 +247,9 @@ void initializeReplicaConverseHandlers() {
   CkpvAccess(recv_bcast_idx) = CmiRegisterHandler((CmiHandler)recvBcast);                 
   CkpvAccess(recv_eval_command_idx) = CmiRegisterHandler((CmiHandler)recvEvalCommand);    
   CkpvAccess(recv_eval_result_idx) = CmiRegisterHandler((CmiHandler)recvEvalResult);      
+  CkpvAccess(recv_replica_dcd_init_idx) = CmiRegisterHandler((CmiHandler)recvReplicaDcdInit);
+  CkpvAccess(recv_replica_dcd_data_idx) = CmiRegisterHandler((CmiHandler)recvReplicaDcdData);
+  CkpvAccess(recv_replica_dcd_ack_idx) = CmiRegisterHandler((CmiHandler)recvReplicaDcdAck);
 }
 
 //======================================================================

@@ -61,6 +61,9 @@ public:
   void disposeVelocities(CollectVectorInstance *c);
   void disposeForces(CollectVectorInstance *c);
 
+  void blockPositions() { positions.block(); }
+  void unblockPositions() { positions.unblock(); }
+
   /////Beginning of declarations for comm with CollectionMidMaster/////
   void receiveOutputPosReady(int seq);
   void receiveOutputVelReady(int seq);
@@ -145,6 +148,8 @@ public:
       //next round of output -Chao Mei
       return NULL;
     }
+    void block() { ; }  // unimplemented
+    void unblock() { ; }  // unimplemented
 
     //only get the ready instance, not remove their info
     //from timestep queue and lattice queue
@@ -264,7 +269,7 @@ public:
     CollectVectorInstance* removeReady(void)
     {
       CollectVectorInstance *o = 0;
-      if ( queue.size() )
+      if ( queue.size() && ! blocked )
       {
         int seq = queue[0];
         CollectVectorInstance **c = data.begin();
@@ -281,9 +286,14 @@ public:
       return o;
     }
 
+    void block() { blocked = 1; }
+    void unblock() { blocked = 0; }
+    CollectVectorSequence() : blocked(0) { ; }
+    
     ResizeArray<CollectVectorInstance*> data;
     ResizeArray<int> queue;
     ResizeArray<Lattice> latqueue;
+    int blocked;
 
   };
 #endif

@@ -31,6 +31,7 @@
 #include "PatchMap.inl"
 #include "ScriptTcl.h"
 #include "Lattice.h"
+#include "DataExchanger.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #ifdef WIN32
@@ -126,6 +127,31 @@ void NAMD_close(int fd, const char *fname) {
 #define simParams simParameters
 #define pdbData pdb
 
+
+static void lattice_to_unitcell(const Lattice *lattice, double *unitcell) {
+   if (lattice && lattice->a_p() && lattice->b_p() && lattice->c_p()) {
+      const Vector &a=lattice->a();
+      const Vector &b=lattice->b();
+      const Vector &c=lattice->c();
+      unitcell[0] = a.length();
+      unitcell[2] = b.length();
+      unitcell[5] = c.length();
+      double cosAB = (a*b)/(unitcell[0]*unitcell[2]);
+      double cosAC = (a*c)/(unitcell[0]*unitcell[5]);
+      double cosBC = (b*c)/(unitcell[2]*unitcell[5]);
+      if (cosAB > 1.0) cosAB = 1.0; else if (cosAB < -1.0) cosAB = -1.0;
+      if (cosAC > 1.0) cosAC = 1.0; else if (cosAC < -1.0) cosAC = -1.0;
+      if (cosBC > 1.0) cosBC = 1.0; else if (cosBC < -1.0) cosBC = -1.0;
+      unitcell[1] = cosAB;
+      unitcell[3] = cosAC;
+      unitcell[4] = cosBC;
+   } else {
+      unitcell[0] = unitcell[2] = unitcell[5] = 1.0;
+      unitcell[1] = unitcell[3] = unitcell[4] = 0.0;
+   }
+}
+
+
 /************************************************************************/
 /*                  */
 /*      FUNCTION Output          */
@@ -135,7 +161,7 @@ void NAMD_close(int fd, const char *fname) {
 /*                  */
 /************************************************************************/
 
-Output::Output() { }
+Output::Output() : replicaDcdActive(0) { }
 
 /*      END OF FUNCTION Output        */
 
@@ -631,6 +657,81 @@ void SimParameters::close_dcdfile() {
 
 }
 
+void Output::setReplicaDcdIndex(int index) {
+  replicaDcdActive = 1;
+  replicaDcdIndex = index;
+}
+
+void Output::replicaDcdInit(int index, const char *filename) {
+  replicaDcdActive = 1;
+  replicaDcdIndex = index;
+  int msgsize = sizeof(ReplicaDcdInitMsg) + strlen(filename);
+  ReplicaDcdInitMsg *msg = (ReplicaDcdInitMsg *) CmiAlloc(msgsize);
+  msg->srcPart = CmiMyPartition();
+  msg->dcdIndex = replicaDcdIndex;
+  strcpy(msg->data, filename);
+  sendReplicaDcdInit(abs(replicaDcdIndex) % CmiNumPartitions(), msg, msgsize);
+}
+
+void Output::recvReplicaDcdInit(ReplicaDcdInitMsg *msg) {
+  replicaDcdFile &f = replicaDcdFiles[msg->dcdIndex];
+  if ( f.fileid ) {
+    iout << "CLOSING REPLICA DCD FILE " << msg->dcdIndex << " " << f.filename.c_str() << "\n" << endi;
+    close_dcd_write(f.fileid);
+    f.fileid = 0;
+  }
+  f.filename = (const char*) msg->data;
+  sendReplicaDcdAck(msg->srcPart, (ReplicaDcdAckMsg*) CmiAlloc(sizeof(ReplicaDcdAckMsg)));
+}
+
+void Output::recvReplicaDcdData(ReplicaDcdDataMsg *msg) {
+  if ( ! replicaDcdFiles.count(msg->dcdIndex) ) {
+    char err_msg[257];
+    sprintf(err_msg, "Unknown replicaDcdFile identifier %d\n", msg->dcdIndex);
+    NAMD_die(err_msg);
+  }
+  replicaDcdFile &f = replicaDcdFiles[msg->dcdIndex];
+
+  if ( ! f.fileid ) {
+    //  Open the DCD file
+    iout << "OPENING REPLICA DCD FILE " << msg->dcdIndex << " " << f.filename.c_str() << "\n" << endi;
+
+    f.fileid=open_dcd_write(f.filename.c_str());
+
+    if (f.fileid == DCD_FILEEXISTS) {
+      char err_msg[257];
+      sprintf(err_msg, "DCD file %s already exists!!", f.filename.c_str());
+      NAMD_err(err_msg);
+    } else if (f.fileid < 0) {
+      char err_msg[257];
+      sprintf(err_msg, "Couldn't open DCD file %s", f.filename.c_str());
+      NAMD_err(err_msg);
+    } else if (! f.fileid) {
+      NAMD_bug("Output::recvReplicaDcdData open_dcd_write returned fileid of zero");
+    }
+
+    //  Write out the header
+    int ret_code = write_dcdheader(f.fileid, f.filename.c_str(),
+        msg->numAtoms, msg->NFILE, msg->NPRIV, msg->NSAVC, msg->NSTEP,
+        msg->DELTA, msg->with_unitcell);
+
+    if (ret_code<0) {
+      NAMD_err("Writing of DCD header failed!!");
+    }
+  }
+
+  //  Write out the values for this timestep
+  iout << "WRITING TO REPLICA DCD FILE " << msg->dcdIndex << " " << f.filename.c_str() << "\n" << endi;
+  float *msgx = (float*) msg->data;
+  float *msgy = msgx + msg->numAtoms;
+  float *msgz = msgy + msg->numAtoms;
+  int ret_code = write_dcdstep(f.fileid, msg->numAtoms, msgx, msgy, msgz,
+                                   msg->with_unitcell ? msg->unitcell : 0);
+  if (ret_code < 0) NAMD_err("Writing of DCD step failed!!");
+
+  sendReplicaDcdAck(msg->srcPart, (ReplicaDcdAckMsg*) CmiAlloc(sizeof(ReplicaDcdAckMsg)));
+}
+
 
 /************************************************************************/
 /*                  */
@@ -665,6 +766,15 @@ int Output::output_dcdfile(int timestep, int n, FloatVector *coor,
   //  If this is the last time we will be writing coordinates,
   //  close the file before exiting
   if ( timestep == END_OF_RUN ) {
+    for ( std::map<int,replicaDcdFile>::iterator it = replicaDcdFiles.begin();
+          it != replicaDcdFiles.end(); ++it ) {
+      replicaDcdFile &f = it->second;
+      if ( f.fileid ) {
+        iout << "CLOSING REPLICA DCD FILE " << it->first << " " << f.filename.c_str() << "\n" << endi;
+        close_dcd_write(f.fileid);
+        f.fileid = 0;
+      }
+    }
     int rval = 0;
     if ( ! first ) {
       iout << "CLOSING COORDINATE DCD FILE " << simParams->dcdFilename << "\n" << endi;
@@ -676,6 +786,29 @@ int Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     first = 1;
     fileid = 0;
     return rval;
+  }
+
+  if ( replicaDcdActive ) {
+    int msgsize = sizeof(ReplicaDcdDataMsg) + 3*n*sizeof(float);
+    ReplicaDcdDataMsg *msg = (ReplicaDcdDataMsg *) CmiAlloc(msgsize);
+    float *msgx = (float*) msg->data;
+    float *msgy = msgx + n;
+    float *msgz = msgy + n;
+    for (i=0; i<n; i++) { msgx[i] = coor[i].x; }
+    for (i=0; i<n; i++) { msgy[i] = coor[i].y; }
+    for (i=0; i<n; i++) { msgz[i] = coor[i].z; }
+    msg->numAtoms = n;
+    lattice_to_unitcell(lattice,msg->unitcell);
+    msg->with_unitcell = lattice ? 1 : 0;
+    msg->NSAVC = simParams->dcdFrequency;
+    msg->NPRIV = timestep;
+    msg->NSTEP = msg->NPRIV - msg->NSAVC;
+    msg->NFILE = 0;
+    msg->DELTA = simParams->dt/TIMEFACTOR;
+    msg->srcPart = CmiMyPartition();
+    msg->dcdIndex = replicaDcdIndex;
+    sendReplicaDcdData(abs(replicaDcdIndex) % CmiNumPartitions(), msg, msgsize);
+    return 0;
   }
 
   if (first)
@@ -751,26 +884,7 @@ int Output::output_dcdfile(int timestep, int n, FloatVector *coor,
   fflush(stdout);
   if (lattice) {
     double unitcell[6];
-    if (lattice->a_p() && lattice->b_p() && lattice->c_p()) {
-      const Vector &a=lattice->a();
-      const Vector &b=lattice->b();
-      const Vector &c=lattice->c();
-      unitcell[0] = a.length();
-      unitcell[2] = b.length();
-      unitcell[5] = c.length();
-      double cosAB = (a*b)/(unitcell[0]*unitcell[2]);
-      double cosAC = (a*c)/(unitcell[0]*unitcell[5]);
-      double cosBC = (b*c)/(unitcell[2]*unitcell[5]);
-      if (cosAB > 1.0) cosAB = 1.0; else if (cosAB < -1.0) cosAB = -1.0;
-      if (cosAC > 1.0) cosAC = 1.0; else if (cosAC < -1.0) cosAC = -1.0;
-      if (cosBC > 1.0) cosBC = 1.0; else if (cosBC < -1.0) cosBC = -1.0;
-      unitcell[1] = cosAB;
-      unitcell[3] = cosAC;
-      unitcell[4] = cosBC;
-    } else {
-      unitcell[0] = unitcell[2] = unitcell[5] = 1.0;
-      unitcell[1] = unitcell[3] = unitcell[4] = 0.0;
-    }
+    lattice_to_unitcell(lattice,unitcell);
     ret_code = write_dcdstep(fileid, n, x, y, z, unitcell);
   } else {
     ret_code = write_dcdstep(fileid, n, x, y, z, NULL);
@@ -2154,26 +2268,7 @@ void ParOutput::output_dcdfile_master(int timestep, int n, const Lattice *lattic
     // Write out the Cell data
     if (lattice) {
       double unitcell[6];
-      if (lattice->a_p() && lattice->b_p() && lattice->c_p()) {
-        const Vector &a=lattice->a();
-        const Vector &b=lattice->b();
-        const Vector &c=lattice->c();
-        unitcell[0] = a.length();
-        unitcell[2] = b.length();
-        unitcell[5] = c.length();
-        double cosAB = (a*b)/(unitcell[0]*unitcell[2]);
-        double cosAC = (a*c)/(unitcell[0]*unitcell[5]);
-        double cosBC = (b*c)/(unitcell[2]*unitcell[5]);
-        if (cosAB > 1.0) cosAB = 1.0; else if (cosAB < -1.0) cosAB = -1.0;
-        if (cosAC > 1.0) cosAC = 1.0; else if (cosAC < -1.0) cosAC = -1.0;
-        if (cosBC > 1.0) cosBC = 1.0; else if (cosBC < -1.0) cosBC = -1.0;
-        unitcell[1] = cosAB;
-        unitcell[3] = cosAC;
-        unitcell[4] = cosBC;
-      } else {
-        unitcell[0] = unitcell[2] = unitcell[5] = 1.0;
-        unitcell[1] = unitcell[3] = unitcell[4] = 0.0;
-      }
+      lattice_to_unitcell(lattice,unitcell);
       write_dcdstep_par_cell(dcdFileID, unitcell);
     }
             

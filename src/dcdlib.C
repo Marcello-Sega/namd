@@ -650,7 +650,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 /*								     */
 /*********************************************************************/
 
-int open_dcd_write(char *dcdname)
+int open_dcd_write(const char *dcdname)
 
 {
 	int dcdfd;
@@ -895,7 +895,7 @@ int write_dcdstep_par_slave(int fd, int parL, int parU, int N, float *X, float *
 /*									     */
 /*****************************************************************************/
 
-int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV, 
+int write_dcdheader(int fd, const char *filename, int N, int NFILE, int NPRIV, 
 		   int NSAVC, int NSTEP, double DELTA, int with_unitcell)
 {
 	int32	out_integer;

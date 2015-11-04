@@ -97,6 +97,7 @@ private:
   static int Tcl_checkpoint(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_revert(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_checkpointReplica(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_replicaDcdFile(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_callback(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_reinitatoms(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_coorfile(ClientData, Tcl_Interp *, int, char **);

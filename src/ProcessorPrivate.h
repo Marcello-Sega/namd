@@ -59,6 +59,9 @@ CkpvExtern(int, recv_bcast_idx);
 CkpvExtern(int, recv_red_idx);
 CkpvExtern(int, recv_eval_command_idx);
 CkpvExtern(int, recv_eval_result_idx);
+CkpvExtern(int, recv_replica_dcd_init_idx);
+CkpvExtern(int, recv_replica_dcd_data_idx);
+CkpvExtern(int, recv_replica_dcd_ack_idx);
 
 void ProcessorPrivateInit(void);
 

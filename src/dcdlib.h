@@ -58,11 +58,11 @@ int read_dcdheader(int, int*, int*, int*, int*, double*, int*, int**);
 				/*  Read the DCD header			*/
 int read_dcdstep(int, int, float*, float*, float*, int, int, int*);	
 				/*  Read a timestep's values		*/
-int open_dcd_write(char *);     /*  Open a DCD file for writing		*/
+int open_dcd_write(const char *);     /*  Open a DCD file for writing		*/
 
 int write_dcdstep(int, int, float *, float *, float *, double *unitcell);
 				/*  Write out a timesteps values	*/
-int write_dcdheader(int, char*, int, int, int, int, int, double, int);	
+int write_dcdheader(int, const char*, int, int, int, int, int, double, int);	
 				/*  Write a dcd header			*/
 int get_dcdheader_size(); 
 				/* Get the total size of the header */
