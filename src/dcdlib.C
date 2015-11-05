@@ -11,7 +11,6 @@
 */
 
 #include "dcdlib.h"
-#include "Output.h"
 #ifdef WIN32
 #define access(PATH,MODE) _access(PATH,00)
 #endif
