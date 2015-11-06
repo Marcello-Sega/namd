@@ -1269,12 +1269,14 @@ int ScriptTcl::Tcl_replicaDcdFile(ClientData clientData,
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
   int index;
-  if (argc < 2 || argc > 3 || sscanf(argv[1],"%d",&index) != 1 ) {
-    Tcl_SetResult(interp,"args: <index> ?<filename>?",TCL_VOLATILE);
+  int cmpoff;
+  if (argc < 2 || argc > 3 || ((cmpoff = strcmp(argv[1],"off")) != 0 && sscanf(argv[1],"%d",&index) != 1) ) {
+    Tcl_SetResult(interp,"args: <index>|off ?<filename>?",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if ( argc == 2 ) {
-    Node::Object()->output->setReplicaDcdIndex(index);
+    if ( cmpoff == 0 ) Node::Object()->output->replicaDcdOff();
+    else Node::Object()->output->setReplicaDcdIndex(index);
   } else if ( argc == 3 ) {
     Node::Object()->output->replicaDcdInit(index,argv[2]);
     script->barrier();

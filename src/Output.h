@@ -97,6 +97,7 @@ public :
 						//  output for the current 
 						//  timestep
 
+  void replicaDcdOff() { replicaDcdActive = 0; }
   void setReplicaDcdIndex(int index);
   void replicaDcdInit(int index, const char *filename);
   void recvReplicaDcdInit(ReplicaDcdInitMsg *msg);

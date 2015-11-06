@@ -294,7 +294,7 @@ fewer NAMD replica partitions than logical replicas:
   \item \icommand{checkpointFree} {\em key} ?{\em replica} or global?
   \item \icommand{replicaEval} {\em replica} {\em script}
   \item \icommand{replicaYield} ?{\em seconds}?
-  \item \icommand{replicaDcdFile} {\em index} ?{\em filename}?
+  \item \icommand{replicaDcdFile} {\em index}|off ?{\em filename}?
 \end{itemize}
 
 The {\em key} can be any string.
@@ -335,6 +335,7 @@ The new file is created only when the next trajectory frame is written,
 not during the replicaDcdFile command itself.
 The caller must ensure that an index is not used before it is associated with a filename,
 and that each index is in use by only one replica at a time.
+The keyword ``off'' will return to writing the local trajectory file set by the dcdFile command.
 
 \subsubsection{Required \NAMD\ configuration parameters}
 \label{section:requiredparams}
