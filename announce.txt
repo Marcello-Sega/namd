@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                   NAMD 2.10 Release Announcement                   |
+|                  NAMD 2.11b1 Release Announcement                  |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                    December 11, 2014
+                                                    November 10, 2015
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
@@ -13,57 +13,60 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Institute of General Medical Sciences.
 
-NAMD 2.10 has many advantages over NAMD 2.9, among these are:
+NAMD 2.11 has many advantages over NAMD 2.10, among these are:
 
-- Network topology adaptation for CRAY XE/XK and IBM Blue Gene/Q
+- GPU-accelerated simulations up to twice as fast as NAMD 2.10
 
-- CRAY XC30 and IBM Blue Gene/Q native network layers
+- Enhanced Tcl scripting of collective variables and "cv" command
 
-- Multiple-copy algorithm support for native network layers
+- Collective variables module improvements including to histogram bias
 
-- Lambda-exchange multiple-copy alchemical free energy calculations
+- Tcl scripting query total net forces for atom groups
 
-- String method with swarms-of-trajectories transition pathways
+- Tcl scripting multiple in-memory checkpoints
 
-- Atom coordinate/velocity exchange for multiple-copy algorithms
+- Improved Tcl scripting multi-copy interface documentation
 
-- Tcl scripting command to reinitialize atoms from output files
+- Tcl scripting asynchronous multi-copy remote in-memory checkpoints
 
-- Tcl scripting configuration file parameter introspection
+- Tcl scripting asynchronous multi-copy remote trajectory output
 
-- Tcl scripting trajectory and restart output file switching
+- Tcl scripting asynchronous multi-copy remote script evaluation
 
-- Multilevel summation method for long-range electrostatics
+- Tcl scripting asynchronous multi-copy central work queue support
 
-- Normalized external electric field to avoid pressure artifacts
+- Tcl scripting asynchronous multi-copy workflow-style programming
 
-- Improved scalability for collective variables, Tcl forces, etc.
+- Improved minimization for Drude force field and rigid bonds
 
-- Collective variables module improvements
+- Improved long-range LJ correction with VDW force switching
 
-- Drude polarizable force field improvements
+- Improved alchemical calculations with VDW force switching
 
-- SMOG structure-based potential support
+- Pressure calculation with fixed atoms on GPU works as on CPU
 
-- Minimizer stability and performance improvements
+- Improved scaling for GPU-accelerated particle-mesh Ewald calculation
 
-- Various improvements for 100-million-atom simulations
+- Improved scaling for GPU-accelerated simulations
 
-- Update to CUDA 6.0 with Kepler GPU optimizations
+- Improved scaling for multi-threaded "smp" builds
 
-- GPU-accelerated particle-mesh Ewald calculation
+- Prevent running smp builds with one thread per process
 
-- Intel Xeon Phi coprocessor support
+- Support trajectory files larger than 2GB on Windows
 
-- 64-bit Windows shared-memory single-node port with CUDA support
+- Improved Intel Xeon Phi coprocessor support
 
-- 32-bit and 64-bit ARM processor Linux port with CUDA support
+- Update to Charm++ 6.7.0 with improved multi-copy support
 
-- CUDA support for POWER processor Linux port
+- Ignore ioformat statement in CHARMM topology and parameter files
 
-- Enhanced performance and scalability
+- Psfgen improvements including long resids and insertion codes
 
-Details at http://www.ks.uiuc.edu/Research/namd/2.10/features.html
+- Psfgen package available in NAMD Tcl interpreter
+
+
+Details at http://www.ks.uiuc.edu/Research/namd/2.11/features.html
 
 NAMD is available from http://www.ks.uiuc.edu/Research/namd/
 
