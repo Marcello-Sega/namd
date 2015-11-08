@@ -21,7 +21,9 @@ NAMD 2.11 has many advantages over NAMD 2.10, among these are:
 
 - Collective variables module improvements including to histogram bias
 
-- Tcl scripting query total net forces for atom groups
+- TclForces query total net forces for atom groups
+
+- Replica-exchange multiplexing (fewer partitions than replicas)
 
 - Tcl scripting multiple in-memory checkpoints
 
