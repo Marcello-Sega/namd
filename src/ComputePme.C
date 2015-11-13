@@ -394,9 +394,6 @@ public:
   void setup_recvgrid_persistent();
 #endif
 
-  //Tells if the current processor is a PME processor or not. Called by NamdCentralLB
-  int isPmeProcessor(int p);  
-
   static CmiNodeLock fftw_plan_lock;
   CmiNodeLock pmemgr_lock;  // for accessing this object from other threads
 
@@ -548,7 +545,6 @@ private:
   int *gridPeOrder;
   int *gridNodeOrder;
   int *transNodeOrder;
-  char *isPmeFlag;
   int grid_count;
   int trans_count;
   int untrans_count;
@@ -580,12 +576,7 @@ private:
 #endif
 
 int isPmeProcessor(int p){ 
-  return CProxy_ComputePmeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
-}
-
-int ComputePmeMgr::isPmeProcessor(int p){ 
-  SimParameters *simParams = Node::Object()->simParameters;
-  return ( usePencils || (simParams->PMEPencils>0) ? pencilPMEProcessors[p] : isPmeFlag[p] );
+  return pencilPMEProcessors[p];
 }
 
 class NodePmeMgr : public CBase_NodePmeMgr {
@@ -855,7 +846,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   gridPeOrder = new int[CkNumPes()];
   gridNodeOrder = new int[CkNumNodes()];
   transNodeOrder = new int[CkNumNodes()];
-  isPmeFlag = new char[CkNumPes()];  
+
+  if (CkMyRank() == 0) {
+    pencilPMEProcessors = new char [CkNumPes()];
+    memset (pencilPMEProcessors, 0, sizeof(char) * CkNumPes());
+  }
 
   SimParameters *simParams = Node::Object()->simParameters;
   PatchMap *patchMap = PatchMap::Object();
@@ -1062,13 +1057,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   myGridPe = -1;
   myGridNode = -1;
   int i = 0;
-  for ( i=0; i<CkNumPes(); ++i )
-    isPmeFlag[i] = 0;
   int node = -1;
   int real_node = -1;
   for ( i=0; i<numGridPes; ++i ) {
     if ( gridPeMap[i] == CkMyPe() ) myGridPe = i;
-    isPmeFlag[gridPeMap[i]] |= 1;
+    if (CkMyRank() == 0) pencilPMEProcessors[gridPeMap[i]] |= 1;
     int real_node_i = CkNodeOf(gridPeMap[i]);
     if ( real_node_i == real_node ) {
       gridNodeInfo[node].npe += 1;
@@ -1088,7 +1081,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   real_node = -1;
   for ( i=0; i<numTransPes; ++i ) {
     if ( transPeMap[i] == CkMyPe() ) myTransPe = i;
-    isPmeFlag[transPeMap[i]] |= 2;
+    if (CkMyRank() == 0) pencilPMEProcessors[transPeMap[i]] |= 2;
     int real_node_i = CkNodeOf(transPeMap[i]);
     if ( real_node_i == real_node ) {
       transNodeInfo[node].npe += 1;
@@ -1170,16 +1163,6 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       		SortableResizeArray<int> zprocs(xBlocks*yBlocks);
       		SortableResizeArray<int> yprocs(xBlocks*zBlocks);
       		SortableResizeArray<int> xprocs(yBlocks*zBlocks);
- 		{
-      		int basepe = 0;  int npe = CkNumPes();
-			if ( npe > xBlocks*yBlocks &&
-				npe > xBlocks*zBlocks &&
-				npe > yBlocks*zBlocks ) {
-        		// avoid node 0
-        		++basepe;
-        		--npe;
-      		}
-
       
       		// decide which pes to use by bit reversal and patch use
       		int i;
@@ -1269,9 +1252,6 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   CmiUnlock(tmgr_lock);
 #endif
 
-      pencilPMEProcessors = new char [CkNumPes()];
-      memset (pencilPMEProcessors, 0, sizeof(char) * CkNumPes());
-
 
 		if(CkMyPe() == 0){  
 	      iout << iINFO << "PME Z PENCIL LOCATIONS:";
@@ -1288,10 +1268,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	      iout << "\n" << endi;
 		}
 
+    if (CkMyRank() == 0) {
       for (pe=0, x = 0; x < xBlocks; ++x)
 	for (y = 0; y < yBlocks; ++y, ++pe ) {
 	  pencilPMEProcessors[zprocs[pe]] = 1;
 	}
+    }
      
 		if(CkMyPe() == 0){  
 	      iout << iINFO << "PME Y PENCIL LOCATIONS:";
@@ -1308,10 +1290,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	      iout << "\n" << endi;
 		}
 
+    if (CkMyRank() == 0) {
       for (pe=0, z = 0; z < zBlocks; ++z )
 	for (x = 0; x < xBlocks; ++x, ++pe ) {
 	  pencilPMEProcessors[yprocs[pe]] = 1;
 	}
+    }
     
 		if(CkMyPe() == 0){  
       		iout << iINFO << "PME X PENCIL LOCATIONS:";
@@ -1328,13 +1312,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       		iout << "\n" << endi;
 		}
 
+    if (CkMyRank() == 0) {
       for (pe=0, y = 0; y < yBlocks; ++y )	
 	for (z = 0; z < zBlocks; ++z, ++pe ) {
 	  pencilPMEProcessors[xprocs[pe]] = 1;
 	}
-	
     }
-
+	
 
 	// creating the pencil arrays
 	if ( CkMyPe() == 0 ){
@@ -1818,7 +1802,6 @@ ComputePmeMgr::~ComputePmeMgr() {
   delete [] gridPeOrder;
   delete [] gridNodeOrder;
   delete [] transNodeOrder;
-  delete [] isPmeFlag;
   delete [] qgrid;
   if ( kgrid != qgrid ) delete [] kgrid;
   delete [] work;
