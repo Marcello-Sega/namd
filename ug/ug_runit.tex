@@ -196,12 +196,12 @@ shared among the threads, reducing the per-core memory footprint when
 scaling large simulations to large numbers of cores.
 
 SMP builds launched with charmrun use +p to specify the total number of
-PEs (worker threads) and +ppn to specify the number of PEs per process.
+PEs (worker threads) and ++ppn to specify the number of PEs per process.
 Thus, to run one process with one communication and three worker threads
 on each of four quad-core nodes one would specify:
 
 \begin{verbatim}
-  charmrun namd2 +p12 +ppn 3 <configfile>
+  charmrun namd2 +p12 ++ppn 3 <configfile>
 \end{verbatim}
 
 For MPI-based SMP builds one would specify any mpiexec options needed

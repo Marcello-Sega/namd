@@ -277,11 +277,11 @@ shared among the threads, reducing the per-core memory footprint when
 scaling large simulations to large numbers of cores.
 
 SMP builds launched with charmrun use +p to specify the total number of
-PEs (worker threads) and +ppn to specify the number of PEs per process.
+PEs (worker threads) and ++ppn to specify the number of PEs per process.
 Thus, to run one process with one communication and three worker threads
 on each of four quad-core nodes one would specify:
 
-  charmrun namd2 +p12 +ppn 3 <configfile>
+  charmrun namd2 +p12 ++ppn 3 <configfile>
 
 For MPI-based SMP builds one would specify any mpiexec options needed
 for the required number of processes and pass +ppn to the NAMD binary as:
@@ -478,7 +478,7 @@ directory to LD_LIBRARY_PATH with the following executable runscript:
 
 For example:
 
-  ./charmrun ++runscript ./runscript +p24 ./namd2 +ppn 3 <configfile>
+  ./charmrun ++runscript ./runscript +p24 ./namd2 ++ppn 3 <configfile>
 
 An InfiniBand network is highly recommended when running CUDA-accelerated
 NAMD across multiple nodes.  You will need a verbs or ibverbs NAMD binary
