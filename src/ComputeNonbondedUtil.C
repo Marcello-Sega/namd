@@ -789,17 +789,9 @@ void ComputeNonbondedUtil::select(void)
       vdwb_energy = k_vdwb * tmpb * tmpb;
       vdwa_gradient = -6.0 * k_vdwa * tmpa * r_2 * r_6;
       vdwb_gradient = -3.0 * k_vdwb * tmpb * r_2 * r_2 * r_1;
-      if ( simParams->LJcorrection ) { //BKR - re-defined shift for more well 
-        vdwa_energy -= v_vdwa;         //      defined tail correction
-        vdwb_energy -= v_vdwb;
-      }
     } else {
-      vdwa_energy = r_12;
-      vdwb_energy = r_6;
-      if ( !simParams->LJcorrection ) { //BKR - standard shift to zero when
-        vdwa_energy += v_vdwa;          //      not using tail correction
-        vdwb_energy += v_vdwb;
-      }
+      vdwa_energy = r_12 + v_vdwa;
+      vdwb_energy = r_6 + v_vdwb;
       vdwa_gradient = -6.0 * r_2 * r_12;
       vdwb_gradient = -3.0 * r_2 * r_6;
     }

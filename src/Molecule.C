@@ -9150,17 +9150,20 @@ void Molecule::build_atom_status(void) {
           tail_corr_ener = tail_corr_virial = 16*numAtoms*numAtoms*PI*(LJAvgA*(3*rcut4 + 9*rcut3*rswitch + 11*rcut2*rswitch2 + 9*rcut*rswitch3 + 3*rswitch4) - 105*LJAvgB*rcut5*rswitch5)/(315*rcut5*rswitch5*(rcut + rswitch)*(rcut + rswitch)*(rcut + rswitch)); 
         }
         else {
-          /* BKR - This also requires re-definition of the force switched LJ
-             potential such that the potential is unmodified within the
-             switching distance (see ComputeNonbondedUtil.C). If that is not
-             done, then the tail correction is difficult to define (in fact,
-             it is no longer a "tail" correction but rather a correction to
-             the "core").  For backwards consistency, this change is only made
-             when the correction defined here is used.
+          /* BKR - This only includes the volume dependent portion of the
+             energy correction. In order to fully correct to a true 
+             Lennard-Jones potential one also needs a "core" correction to 
+             account for the shift inside rswitch; this is a _global_ potential
+             energy shift. Fortunately, neglecting this correction is 
+             equivalent to stating that the number of atoms in the whole system
+             is much more than the number within rswitch of any given atom. 
+             Interestingly, this approximation gets better as rswitch shrinks 
+             whereas the tail correction gets worse. Neglecting this term has 
+             _zero_ affect on the virial since the forces are unchanged.
           */
           BigReal lnr = log(rswitch/rcut);
           tail_corr_virial = 4*numAtoms*numAtoms*PI*(4*LJAvgA*(rcut3 - rswitch3) + 9*LJAvgB*rswitch3*rcut3*(rcut3 + rswitch3)*lnr)/(9*rswitch3*rcut3*(rcut6-rswitch6));
-          tail_corr_ener = 2*numAtoms*numAtoms*PI*(LJAvgA*(5*rswitch3 - 3*rcut3)*(rcut3 - rswitch3) - 3*LJAvgB*rswitch3*rcut3*(rswitch6 - rcut6 - 6*rswitch3*(rcut3+rswitch3)*lnr))/(9*rswitch6*rcut3*(rcut6-rswitch6));
+          tail_corr_ener = 2*numAtoms*numAtoms*PI*(LJAvgA*(5*rcut3 - 3*rswitch3)*(rcut3 - rswitch3) - 3*LJAvgB*rswitch3*rcut3*(rcut3 + rswitch3)*(rswitch3 - rcut3 - 6*rcut3*lnr))/(9*rswitch3*rcut6*(rcut6-rswitch6));
         }
       }
       else {

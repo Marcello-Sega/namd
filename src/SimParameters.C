@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2015/11/02 15:29:17 $
- * $Revision: 1.1456 $
+ * $Date: 2015/11/19 22:29:36 $
+ * $Revision: 1.1457 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2844,10 +2844,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        sprintf(err_msg, 
          "switchDist muct be between 0 and cutoff, which is %f", cutoff);
        NAMD_die(err_msg);
-     }
-     if (vdwForceSwitching && LJcorrection){
-       iout << iWARN << "LJcorrection with vdwForceSwitching redefines "
-	 "potential shift inside cutoff.\n";
      }
 
    }
