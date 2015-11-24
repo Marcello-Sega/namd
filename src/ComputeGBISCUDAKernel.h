@@ -97,7 +97,8 @@ __global__ static void GBIS_P1_Kernel (
     //init intermediate variables
     GBReal psiSumI = 0.f; // each thread accumulating single psi
 
-    const bool diag_patch_pair = (sh_patch_pair.patch1_start) == (sh_patch_pair.patch2_start);
+    const bool diag_patch_pair = (sh_patch_pair.patch1_start == sh_patch_pair.patch2_start) && 
+    (sh_patch_pair.offset.x == 0.0f && sh_patch_pair.offset.y == 0.0f && sh_patch_pair.offset.z == 0.0f);
     int blockj = (diag_patch_pair) ? blocki : 0;
 
     //iterate over chunks of atoms within Patch 2
@@ -132,7 +133,7 @@ __global__ static void GBIS_P1_Kernel (
 #endif
       }
 
-      const bool diag_tile = (sh_patch_pair.patch1_start + blocki == sh_patch_pair.patch2_start + blockj);
+      const bool diag_tile = diag_patch_pair && (blocki == blockj);
       const int modval = diag_tile ? 2*WARPSIZE : WARPSIZE;
 
       sh_psiSumJ[threadIdx.x] = 0.f;
@@ -367,7 +368,8 @@ __global__ static void GBIS_P2_Kernel (
     forceI.y = 0.f;
     forceI.z = 0.f;
 
-    const bool diag_patch_pair = (sh_patch_pair.patch1_start) == (sh_patch_pair.patch2_start);
+    const bool diag_patch_pair = (sh_patch_pair.patch1_start == sh_patch_pair.patch2_start) && 
+    (sh_patch_pair.offset.x == 0.0f && sh_patch_pair.offset.y == 0.0f && sh_patch_pair.offset.z == 0.0f);
     int blockj = (diag_patch_pair) ? blocki : 0;
     //iterate over chunks of atoms within Patch 2
     for (; blockj < sh_patch_pair.patch2_size; blockj += WARPSIZE) {
@@ -406,7 +408,7 @@ __global__ static void GBIS_P2_Kernel (
       sh_forceJ[threadIdx.x].z = 0.f;
       sh_dEdaSumJ[threadIdx.x] = 0.f;
 
-      const bool diag_tile = (sh_patch_pair.patch1_start + blocki == sh_patch_pair.patch2_start + blockj);
+      const bool diag_tile = diag_patch_pair && (blocki == blockj);
       const int modval = diag_tile ? 2*WARPSIZE : WARPSIZE;
       for (int t=0; t < WARPSIZE; ++t ) {
         int j = (t + threadIdx.x) % modval;
@@ -701,7 +703,8 @@ __global__ static void GBIS_P3_Kernel (
     forceI.y = 0.f;
     forceI.z = 0.f;
 
-    const bool diag_patch_pair = (sh_patch_pair.patch1_start) == (sh_patch_pair.patch2_start);
+    const bool diag_patch_pair = (sh_patch_pair.patch1_start == sh_patch_pair.patch2_start) && 
+    (sh_patch_pair.offset.x == 0.0f && sh_patch_pair.offset.y == 0.0f && sh_patch_pair.offset.z == 0.0f);
     int blockj = (diag_patch_pair) ? blocki : 0;
     //iterate over chunks of atoms within Patch 2
     for (; blockj < sh_patch_pair.patch2_size; blockj += WARPSIZE ) {
@@ -742,7 +745,7 @@ __global__ static void GBIS_P3_Kernel (
       sh_forceJ[threadIdx.x].y = 0.f;
       sh_forceJ[threadIdx.x].z = 0.f;
 
-      const bool diag_tile = (sh_patch_pair.patch1_start + blocki == sh_patch_pair.patch2_start + blockj);
+      const bool diag_tile = diag_patch_pair && (blocki == blockj);
       const int modval = diag_tile ? 2*WARPSIZE : WARPSIZE;
 #ifdef KEPLER_SHUFFLE
       if (diag_tile) {

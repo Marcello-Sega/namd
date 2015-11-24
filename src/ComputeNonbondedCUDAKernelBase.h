@@ -288,7 +288,8 @@ NAME(dev_nonbonded)
 	 iforce_slow.y = 0.0f;
 	 iforce_slow.z = 0.0f;)
 
-    const bool diag_patch_pair = (sh_patch_pair.patch1_start == sh_patch_pair.patch2_start);
+		const bool diag_patch_pair = (sh_patch_pair.patch1_start == sh_patch_pair.patch2_start) && 
+		(sh_patch_pair.offset.x == 0.0f && sh_patch_pair.offset.y == 0.0f && sh_patch_pair.offset.z == 0.0f);
     int blockj = (diag_patch_pair) ? blocki : 0;
     for (;blockj < sh_patch_pair.patch2_size;blockj += WARPSIZE) {
 
@@ -376,7 +377,7 @@ NAME(dev_nonbonded)
 		  // NOTE: We must truncate nfreei to be non-negative number since we're comparing to threadIdx.x (unsigned int) later on
 		  int nfreei = max(sh_patch_pair.patch1_free_size - blocki, 0);
 		  )
-      const bool diag_tile = (sh_patch_pair.patch1_start + blocki == sh_patch_pair.patch2_start + blockj);
+      const bool diag_tile = diag_patch_pair && (blocki == blockj);
       // Loop through tile diagonals. Local tile indices are:
       // i = threadIdx.x % WARPSIZE = constant
       // j = (t + threadIdx.x) % WARPSIZE
