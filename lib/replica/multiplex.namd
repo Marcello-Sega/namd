@@ -315,7 +315,9 @@ proc dict_swap {dict1 dict2 args} {
 proc swap_replica {self swap} {
   global num_runs
   set temp [dict get $self temperature]
+  set rid  [dict get $self index]
   set temp2 [dict get $swap temperature]
+  set rid2  [dict get $swap index]
   set BOLTZMAN 0.001987191
   set dbeta [expr ((1.0/$temp) - (1.0/$temp2)) / $BOLTZMAN]
   set pot [dict get $self POTENTIAL]
@@ -323,7 +325,9 @@ proc swap_replica {self swap} {
   set delta [expr $dbeta * ($pot2 - $pot)]
   set doswap [expr $delta < 0. || exp(-1. * $delta) > rand()]
   if { $doswap } {
-    print SWAP [dict get $self i_run] [dict get $self index] [dict get $swap index]
+    set i_run [dict get $self i_run]
+    print SWAP $i_run $rid $rid2
+    puts stderr "EXCHANGE_ACCEPT $rid ($temp) $rid2 ($temp2) RUN $i_run"
     set rescale [expr sqrt(1.0*$temp/$temp2)]
     set rescale2 [expr sqrt(1.0*$temp2/$temp)]
     dict_swap self swap checkpointname checkpointloc history_file dcdindex
