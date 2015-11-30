@@ -811,6 +811,10 @@ int ScriptTcl::Tcl_run(ClientData clientData,
     Tcl_SetResult(interp,"number of steps must be a multiple of stepsPerCycle",TCL_VOLATILE);
     return TCL_ERROR;
   }
+  if ( simParams->minimizeCGOn ) {
+    Tcl_SetResult(interp,"run called with minimization enabled; use minimize command instead",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
   if ( simParams->N != simParams->firstTimestep ) {
     iout << "TCL: Original numsteps " << simParams->N
          << " will be ignored.\n";
