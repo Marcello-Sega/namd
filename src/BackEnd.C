@@ -262,14 +262,14 @@ void BackEnd::exit(void) {
 #ifdef NAMD_CUDA
   cuda_finalize();
 #ifdef __APPLE__
-#if CMK_MULTICORE
+#if 0 && CMK_MULTICORE
   CmiPrintf("EXITING ABNORMALLY TO AVOID HANGING CUDA RUNTIME THREADS\n");
   ::exit(0);
 #endif
 #endif
 #endif
 #ifdef NAMD_MIC
-#if CMK_MULTICORE
+#if 0 && CMK_MULTICORE
   CmiPrintf("EXITING ABNORMALLY TO AVOID HANGING MIC OFFLOAD THREADS\n");
 #pragma offload target(mic)
   {
