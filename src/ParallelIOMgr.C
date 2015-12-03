@@ -751,7 +751,8 @@ void ParallelIOMgr::updateMolInfo()
     msg->numDihedrals = msg->numCalcDihedrals = 0;
     msg->numImpropers = msg->numCalcImpropers = 0;
     msg->numCrossterms = msg->numCalcCrossterms = 0;
-    msg->numExclusions = msg->numCalcExclusions = 0;    
+    msg->numExclusions = msg->numCalcExclusions = 0;
+    int numFullExclusions = msg->numCalcFullExclusions = 0;
     // JLai
     msg->numLJPairs = msg->numCalcLJPairs = 0;
     // End of JLai
@@ -775,6 +776,7 @@ void ParallelIOMgr::updateMolInfo()
 
         ExclusionSignature *exclSig = &exclSigPool[initAtoms[i].exclId];
         msg->numExclusions += (exclSig->fullExclCnt + exclSig->modExclCnt);
+        numFullExclusions += exclSig->fullExclCnt;
 
         if(initAtoms[i].rigidBondLength > 0.0) msg->numRigidBonds++;
 
@@ -804,6 +806,7 @@ void ParallelIOMgr::updateMolInfo()
                 msg->numCalcImpropers += thisSig->improperCnt;
                 msg->numCalcCrossterms += thisSig->crosstermCnt;
                 msg->numCalcExclusions+=(exclSig->fullExclCnt+exclSig->modExclCnt);
+                msg->numCalcFullExclusions+=(exclSig->fullExclCnt);
                 continue;
             }
                        
@@ -872,7 +875,7 @@ void ParallelIOMgr::updateMolInfo()
             //this atom is fixed, check atoms in the exclusion set
             for(int j=0; j<exclSig->fullExclCnt; j++) {
                 int thisAId = exclSig->fullOffset[j]+myAId;
-                if(!isAtomFixed(sAId, thisAId)) msg->numCalcExclusions++;
+                if(!isAtomFixed(sAId, thisAId)) { msg->numCalcExclusions++; msg->numCalcFullExclusions++; }
             }
             for(int j=0; j<exclSig->modExclCnt; j++) {
                 int thisAId = exclSig->modOffset[j]+myAId;
@@ -900,6 +903,7 @@ void ParallelIOMgr::updateMolInfo()
         msg->numCalcImpropers = msg->numImpropers;
         msg->numCalcCrossterms = msg->numCrossterms;
         msg->numCalcExclusions = msg->numExclusions;
+        msg->numCalcFullExclusions = numFullExclusions;
     }
 
 
@@ -936,6 +940,7 @@ void ParallelIOMgr::recvMolInfo(MolInfoMsg *msg)
     molecule->numCalcCrossterms += msg->numCalcCrossterms;
     molecule->numTotalExclusions += msg->numExclusions;
     molecule->numCalcExclusions += msg->numCalcExclusions;
+    molecule->numCalcFullExclusions += msg->numCalcFullExclusions;
     molecule->numRigidBonds += msg->numRigidBonds;
 
     totalMass += msg->totalMass;
@@ -959,6 +964,7 @@ void ParallelIOMgr::recvMolInfo(MolInfoMsg *msg)
         msg->numCalcCrossterms = molecule->numCalcCrossterms;
         msg->numExclusions = molecule->numTotalExclusions/2;
         msg->numCalcExclusions = molecule->numCalcExclusions/2;
+        msg->numCalcFullExclusions = molecule->numCalcFullExclusions/2;
         msg->numRigidBonds = molecule->numRigidBonds;
 
         msg->totalMass = totalMass;
@@ -1006,6 +1012,7 @@ void ParallelIOMgr::bcastMolInfo(MolInfoMsg *msg)
 
     molecule->numTotalExclusions = msg->numExclusions;
     molecule->numCalcExclusions = msg->numCalcExclusions;
+    molecule->numCalcFullExclusions = msg->numCalcFullExclusions;
 
     molecule->numRigidBonds = msg->numRigidBonds;
     delete msg;

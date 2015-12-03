@@ -774,7 +774,6 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   if (params->pressureProfileOn) {
     NAMD_die("pressure profile not supported in CUDA");
   }
-  doExclusionCheck = ( CkNumNodes() == 1 && deviceCUDA->one_device_per_node() && ! params->goGroPair );
 
   atomsChanged = 1;
   computesChanged = 1;
@@ -1741,8 +1740,6 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
   float maxAtomMovement = 0.;
   float maxPatchTolerance = 0.;
 
-   if (doExclusionCheck && atomsChanged) numExcludedTot = 0;
-
   for ( int i=0; i<activePatches.size(); ++i ) {
     patch_record &pr = patchRecords[activePatches[i]];
 
@@ -1767,11 +1764,9 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
 #ifdef MEM_OPT_VERSION
         ap[k].excl_index = exclusionsByAtom[aExt[j].exclId].y;
         ap[k].excl_maxdiff = exclusionsByAtom[aExt[j].exclId].x;
-        if (doExclusionCheck) numExcludedTot += mol->exclSigPool[aExt[j].exclId].fullExclCnt;
 #else // ! MEM_OPT_VERSION
         ap[k].excl_index = exclusionsByAtom[aExt[j].id].y;
         ap[k].excl_maxdiff = exclusionsByAtom[aExt[j].id].x;
-        if (doExclusionCheck) numExcludedTot += mol->get_full_exclusions_for_atom(aExt[j].id)[0];
 #endif // MEM_OPT_VERSION
       }
     }
@@ -1794,9 +1789,6 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
 #endif
     }
   }
-
-  // Divide by two since we were double counting the exclusions
-  if (doExclusionCheck && atomsChanged) numExcludedTot /= 2;
 
 //GBISP("finished active patches\n")
 
@@ -2401,17 +2393,12 @@ void ComputeNonbondedCUDA::finishReductions() {
       energyv += virials[16*i+9];
       energye += virials[16*i+10];
       energys += virials[16*i+11];
-      if (doExclusionCheck) nexcluded += ((int *)virials)[16*i+12];
+      nexcluded += ((int *)virials)[16*i+12];
       if (simParams->GBISOn) {
         energye += energy_gbis[i];
       }
     }
-    if (doExclusionCheck) {
-      if (nexcluded != numExcludedTot) {
-        CkPrintf("Exclusions: detected %d expected %d\n",nexcluded,numExcludedTot);
-        NAMD_bug("Incorrect number of exclusions detected");
-      }
-    }
+    reduction->item(REDUCTION_EXCLUSION_CHECKSUM_CUDA) += nexcluded;
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NBOND,virial_tensor);
     if ( doEnergy ) {
       reduction->item(REDUCTION_LJ_ENERGY) += energyv;

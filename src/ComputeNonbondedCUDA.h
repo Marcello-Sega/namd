@@ -77,7 +77,6 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
   Lattice lattice;
   int doSlow, doEnergy;
   int step;
-  int doExclusionCheck;
   int finishWork();  // returns true when finished, false to continue
   void finishReductions();
   void finishPatch(int);
@@ -91,7 +90,6 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
   void requirePatch(int pid);
   void assignPatches();
   void registerPatches();
-  int numExcludedTot;
   ResizeArray<int> activePatches, localActivePatches, remoteActivePatches;
   ResizeArray<int> hostedPatches, localHostedPatches, remoteHostedPatches;
   ResizeArray<patch_record> patchRecords;

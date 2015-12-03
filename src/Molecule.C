@@ -369,6 +369,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numCalcAnisos=0;
   numCalcCrossterms=0;
   numCalcExclusions=0;
+  numCalcFullExclusions=0;
   // JLai
   numCalcLJPair=0;
   // End of JLai
@@ -3267,12 +3268,14 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
          byAtomSize[i] = 0;
        }
        numCalcExclusions = 0;
+       numCalcFullExclusions = 0;
        for (i=0; i<numTotalExclusions; i++)
        {
          if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
                             && fixedAtomFlags[exclusions[i].atom2] ) continue;
          byAtomSize[exclusions[i].atom1]++;
          numCalcExclusions++;
+         if ( ! exclusions[i].modified ) numCalcFullExclusions++;
        }
 
        for (i=0; i<numAtoms; i++)
@@ -5308,7 +5311,7 @@ void Molecule::send_Molecule(MOStream *msg){
   numDihedrals = numCalcDihedrals = 0;
   numImpropers = numCalcImpropers = 0;
   numCrossterms = numCalcCrossterms = 0;
-  numTotalExclusions = numCalcExclusions = 0;  
+  numTotalExclusions = numCalcExclusions = numCalcFullExclusions = 0;  
   // JLai
   numLJPair = numCalcLJPair = 0;
   // End of JLai
@@ -5768,7 +5771,7 @@ void Molecule::receive_Molecule(MIStream *msg){
     numDihedrals = numCalcDihedrals = 0;
     numImpropers = numCalcImpropers = 0;
     numCrossterms = numCalcCrossterms = 0;
-    numTotalExclusions = numCalcExclusions = 0;  
+    numTotalExclusions = numCalcExclusions = numCalcFullExclusions = 0;  
     // JLai
     numLJPair = numCalcLJPair = 0;
     // End of JLai

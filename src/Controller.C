@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2015/10/12 15:48:41 $
- * $Revision: 1.1309 $
+ * $Date: 2015/12/03 17:02:22 $
+ * $Revision: 1.1310 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2102,6 +2102,45 @@ void Controller::compareChecksums(int step, int forgiving) {
         NAMD_bug(errmsg);
       }
     }
+
+#ifdef NAMD_CUDA
+    checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM_CUDA);
+    if ( ((int)checksum) > molecule->numCalcFullExclusions &&
+         ( ! simParams->mollyOn || step % slowFreq ) ) {
+      if ( forgiving )
+        iout << iWARN << "High global CUDA exclusion count ("
+                      << ((int)checksum) << " vs "
+                      << molecule->numCalcFullExclusions << "), possible error!\n"
+          << iWARN << "This warning is not unusual during minimization.\n"
+          << iWARN << "Decreasing pairlistdist or cutoff that is too close to periodic cell size may avoid this.\n" << endi;
+      else {
+        char errmsg[256];
+        sprintf(errmsg, "High global CUDA exclusion count!  (%d vs %d)  System unstable or pairlistdist or cutoff too close to periodic cell size.\n",
+                (int)checksum, molecule->numCalcFullExclusions);
+        NAMD_bug(errmsg);
+      }
+    }
+
+    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcFullExclusions && ! simParams->goGroPair ) {
+      if ( forgiving || ! simParams->fullElectFrequency ) {
+        iout << iWARN << "Low global CUDA exclusion count!  ("
+          << ((int)checksum) << " vs " << molecule->numCalcFullExclusions << ")";
+        if ( forgiving ) {
+          iout << "\n"
+            << iWARN << "This warning is not unusual during minimization.\n"
+            << iWARN << "Increasing pairlistdist or cutoff may avoid this.\n";
+        } else {
+          iout << "  System unstable or pairlistdist or cutoff too small.\n";
+        }
+        iout << endi;
+      } else {
+        char errmsg[256];
+        sprintf(errmsg, "Low global CUDA exclusion count!  (%d vs %d)  System unstable or pairlistdist or cutoff too small.\n",
+                (int)checksum, molecule->numCalcFullExclusions);
+        NAMD_bug(errmsg);
+      }
+    }
+#endif
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) && ! marginViolations ) {

@@ -583,6 +583,7 @@ public:
   int numCalcImpropers; //  Number of impropers requiring calculation
   int numCalcCrossterms; //  Number of cross-terms requiring calculation
   int numCalcExclusions;  //  Number of exclusions requiring calculation
+  int numCalcFullExclusions;  //  Number of full exclusions requiring calculation
 
   // DRUDE
   int numCalcTholes;  // Number of Thole correction terms requiring calculation
