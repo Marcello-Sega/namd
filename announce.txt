@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                  NAMD 2.11b1 Release Announcement                  |
+|                  NAMD 2.11b2 Release Announcement                  |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                    November 10, 2015
+                                                    December 4, 2015
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
