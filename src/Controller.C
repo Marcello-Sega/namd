@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2015/12/03 17:02:22 $
- * $Revision: 1.1310 $
+ * $Date: 2015/12/04 21:43:18 $
+ * $Revision: 1.1311 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -519,6 +519,7 @@ void Controller::integrate(int scriptTask) {
     } else { \
       broadcast->minimizeCoefficient.publish(minSeq++,0.); \
       broadcast->minimizeCoefficient.publish(minSeq++,0.); \
+      min_reduction->require(); \
       broadcast->minimizeCoefficient.publish(minSeq++,0.); \
     } \
     enqueueCollections(step); \
