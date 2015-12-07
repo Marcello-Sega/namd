@@ -9149,7 +9149,7 @@ void Molecule::build_atom_status(void) {
       if (simParams->switchingActive) {
 	if (!simParams->vdwForceSwitching) {
           //DEBUG printf("%f %i %f %f %f %f\n", PI, numAtoms, LJAvgA, LJAvgB, rcut, rswitch);
-          tail_corr_ener = tail_corr_virial = PI*16.0L*numAtoms*numAtoms*(LJAvgA*(3*rcut4 + 9*rcut3*rswitch + 11*rcut2*rswitch2 + 9*rcut*rswitch3 + 3*rswitch4) - 105*LJAvgB*rcut5*rswitch5)/(315*rcut5*rswitch5*(rcut + rswitch)*(rcut + rswitch)*(rcut + rswitch)); 
+          tail_corr_ener = tail_corr_virial = PI*16.0*(double)numAtoms*(double)numAtoms*(LJAvgA*(3*rcut4 + 9*rcut3*rswitch + 11*rcut2*rswitch2 + 9*rcut*rswitch3 + 3*rswitch4) - 105*LJAvgB*rcut5*rswitch5)/(315*rcut5*rswitch5*(rcut + rswitch)*(rcut + rswitch)*(rcut + rswitch)); 
         }
         else {
           /* BKR - This only includes the volume dependent portion of the
@@ -9164,13 +9164,13 @@ void Molecule::build_atom_status(void) {
              _zero_ affect on the virial since the forces are unchanged.
           */
           BigReal lnr = log(rswitch/rcut);
-          tail_corr_virial = PI*4.0L*numAtoms*numAtoms*(4*LJAvgA*(rcut3 - rswitch3) + 9*LJAvgB*rswitch3*rcut3*(rcut3 + rswitch3)*lnr)/(9*rswitch3*rcut3*(rcut6-rswitch6));
-          tail_corr_ener = PI*2.0L*numAtoms*numAtoms*(LJAvgA*(5*rcut3 - 3*rswitch3)*(rcut3 - rswitch3) - 3*LJAvgB*rswitch3*rcut3*(rcut3 + rswitch3)*(rswitch3 - rcut3 - 6*rcut3*lnr))/(9*rswitch3*rcut6*(rcut6-rswitch6));
+          tail_corr_virial = PI*4.0*(double)numAtoms*(double)numAtoms*(4*LJAvgA*(rcut3 - rswitch3) + 9*LJAvgB*rswitch3*rcut3*(rcut3 + rswitch3)*lnr)/(9*rswitch3*rcut3*(rcut6-rswitch6));
+          tail_corr_ener = PI*2.0*(double)numAtoms*(double)numAtoms*(LJAvgA*(5*rcut3 - 3*rswitch3)*(rcut3 - rswitch3) - 3*LJAvgB*rswitch3*rcut3*(rcut3 + rswitch3)*(rswitch3 - rcut3 - 6*rcut3*lnr))/(9*rswitch3*rcut6*(rcut6-rswitch6));
         }
       }
       else {
-        tail_corr_virial = PI*4.0L*numAtoms*numAtoms*(2*LJAvgA - 3*LJAvgB*rcut6) / (9*rcut9);
-        tail_corr_ener = PI*2.0L*numAtoms*numAtoms*(LJAvgA - 3*LJAvgB*rcut6) / (9*rcut9);
+        tail_corr_virial = PI*4.0*(double)numAtoms*(double)numAtoms*(2*LJAvgA - 3*LJAvgB*rcut6) / (9*rcut9);
+        tail_corr_ener = PI*2.0*(double)numAtoms*(double)numAtoms*(LJAvgA - 3*LJAvgB*rcut6) / (9*rcut9);
       }
       //DEBUG iout << iINFO << "energy and virial corrections are  " << tail_corr_ener << " and " << tail_corr_virial << "\n" << endi;
 
