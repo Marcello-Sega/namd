@@ -9061,21 +9061,19 @@ void Molecule::build_atom_status(void) {
       for (i = 0; i < LJtypecount; i++) {numAtomsByLjType[i]=0;}
       for (i = 0; i < numAtoms;  i++) {numAtomsByLjType[atoms[i].vdw_type] ++;}
 
-      BigReal sumOfAs = 0; BigReal sumOfBs = 0; int count = 0;
+      BigReal sumOfAs = 0; BigReal sumOfBs = 0; BigReal count = 0;
       for (i = 0;  i < LJtypecount;  i++) {
         if (numAtomsByLjType[i]) {
+          BigReal _sumOfAs = 0; BigReal _sumOfBs = 0; BigReal _count = 0;
           for (int j = 0;  j < LJtypecount;  j++) {
-            if (i == j) {
-              sumOfAs += (numAtomsByLjType[i] - 1) * numAtomsByLjType[j] * ATable[i*LJtypecount + j];
-              sumOfBs += (numAtomsByLjType[i] - 1) * numAtomsByLjType[j] * BTable[i*LJtypecount + j];
-              count += (numAtomsByLjType[i] - 1) * numAtomsByLjType[j];
-            }
-            else {
-              sumOfAs += (numAtomsByLjType[i]) * numAtomsByLjType[j] * ATable[i*LJtypecount + j];
-              sumOfBs += (numAtomsByLjType[i]) * numAtomsByLjType[j] * BTable[i*LJtypecount + j];
-              count += (numAtomsByLjType[i]) * numAtomsByLjType[j];
-            }
+            BigReal npairs = (numAtomsByLjType[i] - int(i==j))*(double)numAtomsByLjType[j];
+            _sumOfAs += npairs*ATable[i*LJtypecount + j];
+            _sumOfBs += npairs*BTable[i*LJtypecount + j];
+            _count += npairs;
           }
+          sumOfAs += _sumOfAs;
+          sumOfBs += _sumOfBs;
+          count += _count;
         }
       }
       delete [] numAtomsByLjType;
