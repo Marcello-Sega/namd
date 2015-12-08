@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2015/11/19 22:29:36 $
- * $Revision: 1.1457 $
+ * $Date: 2015/12/08 15:41:37 $
+ * $Revision: 1.1458 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2555,6 +2555,12 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    ///// periodic cell parameters
 
    if ( opts.defined("extendedSystem") ) readExtendedSystem(config->find("extendedSystem")->data);
+
+#ifdef MEM_OPT_VERSION
+   if ( LJcorrection ) {
+      NAMD_die("LJ tail corrections not yet available for memory optimized builds");
+   }
+#endif
 
    if ( LJcorrection && ! cellBasisVector3.length2() ) {
      NAMD_die("Can't use LJ tail corrections without periodic boundary conditions!");
