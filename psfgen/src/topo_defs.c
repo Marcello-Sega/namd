@@ -520,7 +520,7 @@ int topo_defs_add_topofile(topo_defs *defs, const char *filename) {
 
   int i;
   topo_defs_topofile_t *newitem;
-  char errmsg[64 + NAMEMAXLEN];
+  char errmsg[64 + 256];
   if ( ! defs ) return -1;
   if ( strlen(filename)>=256 ) return -2;
   if ( ( i = hasharray_index(defs->topo_hash,filename) ) != HASHARRAY_FAIL ) {
