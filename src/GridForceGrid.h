@@ -28,6 +28,7 @@ class GridforceFullSubGrid;
 class GridforceGrid {
 public:
     static GridforceGrid * new_grid(int gridnum, char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams);
+    virtual ~GridforceGrid();
     
     virtual void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams) = 0;
     virtual void reinitialize(SimParameters *simParams, MGridforceParams *mgridParams) = 0;
@@ -67,6 +68,7 @@ protected:
     
     Position get_corner(int idx);
     
+    GridforceGrid() { type = GridforceGridTypeUndefined; }
     GridforceGridType type;
     int mygridnum;
     

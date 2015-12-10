@@ -45,6 +45,8 @@ GridforceGrid * GridforceGrid::new_grid(int gridnum, char *potfilename, SimParam
     return grid;
 }
 
+GridforceGrid::~GridforceGrid() { ; }
+
 void GridforceGrid::pack_grid(GridforceGrid *grid, MOStream *msg)
 {
     // Abstract interface for packing a grid into a message.  This
@@ -193,6 +195,15 @@ void GridforceFullBaseGrid::unpack(MIStream *msg)
 {
     DebugM(3, "Unpacking message\n" << endi);
 //    iout << iINFO << CkMyPe() << " Unpacking message\n" << endi;
+
+    delete[] grid;
+    grid = NULL;
+    for (int i = 0; i < numSubgrids; i++) {
+	delete subgrids[i];
+    }
+    numSubgrids = 0;
+    delete[] subgrids;
+    subgrids = NULL;
     
     msg->get(numSubgrids);
     msg->get(generation);
@@ -224,8 +235,6 @@ void GridforceFullBaseGrid::unpack(MIStream *msg)
     msg->get(sizeof(Vector), (char*)&scale);
     
     if (size) {
-	DebugM(3, "deleting grid\n" << endi);
-	delete[] grid;
 	DebugM(3, "allocating grid, size = " << size << "\n" << endi);
 	grid = new float[size];
 	msg->get(size*sizeof(float), (char*)grid);
@@ -233,7 +242,6 @@ void GridforceFullBaseGrid::unpack(MIStream *msg)
     
     if (numSubgrids) {
 	DebugM(3, "Creating subgrids array, size " << numSubgrids << "\n" << endi);
-	delete[] subgrids;
 	subgrids = new GridforceFullSubGrid *[numSubgrids];
 	for (int i = 0; i < numSubgrids; i++) {
 	    subgrids[i] = new GridforceFullSubGrid(this);
@@ -1410,6 +1418,9 @@ void GridforceLiteGrid::pack(MOStream *msg) const
 
 void GridforceLiteGrid::unpack(MIStream *msg)
 {
+    delete[] grid;
+    grid = NULL;
+
     msg->get(4*sizeof(int), (char*)k);
     msg->get(size);
     msg->get(4*sizeof(long int), (char*)dk);
@@ -1423,7 +1434,6 @@ void GridforceLiteGrid::unpack(MIStream *msg)
     msg->get(129*sizeof(char), (char*)filename);
     
     if (size) {
-	delete[] grid;
 	grid = new float[size];
 	msg->get(size*sizeof(float), (char*)grid);
     }
