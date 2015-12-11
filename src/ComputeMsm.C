@@ -370,6 +370,9 @@ public:
   ~ComputeMsmMgr();
 
   void initialize(MsmInitMsg *);      // entry with message
+private:
+  void initialize2();                 // split in two
+public:
 
   void recvMsmBlockProxy(MsmBlockProxyMsg *);  // entry with message
   void recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *);  // entry with message
@@ -4990,6 +4993,16 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   if (CkMyPe() == 0) {
     iout << iINFO << "MSM finished creating map for grid levels\n" << endi;
   }
+
+  initialize2();
+}
+
+void ComputeMsmMgr::initialize2()
+{
+  SimParameters *simParams = Node::Object()->simParameters;
+  PatchMap *pm = PatchMap::Object();
+  int numpatches = pm->numPatches();
+  int i, j, k, n, level;
 
   // initialize grid of PatchDiagram
   // a = cutoff
