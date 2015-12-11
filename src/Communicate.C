@@ -57,12 +57,15 @@ Communicate::Communicate(void)
 
   CkpvInitialize(int, CsmAcks);
   CkpvAccess(CsmAcks) = nchildren;
+
+  ackmsg = (char *) CmiAlloc(CmiMsgHeaderSizeBytes);
+  CmiSetHandler(ackmsg, CsmAckHandlerIndex);
 }
 
 
 Communicate::~Communicate(void) 
 {
-  // do nothing
+  CmiFree(ackmsg);
 }
 
 MIStream *Communicate::newInputStream(int PE, int tag)
@@ -91,8 +94,6 @@ void *Communicate::getMessage(int PE, int tag)
     // CmiDeliverSpecificMsg(CsmHandlerIndex);
   }
 
-  char *ackmsg = (char *) CmiAlloc(CmiMsgHeaderSizeBytes);
-  CmiSetHandler(ackmsg, CsmAckHandlerIndex);
   CmiSyncSend(parent, CmiMsgHeaderSizeBytes, ackmsg);
 
   while ( CkpvAccess(CsmAcks) < nchildren ) {

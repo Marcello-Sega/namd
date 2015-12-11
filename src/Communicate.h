@@ -23,6 +23,7 @@ private:
   int parent;
   int nchildren;
   int children[2];
+  char *ackmsg;
 
 public:
   Communicate(void);
