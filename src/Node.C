@@ -1101,6 +1101,7 @@ void Node::reloadGridforceGrid(const char * key) {
 }
 
 void Node::reloadGridforceGrid(int gridnum) {
+    if (CmiMyRank()) return;
     DebugM(4, "reloadGridforceGrid(int) called on node " << CkMyPe() << "\n" << endi);
     
     GridforceGrid *grid = molecule->get_gridfrc_grid(gridnum);
@@ -1110,8 +1111,6 @@ void Node::reloadGridforceGrid(int gridnum) {
     
     if (CkMyPe()) {
 	// not node 0 -> receive grid
-	if (CmiMyRank()) return;
-	
 	DebugM(4, "Receiving grid\n");
 	
 	delete grid;
