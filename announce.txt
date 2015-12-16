@@ -41,6 +41,8 @@ NAMD 2.11 has many advantages over NAMD 2.10, among these are:
 
 - Improved minimization for Drude force field and rigid bonds
 
+- Fix long-range LJ correction for systems larger than 11,000 atoms
+
 - Improved long-range LJ correction with VDW force switching
 
 - Improved alchemical calculations with VDW force switching
@@ -56,6 +58,8 @@ NAMD 2.11 has many advantages over NAMD 2.10, among these are:
 - Prevent running smp builds with one thread per process
 
 - Support trajectory files larger than 2GB on Windows
+
+- NVIDIA CUDA GPU-acceleration binaries for Mac OS X
 
 - Improved Intel Xeon Phi coprocessor support
 
