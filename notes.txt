@@ -161,7 +161,7 @@ the ibverbs layer, plus support for multi-copy algorithms (replicas).
 Writing batch job scripts to run charmrun in a queueing system can be
 challenging.  Since most clusters provide directions for using mpiexec
 to launch MPI jobs, charmrun provides a ++mpiexec option to use mpiexec
-to launch non-MPI binaries.  If "mpiexec -np <procs> ..." is not
+to launch non-MPI binaries.  If "mpiexec -n <procs> ..." is not
 sufficient to launch jobs on your cluster you will need to write an
 executable mympiexec script like the following from TACC:
 
@@ -171,6 +171,12 @@ executable mympiexec script like the following from TACC:
 The job is then launched (with full paths where needed) as:
 
   charmrun +p<procs> ++mpiexec ++remote-shell mympiexec namd2 <configfile>
+
+Charm++ now provides the option ++mpiexec-no-n for the common case
+where mpiexec does not accept "-n <procs>" and instead derives the
+number of processes to launch directly from the queueing system:
+
+  charmrun +p<procs> ++mpiexec-no-n ++remote-shell ibrun namd2 <configfile>
 
 For workstation clusters and other massively parallel machines with 
 special high-performance networking, NAMD uses the system-provided MPI 
@@ -286,7 +292,7 @@ on each of four quad-core nodes one would specify:
 For MPI-based SMP builds one would specify any mpiexec options needed
 for the required number of processes and pass +ppn to the NAMD binary as:
 
-  mpiexec -np 4 namd2 +ppn 3 <configfile>
+  mpiexec -n 4 namd2 +ppn 3 <configfile>
 
 MPI-based SMP builds have worse performance than verbs or ibverbs and
 are not recommended, particularly for GPU-accelerated builds.
@@ -351,21 +357,16 @@ Use Linux-x86_64-multicore and the following script to set CPU affinity:
   namd2 +setcpuaffinity `numactl --show | awk '/^physcpubind/ {printf \
      "+p%d +pemap %d",(NF-1),$2; for(i=3;i<=NF;++i){printf ",%d",$i}}'` ...
 
-For runs on large numbers of cores (you will need to experiment) use the
-following to enable the Charm++ communication thread:
-
-  namd2 +setcpuaffinity `numactl --show | awk '/^physcpubind/ {printf \
-     "+p%d +pemap %d",(NF-2),$2; for(i=3;i<NF;++i){printf ",%d",$i}; \
-     print " +commthread +commap",$NF}'`
-
 -- IBM POWER Clusters --
 
-Run the MPI version of NAMD as you would any POE program.  The options and 
-environment variables for poe are various and arcane, so you should 
-consult your local documentation for recommended settings.  As an example, 
-to run on Blue Horizon one would specify:
+Run the verbs or ibverbs version of NAMD as on any other cluster,
+using poe in place of mpiexec as the process launcher, for example:
 
-  poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
+  charmrun +p<procs> ++mpiexec-no-n ++remote-shell poe namd2 <configfile>
+
+The details of job submission will vary between sites.  For example,
+two nodes with two tasks per node on LSF are -n 4 -R "span[ptile=2]"
+with charmrun options +p36 ++ppn 9 ++mpiexec-no-n ++remote-shell poe
 
 ----------------------------------------------------------------------
 
@@ -384,8 +385,7 @@ available and consecutively numbered cores share resources such as
 memory bandwidth or are hardware threads on the same physical core.
 
 If needed, specific cores for the Charm++ PEs (processing elements) and
-communication threads (on all SMP builds and on multicore builds when
-the +commthread option is specified) can be set by adding the +pemap
+communication threads (on SMP builds) can be set by adding the +pemap
 and (if needed) +commap options with lists of core sets in the form
 "lower[-upper[:stride[.run]]][,...]".  A single number identifies a
 particular core.  Two numbers separated by a dash identify an inclusive
@@ -418,6 +418,10 @@ to NAMD in order to set thread affinity (which will improve performance):
 
 CUDA GPU Acceleration
 
+NAMD does not offload the entire calculation to the GPU, and performance
+may therefore be limited by the CPU.  In general all available CPU cores
+should be used, with CPU affinity set as described above.
+
 Energy evaluation is slower than calculating forces alone, and the loss
 is much greater in CUDA-accelerated builds.  Therefore you should set
 outputEnergies to 100 or higher in the simulation config file.  Some
@@ -443,7 +447,7 @@ when running a multicore binary (recommended for a single machine):
 
   setenv LD_LIBRARY_PATH ".:$LD_LIBRARY_PATH"
   (or LD_LIBRARY_PATH=".:$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH)
-  ./namd2 +p4 <configfile>
+  ./namd2 +p8 +setcpuaffinity <configfile>
 
 Each namd2 thread can use only one GPU.  Therefore you will need to run
 at least one thread for each GPU you want to use.  Multiple threads
@@ -452,15 +456,15 @@ will automatically distribute threads equally among the GPUs on a node.
 Specific GPU device IDs can be requested via the +devices argument on
 the namd2 command line, for example:
 
-  ./namd2 +p4 +devices 0,2 <configfile>
+  ./namd2 +p8 +setcpuaffinity +devices 0,2 <configfile>
 
-Devices are shared by consecutive threads in a process, so in the above
-example processes 0 and 1 will share device 0 and processes 2 and 3 will
+Devices are shared by consecutive threads in a process, so in the
+above example threads 0-3 will share device 0 and threads 4-7 will
 share device 2.  Repeating a device will cause it to be assigned to
 multiple master threads, either in the same or different processes, which
 is advised against in general but may be faster in certain cases.  In the
 above example one could specify +devices 0,2,0,2 to cause device 0 to be
-shared by threads 0 and 2, etc.  When running on multiple nodes the
+shared by threads 0-1 and 4-5, etc.  When running on multiple nodes the
 +devices specification is applied to each physical node separately and
 there is no way to provide a unique list for each node.
 
@@ -478,7 +482,7 @@ directory to LD_LIBRARY_PATH with the following executable runscript:
 
 For example:
 
-  ./charmrun ++runscript ./runscript +p24 ./namd2 ++ppn 3 <configfile>
+  ./charmrun ++runscript ./runscript +p60 ./namd2 ++ppn 15 <configfile>
 
 An InfiniBand network is highly recommended when running CUDA-accelerated
 NAMD across multiple nodes.  You will need a verbs or ibverbs NAMD binary
@@ -781,10 +785,7 @@ both 25 and 50 cycles (see the stepspercycle parameter) and base your
 estimate on the additional time needed for the longer simulation in
 order to exclude startup costs and allow for initial load balancing.
 
-Multicore builds scale well within a single node.  On machines with more
-than 32 cores it may be necessary to add a communication thread and run
-on one fewer core than the machine has.  On a 48-core machine this would
-be run as "namd2 +p47 +commthread".  Performance may also benefit from
+Multicore builds scale well within a single node, but may benefit from
 setting CPU affinity using the +setcpuaffinity +pemap <map> +commap <map>
 options described in CPU Affinity above.  Experimentation is needed.
 
