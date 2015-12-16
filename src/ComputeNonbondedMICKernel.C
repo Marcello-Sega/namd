@@ -1686,9 +1686,10 @@ void mic_nonbonded_forces(const int deviceNum,
     MIC_DEVICE_REFINE_PAIRLISTS_CLAUSE \
     MIC_DEVICE_DATA_STRUCT_VERIFY_CLAUSE \
     nocopy(device__pe) nocopy(device__node) \
-    DEVICE_FPRINTF_CLAUSE \
-    signal(tag_kernel)
+    DEVICE_FPRINTF_CLAUSE
   {
+//    DEVICE_FPRINTF_CLAUSE \
+//    signal(tag_kernel)
     __MUST_BE_MIC;
     __FULL_CHECK(__ASSERT(isRemote == 0 || isRemote == 1));
     mic_kernel_data * kernel_data = _kernel_data + isRemote;
@@ -2448,22 +2449,22 @@ int mic_check_remote_kernel_complete(const int deviceNum) {
   // DMK - NOTE : Disable these warnings for now since the device code is only called once,
   //   but the state variable goes from 0 -> 1 -> 2 -> 0, which checks at both 1 and 2
   //if (!tag_remote_kernel) { printf("WARNING :: mic_check_remote_kernel_complete :: called when kernel not active.\n"); }
-  if (_Offload_signaled(deviceNum, &tag_remote_kernel)) {
+  // if (_Offload_signaled(deviceNum, &tag_remote_kernel)) {
     tag_remote_kernel = 0;
     return 1;
-  }
-  return 0;
+  // }
+  // return 0;
 }
 
 int mic_check_local_kernel_complete(const int deviceNum) {
   // DMK - NOTE : Disable these warnings for now since the device code is only called once,
   //   but the state variable goes from 0 -> 1 -> 2 -> 0, which checks at both 1 and 2
   //if (!tag_local_kernel) { printf("WARNING :: mic_check_local_kernel_complete :: called when kernel not active.\n"); }
-  if (_Offload_signaled(deviceNum, &tag_local_kernel)) {
+  // if (_Offload_signaled(deviceNum, &tag_local_kernel)) {
     tag_local_kernel = 0;
     return 1;
-  }
-  return 0;
+  // }
+  // return 0;
 }
 
 
