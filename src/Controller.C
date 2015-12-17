@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2015/12/04 21:43:18 $
- * $Revision: 1.1311 $
+ * $Date: 2015/12/17 21:22:03 $
+ * $Revision: 1.1312 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -810,9 +810,11 @@ void Controller::langevinPiston1(int step)
     // the default (isotropic pressure) case.
     
     Tensor ptarget;
-    ptarget.zz = simParams->langevinPistonTarget;
-    ptarget.xx = ptarget.yy = simParams->langevinPistonTarget - 
+    ptarget.xx = ptarget.yy = ptarget.zz = simParams->langevinPistonTarget;
+    if ( simParams->surfaceTensionTarget != 0. ) {
+      ptarget.xx = ptarget.yy = simParams->langevinPistonTarget - 
         simParams->surfaceTensionTarget / state->lattice.c().z;
+    }
 
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
       ( controlPressure - ptarget );
@@ -958,9 +960,11 @@ void Controller::langevinPiston2(int step)
     // the default (isotropic pressure) case.
    
     Tensor ptarget;
-    ptarget.zz = simParams->langevinPistonTarget;
-    ptarget.xx = ptarget.yy = simParams->langevinPistonTarget -
+    ptarget.xx = ptarget.yy = ptarget.zz = simParams->langevinPistonTarget;
+    if ( simParams->surfaceTensionTarget != 0. ) {
+      ptarget.xx = ptarget.yy = simParams->langevinPistonTarget - 
         simParams->surfaceTensionTarget / state->lattice.c().z;
+    }
 
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
       ( controlPressure - ptarget );
