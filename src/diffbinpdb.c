@@ -16,12 +16,13 @@ int fd1, fd2;
 struct stat statbuf;
 int i, j, n1, n2;
 off_t s1, s2;
-int imax;
-double dmax;
+int imax, usetol;
+double dmax, dtol;
 
-if ( argc != 3 ) {
+if ( argc < 3 || argc > 4 ) {
   fprintf(stderr,"Returns the maximum distance between two binary pdb files.\n");
-  fprintf(stderr,"Usage: %s <filename1> <filename2>\n",argv[0]);
+  fprintf(stderr,"Optionally lists all differences greater than [tolerance].\n");
+  fprintf(stderr,"Usage: %s <filename1> <filename2> [tolerance]\n",argv[0]);
   exit(-1);
 }
 
@@ -79,6 +80,19 @@ if ( n1 != n2 ) {
   exit(-1);
 }
 
+usetol = 0;
+dtol = 0;
+
+if ( argc == 4 ) {
+  if ( sscanf(argv[3],"%lf",&dtol) != 1 ) {
+    fprintf(stderr,"Unable to parse tolerance argument %s\n",argv[3]);
+    fprintf(stderr,"Usage: %s <filename1> <filename2> [tolerance]\n",argv[0]);
+    exit(-1);
+  }
+  usetol = 1;
+  if ( dtol > 0. ) dtol *= dtol;  /* preserve negative values */
+}
+
 imax = 0;
 dmax = 0;
 
@@ -96,10 +110,14 @@ for ( i=0; i<n1; ++i ) {
     d += dj*dj;
   }
   if ( d > dmax ) { imax = i; dmax = d; }
+  if ( usetol && d > dtol ) {
+    printf("%lg at %d\n",sqrt(d),i);
+  }
 }
 
 dmax = sqrt(dmax);
 
+if ( dtol ) printf("MAX: ");
 printf("%lg at %d\n",dmax,imax);
 
 exit(0);
