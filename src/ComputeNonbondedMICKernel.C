@@ -2081,8 +2081,7 @@ void mic_nonbonded_forces(const int deviceNum,
 
       // Select the version of the kernel to call based on the timestep's requirements
       //   and what type of compute this compute is
-      int isSelf = (params.pp->patch1_force_list_index == params.pp->patch2_force_list_index &&
-                    params.offset.x == 0.f && params.offset.y == 0.f && params.offset.z == 0.f);
+      int isSelf = (params.pp->patch1_force_start == params.pp->patch2_force_start);
                     // NOTE: Many ways to check this (arbitrary test used here)
       int selfBit = ((isSelf) ? (0x01) : (0x00));
       int doSlowBit = ((kernel_data->doSlow) ? (0x02) : (0x00));
