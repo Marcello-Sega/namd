@@ -1840,6 +1840,7 @@ void ComputeNonbondedMIC::doWork() {
         pp.patch1_atom_start = patchRecords[p1].localStart;
         pp.patch1_force_start = force_lists[lp1].force_list_start
                               + (force_lists[lp1].patch_stride * force_lists[lp1].force_list_size);
+        force_lists[lp1].force_list_size++;
         pp.patch1_size = patchRecords[p1].numAtoms;
         pp.patch1_force_size = patchRecords[p1].numAtoms; 
 
@@ -1852,6 +1853,7 @@ void ComputeNonbondedMIC::doWork() {
           pp.patch2_atom_start = patchRecords[p2].localStart;
           pp.patch2_force_start = force_lists[lp2].force_list_start
                                 + (force_lists[lp2].patch_stride * force_lists[lp2].force_list_size);
+          force_lists[lp2].force_list_size++;
           pp.patch2_size = patchRecords[p2].numAtoms;
           pp.patch2_force_size = patchRecords[p2].numAtoms;
 	}
@@ -1882,9 +1884,6 @@ void ComputeNonbondedMIC::doWork() {
 
         pp.block_flags_start = bfstart;
         bfstart += ((pp.patch1_force_size + 127) >> 7) << 5;
-
-        force_lists[lp1].force_list_size++;
-        if (!cr.isSelf) { force_lists[lp2].force_list_size++; }
 
       } // for ncomputes
 
