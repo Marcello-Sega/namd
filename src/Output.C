@@ -758,6 +758,7 @@ int Output::output_dcdfile(int timestep, int n, FloatVector *coor,
   static int fileid;  //  File id for the dcd file
 
   static float *x, *y, *z; // Arrays to hold x, y, and z arrays
+  static int n_alloc;  // allocated size
   
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
@@ -816,13 +817,11 @@ int Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     //  Allocate x, y, and z arrays since the DCD file routines
     //  need them passed as three independant arrays to be
     //  efficient
-    if ( ! x ) x = new float[n];
-    if ( ! y ) y = new float[n];
-    if ( ! z ) z = new float[n];
-
-    if ( (x==NULL) || (y==NULL) || (z==NULL) )
-    {
-      NAMD_err("memory allocation failed in Output::output_dcdfile");
+    if ( n > n_alloc ) {
+      delete [] x;  x = new float[3*n];
+      y = x + n;
+      z = x + 2*n;
+      n_alloc = n;
     }
 
     //  Open the DCD file
@@ -1009,6 +1008,7 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
   static Bool first=TRUE;  //  Flag indicating first call
   static int fileid;  //  File id for the dcd file
   static float *x, *y, *z; // Arrays to hold x, y, and z arrays
+  static int n_alloc;  // allocated size
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
   SimParameters *simParams = Node::Object()->simParameters;
@@ -1030,13 +1030,11 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
     //  Allocate x, y, and z arrays since the DCD file routines
     //  need them passed as three independant arrays to be
     //  efficient
-    x = new float[n];
-    y = new float[n];
-    z = new float[n];
-
-    if ( (x==NULL) || (y==NULL) || (z==NULL) )
-    {
-      NAMD_err("memory allocation failed in Output::output_veldcdfile");
+    if ( n > n_alloc ) {
+      delete [] x;  x = new float[3*n];
+      y = x + n;
+      z = x + 2*n;
+      n_alloc = n;
     }
 
     //  Open the DCD file
@@ -1172,6 +1170,7 @@ void Output::output_forcedcdfile(int timestep, int n, Vector *frc)
   static Bool first=TRUE;  //  Flag indicating first call
   static int fileid;  //  File id for the dcd file
   static float *x, *y, *z; // Arrays to hold x, y, and z arrays
+  static int n_alloc;  // allocated size
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
   SimParameters *simParams = Node::Object()->simParameters;
@@ -1193,13 +1192,11 @@ void Output::output_forcedcdfile(int timestep, int n, Vector *frc)
     //  Allocate x, y, and z arrays since the DCD file routines
     //  need them passed as three independant arrays to be
     //  efficient
-    x = new float[n];
-    y = new float[n];
-    z = new float[n];
-
-    if ( (x==NULL) || (y==NULL) || (z==NULL) )
-    {
-      NAMD_err("memory allocation failed in Output::output_forcedcdfile");
+    if ( n > n_alloc ) {
+      delete [] x;  x = new float[3*n];
+      y = x + n;
+      z = x + 2*n;
+      n_alloc = n;
     }
 
     //  Open the DCD file
