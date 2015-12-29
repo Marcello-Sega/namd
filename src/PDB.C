@@ -242,8 +242,12 @@ PDB::~PDB( void )
 {
 #ifndef MEM_OPT_VERSION
 	int i;
-	for (i=atomCount-1; i>=0; i--)
-	   delete atomArray[i];
+	if ( atomArray[atomCount-1] == atomArray[0] + (atomCount-1) ) {
+	  delete [] atomArray[0];
+	} else {
+	  for (i=atomCount-1; i>=0; i--)
+	    delete atomArray[i];
+        }
 #else
 	delete [] altlocArray;
 #endif
