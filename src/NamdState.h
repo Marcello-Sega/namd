@@ -44,6 +44,7 @@ public:
     int configFileInit(char *);
     friend class ScriptTcl;
     int configListInit(ConfigList *);
+    int loadStructure(const char *, const char *, int);
     int status();
     void useController(Controller *controllerPtr);
     void runController(void);

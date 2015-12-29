@@ -956,6 +956,49 @@ void Node::namdOneSend() {
   } // End of modification
 }
 
+
+void Node::reloadStructure(const char *fname, const char *pdbname) {
+  delete molecule;
+  molecule = state->molecule = 0;
+  delete pdb;
+  pdb = state->pdb = 0;
+  state->loadStructure(fname,pdbname,1);
+  this->molecule = state->molecule;
+  this->pdb = state->pdb;
+  CProxy_Node nodeProxy(thisgroup);
+  nodeProxy.resendMolecule();
+}
+
+
+void Node::resendMolecule() {
+  if ( CmiMyRank() ) {
+    return;
+  }
+  if ( CmiMyPe() == 0 ) {
+    int bufSize = BUFSIZE;
+    if(molecule->numAtoms>=1000000) bufSize = 16*BUFSIZE;
+    MOStream *conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
+    molecule->send_Molecule(conv_msg);
+  } else {
+    delete molecule;
+    molecule = new Molecule(simParameters,parameters);
+    MIStream *conv_msg = CkpvAccess(comm)->newInputStream(0, MOLECULETAG);
+    molecule->receive_Molecule(conv_msg);
+  }
+  node_molecule = molecule;
+  SimParameters::nonbonded_select();
+  CProxy_Node nodeProxy(thisgroup);
+  for ( int i=0; i<CmiMyNodeSize(); ++i ) {
+    nodeProxy[CmiMyPe()+i].resendMolecule2();
+  }
+}
+
+void Node::resendMolecule2() {
+  molecule = node_molecule;
+  AtomMap::Object()->allocateMap(molecule->numAtoms);
+}
+
+
 // Initial thread setup
 
 void Node::threadInit() {

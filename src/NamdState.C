@@ -144,13 +144,19 @@ int NamdState::configListInit(ConfigList *cfgList) {
       }
   }
 
+  return loadStructure(0,0,0);
+}
+
+int NamdState::loadStructure(const char *molFilename, const char *pdbFilename, int reload) {
+
   StringList *molInfoFilename;
   // If it's AMBER force field, read the AMBER style files;
   // if it's GROMACS, read the GROMACS files;
   // Otherwise read the CHARMM style files
 
-  if (simParameters->amberOn)
-  { StringList *parmFilename = configList->find("parmfile");
+  if (simParameters->amberOn) {
+    if ( reload ) NAMD_die("Molecular structure reloading not supported for Amber input files.\n");
+    StringList *parmFilename = configList->find("parmfile");
     molInfoFilename = parmFilename;
     StringList *coorFilename = configList->find("ambercoor");
     // "amber" is a temporary data structure, which records all
@@ -170,6 +176,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
     parameters->print_param_summary();
   }
   else if (simParameters->gromacsOn) {
+    if ( reload ) NAMD_die("Molecular structure reloading not supported for Gromacs input files.\n");
     StringList *topFilename = configList->find("grotopfile");
     molInfoFilename = topFilename;
     StringList *coorFilename = configList->find("grocoorfile");
@@ -197,6 +204,10 @@ int NamdState::configListInit(ConfigList *cfgList) {
 #ifdef MEM_OPT_VERSION  	
 	NAMD_die("Using plugin IO is not supported in memory optimized version!");
 #else    
+    if ( pdbFilename ) {
+      NAMD_bug("NamdState::loadStructure pdbFilename non-null with usePluginIO\n");
+    }
+
     PluginIOMgr *pIOMgr = new PluginIOMgr();
     
     iout << iWARN << "Plugin-based I/O is still in development and may still have bugs\n" << endi;
@@ -214,15 +225,18 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
     StringList *moleculeFilename = configList->find("structure");
     molInfoFilename = moleculeFilename;
+    if ( ! molFilename ) molFilename = moleculeFilename->data;
+  if ( ! reload ) {
     StringList *parameterFilename = configList->find("parameters");
     //****** BEGIN CHARMM/XPLOR type changes
     // For AMBER use different constructor based on parm_struct!!!  -JCP
     parameters = new Parameters(simParameters, parameterFilename);
     parameters->print_param_summary();
+  }
 
     int numAtoms = 0;
     //TODO: not sure about the name field in the handler
-    void *plgFile = pIOHandle->open_file_read(moleculeFilename->data, 
+    void *plgFile = pIOHandle->open_file_read(molFilename, 
                                               pIOHandle->name, &numAtoms);
     if(plgFile ==  NULL) {
         NAMD_die("ERROR: Opening structure file failed!");
@@ -251,6 +265,8 @@ int NamdState::configListInit(ConfigList *cfgList) {
   { 
     StringList *moleculeFilename = configList->find("structure");
     molInfoFilename = moleculeFilename; 
+    if ( ! molFilename ) molFilename = moleculeFilename->data;
+  if ( ! reload ) {
     StringList *parameterFilename = configList->find("parameters");
     //****** BEGIN CHARMM/XPLOR type changes
     // For AMBER use different constructor based on parm_struct!!!  -JCP
@@ -258,9 +274,10 @@ int NamdState::configListInit(ConfigList *cfgList) {
     //****** END CHARMM/XPLOR type changes    
 
     parameters->print_param_summary();
+  }
 
     double fileReadTime = CmiWallTimer();
-    molecule = new Molecule(simParameters, parameters, moleculeFilename->data, configList);
+    molecule = new Molecule(simParameters, parameters, (char*)molFilename, configList);
     iout << iINFO << "TIME FOR READING PSF FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
 }
 
@@ -328,10 +345,17 @@ int NamdState::configListInit(ConfigList *cfgList) {
       //In the memory opt version, the coordinates of atoms
       //are read during startup in parallel with a bincoordinates input
       //-Chao Mei
-      coordinateFilename = configList->find("coordinates");    
       double fileReadTime = CmiWallTimer();
-      if (coordinateFilename != NULL)
-        pdb = new PDB(coordinateFilename->data);
+      if ( pdbFilename ) {
+        iout << iINFO << "Reading pdb file " << pdbFilename << "\n" << endi;
+        pdb = new PDB(pdbFilename);
+      } else {
+        coordinateFilename = configList->find("coordinates");    
+        if (coordinateFilename != NULL) {
+          iout << iINFO << "Reading pdb file " << coordinateFilename->data << "\n" << endi;
+          pdb = new PDB(coordinateFilename->data);
+        }
+      }
       if (pdb->num_atoms() != molecule->numAtoms) {
         NAMD_die("Number of pdb and psf atoms are not the same!");
       }
@@ -714,7 +738,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
         fflush(stdout);
 
   StringList *binCoordinateFilename = configList->find("bincoordinates");
-  if ( binCoordinateFilename ) {
+  if ( binCoordinateFilename && ! reload ) {
     read_binary_coors(binCoordinateFilename->data, pdb);
   }
 

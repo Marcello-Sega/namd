@@ -98,6 +98,10 @@ public:
   void reloadGridforceGrid(const char *key);
   void reloadGridforceGrid(int gridnum);
 
+  void reloadStructure(const char *, const char *);
+  void resendMolecule();
+  void resendMolecule2();
+
   void sendCheckpointReq(int remote, const char *key, int task, Lattice &lat, ControllerState &cs);
   void recvCheckpointReq(CheckpointMsg*);
   void recvCheckpointAck(CheckpointMsg*);
