@@ -133,6 +133,7 @@ AtomMap *AtomMap::Instance() {
 AtomMap::AtomMap(void)
 {
   localIDTable = NULL;
+  tableSz = 0;
 
 #ifdef MEM_OPT_VERSION
   entries = NULL;
@@ -167,10 +168,15 @@ void AtomMap::allocateMap(int nAtomIds)
   } // else use non-memopt strategy
   onlyUseTbl = true;	
 #endif
+  if ( nAtomIds <= tableSz ) return;
+  LocalID *oldTable = localIDTable;
   localIDTable = new LocalID[nAtomIds];
-  tableSz = nAtomIds;
-  for(int i=0; i < nAtomIds; i++)
+  for(int i=0; i < tableSz; i++)
+    localIDTable[i] = oldTable[i];
+  for(int i=tableSz; i < nAtomIds; i++)
     localIDTable[i].pid = localIDTable[i].index = notUsed;
+  delete [] oldTable;
+  tableSz = nAtomIds;
 }
 
 //
