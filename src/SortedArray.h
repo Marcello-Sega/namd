@@ -95,7 +95,7 @@ inline int SortedArray<Elem>::insert(const Elem& elem) {
 template <class Elem>
 inline Elem * SortedArray<Elem>::find(const Elem& elem) {
   int found = bsearch(elem);
-  if ( found < 0) 
+  if ( found < 0 || found == this->size() ) 
     return ((Elem *)NULL);
   if (this->rep[found] == elem) {
     return (&(this->rep[found]));
