@@ -28,6 +28,7 @@ private:
 	// Command line argument settings
 	char *devicelist;
 	int usedevicelist;
+	int devicesperreplica;
 	int ignoresharing;
 	int mergegrids;
 	int nomergegrids;

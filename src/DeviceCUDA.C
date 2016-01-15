@@ -39,6 +39,7 @@ void cuda_finalize() {
 struct cuda_args_t {
 	char *devicelist;
 	int usedevicelist;
+	int devicesperreplica;
 	int ignoresharing;
 	int mergegrids;
 	int nomergegrids;
@@ -51,6 +52,9 @@ void cuda_getargs(char **argv) {
   cuda_args.devicelist = 0;
   cuda_args.usedevicelist = CmiGetArgStringDesc(argv, "+devices", &cuda_args.devicelist,
 		"comma-delimited list of CUDA device numbers such as 0,2,1,2");
+  cuda_args.devicesperreplica = 0;
+  CmiGetArgInt(argv, "+devicesperreplica", &cuda_args.devicesperreplica);
+  if ( cuda_args.devicesperreplica < 0 ) NAMD_die("Devices per replica must be positive\n");
   cuda_args.ignoresharing = CmiGetArgFlag(argv, "+ignoresharing");
   cuda_args.mergegrids = CmiGetArgFlag(argv, "+mergegrids");
   cuda_args.nomergegrids = CmiGetArgFlag(argv, "+nomergegrids");
@@ -75,6 +79,7 @@ void DeviceCUDA::initialize() {
 	// Copy command-line arguments into class
 	this->devicelist = cuda_args.devicelist;
 	this->usedevicelist = cuda_args.usedevicelist;
+	this->devicesperreplica = cuda_args.devicesperreplica;
 	this->ignoresharing = cuda_args.ignoresharing;
 	this->mergegrids = cuda_args.mergegrids;
 	this->nomergegrids = cuda_args.nomergegrids;
@@ -169,6 +174,20 @@ void DeviceCUDA::initialize() {
 
   if ( ! ndevices ) {
     cudaDie("All CUDA devices are in prohibited mode, of compute capability 1.0, unable to map host memory, too small, or otherwise unusable.");
+  }
+
+  if ( devicesperreplica > 0 ) {
+    if ( devicesperreplica > ndevices ) {
+      NAMD_die("More devices per partition requested than devices are available");
+    }
+    int *olddevices = devices;
+    devices = new int[devicesperreplica];
+    for ( int i=0; i<devicesperreplica; ++i ) {
+      int mypart = CmiMyPartition();
+      devices[i] = olddevices[(i+devicesperreplica*mypart)%ndevices];
+    }
+    ndevices = devicesperreplica;
+    delete [] olddevices;
   }
 
   sharedGpu = 0;
