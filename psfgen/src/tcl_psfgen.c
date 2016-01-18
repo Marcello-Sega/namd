@@ -1769,6 +1769,7 @@ static int tcl_num_patch_targets(psfgen_data *psf, Tcl_Interp *interp,
   topo_defs_angle_t *angledef;
   topo_defs_dihedral_t *diheddef;
   topo_defs_improper_t *imprdef;
+  topo_defs_exclusion_t *excldef;
   int idef;
 
   topo_defs *defs = psf->defs;
@@ -1813,6 +1814,10 @@ static int tcl_num_patch_targets(psfgen_data *psf, Tcl_Interp *interp,
     if (imprdef->res2 > maxres) maxres = imprdef->res2;
     if (imprdef->res3 > maxres) maxres = imprdef->res3;
     if (imprdef->res4 > maxres) maxres = imprdef->res4;
+  }
+  for (excldef = resdef->exclusions; excldef; excldef = excldef->next) {
+    if (excldef->res1 > maxres) maxres = excldef->res1;
+    if (excldef->res2 > maxres) maxres = excldef->res2;
   }
   Tcl_SetObjResult(interp, Tcl_NewIntObj(maxres+1));
   return TCL_OK;

@@ -602,6 +602,7 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
         atomtmp->dihedrals = 0;
         atomtmp->impropers = 0;
         atomtmp->cmaps = 0;
+        atomtmp->exclusions = 0;
         atomtmp->conformations = 0;
         strcpy(atomtmp->name, atomarray[i].name);
         strcpy(atomtmp->type, atomarray[i].type);
@@ -774,7 +775,10 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
   return 0;
 }
 
-
+    /*
+     * Since support for explicit exlusions is lacking in any plugins, we dont read it
+     * XXX Implement exclusion reading interface for plugins
+     */
 
 /*
  * Write psfgen structure to output file using selected plugin
@@ -800,6 +804,8 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
   int nimprs;
   topo_mol_cmap_t *cmap=NULL;
   int ncmaps;
+  topo_mol_exclusion_t *excl=NULL;
+  int nexcls;
 
   molfile_plugin_t *plg; /* plugin handle */
   void *wv;              /* opaque plugin write handle */
@@ -838,6 +844,7 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
   ndihes = 0;
   nimprs = 0;
   ncmaps = 0;
+  nexcls = 0;
   nseg = hasharray_count(mol->segment_hash);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
@@ -877,6 +884,13 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
             ++ncmaps;
           }
         }
+        for ( excl = atom->exclusions; excl;
+                excl = topo_mol_exclusion_next(excl,atom) ) {
+          if ( excl->atom[0] == atom && ! excl->del ) {
+            ++nexcls;
+          }  
+        } 
+
       }
     }
   }
@@ -887,6 +901,7 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
   ndihes *= nimages;
   nimprs *= nimages;
   ncmaps *= nimages;
+  nexcls *= nimages;
   if ( nimages != 1 ) {
     sprintf(buf,"generating %d images of %d atoms",nimages,nmolatoms);
     print_msg(v,buf);
@@ -901,6 +916,12 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
   print_msg(v,buf);
   sprintf(buf,"total of %d impropers",nimprs);
   print_msg(v,buf);
+  sprintf(buf,"total of %d explicit exclusions",nexcls);
+  print_msg(v,buf);
+  if (nexcls) {
+    print_msg(v, "ERROR: non-zero number of explicit exclusions, which are not supported by plugin interface");
+    return -1;
+  }
 
   /* allocate atom arrays */
   atomarray = (molfile_atom_t *) malloc(natoms*sizeof(molfile_atom_t));

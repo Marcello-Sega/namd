@@ -205,12 +205,19 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, int all_caps, void *v,
       debug_msg("Recognized atom statement.");
       if ( ntok < 4 ) {
         print_msg(v,"ERROR!  Failed to parse atom statement.");
-      } else if ( ntok > 4 ) {
-        print_msg(v,"ERROR!  Explicit exclusions or fluctuating charges not supported, atom ignored.");
       } else {
         s1 = parse_atom(tok[1],&i1,&j1);
         if ( topo_defs_atom(defs,0,0, s1,i1,j1,tok[2],atof(tok[3])) ) {
           print_msg(v,"ERROR!  Failed to parse atom statement.");
+        }
+      }
+      if ( ntok > 4 ) {
+        /* Parse explicit exclusions */
+        s1 = parse_atom(tok[1],&i1,&j1);
+        for ( itok = 4; itok < ntok; ++itok ) {
+          s2 = parse_atom(tok[itok],&i2,&j2);
+          if ( topo_defs_exclusion(defs,0,0,s1,i1,j1,s2,i2,j2) )
+            print_msg(v,"ERROR!  Failed to parse bond statement.");
         }
       }
     }

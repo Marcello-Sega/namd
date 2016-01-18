@@ -45,6 +45,7 @@ void topo_defs_destroy(topo_defs *defs) {
   struct topo_defs_dihedral_t *di, *di2;
   struct topo_defs_improper_t *im, *im2;
   struct topo_defs_cmap_t *cm, *cm2;
+  struct topo_defs_exclusion_t *ex, *ex2;
   struct topo_defs_conformation_t *c, *c2;
   
   if ( ! defs ) return;
@@ -87,6 +88,12 @@ void topo_defs_destroy(topo_defs *defs) {
       cm2 = cm->next;
       free((void*)cm);
       cm = cm2;
+    }
+    ex = defs->residue_array[i].exclusions;
+    while ( ex ) {
+      ex2 = ex->next;
+      free((void*)ex);
+      ex = ex2;
     }
     c = defs->residue_array[i].conformations;
     while ( c ) {
@@ -178,6 +185,7 @@ int topo_defs_residue(topo_defs *defs, const char *rname, int patch) {
   newitem->dihedrals = 0;
   newitem->impropers = 0;
   newitem->cmaps = 0;
+  newitem->exclusions = 0;
   newitem->conformations = 0;
   strcpy(newitem->pfirst,defs->pfirst);
   strcpy(newitem->plast,defs->plast);
@@ -393,6 +401,34 @@ int topo_defs_cmap(topo_defs *defs, const char *rname, int del,
   return 0;
 }
 
+int topo_defs_exclusion(topo_defs *defs, const char *rname, int del,
+	const char *a1name, int a1res, int a1rel,
+	const char *a2name, int a2res, int a2rel) {
+  topo_defs_exclusion_t *newitem;
+  if ( ! defs ) return -1;
+  if ( ! defs->buildres ) {
+    if ( defs->buildres_no_errors ) return 0;
+    topo_defs_log_error(defs,"no residue in progress for explicit exclusion");
+    return -1;
+  }
+  if ( NAMETOOLONG(a1name) ) return -2;
+  if ( NAMETOOLONG(a2name) ) return -3;
+  if ( del && ! defs->buildres->patch ) return -4;
+  if ( ( a1res || a2res ) && ! defs->buildres->patch ) return -4;
+  newitem = (topo_defs_exclusion_t*) malloc(sizeof(topo_defs_exclusion_t));
+  if ( ! newitem )  return -5;
+  newitem->res1 = a1res;
+  newitem->rel1 = a1rel;
+  newitem->res2 = a2res;
+  newitem->rel2 = a2rel;
+  newitem->del = del;
+  strcpy(newitem->atom1,a1name);
+  strcpy(newitem->atom2,a2name);
+  newitem->next = defs->buildres->exclusions;
+  defs->buildres->exclusions = newitem;
+  return 0;
+}
+
 int topo_defs_conformation(topo_defs *defs, const char *rname, int del,
 	const char *a1name, int a1res, int a1rel,
 	const char *a2name, int a2res, int a2rel,
@@ -467,6 +503,7 @@ int topo_defs_patching_first(topo_defs *defs, const char *rname,
   strcpy(defs->buildres->pfirst,pname);
   return 0;
 }
+
 
 int topo_defs_patching_last(topo_defs *defs, const char *rname,
 	const char *pname) {
