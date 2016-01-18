@@ -860,18 +860,18 @@ static void topo_mol_del_cmap(topo_mol *mol, const topo_mol_ident_t *targets,
     al[i] = topo_mol_get_atom(mol,&tl[i],def->rell[i]);
     if ( ! al[i] ) return;
   }
-  for ( tuple = al[i]->cmaps; tuple;
-		tuple = topo_mol_cmap_next(tuple,al[i]) ) {
+  for ( tuple = al[0]->cmaps; tuple;
+		tuple = topo_mol_cmap_next(tuple,al[0]) ) {
     int match1, match2;
     match1 = 0;
     for ( i=0; i<4 && (tuple->atom[i] == al[i]); ++i );
     if ( i == 4 ) match1 = 1;
-    for ( i=0; i<4 && (tuple->atom[i] == al[4-i]); ++i );
+    for ( i=0; i<4 && (tuple->atom[i] == al[3-i]); ++i );
     if ( i == 4 ) match1 = 1;
     match2 = 0;
     for ( i=0; i<4 && (tuple->atom[4+i] == al[4+i]); ++i );
     if ( i == 4 ) match2 = 1;
-    for ( i=0; i<4 && (tuple->atom[4+i] == al[8-i]); ++i );
+    for ( i=0; i<4 && (tuple->atom[4+i] == al[7-i]); ++i );
     if ( i == 4 ) match2 = 1;
     if ( match1 && match2 ) tuple->del = 1;
   }
