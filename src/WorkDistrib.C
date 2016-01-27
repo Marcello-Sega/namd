@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2015/10/23 19:18:34 $
- * $Revision: 1.1286 $
+ * $Date: 2016/01/27 23:24:05 $
+ * $Revision: 1.1287 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1144,15 +1144,17 @@ void WorkDistrib::patchMapInit(void)
 
   BigReal patchSize = params->patchDimension;
 
+#ifndef MEM_OPT_VERSION
+  const int totalAtoms = node->pdb->num_atoms();
+#else
+  const int totalAtoms = node->molecule->numAtoms;
+#endif
+
   ScaledPosition xmin, xmax;
 
   double maxNumPatches = 1.e9;  // need to adjust fractional values
   if ( params->minAtomsPerPatch > 0 )
-#ifndef MEM_OPT_VERSION
-    maxNumPatches = node->pdb->num_atoms() / params->minAtomsPerPatch;
-#else
-    maxNumPatches = node->molecule->numAtoms / params->minAtomsPerPatch;
-#endif
+    maxNumPatches = totalAtoms / params->minAtomsPerPatch;
 
   DebugM(3,"Mapping patches\n");
   if ( lattice.a_p() && lattice.b_p() && lattice.c_p() ) {
@@ -1182,8 +1184,14 @@ void WorkDistrib::patchMapInit(void)
     node->pdb->find_extremes(&(xmin.y),&(xmax.y),lattice.b_r(),0.9);
     node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r(),0.9);
 #endif
-    node->pdb->find_extremes(lattice, 0.9);
+    node->pdb->find_extremes(lattice, 1.0);
     node->pdb->get_extremes(xmin, xmax);
+    iout << iINFO << "ORIGINAL ATOMS MINMAX IS " << xmin << "  " << xmax << "\n" << endi;
+    double frac = ( (double)totalAtoms - 10000. ) / (double)totalAtoms;
+    if ( frac < 0.9 ) { frac = 0.9; }
+    node->pdb->find_extremes(lattice, frac);
+    node->pdb->get_extremes(xmin, xmax);
+    iout << iINFO << "ADJUSTED ATOMS MINMAX IS " << xmin << "  " << xmax << "\n" << endi;
   }
 
 #if 0
