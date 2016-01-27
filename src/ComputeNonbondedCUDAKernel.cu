@@ -498,16 +498,17 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
    } else {
      plcutoff2 = cutoff2;
    }
+
+   cudaMemsetAsync(tmpforces, 0, num_atoms*sizeof(float4), strm);
+   cudaMemsetAsync(tmpvirials, 0, num_patches*sizeof(float)*16, strm);
+   if ( doSlow ) {
+     cudaMemsetAsync(slow_tmpforces, 0, num_atoms*sizeof(float4), strm);
+     cudaMemsetAsync(slow_tmpvirials, 0, num_patches*sizeof(float)*16, strm);
+   }
+
    int grid_dim = max_grid_size;  // maximum allowed
    for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
      if ( grid_dim > ccount - cstart ) grid_dim = ccount - cstart;
-
-     cudaMemsetAsync(tmpforces, 0, num_atoms*sizeof(float4), strm);
-     cudaMemsetAsync(tmpvirials, 0, num_patches*sizeof(float)*16, strm);
-     if ( doSlow ) {
-       cudaMemsetAsync(slow_tmpforces, 0, num_atoms*sizeof(float4), strm);
-       cudaMemsetAsync(slow_tmpvirials, 0, num_patches*sizeof(float)*16, strm);
-     }
 
      dim3 nthread3(WARPSIZE, NUM_WARP, 1);
 
@@ -567,13 +568,14 @@ void cuda_GBIS_P1(
   cudaStream_t &strm
 ) {
 
+  cudaMemsetAsync(tmp_psiSumD, 0, num_atoms*sizeof(GBReal), strm);
+
   int grid_dim = max_grid_size;  // maximum allowed
   for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
     if (grid_dim > ccount - cstart) {
       grid_dim = ccount - cstart;
     }
 
-    cudaMemsetAsync(tmp_psiSumD, 0, num_atoms*sizeof(GBReal), strm);
     dim3 nthread3(WARPSIZE, NUM_WARP, 1);
     GBIS_P1_Kernel<<<grid_dim, nthread3, 0, strm>>>(
       patch_pairs+cbegin+cstart,
@@ -615,13 +617,15 @@ void cuda_GBIS_P2(
   int doFullElec,
   cudaStream_t &strm
 ) {
+
+  cudaMemsetAsync(tmp_dEdaSumD, 0, num_atoms*sizeof(GBReal), strm);
+  cudaMemsetAsync(tmp_energy_gbis, 0, num_patches*sizeof(float), strm);
+
   int grid_dim = max_grid_size;  // maximum allowed
   for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
     if (grid_dim > ccount - cstart)
       grid_dim = ccount - cstart;
 
-    cudaMemsetAsync(tmp_dEdaSumD, 0, num_atoms*sizeof(GBReal), strm);
-    cudaMemsetAsync(tmp_energy_gbis, 0, num_patches*sizeof(float), strm);
     dim3 nthread3(WARPSIZE, NUM_WARP, 1);
     GBIS_P2_Kernel<<<grid_dim, nthread3, 0, strm>>>(
       patch_pairs+cbegin+cstart,
