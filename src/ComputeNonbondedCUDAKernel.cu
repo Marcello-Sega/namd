@@ -568,6 +568,7 @@ void cuda_GBIS_P1(
   cudaStream_t &strm
 ) {
 
+ if ( ccount ) {
   cudaMemsetAsync(tmp_psiSumD, 0, num_atoms*sizeof(GBReal), strm);
 
   int grid_dim = max_grid_size;  // maximum allowed
@@ -593,6 +594,7 @@ void cuda_GBIS_P1(
       );
     cuda_errcheck("dev_GBIS_P1");
   } // end for
+ }
 } // end GBIS P1
 
 //////////////////////////////////////////
@@ -618,6 +620,7 @@ void cuda_GBIS_P2(
   cudaStream_t &strm
 ) {
 
+ if ( ccount ) {
   cudaMemsetAsync(tmp_dEdaSumD, 0, num_atoms*sizeof(GBReal), strm);
   cudaMemsetAsync(tmp_energy_gbis, 0, num_patches*sizeof(float), strm);
 
@@ -653,6 +656,7 @@ void cuda_GBIS_P2(
       );
     cuda_errcheck("dev_GBIS_P2");
   } // end for
+ }
 } // end P2
 
 //////////////////////////////////////////
