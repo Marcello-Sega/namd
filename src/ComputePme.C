@@ -480,6 +480,7 @@ private:
   int alchDecouple;
   int offload;
   BigReal alchElecLambdaStart;
+  BigReal alchLambda;  // set on each step in ComputePme::ungridForces()
 
   float **q_arr;
   // q_list and q_count not used for offload
@@ -871,6 +872,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       NAMD_die("PME offload requires CUDA device of compute capability 2.0 or higher.  Use \"PMEOffload no\".");
   }
 #endif
+
+  alchLambda = -1.;  // illegal value to catch if not updated
 
   alchFepOn = simParams->alchFepOn;
   alchThermIntOn = simParams->alchThermIntOn;
@@ -3905,6 +3908,7 @@ void ComputePme::ungridForces() {
         }
         else {
           BigReal alchLambda = simParams->getCurrentLambda(patch->flags.step);
+          myMgr->alchLambda = alchLambda;
 	  elecLambdaUp = simParams->getElecLambda(alchLambda);
 	  elecLambdaDown = simParams->getElecLambda(1. - alchLambda);
         }
@@ -3963,6 +3967,7 @@ void ComputePme::ungridForces() {
 	  }
 	  else {
             BigReal alchLambda = simParams->getCurrentLambda(patch->flags.step);
+            myMgr->alchLambda = alchLambda;
             if ( g == 0 ) scale = alchLambda;
             else if ( g == 1 ) scale = 1. - alchLambda;
 	  }
@@ -4059,9 +4064,10 @@ void ComputePmeMgr::submitReductions() {
           }
         }
         else {
-          //BKR - enable dynamic lambda
-          //BigReal alchLambda = simParams->getCurrentLambda(patchMap->patch(0)->flags.step);
-          BigReal alchLambda = simParams->alchLambda;
+          // alchLambda set on each step in ComputePme::ungridForces()
+          if ( alchLambda < 0 || alchLambda > 1 ) {
+            NAMD_bug("ComputePmeMgr::submitReductions alchLambda out of range");
+          }
           elecLambdaUp = simParams->getElecLambda(alchLambda);
           elecLambdaDown = simParams->getElecLambda(1-alchLambda);
         }
@@ -4169,6 +4175,9 @@ void ComputePmeMgr::submitReductions() {
         }
       }
     }
+
+    alchLambda = -1.;  // illegal value to catch if not updated
+
     reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
     reduction->submit();
 
