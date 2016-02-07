@@ -309,8 +309,7 @@ obj/dcdlib.o: \
 	src/dcdlib.h \
 	src/largefiles.h \
 	src/common.h \
-	src/Vector.h \
-	src/Output.h
+	src/Vector.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/dcdlib.o $(COPTC) src/dcdlib.C
 obj/erf.o: \
 	src/erf.C
