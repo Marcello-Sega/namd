@@ -45,7 +45,8 @@ public:
     // Internal data
     const BondValue *value;
 
-  enum { bondEnergyIndex, TENSOR(virialIndex), reductionDataSize };
+  enum { bondEnergyIndex, bondEnergyIndex_f, bondEnergyIndex_ti_1, 
+         bondEnergyIndex_ti_2, TENSOR(virialIndex), reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_BOND_CHECKSUM };
   static void submitReductionData(BigReal*,SubmitReduction*);
 

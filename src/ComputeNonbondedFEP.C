@@ -21,9 +21,8 @@ inline void fep_vdw_forceandenergies (BigReal A, BigReal B, BigReal r2,
   BigReal cutoff2, BigReal myVdwLambda, BigReal myVdwLambda2, 
   Bool Fep_WCA_repuOn, Bool Fep_WCA_dispOn, bool Fep_Wham, BigReal WCA_rcut1, 
   BigReal WCA_rcut2, BigReal WCA_rcut3, BigReal switchfactor, 
-  Bool vdwForceSwitching, Bool LJcorrection, BigReal* alch_vdw_energy, 
-  BigReal* alch_vdw_force, BigReal* alch_vdw_energy_2, 
-  BigReal* alch_vdw_energy_2_Left) {
+  Bool vdwForceSwitching, BigReal* alch_vdw_energy, BigReal* alch_vdw_force, 
+  BigReal* alch_vdw_energy_2, BigReal* alch_vdw_energy_2_Left) {
   // switching function (this is correct whether switching is active or not)
   const BigReal switchmul = (r2 > switchdist2 ? switchfactor*(cutoff2 - r2) \
 			     *(cutoff2 - r2)				\

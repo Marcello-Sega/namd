@@ -424,6 +424,11 @@ public:
   // data for tail corrections
   BigReal tail_corr_ener;
   BigReal tail_corr_virial;
+  BigReal tail_corr_dUdl_1;
+  BigReal tail_corr_virial_1;
+  void compute_LJcorrection();
+  BigReal getEnergyTailCorr(const BigReal);
+  BigReal getVirialTailCorr(const BigReal);
 
   int const * getLcpoParamType() {
     return lcpoParamType;
@@ -547,8 +552,8 @@ public:
   int numRigidBonds;  //  Number of rigid bonds
   int numFixedRigidBonds; //  Number of rigid bonds between fixed atoms
 //fepb
-        int numFepInitial;  // no. of fep atoms with initial flag
-        int numFepFinal;  // no. of fep atoms with final flag
+  int numFepInitial;  // no. of fep atoms with initial flag
+  int numFepFinal;  // no. of fep atoms with final flag
 //fepe
 
   int numConsForce; //  Number of atoms that have constant force applied
@@ -1069,10 +1074,58 @@ public:
   }
 
 //fepb
-        unsigned char get_fep_type(int anum) const
-        {
-                return(fepAtomFlags[anum]);
-        }
+  unsigned char get_fep_type(int anum) const
+  {
+    return(fepAtomFlags[anum]);
+  }
+
+  /* BKR - Get the FEP type (i.e. 0, 1, or 2) of a bonded _interaction_ based 
+     on the atom indices of the atoms involved (internally converted to FEP 
+     types) and the order of the bonded interaction (i.e. 2, 3, or 4). This 
+     automatically accounts for whether or not purely alchemical interactions
+     are being scaled (e.g. bonds between two atoms of fep_type 1).
+
+     The logic here is admittedly a bit opaque. When the fep_type's are back
+     mapped to -1,0,1, we can use the sum of all of the types to determine the 
+     type of interaction for all bonded term types:
+
+     0  - only non-alchemical atoms involved
+     >0 - _atleast_ one appearing atom
+     <0 - _atleast_ one disappearing atom
+
+     If the magnitude of the sum is equal to the interaction order (i.e. 2, 3, 
+     or 4), then it is a _purely_ alchemical interaction and it may be 
+     desireable to retain it for sampling purposes (note that this adds a 
+     constant to the free energy that will almost always differ at the 
+     endpoints).  In order to avoid unexpected instability these interactions 
+     are retained by default, but can be scaled along with everything else by 
+     setting "alchBondDecouple on".
+
+     NB: All pure alchemical interactions beyond order 2 are ALWAYS discarded
+     by alchemify. This is good, because higher order interactions would break
+     the above logic. For example, if we had an angle term between atoms of 
+     types (1,1,-1) the sum would be 1, but this term should receive no scaling
+     because it involves groups -1 and 1 but not 0.
+  */
+  int get_fep_bonded_type(const int *atomID, unsigned int order) const
+  {
+    int typeSum = 0;
+    for ( int i=0; i < order; ++i ) {
+      typeSum += (fepAtomFlags[atomID[i]] == 2 ? -1 : fepAtomFlags[atomID[i]]);
+    }
+    // Increase the cutoff if scaling purely alchemical bonds. 
+    // This really only applies when order = 2.
+    if ( simParams->alchBondDecouple ) order++;
+
+    if ( typeSum == 0 ) return 0; // Most interactions get caught here.
+    else if ( 0 < typeSum && typeSum < order ) return 1;
+    else if ( 0 > typeSum && typeSum > -order ) return 2;
+
+    if ( simParams->alchBondDecouple ) {
+      // Alchemify should always keep this from bombing, but just in case...
+      NAMD_die("Unexpected alchemical bonded interaction!");
+    }
+  }
 //fepe
 
 #ifndef MEM_OPT_VERSION

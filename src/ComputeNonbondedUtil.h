@@ -203,6 +203,7 @@ struct nonbonded {
   int minPart;
   int maxPart;
   int numParts;
+  int step;
 
   #if NAMD_ComputeNonbonded_SortAtoms != 0
     Vector projLineVec;
@@ -305,10 +306,7 @@ public:
   static BigReal alchLambda;
   static BigReal alchLambda2;
   static BigReal alchVdwShiftCoeff;
-  static BigReal alchElecLambdaStart;
-  static BigReal alchVdwLambdaEnd;
   static Bool vdwForceSwitching;
-  static Bool LJcorrection;
   static Bool Fep_WCA_repuOn;
   static Bool Fep_WCA_dispOn;
   static Bool Fep_ElecOn;

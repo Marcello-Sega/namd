@@ -19,8 +19,8 @@
 inline void ti_vdw_force_energy_dUdl (BigReal A, BigReal B, BigReal r2, 
   BigReal myVdwShift, BigReal switchdist2, BigReal cutoff2, 
   BigReal myVdwLambda, BigReal alchVdwShiftCoeff, BigReal switchfactor, 
-  Bool vdwForceSwitching, Bool LJcorrection, BigReal* alch_vdw_energy, 
-  BigReal* alch_vdw_force, BigReal* alch_vdw_dUdl) {
+  Bool vdwForceSwitching, BigReal* alch_vdw_energy, BigReal* alch_vdw_force,
+  BigReal* alch_vdw_dUdl) {
   //myVdwShift already multplied by relevant (1-vdwLambda)
   const BigReal r2_1 = 1./(r2 + myVdwShift);
   const BigReal r6_1 = r2_1*r2_1*r2_1;
@@ -35,7 +35,7 @@ inline void ti_vdw_force_energy_dUdl (BigReal A, BigReal B, BigReal r2,
   *alch_vdw_energy = myVdwLambda*U;
   *alch_vdw_force = myVdwLambda*switchmul*(12.*U + 6.*B*r6_1)*r2_1;
   *alch_vdw_dUdl = U + myVdwLambda*alchVdwShiftCoeff*(6.*U + 3.*B*r6_1)*r2_1;
-  
+
   // BKR - separation-shifted vdW force switching and potential shifting
   if(!vdwForceSwitching){ // add on chain rule for switch function
     const BigReal switchmul2 = (r2 > switchdist2 ?                      \

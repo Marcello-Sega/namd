@@ -180,6 +180,7 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     params.p[1] = p;
     params.pExt[0] = pExt;
     params.pExt[1] = pExt;
+    params.step = patch->flags.step;
     // BEGIN LA
     params.doLoweAndersen = patch->flags.doLoweAndersen;
     if (params.doLoweAndersen) {

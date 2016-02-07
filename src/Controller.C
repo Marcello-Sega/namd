@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2015/12/17 21:22:03 $
- * $Revision: 1.1312 $
+ * $Date: 2016/02/07 20:17:57 $
+ * $Revision: 1.1313 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1265,10 +1265,9 @@ void Controller::receivePressure(int step, int minimize)
     {
 
       if (simParameters->LJcorrection && volume) {
-        // Apply tail correction to pressure
-        //printf("Volume is %f\n", volume);
-        //printf("Applying tail correction of %f to virial\n", molecule->tail_corr_virial / volume);
-        virial_normal += Tensor::identity(molecule->tail_corr_virial / volume);
+        // Apply tail correction to pressure.
+        BigReal alchLambda = simParameters->getCurrentLambda(step);
+        virial_normal += Tensor::identity(molecule->getVirialTailCorr(alchLambda) / volume);
       }
 
       // kinetic energy component included in virials
@@ -1413,10 +1412,11 @@ void Controller::rescaleaccelMD(int step, int minimize)
     const BigReal accelMDTalpha = simParams->accelMDTalpha;
     const int accelMDOutFreq = simParams->accelMDOutFreq;
 
-    BigReal bondEnergy;
-    BigReal angleEnergy;
-    BigReal dihedralEnergy;
-    BigReal improperEnergy;
+    //BigReal bondEnergy;
+    //BigReal angleEnergy;
+    //BigReal dihedralEnergy;
+    //BigReal improperEnergy;
+    // BKR - bonded terms are now declared globally for easy FEP differencing
     BigReal crosstermEnergy;
     BigReal boundaryEnergy;
     BigReal miscEnergy;
@@ -2249,10 +2249,11 @@ void Controller::printEnergies(int step, int minimize)
     // Drude model ANISO energy is added into BOND energy
     // and THOLE energy is added into ELECT energy
 
-    BigReal bondEnergy;
-    BigReal angleEnergy;
-    BigReal dihedralEnergy;
-    BigReal improperEnergy;
+    //BigReal bondEnergy;
+    //BigReal angleEnergy;
+    //BigReal dihedralEnergy;
+    //BigReal improperEnergy;
+    // BKR - bonded terms are now declared globally for easy FEP differencing
     BigReal crosstermEnergy;
     BigReal boundaryEnergy;
     BigReal miscEnergy;
@@ -2286,12 +2287,24 @@ void Controller::printEnergies(int step, int minimize)
       goTotalEnergy = goNativeEnergy + goNonnativeEnergy;
 
 //fepb
+      bondEnergy_f = reduction->item(REDUCTION_BOND_ENERGY_F);
+      angleEnergy_f = reduction->item(REDUCTION_ANGLE_ENERGY_F);
+      dihedralEnergy_f = reduction->item(REDUCTION_DIHEDRAL_ENERGY_F);
+      improperEnergy_f = reduction->item(REDUCTION_IMPROPER_ENERGY_F);
       electEnergy_f = reduction->item(REDUCTION_ELECT_ENERGY_F);
       ljEnergy_f = reduction->item(REDUCTION_LJ_ENERGY_F);
       ljEnergy_f_left = reduction->item(REDUCTION_LJ_ENERGY_F_LEFT);
 
+      bondEnergy_ti_1 = reduction->item(REDUCTION_BOND_ENERGY_TI_1);
+      angleEnergy_ti_1 = reduction->item(REDUCTION_ANGLE_ENERGY_TI_1);
+      dihedralEnergy_ti_1 = reduction->item(REDUCTION_DIHEDRAL_ENERGY_TI_1);
+      improperEnergy_ti_1 = reduction->item(REDUCTION_IMPROPER_ENERGY_TI_1);
       electEnergy_ti_1 = reduction->item(REDUCTION_ELECT_ENERGY_TI_1);
       ljEnergy_ti_1 = reduction->item(REDUCTION_LJ_ENERGY_TI_1);
+      bondEnergy_ti_2 = reduction->item(REDUCTION_BOND_ENERGY_TI_2);
+      angleEnergy_ti_2 = reduction->item(REDUCTION_ANGLE_ENERGY_TI_2);
+      dihedralEnergy_ti_2 = reduction->item(REDUCTION_DIHEDRAL_ENERGY_TI_2);
+      improperEnergy_ti_2 = reduction->item(REDUCTION_IMPROPER_ENERGY_TI_2);
       electEnergy_ti_2 = reduction->item(REDUCTION_ELECT_ENERGY_TI_2);
       ljEnergy_ti_2 = reduction->item(REDUCTION_LJ_ENERGY_TI_2);
 //fepe
@@ -2311,14 +2324,18 @@ void Controller::printEnergies(int step, int minimize)
     }
 
     if (simParameters->LJcorrection && volume) {
-      // Apply tail correction to energy
-      //printf("Volume is %f\n", volume);
-      //printf("Applying tail correction of %f to energy\n", molecule->tail_corr_ener / volume);
-      ljEnergy += molecule->tail_corr_ener / volume;
-      ljEnergy_f += molecule->tail_corr_ener / volume;
-      ljEnergy_f_left += molecule->tail_corr_ener / volume;
-    }
+      // Apply tail correction to energy.
+      BigReal alchLambda = simParameters->getCurrentLambda(step);
+      BigReal alchLambda2 = simParameters->alchLambda2;
 
+      ljEnergy += molecule->getEnergyTailCorr(alchLambda) / volume;
+      ljEnergy_f += molecule->getEnergyTailCorr(alchLambda2) / volume;
+      ljEnergy_f_left += molecule->getEnergyTailCorr(alchLambda2) / volume;
+      ljEnergy_ti_1 += molecule->tail_corr_dUdl_1 / volume;
+      // NB: Rather than duplicate variables, dUdl_2 is stored as the energy.
+      //     Put another way, dUdl_2 _is_ the energy if alchLambda = 0.
+      ljEnergy_ti_2 += molecule->tail_corr_ener / volume;
+    }
 
     momentum.x = reduction->item(REDUCTION_MOMENTUM_X);
     momentum.y = reduction->item(REDUCTION_MOMENTUM_Y);
@@ -2328,13 +2345,14 @@ void Controller::printEnergies(int step, int minimize)
     angularMomentum.z = reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z);
 
     // Ported by JLai
-    potentialEnergy = bondEnergy + angleEnergy + dihedralEnergy +
-	improperEnergy + electEnergy + electEnergySlow + ljEnergy +
-	crosstermEnergy + boundaryEnergy + miscEnergy + goTotalEnergy + groLJEnergy + groGaussEnergy;
+    potentialEnergy = (bondEnergy + angleEnergy + dihedralEnergy
+	+ improperEnergy + electEnergy + electEnergySlow + ljEnergy
+	+ crosstermEnergy + boundaryEnergy + miscEnergy + goTotalEnergy 
+        + groLJEnergy + groGaussEnergy);
     // End of port
     totalEnergy = potentialEnergy + kineticEnergy;
-    flatEnergy = totalEnergy +
-        (1.0/3.0)*( kineticEnergyHalfstep - kineticEnergyCentered);
+    flatEnergy = (totalEnergy
+        + (1.0/3.0)*(kineticEnergyHalfstep - kineticEnergyCentered));
     if ( !(step%slowFreq) ) {
       // only adjust based on most accurate energies
       BigReal s = (4.0/3.0)*( kineticEnergyHalfstep - kineticEnergyCentered);
@@ -2344,8 +2362,8 @@ void Controller::printEnergies(int step, int minimize)
         smooth2_avg += 0.0625 * s;
       }
     }
-    smoothEnergy = flatEnergy + smooth2_avg -
-        (4.0/3.0)*( kineticEnergyHalfstep - kineticEnergyCentered);
+    smoothEnergy = (flatEnergy + smooth2_avg
+        - (4.0/3.0)*(kineticEnergyHalfstep - kineticEnergyCentered));
 
     if ( simParameters->outputMomenta && ! minimize &&
          ! ( step % simParameters->outputMomenta ) )
@@ -2601,7 +2619,6 @@ void Controller::printEnergies(int step, int minimize)
 
     // N.B.  HP's aCC compiler merges FORMAT calls in the same expression.
     //       Need separate statements because data returned in static array.
-
     iout << ETITLE(step);
     iout << FORMAT(bondEnergy);
     iout << FORMAT(angleEnergy);
@@ -2746,7 +2763,7 @@ static char *FEPTITLE(int X)
 static char *TITITLE(int X)
 { 
   static char tmp_string[21];
-  sprintf(tmp_string, "TI   %6d ",X);
+  sprintf(tmp_string, "TI:     %7d",X); 
   return tmp_string;
 }
 
@@ -2764,8 +2781,11 @@ void Controller::outputFepEnergy(int step) {
     exp_dE_ByRT = 0.0;
     net_dE = 0.0;
   }
-  BigReal dE = electEnergy_f + electEnergySlow_f + ljEnergy_f
-		- (electEnergy + electEnergySlow + ljEnergy);
+  BigReal dE = bondEnergy_f + angleEnergy_f + dihedralEnergy_f 
+               + improperEnergy_f + electEnergy_f + electEnergySlow_f 
+               + ljEnergy_f
+               - (bondEnergy + angleEnergy + dihedralEnergy + improperEnergy 
+                  + electEnergy + electEnergySlow + ljEnergy);
   BigReal RT = BOLTZMANN * simParams->alchTemp;
 
   if (alchEnsembleAvg){
@@ -2825,69 +2845,160 @@ void Controller::outputTiEnergy(int step) {
  if (simParams->alchThermIntOn) {
   const int stepInRun = step - simParams->firstTimestep;
   const int alchEquilSteps = simParams->alchEquilSteps;
-  const BigReal alchLambda = simParams->alchLambda;
-  
-  if (stepInRun == 0 || stepInRun == alchEquilSteps) {
+  const int stepInSwitch = stepInRun - alchEquilSteps;
+  const int alchLambdaFreq = simParams->alchLambdaFreq;
+
+  if (stepInRun == alchEquilSteps) {
     TiNo = 0;
+    net_dEdl_bond_1 = 0;
+    net_dEdl_bond_2 = 0;
     net_dEdl_elec_1 = 0;
     net_dEdl_elec_2 = 0;
     net_dEdl_lj_1 = 0;
     net_dEdl_lj_2 = 0;
+    cumAlchWork = 0;
   }
   if (stepInRun == 0 || (! ((step - 1) % simParams->alchOutFreq))) {
     // output of instantaneous dU/dl now replaced with running average
     // over last alchOutFreq steps (except for step 0)
     recent_TiNo = 0;
+    recent_dEdl_bond_1 = 0;
+    recent_dEdl_bond_2 = 0;
     recent_dEdl_elec_1 = 0;
     recent_dEdl_elec_2 = 0;
     recent_dEdl_lj_1 = 0;
     recent_dEdl_lj_2 = 0;
+    alchWork = 0;
   }
   TiNo++;
   recent_TiNo++;
+  net_dEdl_bond_1 += (bondEnergy_ti_1 + angleEnergy_ti_1 + dihedralEnergy_ti_1
+                      + improperEnergy_ti_1);
+  net_dEdl_bond_2 += (bondEnergy_ti_2 + angleEnergy_ti_2 + dihedralEnergy_ti_2
+                      + improperEnergy_ti_2);
   // FB - PME is no longer scaled by global lambda, but by the respective
   // lambda as dictated by elecLambdaStart. All electrostatics now go together.
-  net_dEdl_elec_1 += electEnergy_ti_1 + electEnergySlow_ti_1 + electEnergyPME_ti_1;
-  net_dEdl_elec_2 += electEnergy_ti_2 + electEnergySlow_ti_2 + electEnergyPME_ti_2;
+  net_dEdl_elec_1 += (electEnergy_ti_1 + electEnergySlow_ti_1 
+                      + electEnergyPME_ti_1);
+  net_dEdl_elec_2 += (electEnergy_ti_2 + electEnergySlow_ti_2 
+                      + electEnergyPME_ti_2);
   net_dEdl_lj_1 += ljEnergy_ti_1;
   net_dEdl_lj_2 += ljEnergy_ti_2;
-  recent_dEdl_elec_1 += electEnergy_ti_1 + electEnergySlow_ti_1 + electEnergyPME_ti_1; 
-  recent_dEdl_elec_2 += electEnergy_ti_2 + electEnergySlow_ti_2 + electEnergyPME_ti_2; 
+
+  recent_dEdl_bond_1 += (bondEnergy_ti_1 + angleEnergy_ti_1
+                         + dihedralEnergy_ti_1 + improperEnergy_ti_1);
+  recent_dEdl_bond_2 += (bondEnergy_ti_2 + angleEnergy_ti_2
+                         + dihedralEnergy_ti_2 + improperEnergy_ti_2);
+  recent_dEdl_elec_1 += (electEnergy_ti_1 + electEnergySlow_ti_1 
+                         + electEnergyPME_ti_1); 
+  recent_dEdl_elec_2 += (electEnergy_ti_2 + electEnergySlow_ti_2 
+                         + electEnergyPME_ti_2); 
   recent_dEdl_lj_1 += ljEnergy_ti_1;
   recent_dEdl_lj_2 += ljEnergy_ti_2;
 
   if (stepInRun == 0) {
-    BigReal alchElecLambdaStart = simParams->alchElecLambdaStart;
-    BigReal alchVdwLambdaEnd = simParams->alchVdwLambdaEnd;
-    BigReal elec_lambda_1 = (alchLambda <= alchElecLambdaStart)? 0. : \
-            (alchLambda - alchElecLambdaStart) / (1. - alchElecLambdaStart);
-    BigReal elec_lambda_2 = ((1-alchLambda) <= alchElecLambdaStart)? 0. : \
-            ((1-alchLambda) - alchElecLambdaStart) / (1. - alchElecLambdaStart);
-    BigReal vdw_lambda_1 =  (alchLambda >= alchVdwLambdaEnd)? 1. : \
-            alchLambda / alchVdwLambdaEnd; 
-    BigReal vdw_lambda_2 =  ((1-alchLambda) >= alchVdwLambdaEnd)? 1. : \
-            (1-alchLambda) / alchVdwLambdaEnd; 
     if (!tiFile.is_open()) {
-      //tiSum = 0.0;
       NAMD_backup_file(simParams->alchOutFile);
       tiFile.open(simParams->alchOutFile);
+      /* BKR - This has been rather drastically updated to better match stdout.
+	 This was necessary for several reasons:
+         1) PME global scaling is obsolete (now removed)
+         2) scaling of bonded terms was added
+         3) alchemical work is now accumulated when switching is active
+       */
       iout << "OPENING TI ENERGY OUTPUT FILE\n" << endi;
-      tiFile << "#       STEP      Elec_dU/dl      Elec_avg        vdW_dU/dl      vdw_avg       Elec_dU/dl      Elec_avg      vdW_dU/dl       vdw_avg       PME_dU/dl      PME_avg\n"
-              << "#               <---------------------PARTITION 1------------------------>    <---------------------PARTITION 2--------------------->" 
-              << std::endl;
+      tiFile << "#TITITLE:    TS";
+      tiFile << FORMAT("BOND1");
+      tiFile << FORMAT("AVGBOND1");
+      tiFile << FORMAT("ELECT1");
+      tiFile << FORMAT("AVGELECT1");
+      tiFile << "     ";
+      tiFile << FORMAT("VDW1");
+      tiFile << FORMAT("AVGVDW1");
+      tiFile << FORMAT("BOND2");
+      tiFile << FORMAT("AVGBOND2");
+      tiFile << FORMAT("ELECT2");
+      tiFile << "     ";
+      tiFile << FORMAT("AVGELECT2");
+      tiFile << FORMAT("VDW2");
+      tiFile << FORMAT("AVGVDW2");
+      if (alchLambdaFreq > 0) {
+	tiFile << FORMAT("ALCHWORK");
+        tiFile << FORMAT("CUMALCHWORK");
+      }
+      tiFile << std::endl;
     }
-    tiFile << "#NEW TI WINDOW: "
-            << "LAMBDA " << alchLambda 
-            << "\n#PARTITION 1 VDW LAMBDA " << vdw_lambda_1 
-            << "\n#PARTITION 1 ELEC LAMBDA " << elec_lambda_1 
-            << "\n#PARTITION 2 VDW LAMBDA " << vdw_lambda_2 
-            << "\n#PARTITION 2 ELEC LAMBDA " << elec_lambda_2 
-            << "\n" << std::endl;
+
+    if (alchLambdaFreq > 0) {
+      tiFile << "#ALCHEMICAL SWITCHING ACTIVE " 
+             << simParams->alchLambda << " --> " << simParams->alchLambda2
+             << "\n#LAMBDA SCHEDULE: " 
+             << "dL: " << simParams->getLambdaDelta() 
+             << " Freq: " << alchLambdaFreq
+             << "\n#CONSTANT TEMPERATURE: " << simParams->alchTemp << " K"
+             << std::endl;
+    }
+    else {
+      const BigReal alchLambda = simParams->alchLambda;    
+      const BigReal bond_lambda_1 = simParams->getBondLambda(alchLambda);
+      const BigReal bond_lambda_2 = simParams->getBondLambda(1-alchLambda);
+      const BigReal elec_lambda_1 = simParams->getElecLambda(alchLambda);
+      const BigReal elec_lambda_2 = simParams->getElecLambda(1-alchLambda);
+      const BigReal vdw_lambda_1 = simParams->getVdwLambda(alchLambda);
+      const BigReal vdw_lambda_2 = simParams->getVdwLambda(1-alchLambda);
+      tiFile << "#NEW TI WINDOW: "
+	     << "LAMBDA " << alchLambda 
+	     << "\n#PARTITION 1 BOND LAMBDA " << bond_lambda_1
+	     << "\n#PARTITION 1 VDW LAMBDA " << vdw_lambda_1 
+	     << "\n#PARTITION 1 ELEC LAMBDA " << elec_lambda_1
+	     << "\n#PARTITION 2 BOND LAMBDA " << bond_lambda_2
+	     << "\n#PARTITION 2 VDW LAMBDA " << vdw_lambda_2 
+	     << "\n#PARTITION 2 ELEC LAMBDA " << elec_lambda_2
+             << "\n#CONSTANT TEMPERATURE: " << simParams->alchTemp << " K"
+	     << std::endl;
+    }
   }
+
   if (stepInRun == alchEquilSteps) {
     tiFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
             << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
             << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
+  }
+  if (alchLambdaFreq > 0 && stepInSwitch >= 0 && step != simParams->N 
+      && stepInSwitch % alchLambdaFreq == 0) {
+      // Work is accumulated whenever alchLambda changes. In the current
+      // scheme we always increment lambda _first_, then integrate in time.
+      // Therefore the work is wrt the "old" lambda before the increment.
+      const BigReal alchLambda = simParams->getCurrentLambda(step);
+      const BigReal oldLambda = alchLambda - simParams->getLambdaDelta();
+      const BigReal bond_lambda_1 = simParams->getBondLambda(oldLambda);
+      const BigReal bond_lambda_2 = simParams->getBondLambda(1-oldLambda);
+      const BigReal elec_lambda_1 = simParams->getElecLambda(oldLambda);
+      const BigReal elec_lambda_2 = simParams->getElecLambda(1-oldLambda);
+      const BigReal vdw_lambda_1 = simParams->getVdwLambda(oldLambda);
+      const BigReal vdw_lambda_2 = simParams->getVdwLambda(1-oldLambda);
+      const BigReal bond_lambda_12 = simParams->getBondLambda(alchLambda);
+      const BigReal bond_lambda_22 = simParams->getBondLambda(1-alchLambda);
+      const BigReal elec_lambda_12 = simParams->getElecLambda(alchLambda);
+      const BigReal elec_lambda_22 = simParams->getElecLambda(1-alchLambda);
+      const BigReal vdw_lambda_12 = simParams->getVdwLambda(alchLambda);
+      const BigReal vdw_lambda_22 = simParams->getVdwLambda(1-alchLambda);
+      alchWork = ((bond_lambda_12 - bond_lambda_1)
+		  *(bondEnergy_ti_1 + angleEnergy_ti_1 + dihedralEnergy_ti_1
+		    + improperEnergy_ti_1)
+		  + (elec_lambda_12 - elec_lambda_1)
+		  *(electEnergy_ti_1 + electEnergySlow_ti_1
+		    + electEnergyPME_ti_1)
+		  + (vdw_lambda_12 - vdw_lambda_1)*ljEnergy_ti_1
+		  + (bond_lambda_22 - bond_lambda_2)
+		  *(bondEnergy_ti_2 + angleEnergy_ti_2 + dihedralEnergy_ti_2
+		    + improperEnergy_ti_2)
+		  + (elec_lambda_22 - elec_lambda_2)
+		  *(electEnergy_ti_2 + electEnergySlow_ti_2
+		    + electEnergyPME_ti_2)
+		  + (vdw_lambda_22 - vdw_lambda_2)*ljEnergy_ti_2
+		  );
+      cumAlchWork += alchWork;
   }
   if (simParams->alchOutFreq && ((step%simParams->alchOutFreq)==0)) {
     writeTiEnergyData(step, tiFile);
@@ -2972,14 +3083,24 @@ void Controller::writeFepEnergyData(int step, ofstream_namd &file) {
 //fepe
 void Controller::writeTiEnergyData(int step, ofstream_namd &file) {
   tiFile << TITITLE(step);
+  tiFile << FORMAT(recent_dEdl_bond_1 / recent_TiNo);
+  tiFile << FORMAT(net_dEdl_bond_1 / TiNo);
   tiFile << FORMAT(recent_dEdl_elec_1 / recent_TiNo);
   tiFile << FORMAT(net_dEdl_elec_1/TiNo);
+  tiFile << "     ";
   tiFile << FORMAT(recent_dEdl_lj_1 / recent_TiNo);
   tiFile << FORMAT(net_dEdl_lj_1/TiNo);
+  tiFile << FORMAT(recent_dEdl_bond_2 / recent_TiNo);
+  tiFile << FORMAT(net_dEdl_bond_2 / TiNo);
   tiFile << FORMAT(recent_dEdl_elec_2 / recent_TiNo);
+  tiFile << "     ";
   tiFile << FORMAT(net_dEdl_elec_2/TiNo);
   tiFile << FORMAT(recent_dEdl_lj_2 / recent_TiNo);
   tiFile << FORMAT(net_dEdl_lj_2/TiNo);
+  if (simParams->alchLambdaFreq > 0) {
+    tiFile << FORMAT(alchWork);
+    tiFile << FORMAT(cumAlchWork);
+  }
   tiFile << std::endl;
 }
 

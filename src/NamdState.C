@@ -519,6 +519,10 @@ int NamdState::loadStructure(const char *molFilename, const char *pdbFilename, i
                 configList->find("openatomPdbCol"), pdb, NULL, "openatomPdb")
         }
         #endif // OPENATOM_VERSION
+
+        if (simParameters->LJcorrection) {
+          molecule->compute_LJcorrection();
+        }
 #endif
 
 	// JLai checks to see if Go Forces are turned on

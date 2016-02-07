@@ -43,7 +43,8 @@ public:
   int hash() const {
     return 0x7FFFFFFF &((atomID[0]<<24) + (atomID[1]<<16) + (atomID[2]<<8) + atomID[3]);
   }
-  enum { improperEnergyIndex, TENSOR(virialIndex), reductionDataSize };
+  enum { improperEnergyIndex, improperEnergyIndex_f, improperEnergyIndex_ti_1, 
+         improperEnergyIndex_ti_2, TENSOR(virialIndex), reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_IMPROPER_CHECKSUM };
   static void submitReductionData(BigReal*,SubmitReduction*);
 

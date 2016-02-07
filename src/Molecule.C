@@ -9012,170 +9012,6 @@ void Molecule::build_atom_status(void) {
     } // for numAtoms
   } // if SWM4
 
-  // set up tail corrections if desired
-  if (simParams->LJcorrection) {
-
-      // long-range dispersion correction (FB)
-      // Allen and Tildesley, Computer Simulation of Liquids, 1991
-      // integrated for NAMD's LJ switch function
-      
-      // Average values for all particles in the system will be
-      // used, as per J Phys Chem B. 2007 111:13052
-
-      // first calculate average A and B coefficients
-
-      int LJtypecount = params->get_num_vdw_params();
-
-      Real A; Real B;
-      Real A14; Real B14;
-      Real sigma_i, sigma_i14, epsilon_i, epsilon_i14;
-      Real sigma_j, sigma_j14, epsilon_j, epsilon_j14;
-      Real *ATable = new Real[LJtypecount*LJtypecount];
-      Real *BTable = new Real[LJtypecount*LJtypecount];
-      int useGeom = simParams->vdwGeometricSigma;
-      for (i = 0; i < LJtypecount; i++) {
-        for (int j = 0; j < LJtypecount; j++) {
-          // A and B calculation code coped from LJTable.C
-          if (params->get_vdw_pair_params(i,j, &A, &B, &A14, &B14)) {
-            ATable[i*LJtypecount + j] = A;
-            BTable[i*LJtypecount + j] = B;
-          }
-          else {
-            params->get_vdw_params(&sigma_i, &epsilon_i, &sigma_i14,
-                &epsilon_i14,i);
-            params->get_vdw_params(&sigma_j, &epsilon_j, &sigma_j14, 
-                &epsilon_j14,j);
-            BigReal sigma_ij =
-              useGeom ? sqrt(sigma_i*sigma_j) : 0.5*(sigma_i+sigma_j);
-            BigReal epsilon_ij = sqrt(epsilon_i*epsilon_j);
-            sigma_ij *= sigma_ij*sigma_ij;
-            sigma_ij *= sigma_ij;
-
-            ATable[i*LJtypecount + j] = 4.0 * sigma_ij * epsilon_ij * sigma_ij;
-            BTable[i*LJtypecount + j] = 4.0 * sigma_ij * epsilon_ij;
-          }
-        }
-      }
-
-      int *numAtomsByLjType = new int[LJtypecount];
-      for (i = 0; i < LJtypecount; i++) {numAtomsByLjType[i]=0;}
-      for (i = 0; i < numAtoms;  i++) {numAtomsByLjType[atoms[i].vdw_type] ++;}
-
-      BigReal sumOfAs = 0; BigReal sumOfBs = 0; BigReal count = 0;
-      for (i = 0;  i < LJtypecount;  i++) {
-        if (numAtomsByLjType[i]) {
-          BigReal _sumOfAs = 0; BigReal _sumOfBs = 0; BigReal _count = 0;
-          for (int j = 0;  j < LJtypecount;  j++) {
-            BigReal npairs = (numAtomsByLjType[i] - int(i==j))*(double)numAtomsByLjType[j];
-            _sumOfAs += npairs*ATable[i*LJtypecount + j];
-            _sumOfBs += npairs*BTable[i*LJtypecount + j];
-            _count += npairs;
-          }
-          sumOfAs += _sumOfAs;
-          sumOfBs += _sumOfBs;
-          count += _count;
-        }
-      }
-      delete [] numAtomsByLjType;
-      delete [] ATable;
-      delete [] BTable;
-
-      // this naive algorithm (time-consuming n*(n-1)/2) gives the same result
-      //BigReal sumOfBs = 0; int count = 0;
-      //for (i = 0;  i < numAtoms;  i++) {
-      //  for (int j = i + 1; j < numAtoms; j++) {
-      //    [get A and B];
-      //    sumOfAs += A;
-      //    sumOfBs += B;
-      //    count ++;
-      //  }
-      //}
-
-
-      // discard modified / excluded pairings
-      // should be negligible but more correct
-
-      for (i=0; i < numExclusions; i++) {
-        int a1 = exclusions[i].atom1;
-        int a2 = exclusions[i].atom2;
-        if (a1 != a2) { 
-          // A and B calculation copied from LJTable.C
-          if (params->get_vdw_pair_params(atoms[a1].vdw_type,atoms[a2].vdw_type, 
-                &A, &B, &A14, &B14)) {
-            sumOfAs -= A;
-            sumOfBs -= B;
-          }
-          else {
-            params->get_vdw_params(&sigma_i, &epsilon_i, &sigma_i14,
-                &epsilon_i14,atoms[a1].vdw_type);
-            params->get_vdw_params(&sigma_j, &epsilon_j, &sigma_j14, 
-                &epsilon_j14,atoms[a2].vdw_type);
-            BigReal sigma_ij =
-              useGeom ? sqrt(sigma_i*sigma_j) : 0.5*(sigma_i+sigma_j);
-            BigReal epsilon_ij = sqrt(epsilon_i*epsilon_j);
-
-            sigma_ij *= sigma_ij*sigma_ij;
-            sigma_ij *= sigma_ij;
-            sumOfAs -= 4.0 * sigma_ij * epsilon_ij * sigma_ij;
-            sumOfBs -= 4.0 * sigma_ij * epsilon_ij;
-          }
-          count -= 1;
-        }
-      }
-
-      BigReal LJAvgA = sumOfAs / count;
-      BigReal LJAvgB = sumOfBs / count;
-      if ( ! CkMyPe() ) {
-        iout << iINFO << "LONG-RANGE LJ: APPLYING ANALYTICAL CORRECTIONS TO "
-          << "ENERGY AND PRESSURE\n" << endi; 
-        iout << iINFO << "LONG-RANGE LJ: AVERAGE A AND B COEFFICIENTS " 
-          << LJAvgA << " AND " << LJAvgB << "\n" << endi; 
-      }
-
-      BigReal rcut = simParams->cutoff;
-      BigReal rcut2 = rcut*rcut;
-      BigReal rcut3 = rcut*rcut2;
-      BigReal rcut4 = rcut2*rcut2;
-      BigReal rcut5 = rcut2*rcut3;
-      BigReal rcut6 = rcut3*rcut3;
-      BigReal rcut9 = rcut5*rcut4;
-      BigReal rswitch = simParams->switchingDist;
-      BigReal rswitch2 = rswitch*rswitch;
-      BigReal rswitch3 = rswitch*rswitch2;
-      BigReal rswitch4 = rswitch2*rswitch2;
-      BigReal rswitch5 = rswitch2*rswitch3;
-      BigReal rswitch6 = rswitch3*rswitch3;
-
-      if (simParams->switchingActive) {
-	if (!simParams->vdwForceSwitching) {
-          //DEBUG printf("%f %i %f %f %f %f\n", PI, numAtoms, LJAvgA, LJAvgB, rcut, rswitch);
-          tail_corr_ener = tail_corr_virial = PI*16.0*(double)numAtoms*(double)numAtoms*(LJAvgA*(3*rcut4 + 9*rcut3*rswitch + 11*rcut2*rswitch2 + 9*rcut*rswitch3 + 3*rswitch4) - 105*LJAvgB*rcut5*rswitch5)/(315*rcut5*rswitch5*(rcut + rswitch)*(rcut + rswitch)*(rcut + rswitch)); 
-        }
-        else {
-          /* BKR - This only includes the volume dependent portion of the
-             energy correction. In order to fully correct to a true 
-             Lennard-Jones potential one also needs a "core" correction to 
-             account for the shift inside rswitch; this is a _global_ potential
-             energy shift. Fortunately, neglecting this correction is 
-             equivalent to stating that the number of atoms in the whole system
-             is much more than the number within rswitch of any given atom. 
-             Interestingly, this approximation gets better as rswitch shrinks 
-             whereas the tail correction gets worse. Neglecting this term has 
-             _zero_ affect on the virial since the forces are unchanged.
-          */
-          BigReal lnr = log(rswitch/rcut);
-          tail_corr_virial = PI*4.0*(double)numAtoms*(double)numAtoms*(4*LJAvgA*(rcut3 - rswitch3) + 9*LJAvgB*rswitch3*rcut3*(rcut3 + rswitch3)*lnr)/(9*rswitch3*rcut3*(rcut6-rswitch6));
-          tail_corr_ener = PI*2.0*(double)numAtoms*(double)numAtoms*(LJAvgA*(5*rcut3 - 3*rswitch3)*(rcut3 - rswitch3) - 3*LJAvgB*rswitch3*rcut3*(rcut3 + rswitch3)*(rswitch3 - rcut3 - 6*rcut3*lnr))/(9*rswitch3*rcut6*(rcut6-rswitch6));
-        }
-      }
-      else {
-        tail_corr_virial = PI*4.0*(double)numAtoms*(double)numAtoms*(2*LJAvgA - 3*LJAvgB*rcut6) / (9*rcut9);
-        tail_corr_ener = PI*2.0*(double)numAtoms*(double)numAtoms*(LJAvgA - 3*LJAvgB*rcut6) / (9*rcut9);
-      }
-      //DEBUG iout << iINFO << "energy and virial corrections are  " << tail_corr_ener << " and " << tail_corr_virial << "\n" << endi;
-
-    } // LJcorrection 
-
   #if 0 
   // debugging code for showing sorted atoms
   if(CkMyPe()==1) {  
@@ -9393,6 +9229,302 @@ void Molecule::build_atom_status(void) {
 
   }
   }
+
+/****************************************************************************/
+/*  FUNCTION compute_LJcorrection                                           */
+/*                                                                          */
+/*  Compute the energy and virial tail corrections to the Lennard-Jones     */
+/*  potential. The approximation used for heterogenous systems is to compute*/
+/*  the average pairwise parameters as in Ref 2.  Additional terms are also */
+/*  added in the case of potential or force switching.                      */
+/*                                                                          */
+/*  REFERENCES                                                              */
+/*   1) Allen and Tildesley, Computer Simulation of Liquids, 1991           */
+/*   2) Shirts, et al. J Phys Chem B. 2007 111:13052                        */
+/****************************************************************************/
+void Molecule::compute_LJcorrection() {
+  // First, calculate the average A and B coefficients. For TI/FEP, decompose
+  // by alchemical group (1 or 2).
+  BigReal LJAvgA, LJAvgB, LJAvgA1, LJAvgB1, LJAvgA2, LJAvgB2;
+
+  /*This a shortcut to summing over all atoms since it is faster to count how 
+    many atoms are of each LJ type.
+
+    NB: In practice it is easier to double count pairs. That is, we get N*(N-1)
+        pairs instead of N*(N-1)/2 and the 2 cancels in the numerator and
+        denominator. This affects later corrections to the sums!
+  */
+  int LJtypecount = params->get_num_vdw_params();
+  Real A, B, A14, B14;
+  Real sigma_i, sigma_i14, epsilon_i, epsilon_i14;
+  Real sigma_j, sigma_j14, epsilon_j, epsilon_j14;
+  Real *ATable = new Real[LJtypecount*LJtypecount];
+  Real *BTable = new Real[LJtypecount*LJtypecount];
+  int useGeom = simParams->vdwGeometricSigma;
+  // copied from LJTable.C
+  for (int i = 0; i < LJtypecount; i++) {
+    for (int j = 0; j < LJtypecount; j++) {
+      if (params->get_vdw_pair_params(i,j, &A, &B, &A14, &B14)) {
+        ATable[i*LJtypecount + j] = A;
+        BTable[i*LJtypecount + j] = B;
+      }
+      else {
+        params->get_vdw_params(&sigma_i,&epsilon_i,&sigma_i14,&epsilon_i14,i);
+        params->get_vdw_params(&sigma_j,&epsilon_j,&sigma_j14,&epsilon_j14,j);
+        BigReal sigma_ij =
+          useGeom ? sqrt(sigma_i*sigma_j) : 0.5*(sigma_i+sigma_j);
+        BigReal epsilon_ij = sqrt(epsilon_i*epsilon_j);
+        sigma_ij *= sigma_ij*sigma_ij;
+        sigma_ij *= sigma_ij;
+
+        ATable[i*LJtypecount + j] = 4.0*sigma_ij*epsilon_ij*sigma_ij;
+        BTable[i*LJtypecount + j] = 4.0*sigma_ij*epsilon_ij;
+      }
+    }
+  }
+
+  int *numAtomsByLjType = new int[LJtypecount];
+  for (int i=0; i < LJtypecount; i++) {numAtomsByLjType[i]=0;}
+  for (int i=0; i < numAtoms; i++) {numAtomsByLjType[atoms[i].vdw_type]++;}
+
+  BigReal sumOfAs = 0;
+  BigReal sumOfBs = 0;
+  BigReal count = 0; // needed to avoid overflow
+  BigReal npairs = 0;
+  for (int i=0; i < LJtypecount; i++) {
+    if (numAtomsByLjType[i] > 1) {
+      for (int j=0; j < LJtypecount; j++) {
+        A = ATable[i*LJtypecount + j];
+        B = BTable[i*LJtypecount + j];
+        npairs = (numAtomsByLjType[i] - int(i==j))*BigReal(numAtomsByLjType[j]);
+        sumOfAs += npairs*A;
+        sumOfBs += npairs*B;
+        count += npairs;
+      }
+    }
+  }
+  delete [] numAtomsByLjType;
+  delete [] ATable;
+  delete [] BTable;
+
+  /*If alchemical interactions exist, account for interactions that disappear
+    at the endpoints. Since alchemical transformations are path independent,
+    the intermediate values can be treated fairly arbitrarily.  IMO, the
+    easiest thing to do is have the lambda dependent correction be a linear
+    interpolation of the endpoint corrections:
+
+    Ecorr(lambda) = lambda*Ecorr(1) + (1-lambda)*Ecorr(0)
+
+    This makes the virial and alchemical derivative very simple also. One
+    alternative would be to count "fractional interactions," but that makes
+    TI derivatives a bit harder and for no obvious gain.
+  */
+  if (simParams->alchOn) {
+    BigReal sumOfAs1 = sumOfAs;
+    BigReal sumOfAs2 = sumOfAs;
+    BigReal sumOfBs1 = sumOfBs;
+    BigReal sumOfBs2 = sumOfBs;
+    BigReal count1 = count;
+    BigReal count2 = count;
+    int alch_counter = 0;
+    for (int i=0; i < numAtoms; ++i) {
+      int alchFlagi = (get_fep_type(i) == 2 ? -1 : get_fep_type(i));
+      for (int j=i+1; j < numAtoms; ++j) {
+        int alchFlagj = (get_fep_type(j) == 2 ? -1 : get_fep_type(j));
+        // Ignore completely non-alchemical pairs.
+        if (alchFlagi == 0 && alchFlagj == 0) continue;
+
+        if (params->get_vdw_pair_params(atoms[i].vdw_type, atoms[j].vdw_type,
+                                        &A, &B, &A14, &B14)) {
+        }
+        else {
+          params->get_vdw_params(&sigma_i, &epsilon_i, &sigma_i14,
+                                 &epsilon_i14, atoms[i].vdw_type);
+          params->get_vdw_params(&sigma_j, &epsilon_j, &sigma_j14,
+                                 &epsilon_j14, atoms[j].vdw_type);
+          BigReal sigma_ij =
+            useGeom ? sqrt(sigma_i*sigma_j) : 0.5*(sigma_i+sigma_j);
+          BigReal epsilon_ij = sqrt(epsilon_i*epsilon_j);
+
+          sigma_ij *= sigma_ij*sigma_ij;
+          sigma_ij *= sigma_ij;
+          A = 4.0*sigma_ij*epsilon_ij*sigma_ij;
+          B = 4.0*sigma_ij*epsilon_ij;
+        }
+        int alchFlagSum = alchFlagi + alchFlagj;
+        if ( alchFlagSum > 0 ){ // in group 1, remove from group 2
+          sumOfAs2 -= 2*A;
+          sumOfBs2 -= 2*B;
+          count2 -= 2;
+        }
+        else if ( alchFlagSum < 0 ){ // in group 2, remove from group 1
+          sumOfAs1 -= 2*A;
+          sumOfBs1 -= 2*B;
+          count1 -= 2;
+        }
+        else{ // between groups 1 and 2, remove entirely (don't exist!)
+          sumOfAs1 -= 2*A;
+          sumOfBs1 -= 2*B;
+          count1 -= 2;
+          sumOfAs2 -= 2*A;
+          sumOfBs2 -= 2*B;
+          count2 -= 2;
+        }
+      }
+      // This should save _tons_ of time, since the alchemical atoms are almost
+      // always at the top of the pdb file.
+      switch ( alchFlagi ){
+      case -1:
+      case 1:
+        alch_counter++;
+        break;
+      }
+      if ( alch_counter == (numFepInitial + numFepFinal) ) break;
+    }
+    LJAvgA1 = sumOfAs1 / count1;
+    LJAvgB1 = sumOfBs1 / count1;
+    LJAvgA2 = sumOfAs2 / count2;
+    LJAvgB2 = sumOfBs2 / count2;
+    if ( ! CkMyPe() ) {
+      iout << iINFO << "LONG-RANGE LJ: APPLYING ANALYTICAL CORRECTIONS TO "
+           << "ENERGY AND PRESSURE\n" << endi;
+      iout << iINFO << "LONG-RANGE LJ: AVERAGE A0 AND B0 COEFFICIENTS "
+           << LJAvgA2 << " AND " << LJAvgB2 << "\n" << endi;
+      iout << iINFO << "LONG-RANGE LJ: AVERAGE A1 AND B1 COEFFICIENTS "
+           << LJAvgA1 << " AND " << LJAvgB1 << "\n" << endi;
+    }
+
+    // Pre-scale by the atom counts, as they differ from when alchemy is off.
+    LJAvgA1 *= BigReal(numAtoms - numFepInitial)*(numAtoms - numFepInitial);
+    LJAvgB1 *= BigReal(numAtoms - numFepInitial)*(numAtoms - numFepInitial);
+    LJAvgA2 *= BigReal(numAtoms - numFepFinal)*(numAtoms - numFepFinal);
+    LJAvgB2 *= BigReal(numAtoms - numFepFinal)*(numAtoms - numFepFinal);
+
+    LJAvgA = LJAvgA2;
+    LJAvgB = LJAvgB2;
+  }
+  else{
+    LJAvgA1 = LJAvgB1 = LJAvgA2 = LJAvgB2 = 0;
+    LJAvgA = sumOfAs / count;
+    LJAvgB = sumOfBs / count;
+
+    if ( ! CkMyPe() ) {
+      iout << iINFO << "LONG-RANGE LJ: APPLYING ANALYTICAL CORRECTIONS TO "
+           << "ENERGY AND PRESSURE\n" << endi;
+      iout << iINFO << "LONG-RANGE LJ: AVERAGE A AND B COEFFICIENTS "
+           << LJAvgA << " AND " << LJAvgB << "\n" << endi;
+    }
+
+    // Pre-scale by the atom counts, as they differ from when alchemy is on.
+    LJAvgA *= BigReal(numAtoms)*numAtoms;
+    LJAvgB *= BigReal(numAtoms)*numAtoms;
+  }
+
+  BigReal rcut = simParams->cutoff;
+  BigReal rcut2 = rcut*rcut;
+  BigReal rcut3 = rcut*rcut2;
+  BigReal rcut4 = rcut2*rcut2;
+  BigReal rcut5 = rcut2*rcut3;
+  BigReal rcut6 = rcut3*rcut3;
+  BigReal rcut9 = rcut5*rcut4;
+  BigReal rswitch = simParams->switchingDist;
+  BigReal rswitch2 = rswitch*rswitch;
+  BigReal rswitch3 = rswitch*rswitch2;
+  BigReal rswitch4 = rswitch2*rswitch2;
+  BigReal rswitch5 = rswitch2*rswitch3;
+
+  /* Here we tabulate the integrals over the untruncated region. This assumes:
+
+   1.) The energy and virial contribution can be well described by a mean field
+       approximation (i.e. a constant).
+
+   2.) The pair distribution function, g(r), is very close to unity on the
+       interval (i.e. g(r) = 1 for r > switchdist).
+
+   The mean field integrals are of the form:
+
+   4*N^2*PI*int r^2 U(r) dr : for the energy
+
+   (4/3)*N^2*PI*int r^3 dU(r)/dr dr : for the virial
+
+   NB: An extra factor of 1/2 comes from double counting the number of
+       interaction pairs (N*(N-1)/2, approximated as N^2).
+  */
+  BigReal int_U_gofr_A, int_rF_gofr_A, int_U_gofr_B, int_rF_gofr_B;
+  if (simParams->switchingActive) {
+    if (!simParams->vdwForceSwitching) {
+      int_U_gofr_A = int_rF_gofr_A = (16*PI*(3*rcut4 + 9*rcut3*rswitch
+                                      + 11*rcut2*rswitch2 + 9*rcut*rswitch3
+                                      + 3*rswitch4)
+                                      / (315*rcut5*rswitch5*(rcut + rswitch)
+                                         *(rcut + rswitch)*(rcut + rswitch)));
+      int_U_gofr_B = int_rF_gofr_B = (-16*PI / (3*(rcut + rswitch)
+                                                *(rcut + rswitch)
+                                                *(rcut + rswitch)));
+    }
+    else {
+      /* BKR - This only includes the volume dependent portion of the energy
+         correction. In order to fully correct to a true Lennard-Jones
+         potential one also needs a "core" correction to account for the shift
+         inside rswitch; this is a _global_ potential energy shift, regardless
+         of volume. Neglecting this correction is equivalent to stating that
+         the number of atoms in the whole system is much greater than the
+         number within rswitch of any given atom.  Interestingly, this
+         approximation gets better as rswitch shrinks whereas the tail
+         correction gets worse. The extra term has _zero_ affect on the virial
+         since the forces are unchanged.
+      */
+      BigReal lnr = log(rswitch/rcut);
+      int_rF_gofr_A = 16*PI / (9*rswitch3*rcut3*(rcut3 + rswitch3));
+      int_rF_gofr_B = 4*PI*lnr / (rcut3 - rswitch3);
+      int_U_gofr_A = (2*PI*(5*rcut3 - 3*rswitch3)
+                      / (9*rswitch3*rcut6*(rcut3 + rswitch3)));
+      int_U_gofr_B = (-2*PI*(rswitch3 - rcut3 - 6*rcut3*lnr)
+                      / (3*rcut3*(rcut3 - rswitch3)));
+    }
+  }
+  else {
+    int_rF_gofr_A = 8*PI / (9*rcut9);
+    int_rF_gofr_B = -4*PI / (3*rcut3);
+    int_U_gofr_A = 2*PI / (9*rcut9);
+    int_U_gofr_B = -2*PI / (3*rcut3);
+  }
+  // If TI/FEP is on, these come back with values at alchLambda = 0 and are
+  // thus equivalent to alchemical group 2.
+  tail_corr_virial = int_rF_gofr_A*LJAvgA + int_rF_gofr_B*LJAvgB;
+  tail_corr_ener = int_U_gofr_A*LJAvgA + int_U_gofr_B*LJAvgB;
+
+  tail_corr_dUdl_1 = int_U_gofr_A*LJAvgA1 + int_U_gofr_B*LJAvgB1;
+  tail_corr_virial_1 = int_rF_gofr_A*LJAvgA1 + int_rF_gofr_B*LJAvgB1;
+}
+
+// Convenience function to simplify lambda scaling.
+BigReal Molecule::getEnergyTailCorr(const BigReal alchLambda){
+  if (simParams->alchOn) {
+    const BigReal vdw_lambda_1 = simParams->getVdwLambda(alchLambda);
+    const BigReal vdw_lambda_2 = simParams->getVdwLambda(1-alchLambda);
+    // NB: Rather than duplicate variables, dUdl_2 is stored as the energy.
+    //     Put another way, dUdl_2 _is_ the energy, if alchLambda = 0.
+    return vdw_lambda_1*tail_corr_dUdl_1 + vdw_lambda_2*tail_corr_ener;
+  }
+  else {
+    return tail_corr_ener;
+  }
+}
+
+// Convenience function to simplify lambda scaling.
+BigReal Molecule::getVirialTailCorr(const BigReal alchLambda){
+  if (simParams->alchOn) {
+    const BigReal vdw_lambda_1 = simParams->getVdwLambda(alchLambda);
+    const BigReal vdw_lambda_2 = simParams->getVdwLambda(1-alchLambda);
+    // NB: Rather than duplicate variables, virial_2 is stored as the virial.
+    //     Put another way, virial_2 _is_ the virial, if alchLambda = 0.
+    return vdw_lambda_1*tail_corr_virial_1 + vdw_lambda_2*tail_corr_virial;
+  }
+  else {
+    return tail_corr_virial;
+  }
+}
 #endif
 
 #ifdef MEM_OPT_VERSION

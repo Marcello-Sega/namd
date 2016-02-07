@@ -287,6 +287,7 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
       params.ff[1] = r[b]->f[Results::nbond];
       params.numAtoms[0] = numAtoms[a];
       params.numAtoms[1] = numAtoms[b];
+      params.step = patch[0]->flags.step;
 
       // DMK - Atom Separation (water vs. non-water)
       #if NAMD_SeparateWaters != 0

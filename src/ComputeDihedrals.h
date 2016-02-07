@@ -44,7 +44,8 @@ public:
     return 0x7FFFFFFF &((atomID[0]<<24) + (atomID[1]<<16) + (atomID[2]<<8) + atomID[3]);
   }
 
-  enum { dihedralEnergyIndex, TENSOR(virialIndex), reductionDataSize };
+  enum { dihedralEnergyIndex, dihedralEnergyIndex_f, dihedralEnergyIndex_ti_1, 
+         dihedralEnergyIndex_ti_2,TENSOR(virialIndex), reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_DIHEDRAL_CHECKSUM };
   static void submitReductionData(BigReal*,SubmitReduction*);
 

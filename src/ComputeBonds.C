@@ -40,8 +40,19 @@ void BondElem::getParameterPointers(Parameters *p, const BondValue **v) {
 void BondElem::computeForce(BondElem *tuples, int ntuple, BigReal *reduction, 
                             BigReal *pressureProfileData)
 {
- const SimParameters *const simParams = Node::Object()->simParameters;
+ SimParameters *const simParams = Node::Object()->simParameters;
  const Lattice & lattice = tuples[0].p[0]->p->lattice;
+
+ //fepb BKR
+ const int step = tuples[0].p[0]->p->flags.step;
+ const BigReal alchLambda = simParams->getCurrentLambda(step);
+ const BigReal alchLambda2 = simParams->alchLambda2;
+ const BigReal bond_lambda_1 = simParams->getBondLambda(alchLambda);
+ const BigReal bond_lambda_2 = simParams->getBondLambda(1-alchLambda);
+ const BigReal bond_lambda_12 = simParams->getBondLambda(alchLambda2);
+ const BigReal bond_lambda_22 = simParams->getBondLambda(1-alchLambda2);
+ Molecule *const mol = Node::Object()->molecule;
+ //fepe
 
  for ( int ituple=0; ituple<ntuple; ++ituple ) {
   const BondElem &tup = tuples[ituple];
@@ -71,24 +82,26 @@ void BondElem::computeForce(BondElem *tuples, int ntuple, BigReal *reduction,
   const Vector r12 = lattice.delta(p[0]->x[localIndex[0]].position,
 					p[1]->x[localIndex[1]].position);
 
-  if (0. == x0) {  // for Drude bonds
-    BigReal drudeBondLen = simParams->drudeBondLen;
-    BigReal drudeBondConst = simParams->drudeBondConst;
-
+  if (0. == x0) {
     BigReal r2 = r12.length2();
-
     scal = -2.0*k;    // bond interaction for equilibrium length 0
-    energy = k * r2;
+    energy = k*r2;
+    // TODO: Instead flag by mass for Drude particles, otherwise mixing and 
+    // matching Drude and alchemical "twin" particles will likely not work as 
+    // expected.
+    if(simParams->drudeOn) { // for Drude bonds
+      BigReal drudeBondLen = simParams->drudeBondLen;
+      BigReal drudeBondConst = simParams->drudeBondConst;
+      if ( (drudeBondConst > 0) && ( ! simParams->drudeHardWallOn ) &&
+          (r2 > drudeBondLen*drudeBondLen) ) {
+        // add a quartic restraining potential to keep Drude bond short
+        BigReal r = sqrt(r2);
+        BigReal diff = r - drudeBondLen;
+        BigReal diff2 = diff*diff;
 
-    if ( (drudeBondConst > 0) && ( ! simParams->drudeHardWallOn ) &&
-        (r2 > drudeBondLen*drudeBondLen) ) {
-      // add a quartic restraining potential to keep Drude bond short
-      BigReal r = sqrt(r2);
-      BigReal diff = r - drudeBondLen;
-      BigReal diff2 = diff*diff;
-
-      scal += -4*drudeBondConst * diff2 * diff / r;
-      energy += drudeBondConst * diff2 * diff2;
+        scal += -4*drudeBondConst * diff2 * diff / r;
+        energy += drudeBondConst * diff2 * diff2;
+      }
     }
   }
   else {
@@ -104,6 +117,27 @@ void BondElem::computeForce(BondElem *tuples, int ntuple, BigReal *reduction,
     //  Scale the force vector accordingly
     scal = (diff/r);
   }
+
+  //fepb - BKR scaling of alchemical bonded terms
+  //       NB: TI derivative is the _unscaled_ energy.
+  if ( simParams->alchOn ) {
+    switch ( mol->get_fep_bonded_type(atomID, 2) ) {
+    case 1:
+      reduction[bondEnergyIndex_ti_1] += energy;
+      reduction[bondEnergyIndex_f] += bond_lambda_12*energy;
+      energy *= bond_lambda_1;
+      scal *= bond_lambda_1;
+      break;
+    case 2:
+      reduction[bondEnergyIndex_ti_2] += energy;
+      reduction[bondEnergyIndex_f] += bond_lambda_22*energy;
+      energy *= bond_lambda_2;
+      scal *= bond_lambda_2;
+      break;
+    //case 0: Do nothing, normal interaction! 
+    }
+  }
+  //fepe
   const Force f12 = scal * r12;
 
 
@@ -146,6 +180,9 @@ void BondElem::computeForce(BondElem *tuples, int ntuple, BigReal *reduction,
 void BondElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_BOND_ENERGY) += data[bondEnergyIndex];
+  reduction->item(REDUCTION_BOND_ENERGY_F) += data[bondEnergyIndex_f];
+  reduction->item(REDUCTION_BOND_ENERGY_TI_1) += data[bondEnergyIndex_ti_1];
+  reduction->item(REDUCTION_BOND_ENERGY_TI_2) += data[bondEnergyIndex_ti_2];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
 }
 

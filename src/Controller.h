@@ -103,6 +103,14 @@ protected:
       BigReal goNonnativeEnergy;
       BigReal goTotalEnergy;
 //fepb
+      BigReal bondEnergy; //Moved here for FEP potential difference
+      BigReal angleEnergy;
+      BigReal dihedralEnergy;
+      BigReal improperEnergy;
+      BigReal bondEnergy_f;
+      BigReal angleEnergy_f;
+      BigReal dihedralEnergy_f;
+      BigReal improperEnergy_f;
       BigReal electEnergy_f;
       BigReal electEnergySlow_f;
       BigReal ljEnergy_f;
@@ -114,24 +122,37 @@ protected:
       void printFepMessage(int);
       BigReal fepSum;
 //fepe
-
+      BigReal bondEnergy_ti_1;
+      BigReal bondEnergy_ti_2;
+      BigReal angleEnergy_ti_1;
+      BigReal angleEnergy_ti_2;
+      BigReal dihedralEnergy_ti_1;
+      BigReal dihedralEnergy_ti_2;
+      BigReal improperEnergy_ti_1;
+      BigReal improperEnergy_ti_2;
       BigReal electEnergy_ti_1;
       BigReal electEnergySlow_ti_1;
       BigReal ljEnergy_ti_1;
       BigReal electEnergy_ti_2;
       BigReal electEnergySlow_ti_2;
       BigReal ljEnergy_ti_2;
+      BigReal net_dEdl_bond_1;
+      BigReal net_dEdl_bond_2;
       BigReal net_dEdl_elec_1;
       BigReal net_dEdl_elec_2;
       BigReal net_dEdl_lj_1;
       BigReal net_dEdl_lj_2;
+      BigReal cumAlchWork;
       BigReal electEnergyPME_ti_1;
       BigReal electEnergyPME_ti_2;
       int TiNo;
+      BigReal recent_dEdl_bond_1;
+      BigReal recent_dEdl_bond_2;
       BigReal recent_dEdl_elec_1;
       BigReal recent_dEdl_elec_2;
       BigReal recent_dEdl_lj_1;
       BigReal recent_dEdl_lj_2;
+      BigReal alchWork;
       int recent_TiNo;
       void printTiMessage(int);
 

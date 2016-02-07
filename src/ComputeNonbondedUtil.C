@@ -98,9 +98,6 @@ BigReal   ComputeNonbondedUtil::alchDispLambda;
 BigReal   ComputeNonbondedUtil::alchElecLambda;
 BigReal   ComputeNonbondedUtil::alchVdwShiftCoeff;
 Bool      ComputeNonbondedUtil::vdwForceSwitching;
-Bool      ComputeNonbondedUtil::LJcorrection;
-BigReal   ComputeNonbondedUtil::alchVdwLambdaEnd;
-BigReal   ComputeNonbondedUtil::alchElecLambdaStart;
 Bool      ComputeNonbondedUtil::alchDecouple;
 //fepe
 Bool      ComputeNonbondedUtil::lesOn;
@@ -275,12 +272,9 @@ void ComputeNonbondedUtil::select(void)
   Bool tabulatedEnergies = simParams->tabulatedEnergies;
   alchVdwShiftCoeff = simParams->alchVdwShiftCoeff;
   vdwForceSwitching = simParams->vdwForceSwitching;
-  LJcorrection = simParams->LJcorrection;
   WCA_rcut1 = simParams->alchFepWCArcut1;
   WCA_rcut2 = simParams->alchFepWCArcut2;
   WCA_rcut3 = simParams->alchFepWCArcut3;
-  alchVdwLambdaEnd = simParams->alchVdwLambdaEnd;
-  alchElecLambdaStart = simParams->alchElecLambdaStart;
 
   alchRepLambda = simParams->alchRepLambda;
   alchDispLambda = simParams->alchDispLambda;
@@ -325,7 +319,6 @@ void ComputeNonbondedUtil::select(void)
 #ifdef NAMD_CUDA
     NAMD_die("Alchemical free-energy perturbation is not supported in CUDA version");
 #endif
-    alchLambda = simParams->alchLambda;
     alchLambda2 = simParams->alchLambda2;
     ComputeNonbondedUtil::calcPair = calc_pair_energy_fep;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_fep;
@@ -347,7 +340,7 @@ void ComputeNonbondedUtil::select(void)
 #ifdef NAMD_CUDA
     NAMD_die("Alchemical thermodynamic integration is not supported in CUDA version");
 #endif
-    alchLambda = simParams->alchLambda;
+    alchLambda2 = simParams->alchLambda2;
     ComputeNonbondedUtil::calcPair = calc_pair_ti;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_ti;
     ComputeNonbondedUtil::calcSelf = calc_self_ti;

@@ -42,6 +42,18 @@ void ImproperElem::computeForce(ImproperElem *tuples, int ntuple, BigReal *reduc
 {
  const Lattice & lattice = tuples[0].p[0]->p->lattice;
 
+ //fepb BKR
+ SimParameters *const simParams = Node::Object()->simParameters;
+ const int step = tuples[0].p[0]->p->flags.step;
+ const BigReal alchLambda = simParams->getCurrentLambda(step);
+ const BigReal alchLambda2 = simParams->alchLambda2;
+ const BigReal bond_lambda_1 = simParams->getBondLambda(alchLambda);
+ const BigReal bond_lambda_2 = simParams->getBondLambda(1-alchLambda);
+ const BigReal bond_lambda_12 = simParams->getBondLambda(alchLambda2);
+ const BigReal bond_lambda_22 = simParams->getBondLambda(1-alchLambda2);
+ Molecule *const mol = Node::Object()->molecule;
+ //fepe
+
  for ( int ituple=0; ituple<ntuple; ++ituple ) {
   const ImproperElem &tup = tuples[ituple];
   enum { size = 4 };
@@ -209,6 +221,31 @@ void ImproperElem::computeForce(ImproperElem *tuples, int ntuple, BigReal *reduc
     }
   } /* for multiplicity */
 
+  //fepb - BKR scaling of alchemical bonded terms
+  //       NB: TI derivative is the _unscaled_ energy.
+  if ( simParams->alchOn ) {
+    switch ( mol->get_fep_bonded_type(atomID, 4) ) {
+    case 1:
+      reduction[improperEnergyIndex_ti_1] += energy;
+      reduction[improperEnergyIndex_f] += bond_lambda_12*energy;
+      energy *= bond_lambda_1;
+      f1 *= bond_lambda_1;
+      f2 *= bond_lambda_1;
+      f3 *= bond_lambda_1;
+      break;
+    case 2:
+      reduction[improperEnergyIndex_ti_2] += energy;
+      reduction[improperEnergyIndex_f] += bond_lambda_22*energy;
+      energy *= bond_lambda_2;
+      f1 *= bond_lambda_2;
+      f2 *= bond_lambda_2;
+      f3 *= bond_lambda_2;
+      break;
+    //case 0: Do nothing, normal interaction! 
+    }
+  }
+  //fepe
+
   /* store the forces */
   p[0]->f[localIndex[0]] += f1;
   p[1]->f[localIndex[1]] += f2 - f1;
@@ -265,6 +302,9 @@ void ImproperElem::computeForce(ImproperElem *tuples, int ntuple, BigReal *reduc
 void ImproperElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_IMPROPER_ENERGY) += data[improperEnergyIndex];
+  reduction->item(REDUCTION_IMPROPER_ENERGY_F) += data[improperEnergyIndex_f];
+  reduction->item(REDUCTION_IMPROPER_ENERGY_TI_1) += data[improperEnergyIndex_ti_1];
+  reduction->item(REDUCTION_IMPROPER_ENERGY_TI_2) += data[improperEnergyIndex_ti_2];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
 }
 
