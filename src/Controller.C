@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/02/07 20:17:57 $
- * $Revision: 1.1313 $
+ * $Date: 2016/02/08 17:15:46 $
+ * $Revision: 1.1314 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2287,24 +2287,15 @@ void Controller::printEnergies(int step, int minimize)
       goTotalEnergy = goNativeEnergy + goNonnativeEnergy;
 
 //fepb
-      bondEnergy_f = reduction->item(REDUCTION_BOND_ENERGY_F);
-      angleEnergy_f = reduction->item(REDUCTION_ANGLE_ENERGY_F);
-      dihedralEnergy_f = reduction->item(REDUCTION_DIHEDRAL_ENERGY_F);
-      improperEnergy_f = reduction->item(REDUCTION_IMPROPER_ENERGY_F);
+      bondedEnergy_f = reduction->item(REDUCTION_BONDED_ENERGY_F);
       electEnergy_f = reduction->item(REDUCTION_ELECT_ENERGY_F);
       ljEnergy_f = reduction->item(REDUCTION_LJ_ENERGY_F);
       ljEnergy_f_left = reduction->item(REDUCTION_LJ_ENERGY_F_LEFT);
 
-      bondEnergy_ti_1 = reduction->item(REDUCTION_BOND_ENERGY_TI_1);
-      angleEnergy_ti_1 = reduction->item(REDUCTION_ANGLE_ENERGY_TI_1);
-      dihedralEnergy_ti_1 = reduction->item(REDUCTION_DIHEDRAL_ENERGY_TI_1);
-      improperEnergy_ti_1 = reduction->item(REDUCTION_IMPROPER_ENERGY_TI_1);
+      bondedEnergy_ti_1 = reduction->item(REDUCTION_BONDED_ENERGY_TI_1);
       electEnergy_ti_1 = reduction->item(REDUCTION_ELECT_ENERGY_TI_1);
       ljEnergy_ti_1 = reduction->item(REDUCTION_LJ_ENERGY_TI_1);
-      bondEnergy_ti_2 = reduction->item(REDUCTION_BOND_ENERGY_TI_2);
-      angleEnergy_ti_2 = reduction->item(REDUCTION_ANGLE_ENERGY_TI_2);
-      dihedralEnergy_ti_2 = reduction->item(REDUCTION_DIHEDRAL_ENERGY_TI_2);
-      improperEnergy_ti_2 = reduction->item(REDUCTION_IMPROPER_ENERGY_TI_2);
+      bondedEnergy_ti_2 = reduction->item(REDUCTION_BONDED_ENERGY_TI_2);
       electEnergy_ti_2 = reduction->item(REDUCTION_ELECT_ENERGY_TI_2);
       ljEnergy_ti_2 = reduction->item(REDUCTION_LJ_ENERGY_TI_2);
 //fepe
@@ -2781,9 +2772,7 @@ void Controller::outputFepEnergy(int step) {
     exp_dE_ByRT = 0.0;
     net_dE = 0.0;
   }
-  BigReal dE = bondEnergy_f + angleEnergy_f + dihedralEnergy_f 
-               + improperEnergy_f + electEnergy_f + electEnergySlow_f 
-               + ljEnergy_f
+  BigReal dE = bondedEnergy_f + electEnergy_f + electEnergySlow_f + ljEnergy_f
                - (bondEnergy + angleEnergy + dihedralEnergy + improperEnergy 
                   + electEnergy + electEnergySlow + ljEnergy);
   BigReal RT = BOLTZMANN * simParams->alchTemp;
@@ -2872,10 +2861,8 @@ void Controller::outputTiEnergy(int step) {
   }
   TiNo++;
   recent_TiNo++;
-  net_dEdl_bond_1 += (bondEnergy_ti_1 + angleEnergy_ti_1 + dihedralEnergy_ti_1
-                      + improperEnergy_ti_1);
-  net_dEdl_bond_2 += (bondEnergy_ti_2 + angleEnergy_ti_2 + dihedralEnergy_ti_2
-                      + improperEnergy_ti_2);
+  net_dEdl_bond_1 += bondedEnergy_ti_1;
+  net_dEdl_bond_2 += bondedEnergy_ti_2;
   // FB - PME is no longer scaled by global lambda, but by the respective
   // lambda as dictated by elecLambdaStart. All electrostatics now go together.
   net_dEdl_elec_1 += (electEnergy_ti_1 + electEnergySlow_ti_1 
@@ -2885,10 +2872,8 @@ void Controller::outputTiEnergy(int step) {
   net_dEdl_lj_1 += ljEnergy_ti_1;
   net_dEdl_lj_2 += ljEnergy_ti_2;
 
-  recent_dEdl_bond_1 += (bondEnergy_ti_1 + angleEnergy_ti_1
-                         + dihedralEnergy_ti_1 + improperEnergy_ti_1);
-  recent_dEdl_bond_2 += (bondEnergy_ti_2 + angleEnergy_ti_2
-                         + dihedralEnergy_ti_2 + improperEnergy_ti_2);
+  recent_dEdl_bond_1 += bondedEnergy_ti_1;
+  recent_dEdl_bond_2 += bondedEnergy_ti_2;
   recent_dEdl_elec_1 += (electEnergy_ti_1 + electEnergySlow_ti_1 
                          + electEnergyPME_ti_1); 
   recent_dEdl_elec_2 += (electEnergy_ti_2 + electEnergySlow_ti_2 
@@ -2983,16 +2968,12 @@ void Controller::outputTiEnergy(int step) {
       const BigReal elec_lambda_22 = simParams->getElecLambda(1-alchLambda);
       const BigReal vdw_lambda_12 = simParams->getVdwLambda(alchLambda);
       const BigReal vdw_lambda_22 = simParams->getVdwLambda(1-alchLambda);
-      alchWork = ((bond_lambda_12 - bond_lambda_1)
-		  *(bondEnergy_ti_1 + angleEnergy_ti_1 + dihedralEnergy_ti_1
-		    + improperEnergy_ti_1)
+      alchWork = ((bond_lambda_12 - bond_lambda_1)*bondedEnergy_ti_1
 		  + (elec_lambda_12 - elec_lambda_1)
 		  *(electEnergy_ti_1 + electEnergySlow_ti_1
 		    + electEnergyPME_ti_1)
 		  + (vdw_lambda_12 - vdw_lambda_1)*ljEnergy_ti_1
-		  + (bond_lambda_22 - bond_lambda_2)
-		  *(bondEnergy_ti_2 + angleEnergy_ti_2 + dihedralEnergy_ti_2
-		    + improperEnergy_ti_2)
+		  + (bond_lambda_22 - bond_lambda_2)*bondedEnergy_ti_2
 		  + (elec_lambda_22 - elec_lambda_2)
 		  *(electEnergy_ti_2 + electEnergySlow_ti_2
 		    + electEnergyPME_ti_2)

@@ -107,10 +107,7 @@ protected:
       BigReal angleEnergy;
       BigReal dihedralEnergy;
       BigReal improperEnergy;
-      BigReal bondEnergy_f;
-      BigReal angleEnergy_f;
-      BigReal dihedralEnergy_f;
-      BigReal improperEnergy_f;
+      BigReal bondedEnergy_f;
       BigReal electEnergy_f;
       BigReal electEnergySlow_f;
       BigReal ljEnergy_f;
@@ -122,14 +119,8 @@ protected:
       void printFepMessage(int);
       BigReal fepSum;
 //fepe
-      BigReal bondEnergy_ti_1;
-      BigReal bondEnergy_ti_2;
-      BigReal angleEnergy_ti_1;
-      BigReal angleEnergy_ti_2;
-      BigReal dihedralEnergy_ti_1;
-      BigReal dihedralEnergy_ti_2;
-      BigReal improperEnergy_ti_1;
-      BigReal improperEnergy_ti_2;
+      BigReal bondedEnergy_ti_1;
+      BigReal bondedEnergy_ti_2;
       BigReal electEnergy_ti_1;
       BigReal electEnergySlow_ti_1;
       BigReal ljEnergy_ti_1;

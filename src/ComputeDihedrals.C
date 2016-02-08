@@ -329,9 +329,9 @@ void DihedralElem::computeForce(DihedralElem *tuples, int ntuple, BigReal *reduc
 void DihedralElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_DIHEDRAL_ENERGY) += data[dihedralEnergyIndex];
-  reduction->item(REDUCTION_DIHEDRAL_ENERGY_F) += data[dihedralEnergyIndex_f];
-  reduction->item(REDUCTION_DIHEDRAL_ENERGY_TI_1) += data[dihedralEnergyIndex_ti_1];
-  reduction->item(REDUCTION_DIHEDRAL_ENERGY_TI_2) += data[dihedralEnergyIndex_ti_2];
+  reduction->item(REDUCTION_BONDED_ENERGY_F) += data[dihedralEnergyIndex_f];
+  reduction->item(REDUCTION_BONDED_ENERGY_TI_1) += data[dihedralEnergyIndex_ti_1];
+  reduction->item(REDUCTION_BONDED_ENERGY_TI_2) += data[dihedralEnergyIndex_ti_2];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_AMD_DIHE,data,virialIndex);
 }

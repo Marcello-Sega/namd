@@ -238,9 +238,9 @@ void AngleElem::computeForce(AngleElem *tuples, int ntuple, BigReal *reduction, 
 void AngleElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_ANGLE_ENERGY) += data[angleEnergyIndex];
-  reduction->item(REDUCTION_ANGLE_ENERGY_F) += data[angleEnergyIndex_f];
-  reduction->item(REDUCTION_ANGLE_ENERGY_TI_1) += data[angleEnergyIndex_ti_1];
-  reduction->item(REDUCTION_ANGLE_ENERGY_TI_2) += data[angleEnergyIndex_ti_2];
+  reduction->item(REDUCTION_BONDED_ENERGY_F) += data[angleEnergyIndex_f];
+  reduction->item(REDUCTION_BONDED_ENERGY_TI_1) += data[angleEnergyIndex_ti_1];
+  reduction->item(REDUCTION_BONDED_ENERGY_TI_2) += data[angleEnergyIndex_ti_2];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
 }
 

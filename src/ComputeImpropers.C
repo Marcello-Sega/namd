@@ -302,9 +302,9 @@ void ImproperElem::computeForce(ImproperElem *tuples, int ntuple, BigReal *reduc
 void ImproperElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_IMPROPER_ENERGY) += data[improperEnergyIndex];
-  reduction->item(REDUCTION_IMPROPER_ENERGY_F) += data[improperEnergyIndex_f];
-  reduction->item(REDUCTION_IMPROPER_ENERGY_TI_1) += data[improperEnergyIndex_ti_1];
-  reduction->item(REDUCTION_IMPROPER_ENERGY_TI_2) += data[improperEnergyIndex_ti_2];
+  reduction->item(REDUCTION_BONDED_ENERGY_F) += data[improperEnergyIndex_f];
+  reduction->item(REDUCTION_BONDED_ENERGY_TI_1) += data[improperEnergyIndex_ti_1];
+  reduction->item(REDUCTION_BONDED_ENERGY_TI_2) += data[improperEnergyIndex_ti_2];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
 }
 

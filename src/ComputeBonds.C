@@ -180,9 +180,9 @@ void BondElem::computeForce(BondElem *tuples, int ntuple, BigReal *reduction,
 void BondElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_BOND_ENERGY) += data[bondEnergyIndex];
-  reduction->item(REDUCTION_BOND_ENERGY_F) += data[bondEnergyIndex_f];
-  reduction->item(REDUCTION_BOND_ENERGY_TI_1) += data[bondEnergyIndex_ti_1];
-  reduction->item(REDUCTION_BOND_ENERGY_TI_2) += data[bondEnergyIndex_ti_2];
+  reduction->item(REDUCTION_BONDED_ENERGY_F) += data[bondEnergyIndex_f];
+  reduction->item(REDUCTION_BONDED_ENERGY_TI_1) += data[bondEnergyIndex_ti_1];
+  reduction->item(REDUCTION_BONDED_ENERGY_TI_2) += data[bondEnergyIndex_ti_2];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
 }
 
