@@ -1,7 +1,7 @@
 NAMD_ARCH = CRAY-XC
 CHARMARCH = gni-crayxc-persistent-smp
 
-FLOATOPTS = -ip -no-vec
+FLOATOPTS = -ip -xAVX
 
 CXX = CC -std=c++11 -DNOHOSTNAME -DNO_GETPWUID
 CXXOPTS = -O2 $(FLOATOPTS)
