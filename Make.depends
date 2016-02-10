@@ -4106,7 +4106,7 @@ obj/colvar.o: \
 	src/colvaratoms.h \
 	src/colvarscript.h \
 	src/colvarbias.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvar.o $(COPTC) src/colvar.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvar.o $(COPTC) src/colvar.C
 obj/colvaratoms.o: \
 	src/colvaratoms.C \
 	src/colvarmodule.h \
@@ -4116,7 +4116,7 @@ obj/colvaratoms.o: \
 	src/colvarvalue.h \
 	src/colvarparse.h \
 	src/colvaratoms.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvaratoms.o $(COPTC) src/colvaratoms.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvaratoms.o $(COPTC) src/colvaratoms.C
 obj/colvarbias.o: \
 	src/colvarbias.C \
 	src/colvarmodule.h \
@@ -4127,7 +4127,7 @@ obj/colvarbias.o: \
 	src/colvarbias.h \
 	src/colvar.h \
 	src/colvarparse.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias.o $(COPTC) src/colvarbias.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias.o $(COPTC) src/colvarbias.C
 obj/colvarbias_abf.o: \
 	src/colvarbias_abf.C \
 	src/colvarmodule.h \
@@ -4140,7 +4140,7 @@ obj/colvarbias_abf.o: \
 	src/colvarbias_abf.h \
 	src/colvarbias.h \
 	src/colvargrid.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_abf.o $(COPTC) src/colvarbias_abf.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_abf.o $(COPTC) src/colvarbias_abf.C
 obj/colvarbias_alb.o: \
 	src/colvarbias_alb.C \
 	src/colvarmodule.h \
@@ -4153,7 +4153,7 @@ obj/colvarbias_alb.o: \
 	src/colvarparse.h \
 	src/colvarbias_restraint.h \
 	src/colvarbias.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_alb.o $(COPTC) src/colvarbias_alb.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_alb.o $(COPTC) src/colvarbias_alb.C
 obj/colvarbias_histogram.o: \
 	src/colvarbias_histogram.C \
 	src/colvarmodule.h \
@@ -4166,7 +4166,7 @@ obj/colvarbias_histogram.o: \
 	src/colvarbias_histogram.h \
 	src/colvarbias.h \
 	src/colvargrid.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_histogram.o $(COPTC) src/colvarbias_histogram.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_histogram.o $(COPTC) src/colvarbias_histogram.C
 obj/colvarbias_meta.o: \
 	src/colvarbias_meta.C \
 	src/colvar.h \
@@ -4179,7 +4179,7 @@ obj/colvarbias_meta.o: \
 	src/colvarbias_meta.h \
 	src/colvarbias.h \
 	src/colvargrid.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_meta.o $(COPTC) src/colvarbias_meta.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_meta.o $(COPTC) src/colvarbias_meta.C
 obj/colvarbias_restraint.o: \
 	src/colvarbias_restraint.C \
 	src/colvarmodule.h \
@@ -4191,7 +4191,7 @@ obj/colvarbias_restraint.o: \
 	src/colvarbias.h \
 	src/colvar.h \
 	src/colvarparse.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_restraint.o $(COPTC) src/colvarbias_restraint.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_restraint.o $(COPTC) src/colvarbias_restraint.C
 obj/colvarcomp.o: \
 	src/colvarcomp.C \
 	src/colvarmodule.h \
@@ -4203,7 +4203,7 @@ obj/colvarcomp.o: \
 	src/colvarparse.h \
 	src/colvarcomp.h \
 	src/colvaratoms.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp.o $(COPTC) src/colvarcomp.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp.o $(COPTC) src/colvarcomp.C
 obj/colvarcomp_angles.o: \
 	src/colvarcomp_angles.C \
 	src/colvarmodule.h \
@@ -4215,7 +4215,7 @@ obj/colvarcomp_angles.o: \
 	src/colvarparse.h \
 	src/colvarcomp.h \
 	src/colvaratoms.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_angles.o $(COPTC) src/colvarcomp_angles.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_angles.o $(COPTC) src/colvarcomp_angles.C
 obj/colvarcomp_coordnums.o: \
 	src/colvarcomp_coordnums.C \
 	src/colvarmodule.h \
@@ -4227,7 +4227,7 @@ obj/colvarcomp_coordnums.o: \
 	src/colvaratoms.h \
 	src/colvar.h \
 	src/colvarcomp.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_coordnums.o $(COPTC) src/colvarcomp_coordnums.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_coordnums.o $(COPTC) src/colvarcomp_coordnums.C
 obj/colvarcomp_distances.o: \
 	src/colvarcomp_distances.C \
 	src/colvarmodule.h \
@@ -4239,7 +4239,7 @@ obj/colvarcomp_distances.o: \
 	src/colvar.h \
 	src/colvarcomp.h \
 	src/colvaratoms.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_distances.o $(COPTC) src/colvarcomp_distances.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_distances.o $(COPTC) src/colvarcomp_distances.C
 obj/colvarcomp_protein.o: \
 	src/colvarcomp_protein.C \
 	src/colvarmodule.h \
@@ -4251,7 +4251,7 @@ obj/colvarcomp_protein.o: \
 	src/colvar.h \
 	src/colvarcomp.h \
 	src/colvaratoms.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_protein.o $(COPTC) src/colvarcomp_protein.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_protein.o $(COPTC) src/colvarcomp_protein.C
 obj/colvarcomp_rotations.o: \
 	src/colvarcomp_rotations.C \
 	src/colvarmodule.h \
@@ -4263,7 +4263,7 @@ obj/colvarcomp_rotations.o: \
 	src/colvar.h \
 	src/colvarcomp.h \
 	src/colvaratoms.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_rotations.o $(COPTC) src/colvarcomp_rotations.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_rotations.o $(COPTC) src/colvarcomp_rotations.C
 obj/colvargrid.o: \
 	src/colvargrid.C \
 	src/colvarmodule.h \
@@ -4276,7 +4276,7 @@ obj/colvargrid.o: \
 	src/colvarcomp.h \
 	src/colvaratoms.h \
 	src/colvargrid.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvargrid.o $(COPTC) src/colvargrid.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvargrid.o $(COPTC) src/colvargrid.C
 obj/colvarmodule.o: \
 	src/colvarmodule.C \
 	src/colvarmodule.h \
@@ -4294,7 +4294,7 @@ obj/colvarmodule.o: \
 	src/colvarbias_histogram.h \
 	src/colvarbias_meta.h \
 	src/colvarscript.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarmodule.o $(COPTC) src/colvarmodule.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarmodule.o $(COPTC) src/colvarmodule.C
 obj/colvarparse.o: \
 	src/colvarparse.C \
 	src/colvarmodule.h \
@@ -4303,7 +4303,7 @@ obj/colvarparse.o: \
 	src/colvarproxy.h \
 	src/colvarvalue.h \
 	src/colvarparse.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarparse.o $(COPTC) src/colvarparse.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarparse.o $(COPTC) src/colvarparse.C
 obj/colvarproxy_namd.o: \
 	src/colvarproxy_namd.C \
 	src/common.h \
@@ -4368,7 +4368,7 @@ obj/colvarproxy_namd.o: \
 	src/colvarscript.h \
 	src/colvarbias.h \
 	src/colvar.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarproxy_namd.o $(COPTC) src/colvarproxy_namd.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarproxy_namd.o $(COPTC) src/colvarproxy_namd.C
 obj/colvarscript.o: \
 	src/colvarscript.C \
 	src/colvarscript.h \
@@ -4380,7 +4380,7 @@ obj/colvarscript.o: \
 	src/colvarbias.h \
 	src/colvar.h \
 	src/colvarparse.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarscript.o $(COPTC) src/colvarscript.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarscript.o $(COPTC) src/colvarscript.C
 obj/colvartypes.o: \
 	src/colvartypes.C \
 	src/colvarmodule.h \
@@ -4389,7 +4389,7 @@ obj/colvartypes.o: \
 	src/colvarproxy.h \
 	src/colvarvalue.h \
 	src/colvarparse.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvartypes.o $(COPTC) src/colvartypes.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvartypes.o $(COPTC) src/colvartypes.C
 obj/colvarvalue.o: \
 	src/colvarvalue.C \
 	src/colvarmodule.h \
@@ -4397,7 +4397,7 @@ obj/colvarvalue.o: \
 	src/colvartypes.h \
 	src/colvarproxy.h \
 	src/colvarvalue.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarvalue.o $(COPTC) src/colvarvalue.C
+	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarvalue.o $(COPTC) src/colvarvalue.C
 obj/GridForceGrid.o: \
 	src/GridForceGrid.C \
 	src/GridForceGrid.h \
