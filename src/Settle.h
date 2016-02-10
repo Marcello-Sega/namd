@@ -47,6 +47,30 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt,
                  BigReal mOrmT, BigReal mHrmT, BigReal ra,
                  BigReal rb, BigReal rc, BigReal rra);
 
+template <int veclen>
+void settle1_SIMD(const Vector *ref, Vector *pos,
+  BigReal mOrmT, BigReal mHrmT, BigReal ra,
+  BigReal rb, BigReal rc, BigReal rra);
+
+struct RattleParam {
+  int ia;
+  int ib;
+  BigReal dsq;
+  BigReal rma;
+  BigReal rmb;
+};
+
+template <int veclen>
+void rattlePair(const RattleParam* rattleParam,
+  const BigReal *refx, const BigReal *refy, const BigReal *refz,
+  BigReal *posx, BigReal *posy, BigReal *posz);
+
+void rattleN(const int icnt, const RattleParam* rattleParam,
+  const BigReal *refx, const BigReal *refy, const BigReal *refz,
+  BigReal *posx, BigReal *posy, BigReal *posz,
+  const BigReal tol2, const int maxiter,
+  bool& done, bool& consFailure);
+
 extern int settle2(BigReal mO, BigReal mH, const Vector *pos,
                    Vector *vel, BigReal dt, Tensor *virial); 
 #endif

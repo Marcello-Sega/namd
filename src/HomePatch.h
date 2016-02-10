@@ -22,6 +22,7 @@
 #include "main.h"
 #include "common.h"
 #include "Migration.h"
+#include "Settle.h"
 
 #include <string>
 #include <map>
@@ -108,12 +109,35 @@ public:
   void saveForce(const int ftag = Results::normal);
   void addForceToMomentum(const BigReal, const int ftag = Results::normal,
 				const int useSaved = 0);
+  void addForceToMomentum3(const BigReal timestep1, const int ftag1, const int useSaved1,
+    const BigReal timestep2, const int ftag2, const int useSaved2,
+    const BigReal timestep3, const int ftag3, const int useSaved3);
   void addVelocityToPosition(const BigReal);
 
   // impose hard wall constraint on Drude bond length
   int hardWallDrude(const BigReal, Tensor *virial, SubmitReduction *);
 
   // methods for rigidBonds
+  struct RattleList {
+    int ig;
+    int icnt;
+  };
+
+  std::vector<int> settleList;
+  std::vector<RattleList> rattleList;
+  std::vector<RattleParam> rattleParam;
+  std::vector<int> noconstList;
+
+  bool rattleListValid;
+
+  // Array to store new positions and velocities. Allocated in "buildRattleList" to size numAtoms
+  std::vector<Vector> velNew;
+  std::vector<Vector> posNew;
+
+  void addRattleForce(const BigReal invdt, Tensor& wc);
+
+  void buildRattleList();
+  int rattle1old(const BigReal, Tensor *virial, SubmitReduction *);
   int rattle1(const BigReal, Tensor *virial, SubmitReduction *);
   void rattle2(const BigReal, Tensor *virial);
   void minimize_rattle2(const BigReal, Tensor *virial, bool forces=false);

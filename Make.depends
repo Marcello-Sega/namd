@@ -38,6 +38,7 @@ obj/ComputeMoa.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/ComputeMoaMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
@@ -103,6 +104,7 @@ obj/ComputeMsm.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/structures.h \
@@ -166,6 +168,7 @@ obj/ComputeMsmSerial.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/ComputeMsmSerialMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
@@ -230,6 +233,7 @@ obj/ComputeFmmSerial.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/ComputeFmmSerialMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
@@ -532,6 +536,7 @@ obj/BackEnd.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/ComputeMsmMsa.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
@@ -678,6 +683,7 @@ obj/CollectionMaster.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
@@ -740,6 +746,7 @@ obj/CollectionMgr.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
@@ -817,6 +824,7 @@ obj/ComputeAngles.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -882,6 +890,7 @@ obj/ComputeAniso.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -962,6 +971,7 @@ obj/ComputeBonds.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMap.inl \
@@ -1028,7 +1038,8 @@ obj/ComputeConsForce.o: \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
-	inc/PatchMgr.decl.h
+	inc/PatchMgr.decl.h \
+	src/Settle.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeConsForce.o $(COPTC) src/ComputeConsForce.C
 obj/ComputeConsForceMsgs.o: \
 	src/ComputeConsForceMsgs.C \
@@ -1072,6 +1083,7 @@ obj/ComputeCrossterms.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -1167,6 +1179,7 @@ obj/ComputeDihedrals.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -1235,6 +1248,7 @@ obj/ComputeDPME.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/ComputeDPMEMsgs.h \
 	inc/ComputeMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
@@ -1323,6 +1337,7 @@ obj/ComputeDPMTA.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/PatchMgr.h \
 	src/Communicate.h \
 	src/Debug.h
@@ -1363,7 +1378,8 @@ obj/ComputeEField.o: \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
-	inc/PatchMgr.decl.h
+	inc/PatchMgr.decl.h \
+	src/Settle.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeEField.o $(COPTC) src/ComputeEField.C
 obj/ComputeEwald.o: \
 	src/ComputeEwald.C \
@@ -1399,6 +1415,7 @@ obj/ComputeEwald.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/ComputeMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
@@ -1460,6 +1477,7 @@ obj/ComputeExt.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/ComputeExtMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
@@ -1523,6 +1541,7 @@ obj/ComputeGBISser.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/ComputeGBISserMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
@@ -1632,6 +1651,7 @@ obj/ComputeGromacsPair.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMap.inl \
@@ -1747,6 +1767,7 @@ obj/ComputeFullDirect.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/Molecule.h \
@@ -1803,6 +1824,7 @@ obj/ComputeHomePatch.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeHomePatch.o $(COPTC) src/ComputeHomePatch.C
@@ -1837,6 +1859,7 @@ obj/ComputeHomePatches.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
@@ -1887,6 +1910,7 @@ obj/ComputeImpropers.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -1954,6 +1978,7 @@ obj/ComputeGlobal.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/ComputeGlobalMsgs.h \
 	inc/ComputeMgr.decl.h \
 	src/PatchMgr.h \
@@ -2028,6 +2053,7 @@ obj/ComputeGridForce.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -2123,6 +2149,7 @@ obj/ComputeMgr.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/PatchMgr.h \
 	src/Parameters.h \
 	src/Priorities.h \
@@ -2745,6 +2772,7 @@ obj/ComputeNonbondedCUDA.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMap.inl \
@@ -2810,6 +2838,7 @@ obj/ComputeNonbondedCUDAExcl.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMap.inl \
@@ -2888,6 +2917,7 @@ obj/ComputeNonbondedMIC.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMap.inl \
@@ -3034,6 +3064,7 @@ obj/ComputePme.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/ComputeMoaMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
@@ -3102,6 +3133,7 @@ obj/OptPme.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/PmeBase.h \
 	src/MathArray.h \
 	src/Array.h \
@@ -3268,6 +3300,7 @@ obj/ComputeStir.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/DataStream.h \
 	src/Molecule.h \
 	src/parm.h \
@@ -3313,6 +3346,7 @@ obj/ComputeTclBC.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/ReductionMgr.h \
 	src/Node.h \
 	inc/Node.decl.h \
@@ -3364,6 +3398,7 @@ obj/ComputeThole.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -3462,6 +3497,7 @@ obj/Controller.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSetIter.h \
 	src/Output.h \
 	src/BroadcastObject.h \
@@ -3582,6 +3618,7 @@ obj/DumpBench.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/NamdState.h \
 	src/ComputeMap.h \
 	src/DumpBenchParams.h
@@ -4038,6 +4075,7 @@ obj/GlobalMasterEasy.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -4090,6 +4128,7 @@ obj/GlobalMasterMisc.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/GlobalMasterEasy.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterMisc.o $(COPTC) src/GlobalMasterMisc.C
@@ -4446,6 +4485,7 @@ obj/GridForceGrid.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Debug.h \
 	src/GridForceGrid.inl
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GridForceGrid.o $(COPTC) src/GridForceGrid.C
@@ -4495,6 +4535,7 @@ obj/HomePatch.o: \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
 	src/main.h \
+	src/Settle.h \
 	src/AtomMap.h \
 	src/Node.h \
 	inc/Node.decl.h \
@@ -4527,7 +4568,6 @@ obj/HomePatch.o: \
 	inc/NamdNborLB.decl.h \
 	inc/NamdHybridLB.decl.h \
 	inc/NamdDummyLB.decl.h \
-	src/Settle.h \
 	src/ReductionMgr.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
@@ -4613,6 +4653,7 @@ obj/LdbCoordinator.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
@@ -4743,6 +4784,7 @@ obj/MigrateAtomsMsg.o: \
 	src/Box.h \
 	src/UniqueSortedArray.h \
 	src/main.h \
+	src/Settle.h \
 	src/packmsg.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/MigrateAtomsMsg.o $(COPTC) src/MigrateAtomsMsg.C
 obj/Molecule.o: \
@@ -4800,6 +4842,7 @@ obj/Molecule.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Debug.h \
 	src/CompressPsf.h \
 	src/ParallelIOMgr.h \
@@ -4863,6 +4906,7 @@ obj/Molecule2.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Debug.h \
 	src/CompressPsf.h \
 	src/ParallelIOMgr.h \
@@ -4924,6 +4968,7 @@ obj/GoMolecule.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Debug.h \
 	src/CompressPsf.h \
 	src/ParallelIOMgr.h \
@@ -5256,6 +5301,7 @@ obj/Node.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -5519,6 +5565,7 @@ obj/PatchMgr.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/main.h \
+	src/Settle.h \
 	src/AtomMap.h \
 	src/ComputeMsmMsa.h \
 	inc/main.decl.h \
@@ -5590,6 +5637,7 @@ obj/PatchMap.o: \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
 	src/main.h \
+	src/Settle.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/DataExchanger.h \
@@ -5655,6 +5703,7 @@ obj/PmeKSpace.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	inc/ComputeMoaMgr.decl.h \
 	src/PmeBase.inl \
 	src/SimParameters.h \
@@ -5732,6 +5781,7 @@ obj/ProxyMgr.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/packmsg.h \
 	src/Priorities.h \
 	src/ComputeNonbondedMICKernel.h \
@@ -5873,7 +5923,8 @@ obj/RecBisection.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
-	src/main.h
+	src/main.h \
+	src/Settle.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/RecBisection.o $(COPTC) src/RecBisection.C
 obj/ReductionMgr.o: \
 	src/ReductionMgr.C \
@@ -6019,6 +6070,7 @@ obj/ScriptTcl.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/Measure.h \
 	src/colvarmodule.h \
 	src/colvartypes.h \
@@ -6073,6 +6125,7 @@ obj/Sequencer.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/ReductionMgr.h \
 	src/CollectionMgr.h \
 	inc/CollectionMgr.decl.h \
@@ -6314,6 +6367,7 @@ obj/WorkDistrib.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PDB.h \
@@ -6445,6 +6499,7 @@ obj/DataExchanger.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
@@ -6528,6 +6583,7 @@ obj/ParallelIOMgr.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Settle.h \
 	src/CollectionMaster.h \
 	inc/CollectionMaster.decl.h \
 	inc/ParallelIOMgr.decl.h \
