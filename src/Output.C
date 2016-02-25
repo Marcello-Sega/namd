@@ -1435,6 +1435,10 @@ void ParOutput::output_veldcdfile_master(int timestep, int n){
     {
       //  Open the DCD file
       iout << "OPENING VELOCITY DCD FILE\n" << endi;
+
+#ifndef OUTPUT_SINGLE_FILE
+#error OUTPUT_SINGLE_FILE not defined!
+#endif
 	  
 	#if OUTPUT_SINGLE_FILE
 	  char *veldcdFilename = simParams->velDcdFilename;

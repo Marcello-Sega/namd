@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2016/02/07 20:17:58 $
- * $Revision: 1.1459 $
+ * $Date: 2016/02/25 18:10:50 $
+ * $Revision: 1.1460 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2451,6 +2451,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        numoutputprocs = (CkNumPes()>>1)+(CkNumPes()&1);
      }
    }
+
+#ifndef OUTPUT_SINGLE_FILE
+#error OUTPUT_SINGLE_FILE not defined!
+#endif
 
    #if !OUTPUT_SINGLE_FILE
    //create directories for multi-file output scheme   

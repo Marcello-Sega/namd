@@ -78,6 +78,9 @@ ParallelIOMgr::~ParallelIOMgr()
     delete [] isWater;
 }
 
+#ifndef OUTPUT_SINGLE_FILE
+#error OUTPUT_SINGLE_FILE not defined!
+#endif
 
 // initialization needed for the parallel IO manager. Entry point through Scripttcl
 void ParallelIOMgr::initialize(Node *node)

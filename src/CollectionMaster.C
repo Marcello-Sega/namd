@@ -227,6 +227,10 @@ void CollectionMaster::startNextRoundOutputPos(double totalT){
 
 	if(totalT > posIOTime) posIOTime = totalT;
 
+#ifndef OUTPUT_SINGLE_FILE
+#error OUTPUT_SINGLE_FILE not defined!
+#endif
+
 #if OUTPUT_SINGLE_FILE
     if(++posDoneCnt < Node::Object()->simParameters->numoutputwrts)  return;
 #else
