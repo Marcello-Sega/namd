@@ -11,6 +11,12 @@
 */
 
 #include "dcdlib.h"
+
+#ifndef OUTPUT_SINGLE_FILE
+#define OUTPUT_SINGLE_FILE 1
+// including Output.h causes compile error on BlueGeneQ
+#endif
+
 #ifdef WIN32
 #define access(PATH,MODE) _access(PATH,00)
 #endif
@@ -612,6 +618,10 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 
 	return(0);
 }
+#endif
+
+#ifndef OUTPUT_SINGLE_FILE
+#error OUTPUT_SINGLE_FILE not defined!
 #endif
 
 #if OUTPUT_SINGLE_FILE
