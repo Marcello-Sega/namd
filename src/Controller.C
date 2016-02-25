@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/02/08 17:15:46 $
- * $Revision: 1.1314 $
+ * $Date: 2016/02/25 18:03:22 $
+ * $Revision: 1.1315 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1265,9 +1265,13 @@ void Controller::receivePressure(int step, int minimize)
     {
 
       if (simParameters->LJcorrection && volume) {
+#ifdef MEM_OPT_VERSION
+        NAMD_bug("LJcorrection not supported in memory optimized build.");
+#else
         // Apply tail correction to pressure.
         BigReal alchLambda = simParameters->getCurrentLambda(step);
         virial_normal += Tensor::identity(molecule->getVirialTailCorr(alchLambda) / volume);
+#endif
       }
 
       // kinetic energy component included in virials
@@ -2315,6 +2319,9 @@ void Controller::printEnergies(int step, int minimize)
     }
 
     if (simParameters->LJcorrection && volume) {
+#ifdef MEM_OPT_VERSION
+      NAMD_bug("LJcorrection not supported in memory optimized build.");
+#else
       // Apply tail correction to energy.
       BigReal alchLambda = simParameters->getCurrentLambda(step);
       BigReal alchLambda2 = simParameters->alchLambda2;
@@ -2326,6 +2333,7 @@ void Controller::printEnergies(int step, int minimize)
       // NB: Rather than duplicate variables, dUdl_2 is stored as the energy.
       //     Put another way, dUdl_2 _is_ the energy if alchLambda = 0.
       ljEnergy_ti_2 += molecule->tail_corr_ener / volume;
+#endif
     }
 
     momentum.x = reduction->item(REDUCTION_MOMENTUM_X);
