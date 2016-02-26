@@ -2935,7 +2935,7 @@ obj/ComputeNonbondedMIC.o: \
 	src/LJTable.h \
 	src/ObjectArena.h \
 	src/SortAtoms.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedMIC.o $(COPTC) src/ComputeNonbondedMIC.C
+	$(CXX) $(CXXMICFLAGS) $(COPTO)obj/ComputeNonbondedMIC.o $(COPTC) src/ComputeNonbondedMIC.C
 obj/ComputeNonbondedMICKernel.o: \
 	src/ComputeNonbondedMICKernel.C \
 	src/ComputeNonbondedMICKernel.h \
@@ -2943,7 +2943,7 @@ obj/ComputeNonbondedMICKernel.o: \
 	src/ComputeNonbondedMICKernelBase2.h \
 	src/ComputeNonbondedMICKernelBase2_handcode_single.h \
 	src/ComputeNonbondedMICKernelBase2_scalar.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedMICKernel.o $(COPTC) src/ComputeNonbondedMICKernel.C
+	$(CXX) $(CXXMICFLAGS) $(COPTO)obj/ComputeNonbondedMICKernel.o $(COPTC) src/ComputeNonbondedMICKernel.C
 obj/ComputePatch.o: \
 	src/ComputePatch.C \
 	inc/WorkDistrib.decl.h \
