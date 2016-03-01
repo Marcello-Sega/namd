@@ -62,6 +62,10 @@ MODIFIED(
 
 
   
+#if ( FULL( EXCLUDED( SHORT( 1+ ) ) ) 0 ) 
+// avoid bug in Intel 15.0 compiler
+#pragma novector
+#endif
     for (k=0; k<npairi; ++k) {      
       TABENERGY(
       const int numtypes = simParams->tableNumTypes;
