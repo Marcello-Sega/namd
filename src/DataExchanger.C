@@ -230,6 +230,21 @@ extern "C" {
   }
 } //endof extern C
 
+#if CMK_IMMEDIATE_MSG && CMK_SMP && ! ( CMK_MULTICORE || CMK_SMP_NO_COMMTHD )
+extern "C" void CmiPushImmediateMsg(void *msg);
+
+class SleepCommthdMsg {
+  public:
+  char core[CmiMsgHeaderSizeBytes];
+};
+
+void recvSleepCommthdMsg(SleepCommthdMsg *msg) {
+  if ( CkMyRank() != CkMyNodeSize() ) NAMD_bug("recvSleepCommthdMsg called on PE instead of communication thread");
+  usleep(1000);
+  CmiDelayImmediate();  // re-enqueue for next cycle
+}
+#endif
+
 void initializeReplicaConverseHandlers() {
   CkpvInitialize(int, recv_data_idx);
   CkpvInitialize(int, recv_ack_idx);
@@ -250,6 +265,17 @@ void initializeReplicaConverseHandlers() {
   CkpvAccess(recv_replica_dcd_init_idx) = CmiRegisterHandler((CmiHandler)recvReplicaDcdInit);
   CkpvAccess(recv_replica_dcd_data_idx) = CmiRegisterHandler((CmiHandler)recvReplicaDcdData);
   CkpvAccess(recv_replica_dcd_ack_idx) = CmiRegisterHandler((CmiHandler)recvReplicaDcdAck);
+
+#if CMK_IMMEDIATE_MSG && CMK_SMP && ! ( CMK_MULTICORE || CMK_SMP_NO_COMMTHD )
+  int sleep_commthd_idx = CmiRegisterHandler((CmiHandler)recvSleepCommthdMsg);
+  if ( CkMyPe() == 0 && CkNumNodes() == 1 ) {
+    CkPrintf("Charm++ communication thread will sleep due to single-process run.\n");
+    SleepCommthdMsg *msg = (SleepCommthdMsg *)malloc(sizeof(SleepCommthdMsg));
+    CmiSetHandler(msg, sleep_commthd_idx);
+    CmiBecomeImmediate(msg);
+    CmiPushImmediateMsg(msg);
+  }
+#endif
 }
 
 //======================================================================
