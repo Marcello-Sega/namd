@@ -59,9 +59,15 @@ protected:
       RequireReduction *min_reduction;
 
     void receivePressure(int step, int minimize = 0);
+    void calcPressure(int step, int minimize,
+      const Tensor& virial_normal_in, const Tensor& virial_nbond_in, const Tensor& virial_slow_in,
+      const Tensor& intVirial_normal, const Tensor& intVirial_nbond, const Tensor& intVirial_slow,
+      const Vector& extForce_normal, const Vector& extForce_nbond, const Vector& extForce_slow);
+
       Tensor pressure_normal;
       Tensor pressure_nbond;
       Tensor pressure_slow;
+      Tensor pressure_amd;
       Tensor virial_amd;
       Tensor groupPressure_normal;
       Tensor groupPressure_nbond;
@@ -111,7 +117,7 @@ protected:
       BigReal electEnergy_f;
       BigReal electEnergySlow_f;
       BigReal ljEnergy_f;
-      BigReal ljEnergy_f_left;	// used by WCA repulsive, [s1,s2]
+      BigReal ljEnergy_f_left;  // used by WCA repulsive, [s1,s2]
       BigReal exp_dE_ByRT;
       BigReal net_dE;
       BigReal dG;
@@ -175,6 +181,18 @@ protected:
       Tensor langevinPiston_origStrainRate;
       Tensor strainRate_old;  // for langevinPistonBarrier no
       Tensor positionRescaleFactor;  // for langevinPistonBarrier no
+
+    void multigratorPressure(int step, int callNumber);
+    BigReal multigratorXi;
+    BigReal multigratorXiT;
+    Tensor momentumSqrSum;
+    void multigratorTemperature(int step, int callNumber);
+    std::vector<BigReal> multigratorNu;
+    std::vector<BigReal> multigratorNuT;
+    std::vector<BigReal> multigratorOmega;
+    std::vector<BigReal> multigratorZeta;
+    RequireReduction *multigratorReduction;
+    BigReal multigatorCalcEnthalpy(BigReal potentialEnergy, int step, int minimize);
 
     int ldbSteps;
     void rebalanceLoad(int);

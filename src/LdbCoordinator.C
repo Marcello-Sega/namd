@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2015/09/25 20:07:01 $
- * $Revision: 1.126 $
+ * $Date: 2016/03/02 21:33:06 $
+ * $Revision: 1.127 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -336,7 +336,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	elemID.id[1] = elemID.id[2] = elemID.id[3] = -2;
 
 	if (patch_count >= nLocalPatches) {
-	  NAMD_bug("LdbCoordinator found too many local patches!");
+    NAMD_bug("LdbCoordinator found too many local patches!");
 	}
         HomePatch *p = patchMap->homePatch(i);
         p->ldObjHandle = 
@@ -553,13 +553,32 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     }
   }
 #endif
-  
+
   nPatchesReported = 0;
   nPatchesExpected = nLocalPatches;
   nComputesReported = 0;
   nComputesExpected = nLocalComputes * numStepsToRun;
   controllerReported = 0;
   controllerExpected = ! CkMyPe();
+
+  if (simParams->multigratorOn) {
+    // Add the number of pressure cycles into nComputesExpected:
+    // Pressure cycle is done when !(step % simParams->multigratorPressureFreq) = true
+    // step = Current step
+    int step = totalStepsDone - numStepsToRun;
+    int freq = simParams->multigratorPressureFreq;
+    // dstep = Number of steps we have to take until next pressure cycle
+    int dstep = 0;
+    if ((step % freq) != 0) dstep = freq - (step % freq);
+    step += dstep;
+    if (step < totalStepsDone) {
+      int numPressureCycles = 1 + ((totalStepsDone-step-1)/freq);
+      if (step==0) numPressureCycles--;
+      // if (CkMyPe()==2) fprintf(stderr, "step %d totalStepsDone %d numPressureCycles %d\n",
+      //   step, totalStepsDone, numPressureCycles);
+      nComputesExpected += 2*nLocalComputes*numPressureCycles;
+    }
+  }
 
   if (CkMyPe() == 0)
   {

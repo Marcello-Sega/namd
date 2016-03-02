@@ -18,6 +18,7 @@ public:
   int sequence;			// sequence number of compute call
 				// changes by 1 every time!
   int doEnergy;
+  int doVirial;
   int doNonbonded;
   int doFullElectrostatics;
   int doMolly;

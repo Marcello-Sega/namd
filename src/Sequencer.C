@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2015/03/03 17:54:14 $
- * $Revision: 1.1228 $
+ * $Date: 2016/03/02 21:33:06 $
+ * $Revision: 1.1229 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -62,6 +62,11 @@ Sequencer::Sequencer(HomePatch *p) :
     } else {
       pressureProfileReduction = NULL;
     }
+    if (simParams->multigratorOn) {
+      multigratorReduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_MULTIGRATOR,MULTIGRATOR_REDUCTION_MAX_RESERVED);
+    } else {
+      multigratorReduction = NULL;
+    }
     ldbCoordinator = (LdbCoordinator::Object());
     random = new Random(simParams->randomSeed);
     random->split(patch->getPatchID()+1,PatchMap::Object()->numPatches()+1);
@@ -76,8 +81,9 @@ Sequencer::~Sequencer(void)
     delete broadcast;
     delete reduction;
     delete min_reduction;
-    delete pressureProfileReduction;
+    if (pressureProfileReduction) delete pressureProfileReduction;
     delete random;
+    if (multigratorReduction) delete multigratorReduction;
 }
 
 // Invoked by thread
@@ -256,6 +262,9 @@ void Sequencer::integrate(int scriptTask) {
 
     const int reassignFreq = simParams->reassignFreq;
 
+    int &doVirial = patch->flags.doVirial;
+    doVirial = 1;
+
   if ( scriptTask == SCRIPT_RUN ) {
 
 //    printf("Doing initial rattle\n");
@@ -285,9 +294,9 @@ void Sequencer::integrate(int scriptTask) {
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
       if (staleForces || doNonbonded)
-		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,0);
+        addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,0);
       if (staleForces || doFullElectrostatics)
-		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
+        addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
     }
     minimizationQuenchVelocity();
     rattle1(-timestep,0);
@@ -295,9 +304,9 @@ void Sequencer::integrate(int scriptTask) {
     if ( ! commOnly ) {
       addForceToMomentum(timestep);
       if (staleForces || doNonbonded)
-		addForceToMomentum(nbondstep,Results::nbond,staleForces,0);
+        addForceToMomentum(nbondstep,Results::nbond,staleForces,0);
       if (staleForces || doFullElectrostatics)
-		addForceToMomentum(slowstep,Results::slow,staleForces,0);
+        addForceToMomentum(slowstep,Results::slow,staleForces,0);
     }
     rattle1(timestep,1);
     if (doTcl || doColvars)  // include constraint forces
@@ -307,9 +316,9 @@ void Sequencer::integrate(int scriptTask) {
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
       if (staleForces || doNonbonded)
-		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,1);
+		    addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,1);
       if (staleForces || doFullElectrostatics)
-		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
+		    addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
     }
     submitReductions(step);
     if(traceIsOn()){
@@ -321,19 +330,31 @@ void Sequencer::integrate(int scriptTask) {
 
   } // scriptTask == SCRIPT_RUN
 
+  bool doMultigratorRattle = false;
+
     for ( ++step; step <= numberOfSteps; ++step )
     {
+
       rescaleVelocities(step);
       tcoupleVelocities(timestep,step);
       berendsenPressure(step);
 
       if ( ! commOnly ) {
-        addForceToMomentum(0.5*timestep);
-        if (staleForces || doNonbonded)
-          addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces,1);
-        if (staleForces || doFullElectrostatics)
-          addForceToMomentum(0.5*slowstep,Results::slow,staleForces,1);
+        if (staleForces || (doNonbonded && doFullElectrostatics)) {
+          addForceToMomentum3(0.5*timestep,Results::normal,0,
+            0.5*nbondstep,Results::nbond,staleForces,
+            0.5*slowstep,Results::slow,staleForces);
+        } else {
+          addForceToMomentum(0.5*timestep);
+          if (staleForces || doNonbonded)
+            addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces,1);
+          if (staleForces || doFullElectrostatics)
+            addForceToMomentum(0.5*slowstep,Results::slow,staleForces,1);
+        }
       }
+
+      // We do RATTLE here if multigrator thermostat was applied in the previous step
+      if (doMultigratorRattle) rattle1(timestep, 1);
 
       /* reassignment based on half-step velocities
          if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
@@ -347,13 +368,16 @@ void Sequencer::integrate(int scriptTask) {
          } */
 
       maximumMove(timestep);
-      if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
-
-      // We add an Ornstein-Uhlenbeck integration step for the case of BAOAB (Langevin)
-      if ( simParams->langevinOn && simParams->langevin_useBAOAB ) langevinVelocities(timestep);
-
-      langevinPiston(step);
-      if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
+      if ( simParams->langevinPistonOn || (simParams->langevinOn && simParams->langevin_useBAOAB) ) {
+        if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
+        // We add an Ornstein-Uhlenbeck integration step for the case of BAOAB (Langevin)
+        if ( simParams->langevinOn && simParams->langevin_useBAOAB ) langevinVelocities(timestep);
+        langevinPiston(step);
+        if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
+      } else {
+        // If Langevin is not used, take full time step directly instread of two half steps
+        if ( ! commOnly ) addVelocityToPosition(timestep);        
+      }
 
       // impose hard wall potential for Drude bond length
       hardWallDrude(timestep, 1);
@@ -382,8 +406,21 @@ void Sequencer::integrate(int scriptTask) {
       doEnergy = ! ( step % energyFrequency );
       if ( accelMDOn && !accelMDdihe ) doEnergy=1;
       if ( adaptTempOn ) doEnergy=1; 
+
+      // Multigrator 
+      if (simParams->multigratorOn) {
+        doVirial = (!(step % energyFrequency) || ((simParams->outputPressure > 0) && !(step % simParams->outputPressure)) 
+          || !(step % simParams->multigratorPressureFreq));
+        doKineticEnergy = (!(step % energyFrequency) || !(step % simParams->multigratorTemperatureFreq));
+        doMomenta = (simParams->outputMomenta > 0) && !(step % simParams->outputMomenta);
+      } else {
+        doVirial = 1;
+        doKineticEnergy = 1;
+        doMomenta = 1;
+      }
+
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
- 
+
       rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
      
       if ( staleForces || doTcl || doColvars ) {
@@ -394,22 +431,34 @@ void Sequencer::integrate(int scriptTask) {
       // reassignment based on full-step velocities
       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
         reassignVelocities(timestep,step);
-        addForceToMomentum(-0.5*timestep);
-        if (staleForces || doNonbonded)
-          addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,0);
-        if (staleForces || doFullElectrostatics)
-          addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,0);
+        if (staleForces || (doNonbonded && doFullElectrostatics)) {
+          addForceToMomentum3(-0.5*timestep,Results::normal,0,
+            -0.5*nbondstep,Results::nbond,staleForces,
+            -0.5*slowstep,Results::slow,staleForces);
+        } else {
+          addForceToMomentum(-0.5*timestep);
+          if (staleForces || doNonbonded)
+            addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,0);
+          if (staleForces || doFullElectrostatics)
+            addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,0);
+        }
         rattle1(-timestep,0);
       }
 
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
-        addForceToMomentum(timestep);
-        if (staleForces || doNonbonded) {
-          addForceToMomentum(nbondstep,Results::nbond,staleForces,1);
-        }
-        if (staleForces || doFullElectrostatics) {
-          addForceToMomentum(slowstep,Results::slow,staleForces,1);
+        if (staleForces || (doNonbonded && doFullElectrostatics)) {
+          addForceToMomentum3(timestep,Results::normal,0,
+            nbondstep,Results::nbond,staleForces,
+            slowstep,Results::slow,staleForces);
+        } else {
+          addForceToMomentum(timestep);
+          if (staleForces || doNonbonded) {
+            addForceToMomentum(nbondstep,Results::nbond,staleForces,1);
+          }
+          if (staleForces || doFullElectrostatics) {
+            addForceToMomentum(slowstep,Results::slow,staleForces,1);
+          }
         }
         langevinVelocitiesBBK2(timestep);
       }
@@ -426,11 +475,17 @@ void Sequencer::integrate(int scriptTask) {
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
       if ( ! commOnly ) {
-        addForceToMomentum(-0.5*timestep);
-        if (staleForces || doNonbonded)
-          addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,1);
-        if (staleForces || doFullElectrostatics)
-          addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
+        if (staleForces || (doNonbonded && doFullElectrostatics)) {
+          addForceToMomentum3(-0.5*timestep,Results::normal,0,
+            -0.5*nbondstep,Results::nbond,staleForces,
+            -0.5*slowstep,Results::slow,staleForces);
+        } else {
+          addForceToMomentum(-0.5*timestep);
+          if (staleForces || doNonbonded)
+            addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,1);
+          if (staleForces || doFullElectrostatics)
+            addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
+        }
       }
 
 	// rattle2(timestep,step);
@@ -439,6 +494,13 @@ void Sequencer::integrate(int scriptTask) {
 	submitCollections(step);
        //Update adaptive tempering temperature
         adaptTempUpdate(step);
+
+      // Multigrator temperature and pressure steps
+      multigratorTemperature(step, 1);
+      multigratorPressure(step, 1);
+      multigratorPressure(step, 2);
+      multigratorTemperature(step, 2);
+      doMultigratorRattle = (simParams->multigratorOn && !(step % simParams->multigratorTemperatureFreq));
 
 #if CYCLE_BARRIER
         cycleBarrier(!((step+1) % stepsPerCycle), step);
@@ -485,6 +547,7 @@ void Sequencer::integrate(int scriptTask) {
         if(step == STOP_HPM_STEP)
           (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
 #endif
+
     }
 }
 
@@ -792,6 +855,249 @@ if ( simParams->zeroMomentumAlt ) {
 }
 
 }
+
+// --------- For Multigrator ---------
+void Sequencer::scalePositionsVelocities(const Tensor& posScale, const Tensor& velScale) {
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+  Position origin = patch->lattice.origin();
+  if ( simParams->fixedAtomsOn ) {
+    NAMD_bug("Sequencer::scalePositionsVelocities, fixed atoms not implemented");
+  }
+  if ( simParams->useGroupPressure ) {
+    int hgs;
+    for ( int i = 0; i < numAtoms; i += hgs ) {
+      hgs = a[i].hydrogenGroupSize;
+      Position pos_cm(0.0, 0.0, 0.0);
+      Velocity vel_cm(0.0, 0.0, 0.0);
+      BigReal m_cm = 0.0;
+      for (int j=0;j < hgs;++j) {
+        m_cm += a[i+j].mass;
+        pos_cm += a[i+j].mass*a[i+j].position;
+        vel_cm += a[i+j].mass*a[i+j].velocity;
+      }
+      pos_cm /= m_cm;
+      vel_cm /= m_cm;
+      pos_cm -= origin;
+      Position dpos = posScale*pos_cm;
+      Velocity dvel = velScale*vel_cm;
+      for (int j=0;j < hgs;++j) {
+        a[i+j].position += dpos;
+        a[i+j].velocity += dvel;
+      }
+    }
+  } else {
+    for ( int i = 0; i < numAtoms; i++) {
+      a[i].position += posScale*(a[i].position-origin);
+      a[i].velocity = velScale*a[i].velocity;
+    }
+  }
+}
+
+void Sequencer::multigratorPressure(int step, int callNumber) {
+// Calculate new positions, momenta, and volume using positionRescaleFactor and 
+// velocityRescaleTensor values returned from Controller::multigratorPressureCalcScale()
+  if (simParams->multigratorOn && !(step % simParams->multigratorPressureFreq)) {
+    FullAtom *a = patch->atom.begin();
+    int numAtoms = patch->numAtoms;
+
+    // Receive scaling factors from Controller
+    Tensor scaleTensor    = (callNumber == 1) ? broadcast->positionRescaleFactor.get(step) : broadcast->positionRescaleFactor2.get(step);
+    Tensor velScaleTensor = (callNumber == 1) ? broadcast->velocityRescaleTensor.get(step) : broadcast->velocityRescaleTensor2.get(step);
+    Tensor posScaleTensor = scaleTensor;
+    posScaleTensor -= Tensor::identity();
+    if (simParams->useGroupPressure) {
+      velScaleTensor -= Tensor::identity();
+    }
+
+    // Scale volume
+    patch->lattice.rescale(scaleTensor);
+    // Scale positions and velocities
+    scalePositionsVelocities(posScaleTensor, velScaleTensor);
+
+    if (!patch->flags.doFullElectrostatics) NAMD_bug("Sequencer::multigratorPressure, doFullElectrostatics must be true");
+
+    // Calculate new forces
+    // NOTE: We should not need to migrate here since any migration should have happened in the
+    // previous call to runComputeObjects inside the MD loop in Sequencer::integrate()
+    const int numberOfSteps = simParams->N;
+    const int stepsPerCycle = simParams->stepsPerCycle;
+    runComputeObjects(0 /*!(step%stepsPerCycle)*/, step<numberOfSteps, 1);
+
+    reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
+    reduction->item(REDUCTION_MARGIN_VIOLATIONS) += patch->marginViolations;
+
+    // Virials etc.
+    Tensor virialNormal;
+    Tensor momentumSqrSum;
+    BigReal kineticEnergy = 0;
+    if ( simParams->pairInteractionOn ) {
+      if ( simParams->pairInteractionSelf ) {
+        for ( int i = 0; i < numAtoms; ++i ) {
+          if ( a[i].partition != 1 ) continue;
+          kineticEnergy += a[i].mass * a[i].velocity.length2();
+          virialNormal.outerAdd(a[i].mass, a[i].velocity, a[i].velocity);
+        }
+      }
+    } else {
+      for ( int i = 0; i < numAtoms; ++i ) {
+        if (a[i].mass < 0.01) continue;
+        kineticEnergy += a[i].mass * a[i].velocity.length2();
+        virialNormal.outerAdd(a[i].mass, a[i].velocity, a[i].velocity);
+      }
+    }
+    if (!simParams->useGroupPressure) momentumSqrSum = virialNormal;
+    kineticEnergy *= 0.5;
+    reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY) += kineticEnergy;
+    ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NORMAL, virialNormal);
+
+    if ( simParams->fixedAtomsOn ) {
+      Tensor fixVirialNormal;
+      Tensor fixVirialNbond;
+      Tensor fixVirialSlow;
+      Vector fixForceNormal = 0;
+      Vector fixForceNbond = 0;
+      Vector fixForceSlow = 0;
+
+      calcFixVirial(fixVirialNormal, fixVirialNbond, fixVirialSlow, fixForceNormal, fixForceNbond, fixForceSlow);
+
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NORMAL, fixVirialNormal);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NBOND, fixVirialNbond);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_SLOW, fixVirialSlow);
+      ADD_VECTOR_OBJECT(reduction, REDUCTION_EXT_FORCE_NORMAL, fixForceNormal);
+      ADD_VECTOR_OBJECT(reduction, REDUCTION_EXT_FORCE_NBOND, fixForceNbond);
+      ADD_VECTOR_OBJECT(reduction, REDUCTION_EXT_FORCE_SLOW, fixForceSlow);
+    }
+
+    // Internal virial and group momentum
+    Tensor intVirialNormal;
+    Tensor intVirialNormal2;
+    Tensor intVirialNbond;
+    Tensor intVirialSlow;
+    int hgs;
+    for ( int i = 0; i < numAtoms; i += hgs ) {
+      hgs = a[i].hydrogenGroupSize;
+      int j;
+      BigReal m_cm = 0;
+      Position x_cm(0,0,0);
+      Velocity v_cm(0,0,0);
+      for ( j = i; j < (i+hgs); ++j ) {
+        m_cm += a[j].mass;
+        x_cm += a[j].mass * a[j].position;
+        v_cm += a[j].mass * a[j].velocity;
+      }
+      if (simParams->useGroupPressure) momentumSqrSum.outerAdd(1.0/m_cm, v_cm, v_cm);
+      x_cm /= m_cm;
+      v_cm /= m_cm;
+      if (simParams->fixedAtomsOn) NAMD_bug("Sequencer::multigratorPressure, simParams->fixedAtomsOn not implemented yet");
+      if ( simParams->pairInteractionOn ) {
+        if ( simParams->pairInteractionSelf ) {
+          NAMD_bug("Sequencer::multigratorPressure, this part needs to be implemented correctly");
+          for ( j = i; j < (i+hgs); ++j ) {
+            if ( a[j].partition != 1 ) continue;
+            BigReal mass = a[j].mass;
+            Vector v = a[j].velocity;
+            Vector dv = v - v_cm;
+            intVirialNormal2.outerAdd (mass, v, dv);
+            Vector dx = a[j].position - x_cm;
+            intVirialNormal.outerAdd(1.0, patch->f[Results::normal][j], dx);
+            intVirialNbond.outerAdd(1.0, patch->f[Results::nbond][j], dx);
+            intVirialSlow.outerAdd(1.0, patch->f[Results::slow][j], dx);
+          }
+        }
+      } else {
+        for ( j = i; j < (i+hgs); ++j ) {
+          BigReal mass = a[j].mass;
+          Vector v = a[j].velocity;
+          Vector dv = v - v_cm;
+          intVirialNormal2.outerAdd(mass, v, dv);
+          Vector dx = a[j].position - x_cm;
+          intVirialNormal.outerAdd(1.0, patch->f[Results::normal][j], dx);
+          intVirialNbond.outerAdd(1.0, patch->f[Results::nbond][j], dx);
+          intVirialSlow.outerAdd(1.0, patch->f[Results::slow][j], dx);
+        }
+      }
+    }
+
+    ADD_TENSOR_OBJECT(reduction, REDUCTION_INT_VIRIAL_NORMAL, intVirialNormal);
+    ADD_TENSOR_OBJECT(reduction, REDUCTION_INT_VIRIAL_NORMAL, intVirialNormal2);
+    ADD_TENSOR_OBJECT(reduction, REDUCTION_INT_VIRIAL_NBOND, intVirialNbond);
+    ADD_TENSOR_OBJECT(reduction, REDUCTION_INT_VIRIAL_SLOW, intVirialSlow);
+    ADD_TENSOR_OBJECT(reduction, REDUCTION_MOMENTUM_SQUARED, momentumSqrSum);
+
+    reduction->submit();
+  }
+}
+
+void Sequencer::scaleVelocities(const BigReal velScale) {
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+  for ( int i = 0; i < numAtoms; i++) {
+    a[i].velocity *= velScale;
+  }
+}
+
+BigReal Sequencer::calcKineticEnergy() {
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+  BigReal kineticEnergy = 0.0;
+  if ( simParams->pairInteractionOn ) {
+    if ( simParams->pairInteractionSelf ) {
+      for (int i = 0; i < numAtoms; ++i ) {
+        if ( a[i].partition != 1 ) continue;
+        kineticEnergy += a[i].mass * a[i].velocity.length2();
+      }
+    }
+  } else {
+    for (int i = 0; i < numAtoms; ++i ) {
+      kineticEnergy += a[i].mass * a[i].velocity.length2();
+    }
+  }
+  kineticEnergy *= 0.5;
+  return kineticEnergy;
+}
+
+void Sequencer::multigratorTemperature(int step, int callNumber) {
+  if (simParams->multigratorOn && !(step % simParams->multigratorTemperatureFreq)) {
+    // Scale velocities
+    BigReal velScale = (callNumber == 1) ? broadcast->velocityRescaleFactor.get(step) : broadcast->velocityRescaleFactor2.get(step);
+    scaleVelocities(velScale);
+    // Calculate new kineticEnergy
+    BigReal kineticEnergy = calcKineticEnergy();
+    multigratorReduction->item(MULTIGRATOR_REDUCTION_KINETIC_ENERGY) += kineticEnergy;
+    if (callNumber == 1 && !(step % simParams->multigratorPressureFreq)) {
+      // If this is a pressure cycle, calculate new momentum squared sum
+      FullAtom *a = patch->atom.begin();
+      int numAtoms = patch->numAtoms;
+      Tensor momentumSqrSum;
+      if (simParams->useGroupPressure) {
+        int hgs;
+        for ( int i = 0; i < numAtoms; i += hgs ) {
+          hgs = a[i].hydrogenGroupSize;
+          int j;
+          BigReal m_cm = 0;
+          Position x_cm(0,0,0);
+          Velocity v_cm(0,0,0);
+          for ( j = i; j < (i+hgs); ++j ) {
+            m_cm += a[j].mass;
+            x_cm += a[j].mass * a[j].position;
+            v_cm += a[j].mass * a[j].velocity;
+          }
+          momentumSqrSum.outerAdd(1.0/m_cm, v_cm, v_cm);
+        }
+      } else {
+        for ( int i = 0; i < numAtoms; i++) {
+          momentumSqrSum.outerAdd(a[i].mass, a[i].velocity, a[i].velocity);
+        }
+      }
+      ADD_TENSOR_OBJECT(multigratorReduction, MULTIGRATOR_REDUCTION_MOMENTUM_SQUARED, momentumSqrSum);
+    }
+    // Submit reductions (kineticEnergy and, if applicable, momentumSqrSum)
+    multigratorReduction->submit();
+
+  }
+}
+// --------- End Multigrator ---------
 
 void Sequencer::langevinVelocities(BigReal dt_fs)
 {
@@ -1303,6 +1609,15 @@ void Sequencer::addForceToMomentum(BigReal dt, const int ftag,
   patch->addForceToMomentum(dt,ftag,useSaved);
 }
 
+void Sequencer::addForceToMomentum3(const BigReal timestep1, const int ftag1, const int useSaved1,
+        const BigReal timestep2, const int ftag2, const int useSaved2,
+        const BigReal timestep3, const int ftag3, const int useSaved3) {
+#if CMK_BLUEGENEL
+  CmiNetworkProgressAfter (0);
+#endif
+  patch->addForceToMomentum3(timestep1,ftag1,useSaved1, timestep2,ftag2,useSaved2, timestep3,ftag3,useSaved3);  
+}
+
 void Sequencer::addVelocityToPosition(BigReal dt)
 {
 #if CMK_BLUEGENEL
@@ -1341,19 +1656,19 @@ void Sequencer::rattle1(BigReal dt, int pressure)
   }
 }
 
-void Sequencer::rattle2(BigReal dt, int step)
-{
-  if ( simParams->rigidBonds != RIGID_NONE ) {
-    Tensor virial;
-    patch->rattle2(dt, &virial);
-    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
-    // we need to add to alt and int virial because not included in forces
-#ifdef ALTVIRIAL
-    ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
-#endif
-    ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,virial);
-  }
-}
+// void Sequencer::rattle2(BigReal dt, int step)
+// {
+//   if ( simParams->rigidBonds != RIGID_NONE ) {
+//     Tensor virial;
+//     patch->rattle2(dt, &virial);
+//     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+//     // we need to add to alt and int virial because not included in forces
+// #ifdef ALTVIRIAL
+//     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
+// #endif
+//     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,virial);
+//   }
+// }
 
 void Sequencer::maximumMove(BigReal timestep)
 {
@@ -1420,6 +1735,9 @@ void Sequencer::submitHalfstep(int step)
   CmiNetworkProgressAfter (0);
 #endif
 
+  // For non-Multigrator doKineticEnergy = 1 always
+  Tensor momentumSqrSum;
+  if (doKineticEnergy || patch->flags.doVirial)
   {
     BigReal kineticEnergy = 0;
     Tensor virial;
@@ -1438,7 +1756,10 @@ void Sequencer::submitHalfstep(int step)
         virial.outerAdd(a[i].mass, a[i].velocity, a[i].velocity);
       }
     }
-
+    
+    if (simParams->multigratorOn && !simParams->useGroupPressure) {
+      momentumSqrSum = virial;
+    }
     kineticEnergy *= 0.5 * 0.5;
     reduction->item(REDUCTION_HALFSTEP_KINETIC_ENERGY) += kineticEnergy;
     virial *= 0.5;
@@ -1501,6 +1822,8 @@ void Sequencer::submitHalfstep(int step)
     }
   } 
 
+  // For non-Multigrator doKineticEnergy = 1 always
+  if (doKineticEnergy || patch->flags.doVirial)
   {
     BigReal intKineticEnergy = 0;
     Tensor intVirialNormal;
@@ -1519,6 +1842,9 @@ void Sequencer::submitHalfstep(int step)
       for ( j = i; j < (i+hgs); ++j ) {
         m_cm += a[j].mass;
         v_cm += a[j].mass * a[j].velocity;
+      }
+      if (simParams->multigratorOn && simParams->useGroupPressure) {
+        momentumSqrSum.outerAdd(1.0/m_cm, v_cm, v_cm);
       }
       v_cm /= m_cm;
       if ( simParams->pairInteractionOn ) {
@@ -1547,8 +1873,32 @@ void Sequencer::submitHalfstep(int step)
     reduction->item(REDUCTION_INT_HALFSTEP_KINETIC_ENERGY) += intKineticEnergy;
     intVirialNormal *= 0.5;
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
+    if ( simParams->multigratorOn) {
+      momentumSqrSum *= 0.5;
+      ADD_TENSOR_OBJECT(reduction,REDUCTION_MOMENTUM_SQUARED,momentumSqrSum);
+    }
   }
 
+}
+
+void Sequencer::calcFixVirial(Tensor& fixVirialNormal, Tensor& fixVirialNbond, Tensor& fixVirialSlow,
+  Vector& fixForceNormal, Vector& fixForceNbond, Vector& fixForceSlow) {
+
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+
+  for ( int j = 0; j < numAtoms; j++ ) {
+    if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
+      Vector dx = a[j].fixedPosition;
+      // all negative because fixed atoms cancels these forces
+      fixVirialNormal.outerAdd(-1.0, patch->f[Results::normal][j], dx);
+      fixVirialNbond.outerAdd(-1.0, patch->f[Results::nbond][j], dx);
+      fixVirialSlow.outerAdd(-1.0, patch->f[Results::slow][j], dx);
+      fixForceNormal -= patch->f[Results::normal][j];
+      fixForceNbond -= patch->f[Results::nbond][j];
+      fixForceSlow -= patch->f[Results::slow][j];
+    }
+  }
 }
 
 void Sequencer::submitReductions(int step)
@@ -1563,6 +1913,8 @@ void Sequencer::submitReductions(int step)
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
   reduction->item(REDUCTION_MARGIN_VIOLATIONS) += patch->marginViolations;
 
+  // For non-Multigrator doKineticEnergy = 1 always
+  if (doKineticEnergy || doMomenta || patch->flags.doVirial)
   {
     BigReal kineticEnergy = 0;
     Vector momentum = 0;
@@ -1651,6 +2003,8 @@ void Sequencer::submitReductions(int step)
   }
 #endif
 
+  // For non-Multigrator doKineticEnergy = 1 always
+  if (doKineticEnergy || patch->flags.doVirial)
   {
     BigReal intKineticEnergy = 0;
     Tensor intVirialNormal;
@@ -1756,33 +2110,26 @@ void Sequencer::submitReductions(int step)
     }
   }
 
-  if ( simParams->fixedAtomsOn ) {
-    Tensor fixVirialNormal;
-    Tensor fixVirialNbond;
-    Tensor fixVirialSlow;
-    Vector fixForceNormal = 0;
-    Vector fixForceNbond = 0;
-    Vector fixForceSlow = 0;
+  // For non-Multigrator doVirial = 1 always
+  if (patch->flags.doVirial)
+  {
+    if ( simParams->fixedAtomsOn ) {
+      Tensor fixVirialNormal;
+      Tensor fixVirialNbond;
+      Tensor fixVirialSlow;
+      Vector fixForceNormal = 0;
+      Vector fixForceNbond = 0;
+      Vector fixForceSlow = 0;
 
-    for ( int j = 0; j < numAtoms; j++ ) {
-      if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
-        Vector dx = a[j].fixedPosition;
-        // all negative because fixed atoms cancels these forces
-        fixVirialNormal.outerAdd(-1.0, patch->f[Results::normal][j], dx);
-        fixVirialNbond.outerAdd(-1.0, patch->f[Results::nbond][j], dx);
-        fixVirialSlow.outerAdd(-1.0, patch->f[Results::slow][j], dx);
-        fixForceNormal -= patch->f[Results::normal][j];
-        fixForceNbond -= patch->f[Results::nbond][j];
-        fixForceSlow -= patch->f[Results::slow][j];
-      }
+      calcFixVirial(fixVirialNormal, fixVirialNbond, fixVirialSlow, fixForceNormal, fixForceNbond, fixForceSlow);
+
+      ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,fixVirialNormal);
+      ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NBOND,fixVirialNbond);
+      ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,fixVirialSlow);
+      ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,fixForceNormal);
+      ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NBOND,fixForceNbond);
+      ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_SLOW,fixForceSlow);
     }
-
-    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,fixVirialNormal);
-    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NBOND,fixVirialNbond);
-    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,fixVirialSlow);
-    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,fixForceNormal);
-    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NBOND,fixForceNbond);
-    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_SLOW,fixForceSlow);
   }
 
   reduction->submit();
@@ -1914,18 +2261,7 @@ void Sequencer::submitMinimizeReductions(int step, BigReal fmax2)
     Vector fixForceNbond = 0;
     Vector fixForceSlow = 0;
 
-    for ( int j = 0; j < numAtoms; j++ ) {
-      if ( a[j].atomFixed ) {
-        Vector dx = a[j].fixedPosition;
-        // all negative because fixed atoms cancels these forces
-        fixVirialNormal.outerAdd(-1.0, patch->f[Results::normal][j],dx);
-        fixVirialNbond.outerAdd(-1.0, patch->f[Results::nbond][j],dx);
-        fixVirialSlow.outerAdd(-1.0, patch->f[Results::slow][j],dx);
-        fixForceNormal -= patch->f[Results::normal][j];
-        fixForceNbond -= patch->f[Results::nbond][j];
-        fixForceSlow -= patch->f[Results::slow][j];
-      }
-    }
+    calcFixVirial(fixVirialNormal, fixVirialNbond, fixVirialSlow, fixForceNormal, fixForceNbond, fixForceSlow);
 
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,fixVirialNormal);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NBOND,fixVirialNbond);
@@ -1952,7 +2288,7 @@ void Sequencer::submitCollections(int step, int zeroVel)
   }
 }
 
-void Sequencer::runComputeObjects(int migration, int pairlists)
+void Sequencer::runComputeObjects(int migration, int pairlists, int pressureStep)
 {
   if ( migration ) pairlistsAreValid = 0;
 #if defined(NAMD_CUDA) || defined(NAMD_MIC)
@@ -1973,6 +2309,7 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
   if ( simParams->lonepairs ) patch->reposition_all_lonepairs();
 
   patch->positionsReady(migration);  // updates flags.sequence
+
   int seq = patch->flags.sequence;
   int basePriority = ( (seq & 0xffff) << 15 )
                      + PATCH_PRIORITY(patch->getPatchID());
@@ -1994,7 +2331,9 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
     pairlistsAreValid = 1;
     pairlistsAge = 0;
   }
-  if ( pairlistsAreValid ) ++pairlistsAge;
+  // For multigrator, do not age pairlist during pressure step
+  // NOTE: for non-multigrator pressureStep = 0 always
+  if ( pairlistsAreValid && !pressureStep ) ++pairlistsAge;
 
   if (simParams->lonepairs) {
     {

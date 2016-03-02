@@ -38,9 +38,12 @@ protected:
     void minimize(); // CG minimizer
       SubmitReduction *min_reduction;
 
-    void runComputeObjects(int migration = 1, int pairlists = 0);
+    void runComputeObjects(int migration = 1, int pairlists = 0, int pressureStep = 0);
     int pairlistsAreValid;
     int pairlistsAge;
+
+    void calcFixVirial(Tensor& fixVirialNormal, Tensor& fixVirialNbond, Tensor& fixVirialSlow,
+      Vector& fixForceNormal, Vector& fixForceNbond, Vector& fixForceSlow);
 
     void submitReductions(int);
     void submitHalfstep(int);
@@ -53,6 +56,9 @@ protected:
     void saveForce(const int ftag = Results::normal);
     void addForceToMomentum(BigReal, const int ftag = Results::normal,
 						const int useSaved = 0, const int pressure = 0);
+    void addForceToMomentum3(const BigReal timestep1, const int ftag1, const int useSaved1,
+        const BigReal timestep2, const int ftag2, const int useSaved2,
+        const BigReal timestep3, const int ftag3, const int useSaved3);
     void addVelocityToPosition(BigReal);
     
     void addRotDragToPosition(BigReal);
@@ -66,7 +72,7 @@ protected:
     void hardWallDrude(BigReal,int);
 
     void rattle1(BigReal,int);
-    void rattle2(BigReal,int);
+    // void rattle2(BigReal,int);
 
     void maximumMove(BigReal);
     void minimizationQuenchVelocity(void);
@@ -91,7 +97,17 @@ protected:
     void langevinVelocities(BigReal);
     void langevinVelocitiesBBK1(BigReal);
     void langevinVelocitiesBBK2(BigReal);
-
+    // Multigrator
+    void scalePositionsVelocities(const Tensor& posScale, const Tensor& velScale);
+    void multigratorPressure(int step, int callNumber);
+    void scaleVelocities(const BigReal velScale);
+    BigReal calcKineticEnergy();
+    void multigratorTemperature(int step, int callNumber);
+    SubmitReduction *multigratorReduction;
+    int doKineticEnergy;
+    int doMomenta;
+    // End of Multigrator
+    
     void cycleBarrier(int,int);
 	void traceBarrier(int);
 #ifdef MEASURE_NAMD_WITH_PAPI

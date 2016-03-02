@@ -38,6 +38,12 @@ enum {
 enum {
   velocityRescaleFactorTag,
   positionRescaleFactorTag,
+  // For multigrator
+  velocityRescaleTensorTag,
+  velocityRescaleTensor2Tag,
+  velocityRescaleFactor2Tag,
+  positionRescaleFactor2Tag,
+  // End multigrator
   tcoupleCoefficientTag,
   minimizeCoefficientTag,
   momentumCorrectionTag,
@@ -59,6 +65,12 @@ struct ControllerBroadcasts
 {
   SimpleBroadcastObject<BigReal> velocityRescaleFactor;
   SimpleBroadcastObject<Tensor> positionRescaleFactor;
+  // For multigrator
+  SimpleBroadcastObject<Tensor> velocityRescaleTensor;
+  SimpleBroadcastObject<Tensor> velocityRescaleTensor2;
+  SimpleBroadcastObject<BigReal> velocityRescaleFactor2;
+  SimpleBroadcastObject<Tensor> positionRescaleFactor2;
+  // End multigrator
   SimpleBroadcastObject<BigReal> tcoupleCoefficient;
   SimpleBroadcastObject<BigReal> minimizeCoefficient;
   SimpleBroadcastObject<Vector> momentumCorrection;
@@ -76,6 +88,12 @@ struct ControllerBroadcasts
   ControllerBroadcasts(const LDObjHandle *ldObjPtr = 0) : 
     velocityRescaleFactor(velocityRescaleFactorTag, ldObjPtr),
     positionRescaleFactor(positionRescaleFactorTag, ldObjPtr),
+    // For multigrator
+    velocityRescaleTensor(velocityRescaleTensorTag, ldObjPtr),
+    velocityRescaleTensor2(velocityRescaleTensor2Tag, ldObjPtr),
+    velocityRescaleFactor2(velocityRescaleFactor2Tag, ldObjPtr),
+    positionRescaleFactor2(positionRescaleFactor2Tag, ldObjPtr),
+    // End multigrator
     tcoupleCoefficient(tcoupleCoefficientTag, ldObjPtr),
     minimizeCoefficient(minimizeCoefficientTag, ldObjPtr),
     momentumCorrection(momentumCorrectionTag, ldObjPtr),
