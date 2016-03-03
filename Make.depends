@@ -2424,8 +2424,6 @@ obj/ComputeNonbondedStd.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -2470,8 +2468,6 @@ obj/ComputeNonbondedFEP.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -2516,8 +2512,6 @@ obj/ComputeNonbondedGo.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -2562,8 +2556,6 @@ obj/ComputeNonbondedTI.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -2608,8 +2600,6 @@ obj/ComputeNonbondedLES.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -2654,8 +2644,6 @@ obj/ComputeNonbondedPProf.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -2700,8 +2688,6 @@ obj/ComputeNonbondedTabEnergies.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \

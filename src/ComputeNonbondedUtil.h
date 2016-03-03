@@ -17,6 +17,7 @@
 
 class LJTable;
 class Molecule;
+class Random;
 
 #ifdef NAMD_CUDA
 void register_cuda_compute_self(ComputeID c, PatchID pid);
@@ -187,6 +188,10 @@ struct nonbonded {
 
   BigReal *reduction;
   BigReal *pressureProfileReduction;
+
+  Parameters *parameters;
+  SimParameters *simParameters;
+  Random *random;
 
   ComputeNonbondedWorkArrays *workArrays;
 

@@ -35,6 +35,9 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
   }
   pairlistsValid = 0;
   pairlistTolerance = 0.;
+  params.simParameters = Node::Object()->simParameters;
+  params.parameters = Node::Object()->parameters;
+  params.random = Node::Object()->rand;
 }
 
 void ComputeNonbondedSelf::initialize() {

@@ -232,7 +232,7 @@ void ComputeNonbondedUtil :: NAME
 
   // speedup variables
   BigReal *reduction = params->reduction;
-  SimParameters *simParams = Node::Object()->simParameters;
+  SimParameters *simParams = params->simParameters;
 
   PPROF(
   BigReal *pressureProfileReduction = params->pressureProfileReduction;
@@ -1675,7 +1675,7 @@ void ComputeNonbondedUtil :: NAME
 #if (FAST(1+)0)
     if (drudeNbthole && p_i.hydrogenGroupSize > 1) {
   
-      Parameters *parameters = Node::Object()->parameters;
+      Parameters *parameters = params->parameters;
       const NbtholePairValue * const nbthole_array = parameters->nbthole_array;
       const int NumNbtholePairParams = parameters->NumNbtholePairParams;
       BigReal drudeNbtholeCut = simParams -> drudeNbtholeCut;
@@ -1826,7 +1826,7 @@ void ComputeNonbondedUtil :: NAME
 	
 	// Note v[0].charge is actually mass
 	//Random rand(CkMyPe()); // ?? OK ?? NO!!!!
-	Random *rand = Node::Object()->rand;
+	Random *rand = params->random;
 	for (k = 0; k < npairi; k++) {
 	    if (r2list[k] > loweAndersenCutoff2) { continue; }
 		
