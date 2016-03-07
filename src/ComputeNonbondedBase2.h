@@ -65,6 +65,16 @@ MODIFIED(
 #if ( FULL( EXCLUDED( SHORT( 1+ ) ) ) 0 ) 
 // avoid bug in Intel 15.0 compiler
 #pragma novector
+#else
+#ifdef PRAGMA_SIMD
+#ifndef TABENERGYFLAG
+#pragma simd assert SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z) PAIR(reduction(+:virial_xx,virial_xy,virial_xz,virial_yy,virial_yz,virial_zz))) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
+             FULL(reduction(+:fullf_i_x,fullf_i_y,fullf_i_z) PAIR(reduction(+:fullElectVirial_xx,fullElectVirial_xy,fullElectVirial_xz,fullElectVirial_yy,fullElectVirial_yz,fullElectVirial_zz)) ENERGY(reduction(+:fullElectEnergy)))
+#endif
+#pragma loop_count avg=100
+#else // PRAGMA_SIMD
+#pragma loop_count avg=4
+#endif // PRAGMA_SIMD
 #endif
     for (k=0; k<npairi; ++k) {      
       TABENERGY(
@@ -75,7 +85,8 @@ MODIFIED(
 
       int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0 
       const int j = pairlisti[k];
-      register const CompAtom *p_j = p_1 + j;
+      //register const CompAtom *p_j = p_1 + j;
+#define p_j (p_1+j)
 #ifdef  A2_QPX
       register double *p_j_d = (double *) p_j;
 #endif
@@ -85,12 +96,15 @@ MODIFIED(
 #ifdef  A2_QPX
       BigReal* table_four_i = (BigReal *)(table_four + 16*table_i);
 #else
-      const BigReal* const table_four_i = table_four + 16*table_i;
+      //const BigReal* const table_four_i = table_four + 16*table_i;
+#define table_four_i (table_four + 16*table_i)
 #endif
 
 #if  ( FAST( 1 + ) TABENERGY( 1 + ) 0 ) // FAST or TABENERGY
-      const LJTable::TableEntry * lj_pars = 
-              lj_row + 2 * p_j->vdwType MODIFIED(+ 1);
+      //const LJTable::TableEntry * lj_pars = 
+      //        lj_row + 2 * p_j->vdwType MODIFIED(+ 1);
+      const int lj_index = 2 * p_j->vdwType MODIFIED(+ 1);
+#define lj_pars (lj_row+lj_index)
 #ifdef  A2_QPX
       double *lj_pars_d = (double *) lj_pars;
 #endif
@@ -101,11 +115,13 @@ MODIFIED(
       )
       
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
-      Force *f_j = f_1 + j;
+      //Force *f_j = f_1 + j;
+#define f_j (f_1+j)
 #endif
 	
 #if ( FULL( 1+ ) 0 )
-      Force *fullf_j = fullf_1 + j;
+      //Force *fullf_j = fullf_1 + j;
+#define fullf_j (fullf_1+j)
 #endif
 
       //Power PC aliasing and alignment constraints
@@ -535,7 +551,8 @@ MODIFIED(
 
 #if ( FULL (EXCLUDED( SHORT ( 1+ ) ) ) 0 ) 
 #ifndef A2_QPX
-      const BigReal* const slow_i = slow_table + 4*table_i;
+      //const BigReal* const slow_i = slow_table + 4*table_i;
+#define slow_i (slow_table + 4*table_i)
 #else
       BigReal* slow_i = (BigReal *)(slow_table + 4*table_i);
 #endif
@@ -553,7 +570,8 @@ MODIFIED(
 
 #if ( FULL (MODIFIED( SHORT ( 1+ ) ) ) 0 ) 
 #ifndef A2_QPX
-      const BigReal* const slow_i = slow_table + 4*table_i;
+      //const BigReal* const slow_i = slow_table + 4*table_i;
+#define slow_i (slow_table + 4*table_i)
 #else
       BigReal* slow_i = (BigReal *)(slow_table + 4*table_i);
 #endif
@@ -754,4 +772,11 @@ MODIFIED(
 #endif //FULL
 
    } // for pairlist
+
+#undef p_j
+#undef lj_pars
+#undef table_four_i
+#undef slow_i
+#undef f_j
+#undef fullf_j
 

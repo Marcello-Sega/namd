@@ -88,9 +88,16 @@ public:
 #define NBWORKARRAYSINIT(ARRAYS) \
   ComputeNonbondedWorkArrays* const computeNonbondedWorkArrays = ARRAYS;
 
+#ifdef __INTEL_COMPILER
 #define NBWORKARRAY(TYPE,NAME,SIZE) \
   computeNonbondedWorkArrays->NAME.resize(SIZE); \
-  TYPE * NAME = computeNonbondedWorkArrays->NAME.begin();
+  TYPE * const NAME = computeNonbondedWorkArrays->NAME.begin(); \
+  __assume_aligned(NAME,32);
+#else
+#define NBWORKARRAY(TYPE,NAME,SIZE) \
+  computeNonbondedWorkArrays->NAME.resize(SIZE); \
+  TYPE * const NAME = computeNonbondedWorkArrays->NAME.begin();
+#endif
 
 class ComputeNonbondedWorkArrays {
 public:

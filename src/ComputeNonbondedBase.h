@@ -1899,7 +1899,9 @@ void ComputeNonbondedUtil :: NAME
 #define NORMAL(X) X
 #define EXCLUDED(X)
 #define MODIFIED(X)
+#define PRAGMA_SIMD
 #include  "ComputeNonbondedBase2.h"
+#undef PRAGMA_SIMD
 #undef NORMAL
 #undef EXCLUDED
 #undef MODIFIED
