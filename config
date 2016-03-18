@@ -16,6 +16,7 @@ syntax:
   echo '  --with-tcl (default)  --without-tcl'
   echo '  --tcl-prefix <directory containing Tcl lib and include>'
   echo '      (defaults to ./tcl or ~/tcl)'
+  echo '  --without-python (default)  --with-python (requires Tcl)'
   echo '  --with-fftw (default)  --without-fftw'
   echo '  --with-fftw3 (use fftw3 API, your fftw-prefix should match) '
   echo '  --fftw-prefix <directory containing FFTW lib and include>'
@@ -119,6 +120,7 @@ begin:
   # defaults
   set use_debug = 0
   set use_tcl = 1
+  set use_python = 0
   set use_fftw = 1
   set use_fftw3 = 0
   set use_cuda = 0
@@ -233,6 +235,13 @@ begin:
           goto syntax
         endif
         set TCL_PREFIX=$1
+      breaksw
+
+      case --with-python:
+        set use_python = 1
+      breaksw
+      case --without-python:
+        set use_python = 0
       breaksw
 
       case --with-fftw:
@@ -389,6 +398,25 @@ begin:
       exit 1
     endif
 
+  endif
+
+  if ( $use_python ) then
+    if ( ! $use_tcl ) then
+      echo ''
+      echo "ERROR: Python interface requires Tcl."
+      echo ''
+      exit 1
+    endif
+    foreach python_include ( /usr/include/python[23].[0-9] )
+      set python_lib = $python_include:t
+    end
+    if ( $?python_lib ) then
+      echo "Using $python_lib with include files in $python_include"
+    else
+      set python_include = /usr/include/python
+      set python_lib = python
+      echo "Unable to local Python; please edit Make.config file."
+    endif
   endif
 
   if ( $?CHARM_BASE ) then
@@ -549,6 +577,11 @@ begin:
       echo "Using Tcl build found in $HOME/tcl"
       echo 'TCLDIR = $(HOME)/tcl' >> Make.config
     endif
+  endif
+
+  if ( $use_python ) then
+    echo "PYTHON = -DNAMD_PYTHON -I$python_include" >> Make.config
+    echo "PYTHONLIB = -l$python_lib" >> Make.config
   endif
 
   if ( $use_fftw ) then
