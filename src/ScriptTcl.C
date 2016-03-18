@@ -222,6 +222,9 @@ static void namd_python_initialize(void *interp) {
 "    if tcl.call('info','commands',name) == name:\n"
 "      raise AttributeError\n"
 "    return tcl.call('param',name,val)\n"
+"  def __call__(self, **args):\n"
+"    for (name,val) in args.items():\n"
+"      tcl.call('param',name,val)\n"
 "\n"
 "namd = wrapper()\n"
 "\n";
