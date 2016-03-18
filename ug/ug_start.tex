@@ -337,6 +337,64 @@ The caller must ensure that an index is not used before it is associated with a 
 and that each index is in use by only one replica at a time.
 The keyword ``off'' will return to writing the local trajectory file set by the dcdFile command.
 
+
+\subsubsection{Python scripting interface and features}
+\label{section:tclscripting}
+
+NAMD may be compiled with an embedded Python interpreter
+via the config script option \verb$--$with\verb$-$python.
+The default embedded Tcl interpreter is also required to enable Python scripting.
+Released NAMD binaries do not support Python scripting at this time
+due to portability issues with the extensive Python library.
+
+Python scripting is accessed via the Tcl ``\icommand{python}'' command,
+which functions in either expression mode or script mode.
+When passed a single-line string,
+the Python interpreter will evaluate the expression in the string and return the result.
+Python containers (tuples, lists, etc.) are converted to Tcl lists
+and all other values are converted to their string representation,
+which is typically compatible with Tcl.
+For example, ``[python ( 1 + 1, 'abc' + '123' )]'' evaluates to the Tcl list ``2 abc123''.
+
+When the python command is passed a single multi-line string (typically enclosed in braces),
+the Python interpreter will execute the code in the string and return nothing.
+Because of Python's indentation-sensitive syntax the enclosed code can not be indented.
+
+Calls to Tcl from Python code are supported by the tcl module functions
+\icommand{tcl.call()}, which takes the Tcl command name and its arguments as separate arguments
+and performs limited container and string conversions as described above,
+and \icommand{tcl.eval()}, which passes a single string unmodified to the Tcl interpreter.
+Both functions return the result as a string, so numerical results must be explicitly
+cast to float or int as appropriate.
+
+NAMD simulation parameters and commands are wrapped for convenience by the ``namd'' object.
+Any NAMD simulation parameter may be set by assigning to the corresponding case-insensitive
+attribute of the namd object, e.g., ``namd.timestep = 1.0'', and similarly
+read (as a string) by access, e.g., ``ts = float(namd.TimeStep)''.
+Assignment corresponds exactly to normal config file parsing, i.e., ``timestep 1.0'',
+and hence multiple assignment will generate an error just as would repeated parameters.
+For convenience, multiple parameters may be set at once by passing them as keyword arguments,
+e.g., ``namd(langevin=True, langevinDamping=5., langevinTemp=100.)''.
+NAMD (and other) commands in the Tcl interpreter may be called as a method of the namd object,
+e.g., ``namd.run(1000)'' and ``namd.output('myfile')''.
+
+The NAMD 1-4scaling parameter is incompatible with Python syntax, but may be accessed
+several other ways, e.g., ``namd.param('1-4scaling',1.0)'', ``tcl.call('1-4scaling',1.0)'',
+or ``tcl.eval('1-4scaling 1.0')''.
+
+The following example illustrates various aspects of the Python scripting interface:
+\begin{verbatim}
+set a 1
+cutoff 12.0
+python {
+# do not indent
+namd.pairlistDist = float(namd.Cutoff) + float(tcl.eval("set a")) # cast strings to float
+b = 2
+namd(switching=True, switchdist = float(namd.cutoff) - b) # case insensitive
+}
+set c [python $a + b]
+\end{verbatim}
+
 \subsubsection{Required \NAMD\ configuration parameters}
 \label{section:requiredparams}
 
