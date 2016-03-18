@@ -189,11 +189,20 @@ static PyObject* python_tcl_eval(PyObject *self, PyObject *args) {
   return Py_BuildValue("s", Tcl_GetStringResult(interp));
 }
 
+static PyObject* python_tcl_write(PyObject *self, PyObject *args) {
+  const char *string;
+  if ( ! PyArg_ParseTuple(args, "s", &string) ) return 0;
+  CkPrintf("%s", string);
+  return Py_None;
+}
+
 static PyMethodDef methods[] = {
   {"eval", python_tcl_eval, METH_VARARGS,
    "Evaluate string in Tcl interpreter."},
   {"call", python_tcl_call, METH_VARARGS,
    "Call command and arguments in Tcl interpreter."},
+  {"write", python_tcl_write, METH_VARARGS,
+   "Write string using CkPrintf."},
   {NULL, NULL, 0, NULL}
 };
 
@@ -204,8 +213,9 @@ static void namd_python_initialize(void *interp) {
   Py_InitModule("tcl", methods);
 
   const char * python_code = "\n"
+"import sys\n"
 "import tcl\n"
-"import string\n"
+"sys.stdout = tcl\n"
 "\n"
 "class wrapper:\n"
 "  class wrapped:\n"
