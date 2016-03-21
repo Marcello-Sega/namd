@@ -167,6 +167,7 @@ void NAMD_backup_file(const char *filename, const char *extension)
       iout << iERROR << "Error on renaming file " << filename
 	<< " to " << backup << ": " << sys_err_msg << "\n" << endi;
       fflush(stdout);
+      if ( errno == EXDEV ) continue;
       break;
       // char errmsg[256];
       // sprintf(errmsg, "Error on renaming file %s to %s",filename,backup);

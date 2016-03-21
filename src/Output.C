@@ -577,7 +577,7 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
       iout << "RENAMING COORDINATE DCD FILE " << old_name << " TO " << new_name << "\n" << endi;
       NAMD_backup_file(new_name,".BAK");
       while ( rename(old_name, new_name) ) {
-        if ( errno == EINTR ) continue;
+        if ( errno == EINTR || errno == EXDEV ) continue;
         char err_msg[257];
         sprintf(err_msg, "Unable to rename DCD file %s to %s", old_name, new_name);
         NAMD_err(err_msg);
