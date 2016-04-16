@@ -51,7 +51,7 @@ void * operator new (size_t, void *p) { return p; }
 
 /* Some plagtforms don't have nearbyint or round, so we'll define one */
 /* that works everywhere */
-#ifdef ARCH_POWERPC
+#ifdef POWERPC_TANINT
 extern "builtin" double __tanint(double); //IEEE round
 #define mynearbyint(x)  __tanint(x)
 #else

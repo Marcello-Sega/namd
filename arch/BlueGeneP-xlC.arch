@@ -5,7 +5,7 @@ CHARMARCH = bluegenep-xlc
 
 BGP_INC = -I/bgsys/drivers/ppcfloor/comm/include
 
-CXX = bgxlC -qstaticinline -DNO_SOCKET -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID $(BGP_INC) -DARCH_POWERPC -DUSE_TOPOMAP=1
+CXX = bgxlC -qstaticinline -DNO_SOCKET -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID $(BGP_INC) -DARCH_POWERPC -DUSE_TOPOMAP=1 -DPOWERPC_TANINT
 
 FLOATOPTS = -O2 -qnoipa -qinline -qarch=450d -qtune=450
 CXXOPTS = $(FLOATOPTS) -qalias=ansi:addrtaken:typeptr:restrict
