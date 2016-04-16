@@ -93,12 +93,8 @@ MODIFIED(
       // const CompAtomExt *pExt_j = pExt_1 + j;
       
       BigReal diffa = r2list[k] - r2_table[table_i];
-#ifdef  A2_QPX
-      BigReal* table_four_i = (BigReal *)(table_four + 16*table_i);
-#else
       //const BigReal* const table_four_i = table_four + 16*table_i;
 #define table_four_i (table_four + 16*table_i)
-#endif
 
 #if  ( FAST( 1 + ) TABENERGY( 1 + ) 0 ) // FAST or TABENERGY
       //const LJTable::TableEntry * lj_pars = 
@@ -127,27 +123,27 @@ MODIFIED(
       //Power PC aliasing and alignment constraints
 #ifdef ARCH_POWERPC      
 #if ( FULL( 1+ ) 0 )
-#pragma disjoint (*table_four_i, *fullf_j)
-#pragma disjoint (*p_j,          *fullf_j)
+#pragma disjoint (*table_four, *fullf_1)
+#pragma disjoint (*p_1,          *fullf_1)
 #ifdef  A2_QPX
-#pragma disjoint (*p_j_d,        *fullf_j)
+#pragma disjoint (*p_j_d,        *fullf_1)
 #endif
-#pragma disjoint (*r2_table,     *fullf_j)
-#pragma disjoint (*r2list,       *fullf_j)
+#pragma disjoint (*r2_table,     *fullf_1)
+#pragma disjoint (*r2list,       *fullf_1)
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
-#pragma disjoint (*f_j    ,      *fullf_j)
-#pragma disjoint (*fullf_j,      *f_j)
+#pragma disjoint (*f_1    ,      *fullf_1)
+#pragma disjoint (*fullf_1,      *f_1)
 #endif   //Short + fast
 #endif   //Full
 
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
-#pragma disjoint (*table_four_i, *f_j)
-#pragma disjoint (*p_j,          *f_j)
-#pragma disjoint (*r2_table,     *f_j)
-#pragma disjoint (*r2list,       *f_j)
-#pragma disjoint (*lj_pars,      *f_j)
+#pragma disjoint (*table_four, *f_1)
+#pragma disjoint (*p_1,          *f_1)
+#pragma disjoint (*r2_table,     *f_1)
+#pragma disjoint (*r2list,       *f_1)
+#pragma disjoint (*lj_row,      *f_1)
 #ifdef  A2_QPX
-#pragma disjoint (*p_j_d,        *f_j)
+#pragma disjoint (*p_j_d,        *f_1)
 #endif
 #endif //Short + Fast
 
@@ -550,38 +546,30 @@ MODIFIED(
 #endif // FAST
 
 #if ( FULL (EXCLUDED( SHORT ( 1+ ) ) ) 0 ) 
-#ifndef A2_QPX
       //const BigReal* const slow_i = slow_table + 4*table_i;
 #define slow_i (slow_table + 4*table_i)
-#else
-      BigReal* slow_i = (BigReal *)(slow_table + 4*table_i);
-#endif
 
 #ifdef ARCH_POWERPC  //Alignment and aliasing constraints
-      __alignx (32, slow_i);
+      __alignx (32, slow_table);
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
-#pragma disjoint (*slow_i, *f_j)
+#pragma disjoint (*slow_table, *f_1)
 #endif
-#pragma disjoint (*slow_i, *fullf_j)
+#pragma disjoint (*slow_table, *fullf_1)
 #endif  //ARCH_POWERPC
 
 #endif //FULL 
 
 
 #if ( FULL (MODIFIED( SHORT ( 1+ ) ) ) 0 ) 
-#ifndef A2_QPX
       //const BigReal* const slow_i = slow_table + 4*table_i;
 #define slow_i (slow_table + 4*table_i)
-#else
-      BigReal* slow_i = (BigReal *)(slow_table + 4*table_i);
-#endif
 
 #ifdef ARCH_POWERPC //Alignment and aliasing constraints
-      __alignx (32, slow_i);
+      __alignx (32, slow_table);
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
-#pragma disjoint (*slow_i, *f_j)
+#pragma disjoint (*slow_table, *f_1)
 #endif
-#pragma disjoint (*slow_i, *fullf_j)
+#pragma disjoint (*slow_table, *fullf_1)
 #endif //ARCH_POWERPC
 
 #endif //FULL
