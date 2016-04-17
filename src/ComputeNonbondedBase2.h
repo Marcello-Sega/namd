@@ -177,11 +177,11 @@ MODIFIED(
 #ifdef  A2_QPX
       float * cg = (float *)&p_j->charge;
 #if ( FULL( 1+ ) 0 )
-#pragma disjoint (*cg, *fullf_j)
+#pragma disjoint (*cg, *fullf_1)
 #endif   //Full
 
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
-#pragma disjoint (*cg, *f_j)
+#pragma disjoint (*cg, *f_1)
 #endif   //Short + fast
 #endif
 
@@ -211,7 +211,7 @@ MODIFIED(
 #else
       const vector4double Av = vec_mul(scalingv, vec_lds(0, lj_pars_d));
       const vector4double Bv = vec_mul(scalingv, vec_lds(8, lj_pars_d));
-      vector4double vdw_v = vec_msub( Av, vec_ld(0, table_four_i), vec_mul(Bv, vec_ld(4*sizeof(BigReal), table_four_i)) );
+      vector4double vdw_v = vec_msub( Av, vec_ld(0, (BigReal*)table_four_i), vec_mul(Bv, vec_ld(4*sizeof(BigReal), (BigReal*)table_four_i)) );
 #define   vdw_d  vec_extract(vdw_v, 0)
 #define   vdw_c  vec_extract(vdw_v, 1)
 #define   vdw_b  vec_extract(vdw_v, 2)
@@ -329,7 +329,7 @@ MODIFIED(
       BigReal fast_a = modfckqq * table_four_i[11];
       )
 #else
-      vector4double fastv = vec_mul(kqqv, vec_ld(8 * sizeof(BigReal), table_four_i));
+      vector4double fastv = vec_mul(kqqv, vec_ld(8 * sizeof(BigReal), (BigReal*)table_four_i));
 #define fast_d   vec_extract(fastv, 0)
 #define fast_c   vec_extract(fastv, 1)
 #define fast_b   vec_extract(fastv, 2)
@@ -613,21 +613,21 @@ MODIFIED(
       slow_b *= kqq;
       slow_a *= kqq;
 #else
-      vector4double slow_v = vec_ld((8 SHORT(+ 4)) * sizeof(BigReal), table_four_i);
+      vector4double slow_v = vec_ld((8 SHORT(+ 4)) * sizeof(BigReal), (BigReal*)table_four_i);
       EXCLUDED(
 	       SHORT(
-		     slow_v = vec_madd(full_cnst, vec_ld(0, slow_i), slow_v);
+		     slow_v = vec_madd(full_cnst, vec_ld(0, (BigReal*)slow_i), slow_v);
 		     )
 	       NOSHORT(
-		       slow_v = vec_sub(slow_v, vec_ld(12*sizeof(BigReal), table_four_i));
+		       slow_v = vec_sub(slow_v, vec_ld(12*sizeof(BigReal), (BigReal*)table_four_i));
 		       )
 	       );
       MODIFIED(
 	       SHORT(
-		     slow_v = vec_madd(full_cnst,  vec_ld(0, slow_i), slow_v);
+		     slow_v = vec_madd(full_cnst,  vec_ld(0, (BigReal*)slow_i), slow_v);
 		     )
 	       NOSHORT(
-		       slow_v = vec_nmsub(full_cnst, vec_ld(12*sizeof(BigReal), table_four_i), slow_v);
+		       slow_v = vec_nmsub(full_cnst, vec_ld(12*sizeof(BigReal), (BigReal*)table_four_i), slow_v);
 		       )
 	       );
       slow_v = vec_mul (slow_v, vec_splats(kqq));
