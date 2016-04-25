@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/03/02 21:33:05 $
- * $Revision: 1.1316 $
+ * $Date: 2016/04/25 01:39:09 $
+ * $Revision: 1.1317 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2581,6 +2581,14 @@ void Controller::printEnergies(int step, int minimize)
 #endif
     }
 
+//fepb BKR - Compute alchemical work if using dynamic lambda.  This is here so
+//           that the cumulative work can be given during a callback.
+    if (simParameters->alchLambdaFreq > 0) {
+        alchWork = computeAlchWork(step);
+        cumAlchWork += alchWork;
+    }
+//fepe
+
     momentum.x = reduction->item(REDUCTION_MOMENTUM_X);
     momentum.y = reduction->item(REDUCTION_MOMENTUM_Y);
     momentum.z = reduction->item(REDUCTION_MOMENTUM_Z);
@@ -2758,6 +2766,25 @@ void Controller::printEnergies(int step, int minimize)
         CALLBACKLIST("VDW_FORCE",pairVDWForce);
         CALLBACKLIST("ELECT_FORCE",pairElectForce);
       }
+      if (simParameters->alchOn) {
+        if (simParameters->alchThermIntOn) {
+          CALLBACKLIST("BOND1", bondedEnergy_ti_1);
+          CALLBACKLIST("ELEC1", electEnergy_ti_1 + electEnergySlow_ti_1 +
+                                electEnergyPME_ti_1);
+          CALLBACKLIST("VDW1", ljEnergy_ti_1);
+          CALLBACKLIST("BOND2", bondedEnergy_ti_2);
+          CALLBACKLIST("ELEC2", electEnergy_ti_2 + electEnergySlow_ti_2 +
+                                electEnergyPME_ti_2);
+          CALLBACKLIST("VDW2", ljEnergy_ti_2);
+          if (simParameters->alchLambdaFreq > 0) {
+            CALLBACKLIST("CUMALCHWORK", cumAlchWork);
+          }
+        } else if (simParameters->alchFepOn) {
+          CALLBACKLIST("BOND2", bondedEnergy_f);
+          CALLBACKLIST("ELEC2", electEnergy_f);
+          CALLBACKLIST("VDW2", ljEnergy_f);
+        } 
+      }
 
       labels << '\0';  values << '\0';  // insane but makes Linux work
       state->callback_labelstring = labels.str();
@@ -2863,6 +2890,21 @@ void Controller::printEnergies(int step, int minimize)
 	  //iout << FORMAT("GOAVG");
 	}
 	// End of port -- JLai
+        if (simParameters->alchOn && simParameters->alchThermIntOn) {
+          iout << "     ";
+          iout << FORMAT("BOND1");
+          iout << FORMAT("ELECT1");
+          iout << FORMAT("VDW1");
+          iout << FORMAT("BOND2");
+          iout << FORMAT("ELECT2");
+          iout << "     ";
+          iout << FORMAT("VDW2");
+          if (simParameters->alchLambdaFreq > 0) {
+            iout << FORMAT("LAMBDA");
+            iout << FORMAT("ALCHWORK");
+          }
+        }
+
 	iout << "\n\n" << endi;
     }
 
@@ -2921,6 +2963,23 @@ void Controller::printEnergies(int step, int minimize)
       iout << FORMAT(goTotalEnergy);
       //iout << FORMAT("not implemented");
     } // End of port -- JLai
+    if (simParameters->alchOn && simParameters->alchThermIntOn) {
+      iout << "     ";
+      iout << FORMAT(bondedEnergy_ti_1);
+      iout << FORMAT(electEnergy_ti_1 + electEnergySlow_ti_1 + 
+                     electEnergyPME_ti_1);
+      iout << FORMAT(ljEnergy_ti_1);
+      iout << FORMAT(bondedEnergy_ti_2);
+      iout << FORMAT(electEnergy_ti_2 + electEnergySlow_ti_2 +
+                     electEnergyPME_ti_2);
+      iout << "     ";
+      iout << FORMAT(ljEnergy_ti_2);
+      if (simParameters->alchLambdaFreq > 0) {
+        iout << FORMAT(simParameters->getCurrentLambda(step));
+        iout << FORMAT(alchWork);
+      }
+    }
+
     iout << "\n\n" << endi;
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
@@ -3103,7 +3162,6 @@ void Controller::outputTiEnergy(int step) {
     net_dEdl_elec_2 = 0;
     net_dEdl_lj_1 = 0;
     net_dEdl_lj_2 = 0;
-    cumAlchWork = 0;
   }
   if (stepInRun == 0 || (! ((step - 1) % simParams->alchOutFreq))) {
     // output of instantaneous dU/dl now replaced with running average
@@ -3115,7 +3173,7 @@ void Controller::outputTiEnergy(int step) {
     recent_dEdl_elec_2 = 0;
     recent_dEdl_lj_1 = 0;
     recent_dEdl_lj_2 = 0;
-    alchWork = 0;
+    recent_alchWork = 0;
   }
   TiNo++;
   recent_TiNo++;
@@ -3138,13 +3196,14 @@ void Controller::outputTiEnergy(int step) {
                          + electEnergyPME_ti_2); 
   recent_dEdl_lj_1 += ljEnergy_ti_1;
   recent_dEdl_lj_2 += ljEnergy_ti_2;
+  recent_alchWork += alchWork;
 
   if (stepInRun == 0) {
     if (!tiFile.is_open()) {
       NAMD_backup_file(simParams->alchOutFile);
       tiFile.open(simParams->alchOutFile);
       /* BKR - This has been rather drastically updated to better match stdout.
-   This was necessary for several reasons:
+         This was necessary for several reasons:
          1) PME global scaling is obsolete (now removed)
          2) scaling of bonded terms was added
          3) alchemical work is now accumulated when switching is active
@@ -3166,7 +3225,7 @@ void Controller::outputTiEnergy(int step) {
       tiFile << FORMAT("VDW2");
       tiFile << FORMAT("AVGVDW2");
       if (alchLambdaFreq > 0) {
-  tiFile << FORMAT("ALCHWORK");
+        tiFile << FORMAT("ALCHWORK");
         tiFile << FORMAT("CUMALCHWORK");
       }
       tiFile << std::endl;
@@ -3197,46 +3256,21 @@ void Controller::outputTiEnergy(int step) {
        << "\n#PARTITION 2 BOND LAMBDA " << bond_lambda_2
        << "\n#PARTITION 2 VDW LAMBDA " << vdw_lambda_2 
        << "\n#PARTITION 2 ELEC LAMBDA " << elec_lambda_2
-             << "\n#CONSTANT TEMPERATURE: " << simParams->alchTemp << " K"
+       << "\n#CONSTANT TEMPERATURE: " << simParams->alchTemp << " K"
        << std::endl;
     }
   }
 
   if (stepInRun == alchEquilSteps) {
     tiFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
-            << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
-            << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
+           << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
+           << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
   }
-  if (alchLambdaFreq > 0 && stepInSwitch >= 0 && step != simParams->N 
-      && stepInSwitch % alchLambdaFreq == 0) {
+  if (alchLambdaFreq > 0 && stepInSwitch >= 0 && step != simParams->N ) {
       // Work is accumulated whenever alchLambda changes. In the current
       // scheme we always increment lambda _first_, then integrate in time.
       // Therefore the work is wrt the "old" lambda before the increment.
-      const BigReal alchLambda = simParams->getCurrentLambda(step);
-      const BigReal oldLambda = alchLambda - simParams->getLambdaDelta();
-      const BigReal bond_lambda_1 = simParams->getBondLambda(oldLambda);
-      const BigReal bond_lambda_2 = simParams->getBondLambda(1-oldLambda);
-      const BigReal elec_lambda_1 = simParams->getElecLambda(oldLambda);
-      const BigReal elec_lambda_2 = simParams->getElecLambda(1-oldLambda);
-      const BigReal vdw_lambda_1 = simParams->getVdwLambda(oldLambda);
-      const BigReal vdw_lambda_2 = simParams->getVdwLambda(1-oldLambda);
-      const BigReal bond_lambda_12 = simParams->getBondLambda(alchLambda);
-      const BigReal bond_lambda_22 = simParams->getBondLambda(1-alchLambda);
-      const BigReal elec_lambda_12 = simParams->getElecLambda(alchLambda);
-      const BigReal elec_lambda_22 = simParams->getElecLambda(1-alchLambda);
-      const BigReal vdw_lambda_12 = simParams->getVdwLambda(alchLambda);
-      const BigReal vdw_lambda_22 = simParams->getVdwLambda(1-alchLambda);
-      alchWork = ((bond_lambda_12 - bond_lambda_1)*bondedEnergy_ti_1
-		  + (elec_lambda_12 - elec_lambda_1)
-		  *(electEnergy_ti_1 + electEnergySlow_ti_1
-		    + electEnergyPME_ti_1)
-		  + (vdw_lambda_12 - vdw_lambda_1)*ljEnergy_ti_1
-		  + (bond_lambda_22 - bond_lambda_2)*bondedEnergy_ti_2
-		  + (elec_lambda_22 - elec_lambda_2)
-		  *(electEnergy_ti_2 + electEnergySlow_ti_2
-		    + electEnergyPME_ti_2)
-		  + (vdw_lambda_22 - vdw_lambda_2)*ljEnergy_ti_2
-		  );
+      alchWork = computeAlchWork(step);
       cumAlchWork += alchWork;
   }
   if (simParams->alchOutFreq && ((step%simParams->alchOutFreq)==0)) {
@@ -3244,6 +3278,39 @@ void Controller::outputTiEnergy(int step) {
     tiFile.flush();
   }
  }
+}
+
+/* Work is accumulated whenever alchLambda changes.  In the current scheme we
+   always increment lambda _first_, then integrate in time.  Therefore the work
+   is wrt the "old" lambda before the increment.
+*/
+BigReal Controller::computeAlchWork(const int step) {
+  // alchemical scaling factors for groups 1/2 at the previous lambda
+  const BigReal oldLambda = simParams->getCurrentLambda(step-1);
+  const BigReal bond_lambda_1 = simParams->getBondLambda(oldLambda);
+  const BigReal bond_lambda_2 = simParams->getBondLambda(1-oldLambda);
+  const BigReal elec_lambda_1 = simParams->getElecLambda(oldLambda);
+  const BigReal elec_lambda_2 = simParams->getElecLambda(1-oldLambda);
+  const BigReal vdw_lambda_1 = simParams->getVdwLambda(oldLambda);
+  const BigReal vdw_lambda_2 = simParams->getVdwLambda(1-oldLambda);
+  // alchemical scaling factors for groups 1/2 at the new lambda
+  const BigReal alchLambda = simParams->getCurrentLambda(step);
+  const BigReal bond_lambda_12 = simParams->getBondLambda(alchLambda);
+  const BigReal bond_lambda_22 = simParams->getBondLambda(1-alchLambda);
+  const BigReal elec_lambda_12 = simParams->getElecLambda(alchLambda);
+  const BigReal elec_lambda_22 = simParams->getElecLambda(1-alchLambda);
+  const BigReal vdw_lambda_12 = simParams->getVdwLambda(alchLambda);
+  const BigReal vdw_lambda_22 = simParams->getVdwLambda(1-alchLambda); 
+
+  return ((bond_lambda_12 - bond_lambda_1)*bondedEnergy_ti_1 +
+          (elec_lambda_12 - elec_lambda_1)*
+          (electEnergy_ti_1 + electEnergySlow_ti_1 +  electEnergyPME_ti_1) +
+          (vdw_lambda_12 - vdw_lambda_1)*ljEnergy_ti_1 +
+          (bond_lambda_22 - bond_lambda_2)*bondedEnergy_ti_2 +
+          (elec_lambda_22 - elec_lambda_2)*
+          (electEnergy_ti_2 + electEnergySlow_ti_2 + electEnergyPME_ti_2) + 
+          (vdw_lambda_22 - vdw_lambda_2)*ljEnergy_ti_2
+  );
 }
 
 void Controller::writeFepEnergyData(int step, ofstream_namd &file) {
@@ -3337,7 +3404,7 @@ void Controller::writeTiEnergyData(int step, ofstream_namd &file) {
   tiFile << FORMAT(recent_dEdl_lj_2 / recent_TiNo);
   tiFile << FORMAT(net_dEdl_lj_2/TiNo);
   if (simParams->alchLambdaFreq > 0) {
-    tiFile << FORMAT(alchWork);
+    tiFile << FORMAT(recent_alchWork / recent_TiNo);
     tiFile << FORMAT(cumAlchWork);
   }
   tiFile << std::endl;

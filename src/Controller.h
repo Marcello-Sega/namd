@@ -139,7 +139,7 @@ protected:
       BigReal net_dEdl_elec_2;
       BigReal net_dEdl_lj_1;
       BigReal net_dEdl_lj_2;
-      BigReal cumAlchWork;
+      BigReal cumAlchWork = 0;
       BigReal electEnergyPME_ti_1;
       BigReal electEnergyPME_ti_2;
       int TiNo;
@@ -149,6 +149,7 @@ protected:
       BigReal recent_dEdl_elec_2;
       BigReal recent_dEdl_lj_1;
       BigReal recent_dEdl_lj_2;
+      BigReal recent_alchWork;
       BigReal alchWork;
       int recent_TiNo;
       void printTiMessage(int);
@@ -238,6 +239,7 @@ protected:
 //fepe
     ofstream_namd tiFile;
     void outputTiEnergy(int step);
+    BigReal computeAlchWork(const int step);
     void writeTiEnergyData(int step, ofstream_namd &file);
 
     // for checkpoint/revert
