@@ -11,7 +11,7 @@
  *
  *      $RCSfile: dcdplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.6 $       $Date: 2013/06/07 21:43:26 $
+ *      $Revision: 1.7 $       $Date: 2016/04/25 01:57:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -574,7 +574,7 @@ static int read_dcdstep(fio_fd fd, int N, float *X, float *Y, float *Z,
     iov[6].iov_len  = rec_scale*sizeof(int);
 
 #if 1
-    /* Use fall-back code instead of readv():
+    /* Use fall-back code instead of readv():                            */
     /*  Some platforms implement readv() as user level code in libc,     */
     /*  and due to POSIX atomicity requirements for readv()/writev(),    */
     /*  they may copy data to internal temp buffers, which can kill      */
