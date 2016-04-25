@@ -501,8 +501,8 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
       return -1; 
     }
 
-    atomcoords = (float *) malloc(3*natoms*sizeof(float));
-    memset(atomcoords, 0, 3*natoms*sizeof(float));
+    atomcoords = (float *) malloc(natoms*(3*sizeof(float)));
+    memset(atomcoords, 0, natoms*(3*sizeof(float)));
     ts.coords = atomcoords;
   
     if (coorplg->read_next_timestep(coorrv, natoms, &ts)) {
@@ -516,8 +516,8 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
     coorplg->close_file_read(coorrv);
 
   } else if ( plg->read_next_timestep ) {
-    atomcoords = (float *) malloc(3*natoms*sizeof(float));
-    memset(atomcoords, 0, 3*natoms*sizeof(float));
+    atomcoords = (float *) malloc(natoms*(3*sizeof(float)));
+    memset(atomcoords, 0, natoms*(3*sizeof(float)));
     ts.coords = atomcoords;
   
     if (plg->read_next_timestep(rv, natoms, &ts)) {
@@ -925,7 +925,7 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
 
   /* allocate atom arrays */
   atomarray = (molfile_atom_t *) malloc(natoms*sizeof(molfile_atom_t));
-  atomcoords = (float *) malloc(natoms * 3 * sizeof(float));
+  atomcoords = (float *) malloc(natoms * (3 * sizeof(float)));
   if (atomarray == NULL) {
     print_msg(v, "ERROR: failed to allocate plugin atom attribute array");
     return -1;
@@ -936,7 +936,7 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
   }
 
   memset(atomarray, 0, natoms*sizeof(molfile_atom_t));
-  memset(atomcoords, 0, natoms*3*sizeof(float));
+  memset(atomcoords, 0, natoms*(3*sizeof(float)));
 
   /* open plugin for output */
   if ((wv = plg->open_file_write(filename, pluginname, natoms)) == NULL) {
@@ -1168,10 +1168,10 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
     int imprcnt=0;
     int cmapcnt=0;
 
-    int *angles = (int *) malloc(3 * nangls * sizeof(int));
-    int *dihedrals = (int *) malloc(4 * ndihes * sizeof(int));
-    int *impropers = (int *) malloc(4 * nimprs * sizeof(int));
-    int *cmaps = (int *) malloc(8 * ncmaps * sizeof(int));
+    int *angles = (int *) malloc(nangls * (3*sizeof(int)));
+    int *dihedrals = (int *) malloc(ndihes * (4*sizeof(int)));
+    int *impropers = (int *) malloc(nimprs * (4*sizeof(int)));
+    int *cmaps = (int *) malloc(ncmaps * (8*sizeof(int)));
 
     /*
      * angles
