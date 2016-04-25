@@ -180,6 +180,8 @@ int tcl_residue(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *arg
 int tcl_mutate(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_multiply(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_coord(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
+int tcl_vel(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
+int tcl_bfactor(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_auto(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_regenerate(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_alias(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
@@ -197,6 +199,7 @@ int tcl_last(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]
 int tcl_patch(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_resetpsf(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_delatom(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
+int tcl_rename_atom(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 
 #if defined(PSFGENTCLDLL_EXPORTS) && defined(_WIN32)
 #  undef TCL_STORAGE_CLASS
@@ -250,6 +253,10 @@ int Psfgen_Init(Tcl_Interp *interp) {
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"coord",tcl_coord,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"vel",tcl_vel,
+        (ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"bfactor",tcl_bfactor,
+        (ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"auto",tcl_auto,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"regenerate",tcl_regenerate,
@@ -282,6 +289,8 @@ int Psfgen_Init(Tcl_Interp *interp) {
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"renameatom", tcl_rename_atom,
+        (ClientData)data, (Tcl_CmdDeleteProc*)NULL); 
  
   Tcl_PkgProvide(interp, "psfgen", "1.6.4");
 
@@ -1160,6 +1169,91 @@ int tcl_coord(ClientData data, Tcl_Interp *interp,
   return TCL_OK;
 }
 
+int tcl_vel(ClientData data, Tcl_Interp *interp,
+                                   int argc, CONST84 char *argv[]) {
+  double vx,vy,vz;
+  topo_mol_ident_t target;
+  char *segid, *resid, *atomname;
+  int rc;
+  psfgen_data *psf = *(psfgen_data **)data;
+  PSFGEN_TEST_MOL(interp,psf);
+
+  if ( argc < 5 ) {
+    Tcl_SetResult(interp,"arguments: segid resid atomname { vx vy vz }",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  if ( argc > 5 ) {
+    Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  if ( sscanf(argv[4],"%lf %lf %lf",&vx,&vy,&vz) != 3 ) {
+    Tcl_SetResult(interp,"arguments: segid resid atomname { vx vy vz }",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  segid=strtoupper(argv[1], psf->all_caps);
+  resid=strtoupper(argv[2], psf->all_caps);
+  atomname=strtoupper(argv[3], psf->all_caps);
+  target.segid = segid;
+  target.resid = resid;
+  target.aname = atomname;
+  rc = topo_mol_set_vel(psf->mol,&target,vx,vy,vz);
+  free(segid);
+  free(resid);
+  free(atomname);
+  if (rc) {
+    Tcl_AppendResult(interp,"ERROR: failed on vel",NULL);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+
+  return TCL_OK;
+}
+
+int tcl_bfactor(ClientData data, Tcl_Interp *interp,
+                                   int argc, CONST84 char *argv[]) {
+  double bfactor;
+  topo_mol_ident_t target;
+  char *segid, *resid, *atomname;
+  int rc;
+  psfgen_data *psf = *(psfgen_data **)data;
+  PSFGEN_TEST_MOL(interp,psf);
+
+  if ( argc < 5 ) {
+    Tcl_SetResult(interp,"arguments: segid resid atomname bfactor",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  if ( argc > 5 ) {
+    Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  if ( sscanf(argv[4],"%lf",&bfactor) != 1 ) {
+    Tcl_SetResult(interp,"arguments: segid resid atomname bfactor",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  segid=strtoupper(argv[1], psf->all_caps);
+  resid=strtoupper(argv[2], psf->all_caps);
+  atomname=strtoupper(argv[3], psf->all_caps);
+  target.segid = segid;
+  target.resid = resid;
+  target.aname = atomname;
+  rc = topo_mol_set_bfactor(psf->mol,&target,bfactor);
+  free(segid);
+  free(resid);
+  free(atomname);
+  if (rc) {
+    Tcl_AppendResult(interp,"ERROR: failed on bfactor",NULL);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+
+  return TCL_OK;
+}
 
 int tcl_auto(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
@@ -1852,7 +1946,7 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
 
       for ( patchres = patch->patchresids; patchres; patchres = patchres->next ) {
 	/* Test the existence of segid:resid for the patch */
-	if (!topo_mol_validate_patchres(psf->mol,patch->pname,patchres->segid, patchres->resid)) {
+	if (!topo_mol_validate_patchres(psf->mol, patch->pname, patchres->segid, patchres->resid)) {
 	  break;
 	};
 	
@@ -1879,8 +1973,9 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
+
   pres=strtoupper(argv[1], psf->all_caps);
-  sprintf(msg,"applying patch %s to %d residues",pres,(argc-2));
+  sprintf(msg,"applying patch %s to %d residue(s)",pres,(argc-2));
   newhandle_msg(interp,msg);
   for ( i=2; i<argc; ++i ) {
     tmp[i-2]=strtoupper(argv[i], psf->all_caps);
@@ -1936,6 +2031,27 @@ int tcl_delatom(ClientData data, Tcl_Interp *interp,
 
   topo_mol_delete_atom(psf->mol, &target);
  
+  return TCL_OK;
+}
+
+int tcl_rename_atom(ClientData data, Tcl_Interp *interp,
+	                                    int argc, CONST84 char *argv[]) {
+  topo_mol_ident_t target;
+  psfgen_data *psf = *(psfgen_data **)data;
+  PSFGEN_TEST_MOL(interp,psf);
+   
+  if ( argc < 5 ) {
+    Tcl_SetResult(interp,"arguments: segid resid aname newaname", TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+ 
+  target.segid = argv[1];
+  target.resid = argv[2];
+  target.aname = argv[3];
+  
+  topo_mol_rename_atom(psf->mol, &target, argv[4]);
+
   return TCL_OK;
 }
  

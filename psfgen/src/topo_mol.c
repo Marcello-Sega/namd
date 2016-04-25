@@ -1,4 +1,4 @@
-
+//
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -2152,6 +2152,22 @@ void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target) {
   topo_mol_destroy_atom(topo_mol_unlink_atom(&(res->atoms),target->aname));
 }
 
+int topo_mol_rename_atom(topo_mol *mol, const topo_mol_ident_t *target,
+                                        const char *name) {
+  topo_mol_residue_t *res;
+  topo_mol_atom_t *atom;
+  if ( ! mol ) return -1;
+  if ( ! target ) return -2;
+  res = topo_mol_get_res(mol,target,0);
+  if ( ! res ) return -3;
+  for ( atom = res->atoms; atom; atom = atom->next ) {
+    if ( ! strcmp(target->aname,atom->name) ) break;
+  }
+  if ( ! atom ) return -3;
+  strcpy(atom->name,name);
+  return 0;
+}
+
 int topo_mol_set_element(topo_mol *mol, const topo_mol_ident_t *target,
                                         const char *element, int replace) {
   topo_mol_residue_t *res;
@@ -2202,6 +2218,42 @@ int topo_mol_set_xyz(topo_mol *mol, const topo_mol_ident_t *target,
   atom->y = y;
   atom->z = z;
   atom->xyz_state = TOPO_MOL_XYZ_SET;
+  return 0;
+}
+
+int topo_mol_set_vel(topo_mol *mol, const topo_mol_ident_t *target,
+                                        double vx, double vy, double vz) {
+  topo_mol_residue_t *res;
+  topo_mol_atom_t *atom;
+  if ( ! mol ) return -1;
+  if ( ! target ) return -2;
+  res = topo_mol_get_res(mol,target,0);
+  if ( ! res ) return -3;
+  for ( atom = res->atoms; atom; atom = atom->next ) {
+    if ( ! strcmp(target->aname,atom->name) ) break;
+  }
+  if ( ! atom ) return -3;
+
+  atom->vx = vx;
+  atom->vy = vy;
+  atom->vz = vz;
+  return 0;
+}
+
+int topo_mol_set_bfactor(topo_mol *mol, const topo_mol_ident_t *target, 
+                         double bfactor) {
+  topo_mol_residue_t *res;
+  topo_mol_atom_t *atom;
+  if ( ! mol ) return -1;
+  if ( ! target ) return -2;
+  res = topo_mol_get_res(mol,target,0);
+  if ( ! res ) return -3;
+  for ( atom = res->atoms; atom; atom = atom->next ) {
+    if ( ! strcmp(target->aname,atom->name) ) break;
+  }
+  if ( ! atom ) return -3;
+
+  atom->partition = bfactor;
   return 0;
 }
 
