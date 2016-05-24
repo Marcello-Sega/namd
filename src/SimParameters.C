@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2016/03/02 21:33:06 $
- * $Revision: 1.1461 $
+ * $Date: 2016/05/24 19:05:39 $
+ * $Revision: 1.1462 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -190,6 +190,13 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_BOOL("velocityQuenching",minimizeOn)
   SCRIPT_PARSE_BOOL("maximumMove",maximumMove)
   // SCRIPT_PARSE_BOOL("Langevin",langevinOn)
+  if ( ! strncasecmp(param,"Langevin",MAX_SCRIPT_PARAM_SIZE) ) {
+    langevinOn = atobool(value);
+    if ( langevinOn && ! langevinOnAtStartup ) {
+      NAMD_die("Langevin must be enabled at startup to disable and re-enable in script.");
+    }
+    return;
+  }
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
   SCRIPT_PARSE_BOOL("langevinBAOAB",langevin_useBAOAB) // [!!] Use the BAOAB integrator or not
   SCRIPT_PARSE_FLOAT("loweAndersenTemp",loweAndersenTemp) // BEGIN LA, END LA
@@ -3099,6 +3106,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
                                              adaptTempBins != 0 ))  
         NAMD_die("Need to specify either adaptTempInFile or all of {adaptTempTmin, adaptTempTmax,adaptTempBins} if adaptTempMD is on.");
    }
+
+   langevinOnAtStartup = langevinOn;
    if (langevinOn) {
      if ( ! opts.defined("langevinDamping") ) langevinDamping = 0.0;
      if ( ! opts.defined("langevinHydrogen") ) langevinHydrogen = TRUE;
