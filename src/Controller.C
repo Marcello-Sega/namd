@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/04/25 01:39:09 $
- * $Revision: 1.1317 $
+ * $Date: 2016/05/24 19:41:49 $
+ * $Revision: 1.1318 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -235,6 +235,7 @@ Controller::Controller(NamdState *s) :
     checkpoint_stored = 0;
     drudeBondTemp = 0;
     drudeBondTempAvg = 0;
+    cumAlchWork = 0;
 }
 
 Controller::~Controller(void)

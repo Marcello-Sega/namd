@@ -139,7 +139,7 @@ protected:
       BigReal net_dEdl_elec_2;
       BigReal net_dEdl_lj_1;
       BigReal net_dEdl_lj_2;
-      BigReal cumAlchWork = 0;
+      BigReal cumAlchWork;
       BigReal electEnergyPME_ti_1;
       BigReal electEnergyPME_ti_2;
       int TiNo;
