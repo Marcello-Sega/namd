@@ -124,17 +124,16 @@ void BondElem::computeForce(BondElem *tuples, int ntuple, BigReal *reduction,
     switch ( mol->get_fep_bonded_type(atomID, 2) ) {
     case 1:
       reduction[bondEnergyIndex_ti_1] += energy;
-      reduction[bondEnergyIndex_f] += bond_lambda_12*energy;
+      reduction[bondEnergyIndex_f] += (bond_lambda_12 - bond_lambda_1)*energy;
       energy *= bond_lambda_1;
       scal *= bond_lambda_1;
       break;
     case 2:
       reduction[bondEnergyIndex_ti_2] += energy;
-      reduction[bondEnergyIndex_f] += bond_lambda_22*energy;
+      reduction[bondEnergyIndex_f] += (bond_lambda_22 - bond_lambda_2)*energy;
       energy *= bond_lambda_2;
       scal *= bond_lambda_2;
       break;
-    //case 0: Do nothing, normal interaction! 
     }
   }
   //fepe

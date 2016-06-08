@@ -109,16 +109,13 @@ protected:
       BigReal goNonnativeEnergy;
       BigReal goTotalEnergy;
 //fepb
-      BigReal bondEnergy; //Moved here for FEP potential difference
-      BigReal angleEnergy;
-      BigReal dihedralEnergy;
-      BigReal improperEnergy;
-      BigReal bondedEnergy_f;
+      BigReal bondedEnergyDiff_f;
       BigReal electEnergy_f;
       BigReal electEnergySlow_f;
       BigReal ljEnergy_f;
       BigReal ljEnergy_f_left;  // used by WCA repulsive, [s1,s2]
       BigReal exp_dE_ByRT;
+      BigReal dE;
       BigReal net_dE;
       BigReal dG;
       int FepNo;

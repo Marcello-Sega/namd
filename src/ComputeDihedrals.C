@@ -130,17 +130,16 @@ void DihedralElem::computeForce(DihedralElem *tuples, int ntuple, BigReal *reduc
     switch ( mol->get_fep_bonded_type(atomID, 4) ) {
     case 1:
       reduction[dihedralEnergyIndex_ti_1] += K;
-      reduction[dihedralEnergyIndex_f] += bond_lambda_12*K;
+      reduction[dihedralEnergyIndex_f] += (bond_lambda_12 - bond_lambda_1)*K;
       K *= bond_lambda_1;
       K1 *= bond_lambda_1;
       break;
     case 2:
       reduction[dihedralEnergyIndex_ti_2] += K;
-      reduction[dihedralEnergyIndex_f] += bond_lambda_22*K;
+      reduction[dihedralEnergyIndex_f] += (bond_lambda_22 - bond_lambda_2)*K;
       K *= bond_lambda_2;
       K1 *= bond_lambda_2;
       break;
-    //case 0: Do nothing, normal interaction! 
     }
   }
   //fepe

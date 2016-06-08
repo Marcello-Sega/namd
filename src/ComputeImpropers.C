@@ -227,7 +227,8 @@ void ImproperElem::computeForce(ImproperElem *tuples, int ntuple, BigReal *reduc
     switch ( mol->get_fep_bonded_type(atomID, 4) ) {
     case 1:
       reduction[improperEnergyIndex_ti_1] += energy;
-      reduction[improperEnergyIndex_f] += bond_lambda_12*energy;
+      reduction[improperEnergyIndex_f] += (bond_lambda_12 - bond_lambda_1) * 
+                                           energy;
       energy *= bond_lambda_1;
       f1 *= bond_lambda_1;
       f2 *= bond_lambda_1;
@@ -235,13 +236,13 @@ void ImproperElem::computeForce(ImproperElem *tuples, int ntuple, BigReal *reduc
       break;
     case 2:
       reduction[improperEnergyIndex_ti_2] += energy;
-      reduction[improperEnergyIndex_f] += bond_lambda_22*energy;
+      reduction[improperEnergyIndex_f] += (bond_lambda_22 - bond_lambda_2) *
+                                           energy;
       energy *= bond_lambda_2;
       f1 *= bond_lambda_2;
       f2 *= bond_lambda_2;
       f3 *= bond_lambda_2;
       break;
-    //case 0: Do nothing, normal interaction! 
     }
   }
   //fepe

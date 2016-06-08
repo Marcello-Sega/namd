@@ -163,7 +163,7 @@ void AngleElem::computeForce(AngleElem *tuples, int ntuple, BigReal *reduction, 
     switch ( mol->get_fep_bonded_type(atomID, 3) ) {
     case 1:
       reduction[angleEnergyIndex_ti_1] += energy;
-      reduction[angleEnergyIndex_f] += bond_lambda_12*energy;
+      reduction[angleEnergyIndex_f] += (bond_lambda_12 - bond_lambda_1)*energy; 
       energy *= bond_lambda_1;
       force1 *= bond_lambda_1;
       force2 *= bond_lambda_1;
@@ -171,13 +171,12 @@ void AngleElem::computeForce(AngleElem *tuples, int ntuple, BigReal *reduction, 
       break;
     case 2:
       reduction[angleEnergyIndex_ti_2] += energy;
-      reduction[angleEnergyIndex_f] += bond_lambda_22*energy;
+      reduction[angleEnergyIndex_f] += (bond_lambda_22 - bond_lambda_2)*energy;
       energy *= bond_lambda_2;
       force1 *= bond_lambda_2;
       force2 *= bond_lambda_2;
       force3 *= bond_lambda_2;
       break;
-    //case 0: Do nothing, normal interaction! 
     }
   }
   //fepe
