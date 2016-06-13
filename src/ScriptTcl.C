@@ -2054,7 +2054,7 @@ void ScriptTcl::run(char *scriptFile) {
   }
 #endif
 
-  if (initWasCalled == 0) {
+  if (runWasCalled == 0) {
     initcheck();
     SimParameters *simParams = Node::Object()->simParameters;
     if ( simParams->minimizeCGOn ) runController(SCRIPT_MINIMIZE);
