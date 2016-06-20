@@ -163,6 +163,24 @@ static Tcl_Obj* python_tcl_convert(PyObject *obj) {
   return robj;
 }
 
+int atoBool(const char *s);
+
+static PyObject* tcl_python_convert(Tcl_Obj *obj) {
+  long rlong;
+  if ( TCL_OK == Tcl_GetLongFromObj(0, obj, &rlong) )
+    return Py_BuildValue("l", rlong);
+  double rdouble;
+  if ( TCL_OK == Tcl_GetDoubleFromObj(0, obj, &rdouble) )
+    return Py_BuildValue("d", rdouble);
+  const char *rstring = Tcl_GetString(obj);
+  if ( rstring[0] == '\0' )
+    return Py_None;
+  int rbool = atoBool(rstring);
+  if ( rbool >= 0 )
+    return Py_BuildValue("i", rbool);
+  return Py_BuildValue("s", rstring);
+}
+
 static Tcl_Interp *static_interp;
 
 static PyObject* python_tcl_call(PyObject *self, PyObject *args) {
@@ -175,7 +193,7 @@ static PyObject* python_tcl_call(PyObject *self, PyObject *args) {
     return 0;
   }
   Tcl_DecrRefCount(command);
-  return Py_BuildValue("s", Tcl_GetStringResult(interp));
+  return tcl_python_convert(Tcl_GetObjResult(interp));
 }
 
 static PyObject* python_tcl_eval(PyObject *self, PyObject *args) {
@@ -186,7 +204,7 @@ static PyObject* python_tcl_eval(PyObject *self, PyObject *args) {
     PyErr_SetString(PyExc_RuntimeError, Tcl_GetStringResult(interp));
     return 0;
   }
-  return Py_BuildValue("s", Tcl_GetStringResult(interp));
+  return tcl_python_convert(Tcl_GetObjResult(interp));
 }
 
 static PyObject* python_tcl_write(PyObject *self, PyObject *args) {
