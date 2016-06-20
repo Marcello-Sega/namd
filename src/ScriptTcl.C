@@ -217,15 +217,15 @@ static void namd_python_initialize(void *interp) {
 "import tcl\n"
 "sys.stdout = tcl\n"
 "\n"
-"class wrapper:\n"
-"  class wrapped:\n"
+"class _namd_wrapper:\n"
+"  class _wrapped:\n"
 "    def __init__(self,_name):\n"
 "      self.name = _name\n"
 "    def __call__(self,*args):\n"
 "      return tcl.call(self.name,*args)\n"
 "  def __getattr__(self,name):\n"
 "    if tcl.call('info','commands',name) == name:\n"
-"      return self.wrapped(name)\n"
+"      return self._wrapped(name)\n"
 "    else:\n"
 "      return tcl.call('param',name)\n"
 "  def __setattr__(self,name,val):\n"
@@ -236,7 +236,7 @@ static void namd_python_initialize(void *interp) {
 "    for (name,val) in args.items():\n"
 "      tcl.call('param',name,val)\n"
 "\n"
-"namd = wrapper()\n"
+"namd = _namd_wrapper()\n"
 "\n";
 
   if ( TCL_OK != PyRun_SimpleString(python_code) ) {
