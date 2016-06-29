@@ -922,7 +922,9 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
     }
     Tcl_AppendResult(interp, "Invalid segid: ", argv[2], NULL);
     return TCL_ERROR;
-  } else if (argc == 5 && !strcasecmp(argv[1], "coordinates")) {
+  } else if (argc == 5 && 
+             (!strcasecmp(argv[1], "coordinates") || 
+              !strcasecmp(argv[1], "mass"))) {
     topo_mol *mol = psf->mol;
     int segindex = (mol ? 
         hasharray_index(mol->segment_hash, argv[2]) :
@@ -942,14 +944,25 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
       atoms = seg->residue_array[resindex].atoms;
       while (atoms) {
         if (!strcmp(atoms->name, argv[4])) {
+          if (!strcasecmp(argv[1], "coordinates")) { 
 #if TCL_MINOR_VERSION >= 6
-          char buf[512];
-          sprintf(buf, "%f %f %f", atoms->x, atoms->y, atoms->z);
-          Tcl_AppendResult(interp, buf, NULL);
+            char buf[512];
+            sprintf(buf, "%f %f %f", atoms->x, atoms->y, atoms->z);
+            Tcl_AppendResult(interp, buf, NULL);
 #else
-          sprintf(interp->result, "%f %f %f", atoms->x, atoms->y, atoms->z);
+            sprintf(interp->result, "%f %f %f", atoms->x, atoms->y, atoms->z);
 #endif
-          return TCL_OK;
+            return TCL_OK;
+          } else if (!strcasecmp(argv[1], "mass")) {
+#if TCL_MINOR_VERSION >= 6
+            char buf[512];
+            sprintf(buf, "%f", atoms->mass);
+            Tcl_AppendResult(interp, buf, NULL);
+#else
+            sprintf(interp->result, "%f", atoms->mass);
+#endif
+            return TCL_OK;
+          }
         }
         atoms = atoms->next;
       }
