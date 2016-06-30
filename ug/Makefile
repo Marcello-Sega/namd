@@ -91,7 +91,7 @@ $(DOCDIR)/ug.dvi: $(SRCFILES)
 
 namd_version.tex: Makefile
 	$(DELETE) namd_version.tex ; \
-	echo "\\newcommand{\\NAMDVER}{$(NAMD_VERSION)}" > namd_version.tex
+	env echo '\newcommand{\NAMDVER}{$(NAMD_VERSION)}' > namd_version.tex
 
 psfgen_macros.tex: ../psfgen/doc/ug_macros.tex
 	$(DELETE) psfgen_macros.tex ; \
