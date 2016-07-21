@@ -12,6 +12,7 @@ while (<>) {
   if ( ($target,$other) = /([a-zA-Z0-9_]*\.o:)(.*)$/ ) {
     print "obj/";
     print $target;
+    print " \\\n	obj/.exists";
     $go=1;
     $first=1;
     while ($go) {

@@ -1,4 +1,5 @@
 obj/ComputeMoa.o: \
+	obj/.exists \
 	src/ComputeMoa.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -64,6 +65,7 @@ obj/ComputeMoa.o: \
 	src/varsizemsg.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMoa.o $(COPTC) src/ComputeMoa.C
 obj/ComputeMsm.o: \
+	obj/.exists \
 	src/ComputeMsm.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -132,9 +134,11 @@ obj/ComputeMsm.o: \
 	inc/ComputeMsmMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsm.o $(COPTC) src/ComputeMsm.C
 obj/ComputeMsmMsa.o: \
+	obj/.exists \
 	src/ComputeMsmMsa.C
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsmMsa.o $(COPTC) src/ComputeMsmMsa.C
 obj/ComputeMsmSerial.o: \
+	obj/.exists \
 	src/ComputeMsmSerial.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -200,6 +204,7 @@ obj/ComputeMsmSerial.o: \
 	inc/ComputeMsmSerialMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsmSerial.o $(COPTC) src/ComputeMsmSerial.C
 obj/ComputeFmmSerial.o: \
+	obj/.exists \
 	src/ComputeFmmSerial.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -264,51 +269,60 @@ obj/ComputeFmmSerial.o: \
 	inc/ComputeFmmSerialMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeFmmSerial.o $(COPTC) src/ComputeFmmSerial.C
 obj/msm.o: \
+	obj/.exists \
 	src/msm.c \
 	src/msm_defn.h \
 	src/msm.h \
 	src/wkfutils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm.o $(COPTC) src/msm.c
 obj/msm_longrng.o: \
+	obj/.exists \
 	src/msm_longrng.c \
 	src/msm_defn.h \
 	src/msm.h \
 	src/wkfutils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_longrng.o $(COPTC) src/msm_longrng.c
 obj/msm_longrng_sprec.o: \
+	obj/.exists \
 	src/msm_longrng_sprec.c \
 	src/msm_defn.h \
 	src/msm.h \
 	src/wkfutils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_longrng_sprec.o $(COPTC) src/msm_longrng_sprec.c
 obj/msm_setup.o: \
+	obj/.exists \
 	src/msm_setup.c \
 	src/msm_defn.h \
 	src/msm.h \
 	src/wkfutils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_setup.o $(COPTC) src/msm_setup.c
 obj/msm_shortrng.o: \
+	obj/.exists \
 	src/msm_shortrng.c \
 	src/msm_defn.h \
 	src/msm.h \
 	src/wkfutils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_shortrng.o $(COPTC) src/msm_shortrng.c
 obj/msm_shortrng_sprec.o: \
+	obj/.exists \
 	src/msm_shortrng_sprec.c \
 	src/msm_defn.h \
 	src/msm.h \
 	src/wkfutils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_shortrng_sprec.o $(COPTC) src/msm_shortrng_sprec.c
 obj/wkfutils.o: \
+	obj/.exists \
 	src/wkfutils.c \
 	src/wkfutils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/wkfutils.o $(COPTC) src/wkfutils.c
 obj/common.o: \
+	obj/.exists \
 	src/common.C \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/common.o $(COPTC) src/common.C
 obj/dcdlib.o: \
+	obj/.exists \
 	src/dcdlib.C \
 	src/dcdlib.h \
 	src/largefiles.h \
@@ -316,13 +330,16 @@ obj/dcdlib.o: \
 	src/Vector.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/dcdlib.o $(COPTC) src/dcdlib.C
 obj/erf.o: \
+	obj/.exists \
 	src/erf.C
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/erf.o $(COPTC) src/erf.C
 obj/fitrms.o: \
+	obj/.exists \
 	src/fitrms.C \
 	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/fitrms.o $(COPTC) src/fitrms.C
 obj/main.o: \
+	obj/.exists \
 	src/main.C \
 	src/InfoStream.h \
 	src/memusage.h \
@@ -365,6 +382,7 @@ obj/main.o: \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/main.o $(COPTC) src/main.C
 obj/mainfunc.o: \
+	obj/.exists \
 	src/mainfunc.C \
 	src/memusage.h \
 	src/common.h \
@@ -400,15 +418,18 @@ obj/mainfunc.o: \
 	src/ScriptTcl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/mainfunc.o $(COPTC) src/mainfunc.C
 obj/memusage.o: \
+	obj/.exists \
 	src/memusage.C \
 	src/memusage.h
 	$(CXXMEMUSAGE) $(CXXFLAGS) $(COPTO)obj/memusage.o $(COPTC) src/memusage.C
 obj/strlib.o: \
+	obj/.exists \
 	src/strlib.C \
 	src/strlib.h \
 	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/strlib.o $(COPTC) src/strlib.C
 obj/AlgSeven.o: \
+	obj/.exists \
 	src/AlgSeven.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -436,6 +457,7 @@ obj/AlgSeven.o: \
 	src/UniqueSetIter.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgSeven.o $(COPTC) src/AlgSeven.C
 obj/AlgRecBisection.o: \
+	obj/.exists \
 	src/AlgRecBisection.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -466,6 +488,7 @@ obj/AlgRecBisection.o: \
 	src/UniqueSetIter.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgRecBisection.o $(COPTC) src/AlgRecBisection.C
 obj/AlgNbor.o: \
+	obj/.exists \
 	src/AlgNbor.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -491,6 +514,7 @@ obj/AlgNbor.o: \
 	src/BOCgroup.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgNbor.o $(COPTC) src/AlgNbor.C
 obj/AtomMap.o: \
+	obj/.exists \
 	src/AtomMap.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
@@ -503,6 +527,7 @@ obj/AtomMap.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AtomMap.o $(COPTC) src/AtomMap.C
 obj/BackEnd.o: \
+	obj/.exists \
 	src/BackEnd.C \
 	src/BackEnd.h \
 	src/ProcessorPrivate.h \
@@ -602,6 +627,7 @@ obj/BackEnd.o: \
 	inc/Sync.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/BackEnd.o $(COPTC) src/BackEnd.C
 obj/BroadcastMgr.o: \
+	obj/.exists \
 	src/BroadcastMgr.C \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -629,6 +655,7 @@ obj/BroadcastMgr.o: \
 	inc/BroadcastMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/BroadcastMgr.o $(COPTC) src/BroadcastMgr.C
 obj/BroadcastClient.o: \
+	obj/.exists \
 	src/BroadcastClient.C \
 	src/InfoStream.h \
 	src/BroadcastMgr.h \
@@ -643,6 +670,7 @@ obj/BroadcastClient.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/BroadcastClient.o $(COPTC) src/BroadcastClient.C
 obj/CollectionMaster.o: \
+	obj/.exists \
 	src/CollectionMaster.C \
 	src/largefiles.h \
 	src/InfoStream.h \
@@ -705,6 +733,7 @@ obj/CollectionMaster.o: \
 	inc/CollectionMaster.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/CollectionMaster.o $(COPTC) src/CollectionMaster.C
 obj/CollectionMgr.o: \
+	obj/.exists \
 	src/CollectionMgr.C \
 	inc/CollectionMgr.decl.h \
 	src/CollectionMgr.h \
@@ -766,6 +795,7 @@ obj/CollectionMgr.o: \
 	inc/CollectionMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/CollectionMgr.o $(COPTC) src/CollectionMgr.C
 obj/Communicate.o: \
+	obj/.exists \
 	src/Communicate.C \
 	src/Communicate.h \
 	src/MStream.h \
@@ -773,6 +803,7 @@ obj/Communicate.o: \
 	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Communicate.o $(COPTC) src/Communicate.C
 obj/Compute.o: \
+	obj/.exists \
 	src/Compute.C \
 	src/main.h \
 	inc/WorkDistrib.decl.h \
@@ -794,6 +825,7 @@ obj/Compute.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Compute.o $(COPTC) src/Compute.C
 obj/ComputeAngles.o: \
+	obj/.exists \
 	src/ComputeAngles.C \
 	src/InfoStream.h \
 	src/ComputeAngles.h \
@@ -860,6 +892,7 @@ obj/ComputeAngles.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeAngles.o $(COPTC) src/ComputeAngles.C
 obj/ComputeAniso.o: \
+	obj/.exists \
 	src/ComputeAniso.C \
 	src/InfoStream.h \
 	src/ComputeAniso.h \
@@ -926,6 +959,7 @@ obj/ComputeAniso.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeAniso.o $(COPTC) src/ComputeAniso.C
 obj/ComputeBonds.o: \
+	obj/.exists \
 	src/ComputeBonds.C \
 	src/InfoStream.h \
 	src/ComputeBonds.h \
@@ -992,6 +1026,7 @@ obj/ComputeBonds.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeBonds.o $(COPTC) src/ComputeBonds.C
 obj/ComputeConsForce.o: \
+	obj/.exists \
 	src/ComputeConsForce.C \
 	src/InfoStream.h \
 	src/SimParameters.h \
@@ -1042,6 +1077,7 @@ obj/ComputeConsForce.o: \
 	src/Settle.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeConsForce.o $(COPTC) src/ComputeConsForce.C
 obj/ComputeConsForceMsgs.o: \
+	obj/.exists \
 	src/ComputeConsForceMsgs.C \
 	src/ComputeConsForceMsgs.h \
 	src/NamdTypes.h \
@@ -1053,6 +1089,7 @@ obj/ComputeConsForceMsgs.o: \
 	src/packmsg.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeConsForceMsgs.o $(COPTC) src/ComputeConsForceMsgs.C
 obj/ComputeCrossterms.o: \
+	obj/.exists \
 	src/ComputeCrossterms.C \
 	src/InfoStream.h \
 	src/ComputeCrossterms.h \
@@ -1118,6 +1155,7 @@ obj/ComputeCrossterms.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeCrossterms.o $(COPTC) src/ComputeCrossterms.C
 obj/ComputeCylindricalBC.o: \
+	obj/.exists \
 	src/ComputeCylindricalBC.C \
 	src/ComputeCylindricalBC.h \
 	src/ComputeHomePatch.h \
@@ -1149,6 +1187,7 @@ obj/ComputeCylindricalBC.o: \
 	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeCylindricalBC.o $(COPTC) src/ComputeCylindricalBC.C
 obj/ComputeDihedrals.o: \
+	obj/.exists \
 	src/ComputeDihedrals.C \
 	src/InfoStream.h \
 	src/ComputeDihedrals.h \
@@ -1215,6 +1254,7 @@ obj/ComputeDihedrals.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDihedrals.o $(COPTC) src/ComputeDihedrals.C
 obj/ComputeDPME.o: \
+	obj/.exists \
 	src/ComputeDPME.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -1275,6 +1315,7 @@ obj/ComputeDPME.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDPME.o $(COPTC) src/ComputeDPME.C
 obj/ComputeDPMEMsgs.o: \
+	obj/.exists \
 	src/ComputeDPMEMsgs.C \
 	src/ComputeDPMEMsgs.h \
 	src/NamdTypes.h \
@@ -1287,6 +1328,7 @@ obj/ComputeDPMEMsgs.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDPMEMsgs.o $(COPTC) src/ComputeDPMEMsgs.C
 obj/ComputeDPMTA.o: \
+	obj/.exists \
 	src/ComputeDPMTA.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -1343,6 +1385,7 @@ obj/ComputeDPMTA.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDPMTA.o $(COPTC) src/ComputeDPMTA.C
 obj/ComputeEField.o: \
+	obj/.exists \
 	src/ComputeEField.C \
 	src/InfoStream.h \
 	src/ComputeEField.h \
@@ -1382,6 +1425,7 @@ obj/ComputeEField.o: \
 	src/Settle.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeEField.o $(COPTC) src/ComputeEField.C
 obj/ComputeEwald.o: \
+	obj/.exists \
 	src/ComputeEwald.C \
 	src/Node.h \
 	src/main.h \
@@ -1444,6 +1488,7 @@ obj/ComputeEwald.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeEwald.o $(COPTC) src/ComputeEwald.C
 obj/ComputeExt.o: \
+	obj/.exists \
 	src/ComputeExt.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -1508,6 +1553,7 @@ obj/ComputeExt.o: \
 	inc/ComputeExtMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeExt.o $(COPTC) src/ComputeExt.C
 obj/ComputeGBISser.o: \
+	obj/.exists \
 	src/ComputeGBISser.C \
 	src/Vector.h \
 	src/common.h \
@@ -1573,6 +1619,7 @@ obj/ComputeGBISser.o: \
 	inc/ComputeGBISserMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGBISser.o $(COPTC) src/ComputeGBISser.C
 obj/ComputeGBIS.o: \
+	obj/.exists \
 	src/ComputeGBIS.C \
 	src/ComputeNonbondedUtil.h \
 	src/NamdTypes.h \
@@ -1606,6 +1653,7 @@ obj/ComputeGBIS.o: \
 	src/ComputeGBIS.inl
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGBIS.o $(COPTC) src/ComputeGBIS.C
 obj/ComputeGromacsPair.o: \
+	obj/.exists \
 	src/ComputeGromacsPair.C \
 	src/InfoStream.h \
 	src/ComputeGromacsPair.h \
@@ -1673,6 +1721,7 @@ obj/ComputeGromacsPair.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGromacsPair.o $(COPTC) src/ComputeGromacsPair.C
 obj/ComputeLCPO.o: \
+	obj/.exists \
 	src/ComputeLCPO.C \
 	src/ComputeLCPO.h \
 	src/Compute.h \
@@ -1734,6 +1783,7 @@ obj/ComputeLCPO.o: \
 	inc/NamdDummyLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeLCPO.o $(COPTC) src/ComputeLCPO.C
 obj/ComputeFullDirect.o: \
+	obj/.exists \
 	src/ComputeFullDirect.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -1791,6 +1841,7 @@ obj/ComputeFullDirect.o: \
 	src/ComputeFullDirectBase.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/ComputeFullDirect.o $(COPTC) src/ComputeFullDirect.C
 obj/ComputeHomePatch.o: \
+	obj/.exists \
 	src/ComputeHomePatch.C \
 	src/InfoStream.h \
 	inc/WorkDistrib.decl.h \
@@ -1829,6 +1880,7 @@ obj/ComputeHomePatch.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeHomePatch.o $(COPTC) src/ComputeHomePatch.C
 obj/ComputeHomePatches.o: \
+	obj/.exists \
 	src/ComputeHomePatches.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -1880,6 +1932,7 @@ obj/ComputeHomePatches.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeHomePatches.o $(COPTC) src/ComputeHomePatches.C
 obj/ComputeImpropers.o: \
+	obj/.exists \
 	src/ComputeImpropers.C \
 	src/InfoStream.h \
 	src/ComputeImpropers.h \
@@ -1945,6 +1998,7 @@ obj/ComputeImpropers.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeImpropers.o $(COPTC) src/ComputeImpropers.C
 obj/ComputeGlobal.o: \
+	obj/.exists \
 	src/ComputeGlobal.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -2004,6 +2058,7 @@ obj/ComputeGlobal.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobal.o $(COPTC) src/ComputeGlobal.C
 obj/ComputeGlobalMsgs.o: \
+	obj/.exists \
 	src/ComputeGlobalMsgs.C \
 	src/ComputeGlobalMsgs.h \
 	src/NamdTypes.h \
@@ -2018,6 +2073,7 @@ obj/ComputeGlobalMsgs.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobalMsgs.o $(COPTC) src/ComputeGlobalMsgs.C
 obj/ComputeGridForce.o: \
+	obj/.exists \
 	src/ComputeGridForce.C \
 	src/ComputeGridForce.h \
 	src/ComputeHomePatch.h \
@@ -2070,6 +2126,7 @@ obj/ComputeGridForce.o: \
 	src/GridForceGrid.inl
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGridForce.o $(COPTC) src/ComputeGridForce.C
 obj/ComputeMap.o: \
+	obj/.exists \
 	src/ComputeMap.C \
 	src/InfoStream.h \
 	src/ComputeMap.h \
@@ -2086,6 +2143,7 @@ obj/ComputeMap.o: \
 	src/ComputeNonbondedMICKernel.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMap.o $(COPTC) src/ComputeMap.C
 obj/ComputeMgr.o: \
+	obj/.exists \
 	src/ComputeMgr.C \
 	src/InfoStream.h \
 	src/ProcessorPrivate.h \
@@ -2249,6 +2307,7 @@ obj/ComputeMgr.o: \
 	inc/ComputeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMgr.o $(COPTC) src/ComputeMgr.C
 obj/ComputeNonbondedSelf.o: \
+	obj/.exists \
 	src/ComputeNonbondedSelf.C \
 	src/ComputeNonbondedSelf.h \
 	src/ComputePatch.h \
@@ -2299,6 +2358,7 @@ obj/ComputeNonbondedSelf.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedSelf.o $(COPTC) src/ComputeNonbondedSelf.C
 obj/ComputeNonbondedPair.o: \
+	obj/.exists \
 	src/ComputeNonbondedPair.C \
 	src/ComputeNonbondedPair.h \
 	src/ComputePatchPair.h \
@@ -2356,6 +2416,7 @@ obj/ComputeNonbondedPair.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedPair.o $(COPTC) src/ComputeNonbondedPair.C
 obj/ComputeNonbondedUtil.o: \
+	obj/.exists \
 	src/ComputeNonbondedUtil.C \
 	src/InfoStream.h \
 	src/ComputeNonbondedUtil.h \
@@ -2393,6 +2454,7 @@ obj/ComputeNonbondedUtil.o: \
 	src/MsmMacros.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputeNonbondedStd.o: \
+	obj/.exists \
 	src/ComputeNonbondedStd.C \
 	src/common.h \
 	src/NamdTypes.h \
@@ -2437,6 +2499,7 @@ obj/ComputeNonbondedStd.o: \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedStd.o $(COPTC) src/ComputeNonbondedStd.C
 obj/ComputeNonbondedFEP.o: \
+	obj/.exists \
 	src/ComputeNonbondedFEP.C \
 	src/ComputeNonbondedInl.h \
 	src/ComputeNonbondedUtil.h \
@@ -2481,6 +2544,7 @@ obj/ComputeNonbondedFEP.o: \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedFEP.o $(COPTC) src/ComputeNonbondedFEP.C
 obj/ComputeNonbondedGo.o: \
+	obj/.exists \
 	src/ComputeNonbondedGo.C \
 	src/common.h \
 	src/NamdTypes.h \
@@ -2525,6 +2589,7 @@ obj/ComputeNonbondedGo.o: \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedGo.o $(COPTC) src/ComputeNonbondedGo.C
 obj/ComputeNonbondedTI.o: \
+	obj/.exists \
 	src/ComputeNonbondedTI.C \
 	src/ComputeNonbondedInl.h \
 	src/ComputeNonbondedUtil.h \
@@ -2569,6 +2634,7 @@ obj/ComputeNonbondedTI.o: \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedTI.o $(COPTC) src/ComputeNonbondedTI.C
 obj/ComputeNonbondedLES.o: \
+	obj/.exists \
 	src/ComputeNonbondedLES.C \
 	src/ComputeNonbondedInl.h \
 	src/ComputeNonbondedUtil.h \
@@ -2613,6 +2679,7 @@ obj/ComputeNonbondedLES.o: \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedLES.o $(COPTC) src/ComputeNonbondedLES.C
 obj/ComputeNonbondedPProf.o: \
+	obj/.exists \
 	src/ComputeNonbondedPProf.C \
 	src/ComputeNonbondedInl.h \
 	src/ComputeNonbondedUtil.h \
@@ -2657,6 +2724,7 @@ obj/ComputeNonbondedPProf.o: \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedPProf.o $(COPTC) src/ComputeNonbondedPProf.C
 obj/ComputeNonbondedTabEnergies.o: \
+	obj/.exists \
 	src/ComputeNonbondedTabEnergies.C \
 	src/ComputeNonbondedInl.h \
 	src/ComputeNonbondedUtil.h \
@@ -2701,6 +2769,7 @@ obj/ComputeNonbondedTabEnergies.o: \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedTabEnergies.o $(COPTC) src/ComputeNonbondedTabEnergies.C
 obj/ComputeNonbondedCUDA.o: \
+	obj/.exists \
 	src/ComputeNonbondedCUDA.C \
 	src/common.h \
 	src/WorkDistrib.h \
@@ -2779,6 +2848,7 @@ obj/ComputeNonbondedCUDA.o: \
 	src/CudaUtils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedCUDA.o $(COPTC) src/ComputeNonbondedCUDA.C
 obj/ComputeNonbondedCUDAExcl.o: \
+	obj/.exists \
 	src/ComputeNonbondedCUDAExcl.C \
 	src/InfoStream.h \
 	src/ComputeNonbondedCUDAExcl.h \
@@ -2847,6 +2917,7 @@ obj/ComputeNonbondedCUDAExcl.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedCUDAExcl.o $(COPTC) src/ComputeNonbondedCUDAExcl.C
 obj/ComputeNonbondedMIC.o: \
+	obj/.exists \
 	src/ComputeNonbondedMIC.C \
 	src/common.h \
 	src/WorkDistrib.h \
@@ -2923,6 +2994,7 @@ obj/ComputeNonbondedMIC.o: \
 	src/SortAtoms.h
 	$(CXX) $(CXXMICFLAGS) $(COPTO)obj/ComputeNonbondedMIC.o $(COPTC) src/ComputeNonbondedMIC.C
 obj/ComputeNonbondedMICKernel.o: \
+	obj/.exists \
 	src/ComputeNonbondedMICKernel.C \
 	src/ComputeNonbondedMICKernel.h \
 	src/ComputeNonbondedMICKernelBase.h \
@@ -2931,6 +3003,7 @@ obj/ComputeNonbondedMICKernel.o: \
 	src/ComputeNonbondedMICKernelBase2_scalar.h
 	$(CXX) $(CXXMICFLAGS) $(COPTO)obj/ComputeNonbondedMICKernel.o $(COPTC) src/ComputeNonbondedMICKernel.C
 obj/ComputePatch.o: \
+	obj/.exists \
 	src/ComputePatch.C \
 	inc/WorkDistrib.decl.h \
 	src/Node.h \
@@ -2970,6 +3043,7 @@ obj/ComputePatch.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePatch.o $(COPTC) src/ComputePatch.C
 obj/ComputePatchPair.o: \
+	obj/.exists \
 	src/ComputePatchPair.C \
 	inc/WorkDistrib.decl.h \
 	src/Node.h \
@@ -3009,6 +3083,7 @@ obj/ComputePatchPair.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePatchPair.o $(COPTC) src/ComputePatchPair.C
 obj/ComputePme.o: \
+	obj/.exists \
 	src/ComputePme.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -3086,6 +3161,7 @@ obj/ComputePme.o: \
 	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePme.o $(COPTC) src/ComputePme.C
 obj/OptPme.o: \
+	obj/.exists \
 	src/OptPme.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -3165,6 +3241,7 @@ obj/OptPme.o: \
 	inc/OptPmeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/OptPme.o $(COPTC) src/OptPme.C
 obj/OptPmeRealSpace.o: \
+	obj/.exists \
 	src/OptPmeRealSpace.C \
 	src/OptPmeRealSpace.h \
 	src/PmeBase.h \
@@ -3174,6 +3251,7 @@ obj/OptPmeRealSpace.o: \
 	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/OptPmeRealSpace.o $(COPTC) src/OptPmeRealSpace.C
 obj/ComputeRestraints.o: \
+	obj/.exists \
 	src/ComputeRestraints.C \
 	src/ComputeRestraints.h \
 	src/ComputeHomePatch.h \
@@ -3219,6 +3297,7 @@ obj/ComputeRestraints.o: \
 	src/PDBData.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeRestraints.o $(COPTC) src/ComputeRestraints.C
 obj/ComputeSphericalBC.o: \
+	obj/.exists \
 	src/ComputeSphericalBC.C \
 	src/ComputeSphericalBC.h \
 	src/ComputeHomePatch.h \
@@ -3250,6 +3329,7 @@ obj/ComputeSphericalBC.o: \
 	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeSphericalBC.o $(COPTC) src/ComputeSphericalBC.C
 obj/ComputeStir.o: \
+	obj/.exists \
 	src/ComputeStir.C \
 	src/InfoStream.h \
 	src/ComputeStir.h \
@@ -3303,6 +3383,7 @@ obj/ComputeStir.o: \
 	inc/CollectionMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeStir.o $(COPTC) src/ComputeStir.C
 obj/ComputeTclBC.o: \
+	obj/.exists \
 	src/ComputeTclBC.C \
 	src/InfoStream.h \
 	src/ComputeTclBC.h \
@@ -3354,6 +3435,7 @@ obj/ComputeTclBC.o: \
 	src/TclCommands.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeTclBC.o $(COPTC) src/ComputeTclBC.C
 obj/ComputeThole.o: \
+	obj/.exists \
 	src/ComputeThole.C \
 	src/InfoStream.h \
 	src/ComputeThole.h \
@@ -3420,6 +3502,7 @@ obj/ComputeThole.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeThole.o $(COPTC) src/ComputeThole.C
 obj/ConfigList.o: \
+	obj/.exists \
 	src/ConfigList.C \
 	src/InfoStream.h \
 	src/ConfigList.h \
@@ -3427,6 +3510,7 @@ obj/ConfigList.o: \
 	src/strlib.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ConfigList.o $(COPTC) src/ConfigList.C
 obj/Controller.o: \
+	obj/.exists \
 	src/Controller.C \
 	src/InfoStream.h \
 	src/memusage.h \
@@ -3510,15 +3594,18 @@ obj/Controller.o: \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/Controller.o $(COPTC) src/Controller.C
 obj/CudaUtils.o: \
+	obj/.exists \
 	src/CudaUtils.C \
 	src/common.h \
 	src/CudaUtils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/CudaUtils.o $(COPTC) src/CudaUtils.C
 obj/ccsinterface.o: \
+	obj/.exists \
 	src/ccsinterface.C \
 	src/ccsinterface.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ccsinterface.o $(COPTC) src/ccsinterface.C
 obj/DataStream.o: \
+	obj/.exists \
 	src/DataStream.C \
 	src/DataStream.h \
 	src/InfoStream.h \
@@ -3541,6 +3628,7 @@ obj/DataStream.o: \
 	inc/CollectionMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/DataStream.o $(COPTC) src/DataStream.C
 obj/DeviceCUDA.o: \
+	obj/.exists \
 	src/DeviceCUDA.C \
 	src/common.h \
 	src/DeviceCUDA.h \
@@ -3557,6 +3645,7 @@ obj/DeviceCUDA.o: \
 	src/CudaUtils.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/DeviceCUDA.o $(COPTC) src/DeviceCUDA.C
 obj/DumpBench.o: \
+	obj/.exists \
 	src/DumpBench.C \
 	src/InfoStream.h \
 	src/DumpBench.h \
@@ -3610,16 +3699,19 @@ obj/DumpBench.o: \
 	src/DumpBenchParams.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/DumpBench.o $(COPTC) src/DumpBench.C
 obj/FreeEnergyAssert.o: \
+	obj/.exists \
 	src/FreeEnergyAssert.C \
 	src/InfoStream.h \
 	src/FreeEnergyAssert.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyAssert.o $(COPTC) src/FreeEnergyAssert.C
 obj/FreeEnergyGroup.o: \
+	obj/.exists \
 	src/FreeEnergyGroup.C \
 	src/FreeEnergyAssert.h \
 	src/FreeEnergyGroup.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyGroup.o $(COPTC) src/FreeEnergyGroup.C
 obj/FreeEnergyLambda.o: \
+	obj/.exists \
 	src/FreeEnergyLambda.C \
 	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
@@ -3630,6 +3722,7 @@ obj/FreeEnergyLambda.o: \
 	src/FreeEnergyVector.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyLambda.o $(COPTC) src/FreeEnergyLambda.C
 obj/FreeEnergyLambdMgr.o: \
+	obj/.exists \
 	src/FreeEnergyLambdMgr.C \
 	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
@@ -3639,6 +3732,7 @@ obj/FreeEnergyLambdMgr.o: \
 	src/FreeEnergyGroup.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyLambdMgr.o $(COPTC) src/FreeEnergyLambdMgr.C
 obj/FreeEnergyParse.o: \
+	obj/.exists \
 	src/FreeEnergyParse.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -3659,6 +3753,7 @@ obj/FreeEnergyParse.o: \
 	src/FreeEnergyParse.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyParse.o $(COPTC) src/FreeEnergyParse.C
 obj/FreeEnergyRestrain.o: \
+	obj/.exists \
 	src/FreeEnergyRestrain.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -3678,6 +3773,7 @@ obj/FreeEnergyRestrain.o: \
 	src/GlobalMasterFreeEnergy.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyRestrain.o $(COPTC) src/FreeEnergyRestrain.C
 obj/FreeEnergyRMgr.o: \
+	obj/.exists \
 	src/FreeEnergyRMgr.C \
 	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
@@ -3697,6 +3793,7 @@ obj/FreeEnergyRMgr.o: \
 	src/GlobalMasterFreeEnergy.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyRMgr.o $(COPTC) src/FreeEnergyRMgr.C
 obj/FreeEnergyVector.o: \
+	obj/.exists \
 	src/FreeEnergyVector.C \
 	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
@@ -3706,11 +3803,13 @@ obj/FreeEnergyVector.o: \
 	src/FreeEnergyVector.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyVector.o $(COPTC) src/FreeEnergyVector.C
 obj/fstream_namd.o: \
+	obj/.exists \
 	src/fstream_namd.C \
 	src/fstream_namd.h \
 	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/fstream_namd.o $(COPTC) src/fstream_namd.C
 obj/GlobalMaster.o: \
+	obj/.exists \
 	src/GlobalMaster.C \
 	src/Node.h \
 	src/main.h \
@@ -3745,6 +3844,7 @@ obj/GlobalMaster.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMaster.o $(COPTC) src/GlobalMaster.C
 obj/GlobalMasterServer.o: \
+	obj/.exists \
 	src/GlobalMasterServer.C \
 	src/ComputeGlobalMsgs.h \
 	src/NamdTypes.h \
@@ -3771,6 +3871,7 @@ obj/GlobalMasterServer.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterServer.o $(COPTC) src/GlobalMasterServer.C
 obj/GlobalMasterTest.o: \
+	obj/.exists \
 	src/GlobalMasterTest.C \
 	src/NamdTypes.h \
 	src/common.h \
@@ -3782,6 +3883,7 @@ obj/GlobalMasterTest.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterTest.o $(COPTC) src/GlobalMasterTest.C
 obj/GlobalMasterIMD.o: \
+	obj/.exists \
 	src/GlobalMasterIMD.C \
 	src/InfoStream.h \
 	src/vmdsock.h \
@@ -3811,6 +3913,7 @@ obj/GlobalMasterIMD.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterIMD.o $(COPTC) src/GlobalMasterIMD.C
 obj/GlobalMasterTcl.o: \
+	obj/.exists \
 	src/GlobalMasterTcl.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -3860,6 +3963,7 @@ obj/GlobalMasterTcl.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterTcl.o $(COPTC) src/GlobalMasterTcl.C
 obj/GlobalMasterSMD.o: \
+	obj/.exists \
 	src/GlobalMasterSMD.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -3897,6 +4001,7 @@ obj/GlobalMasterSMD.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterSMD.o $(COPTC) src/GlobalMasterSMD.C
 obj/GlobalMasterTMD.o: \
+	obj/.exists \
 	src/GlobalMasterTMD.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -3935,6 +4040,7 @@ obj/GlobalMasterTMD.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterTMD.o $(COPTC) src/GlobalMasterTMD.C
 obj/Matrix4Symmetry.o: \
+	obj/.exists \
 	src/Matrix4Symmetry.C \
 	src/Matrix4Symmetry.h \
 	src/NamdTypes.h \
@@ -3944,6 +4050,7 @@ obj/Matrix4Symmetry.o: \
 	src/ResizeArrayRaw.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Matrix4Symmetry.o $(COPTC) src/Matrix4Symmetry.C
 obj/GlobalMasterSymmetry.o: \
+	obj/.exists \
 	src/GlobalMasterSymmetry.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -3983,6 +4090,7 @@ obj/GlobalMasterSymmetry.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterSymmetry.o $(COPTC) src/GlobalMasterSymmetry.C
 obj/GlobalMasterFreeEnergy.o: \
+	obj/.exists \
 	src/GlobalMasterFreeEnergy.C \
 	src/InfoStream.h \
 	src/NamdTypes.h \
@@ -4028,6 +4136,7 @@ obj/GlobalMasterFreeEnergy.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterFreeEnergy.o $(COPTC) src/GlobalMasterFreeEnergy.C
 obj/GlobalMasterEasy.o: \
+	obj/.exists \
 	src/GlobalMasterEasy.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -4084,6 +4193,7 @@ obj/GlobalMasterEasy.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterEasy.o $(COPTC) src/GlobalMasterEasy.C
 obj/GlobalMasterMisc.o: \
+	obj/.exists \
 	src/GlobalMasterMisc.C \
 	src/InfoStream.h \
 	src/NamdTypes.h \
@@ -4119,6 +4229,7 @@ obj/GlobalMasterMisc.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterMisc.o $(COPTC) src/GlobalMasterMisc.C
 obj/colvar.o: \
+	obj/.exists \
 	src/colvar.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4133,6 +4244,7 @@ obj/colvar.o: \
 	src/colvarbias.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvar.o $(COPTC) src/colvar.C
 obj/colvaratoms.o: \
+	obj/.exists \
 	src/colvaratoms.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4143,6 +4255,7 @@ obj/colvaratoms.o: \
 	src/colvaratoms.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvaratoms.o $(COPTC) src/colvaratoms.C
 obj/colvarbias.o: \
+	obj/.exists \
 	src/colvarbias.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4154,6 +4267,7 @@ obj/colvarbias.o: \
 	src/colvarparse.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias.o $(COPTC) src/colvarbias.C
 obj/colvarbias_abf.o: \
+	obj/.exists \
 	src/colvarbias_abf.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4167,6 +4281,7 @@ obj/colvarbias_abf.o: \
 	src/colvargrid.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_abf.o $(COPTC) src/colvarbias_abf.C
 obj/colvarbias_alb.o: \
+	obj/.exists \
 	src/colvarbias_alb.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4180,6 +4295,7 @@ obj/colvarbias_alb.o: \
 	src/colvarbias.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_alb.o $(COPTC) src/colvarbias_alb.C
 obj/colvarbias_histogram.o: \
+	obj/.exists \
 	src/colvarbias_histogram.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4193,6 +4309,7 @@ obj/colvarbias_histogram.o: \
 	src/colvargrid.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_histogram.o $(COPTC) src/colvarbias_histogram.C
 obj/colvarbias_meta.o: \
+	obj/.exists \
 	src/colvarbias_meta.C \
 	src/colvar.h \
 	src/colvarmodule.h \
@@ -4206,6 +4323,7 @@ obj/colvarbias_meta.o: \
 	src/colvargrid.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_meta.o $(COPTC) src/colvarbias_meta.C
 obj/colvarbias_restraint.o: \
+	obj/.exists \
 	src/colvarbias_restraint.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4218,6 +4336,7 @@ obj/colvarbias_restraint.o: \
 	src/colvarparse.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarbias_restraint.o $(COPTC) src/colvarbias_restraint.C
 obj/colvarcomp.o: \
+	obj/.exists \
 	src/colvarcomp.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4230,6 +4349,7 @@ obj/colvarcomp.o: \
 	src/colvaratoms.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp.o $(COPTC) src/colvarcomp.C
 obj/colvarcomp_angles.o: \
+	obj/.exists \
 	src/colvarcomp_angles.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4242,6 +4362,7 @@ obj/colvarcomp_angles.o: \
 	src/colvaratoms.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_angles.o $(COPTC) src/colvarcomp_angles.C
 obj/colvarcomp_coordnums.o: \
+	obj/.exists \
 	src/colvarcomp_coordnums.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4254,6 +4375,7 @@ obj/colvarcomp_coordnums.o: \
 	src/colvarcomp.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_coordnums.o $(COPTC) src/colvarcomp_coordnums.C
 obj/colvarcomp_distances.o: \
+	obj/.exists \
 	src/colvarcomp_distances.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4266,6 +4388,7 @@ obj/colvarcomp_distances.o: \
 	src/colvaratoms.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_distances.o $(COPTC) src/colvarcomp_distances.C
 obj/colvarcomp_protein.o: \
+	obj/.exists \
 	src/colvarcomp_protein.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4278,6 +4401,7 @@ obj/colvarcomp_protein.o: \
 	src/colvaratoms.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_protein.o $(COPTC) src/colvarcomp_protein.C
 obj/colvarcomp_rotations.o: \
+	obj/.exists \
 	src/colvarcomp_rotations.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4290,6 +4414,7 @@ obj/colvarcomp_rotations.o: \
 	src/colvaratoms.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarcomp_rotations.o $(COPTC) src/colvarcomp_rotations.C
 obj/colvargrid.o: \
+	obj/.exists \
 	src/colvargrid.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4303,6 +4428,7 @@ obj/colvargrid.o: \
 	src/colvargrid.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvargrid.o $(COPTC) src/colvargrid.C
 obj/colvarmodule.o: \
+	obj/.exists \
 	src/colvarmodule.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4321,6 +4447,7 @@ obj/colvarmodule.o: \
 	src/colvarscript.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarmodule.o $(COPTC) src/colvarmodule.C
 obj/colvarparse.o: \
+	obj/.exists \
 	src/colvarparse.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4330,6 +4457,7 @@ obj/colvarparse.o: \
 	src/colvarparse.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarparse.o $(COPTC) src/colvarparse.C
 obj/colvarproxy_namd.o: \
+	obj/.exists \
 	src/colvarproxy_namd.C \
 	src/common.h \
 	src/fstream_namd.h \
@@ -4395,6 +4523,7 @@ obj/colvarproxy_namd.o: \
 	src/colvar.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarproxy_namd.o $(COPTC) src/colvarproxy_namd.C
 obj/colvarscript.o: \
+	obj/.exists \
 	src/colvarscript.C \
 	src/colvarscript.h \
 	src/colvarmodule.h \
@@ -4407,6 +4536,7 @@ obj/colvarscript.o: \
 	src/colvarparse.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarscript.o $(COPTC) src/colvarscript.C
 obj/colvartypes.o: \
+	obj/.exists \
 	src/colvartypes.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4416,6 +4546,7 @@ obj/colvartypes.o: \
 	src/colvarparse.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvartypes.o $(COPTC) src/colvartypes.C
 obj/colvarvalue.o: \
+	obj/.exists \
 	src/colvarvalue.C \
 	src/colvarmodule.h \
 	src/fstream_namd.h \
@@ -4424,6 +4555,7 @@ obj/colvarvalue.o: \
 	src/colvarvalue.h
 	$(CXX) $(CXXCOLVARFLAGS) $(COPTO)obj/colvarvalue.o $(COPTC) src/colvarvalue.C
 obj/GridForceGrid.o: \
+	obj/.exists \
 	src/GridForceGrid.C \
 	src/GridForceGrid.h \
 	src/Vector.h \
@@ -4476,6 +4608,7 @@ obj/GridForceGrid.o: \
 	src/GridForceGrid.inl
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GridForceGrid.o $(COPTC) src/GridForceGrid.C
 obj/GromacsTopFile.o: \
+	obj/.exists \
 	src/GromacsTopFile.C \
 	src/common.h \
 	src/ResizeArray.h \
@@ -4485,12 +4618,14 @@ obj/GromacsTopFile.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GromacsTopFile.o $(COPTC) src/GromacsTopFile.C
 obj/heap.o: \
+	obj/.exists \
 	src/heap.C \
 	src/heap.h \
 	src/elements.h \
 	src/Set.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/heap.o $(COPTC) src/heap.C
 obj/HomePatch.o: \
+	obj/.exists \
 	src/HomePatch.C \
 	src/SimParameters.h \
 	src/common.h \
@@ -4565,6 +4700,7 @@ obj/HomePatch.o: \
 	src/ComputeNonbondedMICKernel.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/HomePatch.o $(COPTC) src/HomePatch.C
 obj/IMDOutput.o: \
+	obj/.exists \
 	src/IMDOutput.C \
 	src/IMDOutput.h \
 	src/imd.h \
@@ -4577,6 +4713,7 @@ obj/IMDOutput.o: \
 	src/ResizeArrayRaw.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/IMDOutput.o $(COPTC) src/IMDOutput.C
 obj/InfoStream.o: \
+	obj/.exists \
 	src/InfoStream.C \
 	src/InfoStream.h \
 	src/Vector.h \
@@ -4584,6 +4721,7 @@ obj/InfoStream.o: \
 	src/Tensor.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/InfoStream.o $(COPTC) src/InfoStream.C
 obj/LdbCoordinator.o: \
+	obj/.exists \
 	src/LdbCoordinator.C \
 	src/InfoStream.h \
 	src/NamdCentLB.h \
@@ -4666,6 +4804,7 @@ obj/LdbCoordinator.o: \
 	inc/LdbCoordinator.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/LdbCoordinator.o $(COPTC) src/LdbCoordinator.C
 obj/LJTable.o: \
+	obj/.exists \
 	src/LJTable.C \
 	src/InfoStream.h \
 	src/LJTable.h \
@@ -4692,6 +4831,7 @@ obj/LJTable.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/LJTable.o $(COPTC) src/LJTable.C
 obj/Measure.o: \
+	obj/.exists \
 	src/Measure.C \
 	src/InfoStream.h \
 	src/Measure.h \
@@ -4726,6 +4866,7 @@ obj/Measure.o: \
 	plugins/include/vmdplugin.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Measure.o $(COPTC) src/Measure.C
 obj/MGridforceParams.o: \
+	obj/.exists \
 	src/MGridforceParams.C \
 	src/MGridforceParams.h \
 	src/strlib.h \
@@ -4735,6 +4876,7 @@ obj/MGridforceParams.o: \
 	src/MStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/MGridforceParams.o $(COPTC) src/MGridforceParams.C
 obj/MStream.o: \
+	obj/.exists \
 	src/MStream.C \
 	src/Communicate.h \
 	src/MStream.h \
@@ -4743,6 +4885,7 @@ obj/MStream.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/MStream.o $(COPTC) src/MStream.C
 obj/MigrateAtomsMsg.o: \
+	obj/.exists \
 	src/MigrateAtomsMsg.C \
 	src/InfoStream.h \
 	src/Migration.h \
@@ -4774,6 +4917,7 @@ obj/MigrateAtomsMsg.o: \
 	src/packmsg.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/MigrateAtomsMsg.o $(COPTC) src/MigrateAtomsMsg.C
 obj/Molecule.o: \
+	obj/.exists \
 	src/Molecule.C \
 	src/largefiles.h \
 	src/InfoStream.h \
@@ -4837,6 +4981,7 @@ obj/Molecule.o: \
 	inc/ParallelIOMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule.o $(COPTC) src/Molecule.C
 obj/Molecule2.o: \
+	obj/.exists \
 	src/Molecule2.C \
 	src/Molecule.C \
 	src/largefiles.h \
@@ -4901,6 +5046,7 @@ obj/Molecule2.o: \
 	inc/ParallelIOMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule2.o $(COPTC) src/Molecule2.C
 obj/GoMolecule.o: \
+	obj/.exists \
 	src/GoMolecule.C \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
@@ -4963,6 +5109,7 @@ obj/GoMolecule.o: \
 	inc/ParallelIOMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GoMolecule.o $(COPTC) src/GoMolecule.C
 obj/NamdCentLB.o: \
+	obj/.exists \
 	src/NamdCentLB.C \
 	src/InfoStream.h \
 	src/NamdCentLB.h \
@@ -5013,6 +5160,7 @@ obj/NamdCentLB.o: \
 	inc/NamdDummyLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdCentLB.o $(COPTC) src/NamdCentLB.C
 obj/NamdNborLB.o: \
+	obj/.exists \
 	src/NamdNborLB.C \
 	src/InfoStream.h \
 	src/NamdNborLB.h \
@@ -5059,6 +5207,7 @@ obj/NamdNborLB.o: \
 	inc/NamdDummyLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdNborLB.o $(COPTC) src/NamdNborLB.C
 obj/NamdHybridLB.o: \
+	obj/.exists \
 	src/NamdHybridLB.C \
 	src/InfoStream.h \
 	src/NamdHybridLB.h \
@@ -5113,6 +5262,7 @@ obj/NamdHybridLB.o: \
 	inc/NamdHybridLB.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdHybridLB.o $(COPTC) src/NamdHybridLB.C
 obj/NamdDummyLB.o: \
+	obj/.exists \
 	src/NamdDummyLB.C \
 	src/InfoStream.h \
 	src/NamdDummyLB.h \
@@ -5163,6 +5313,7 @@ obj/NamdDummyLB.o: \
 	inc/NamdDummyLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdDummyLB.o $(COPTC) src/NamdDummyLB.C
 obj/NamdState.o: \
+	obj/.exists \
 	src/NamdState.C \
 	src/InfoStream.h \
 	src/common.h \
@@ -5219,6 +5370,7 @@ obj/NamdState.o: \
 	src/BackEnd.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdState.o $(COPTC) src/NamdState.C
 obj/NamdOneTools.o: \
+	obj/.exists \
 	src/NamdOneTools.C \
 	src/InfoStream.h \
 	src/common.h \
@@ -5250,6 +5402,7 @@ obj/NamdOneTools.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdOneTools.o $(COPTC) src/NamdOneTools.C
 obj/Node.o: \
+	obj/.exists \
 	src/Node.C \
 	src/InfoStream.h \
 	inc/Node.decl.h \
@@ -5380,6 +5533,7 @@ obj/Node.o: \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Node.o $(COPTC) src/Node.C
 obj/Output.o: \
+	obj/.exists \
 	src/Output.C \
 	src/largefiles.h \
 	src/InfoStream.h \
@@ -5443,6 +5597,7 @@ obj/Output.o: \
 	src/Pointer.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Output.o $(COPTC) src/Output.C
 obj/Parameters.o: \
+	obj/.exists \
 	src/Parameters.C \
 	src/InfoStream.h \
 	src/Parameters.h \
@@ -5465,6 +5620,7 @@ obj/Parameters.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Parameters.o $(COPTC) src/Parameters.C
 obj/ParseOptions.o: \
+	obj/.exists \
 	src/ParseOptions.C \
 	src/ParseOptions.h \
 	src/common.h \
@@ -5474,6 +5630,7 @@ obj/ParseOptions.o: \
 	src/strlib.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ParseOptions.o $(COPTC) src/ParseOptions.C
 obj/Patch.o: \
+	obj/.exists \
 	src/Patch.C \
 	src/InfoStream.h \
 	src/Patch.h \
@@ -5524,6 +5681,7 @@ obj/Patch.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Patch.o $(COPTC) src/Patch.C
 obj/PatchMgr.o: \
+	obj/.exists \
 	src/PatchMgr.C \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
@@ -5595,6 +5753,7 @@ obj/PatchMgr.o: \
 	inc/PatchMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PatchMgr.o $(COPTC) src/PatchMgr.C
 obj/PatchMap.o: \
+	obj/.exists \
 	src/PatchMap.C \
 	src/InfoStream.h \
 	src/ObjectArena.h \
@@ -5633,6 +5792,7 @@ obj/PatchMap.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PatchMap.o $(COPTC) src/PatchMap.C
 obj/PDB.o: \
+	obj/.exists \
 	src/PDB.C \
 	src/common.h \
 	src/PDB.h \
@@ -5650,12 +5810,14 @@ obj/PDB.o: \
 	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PDB.o $(COPTC) src/PDB.C
 obj/PDBData.o: \
+	obj/.exists \
 	src/PDBData.C \
 	src/InfoStream.h \
 	src/PDBData.h \
 	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PDBData.o $(COPTC) src/PDBData.C
 obj/PmeKSpace.o: \
+	obj/.exists \
 	src/PmeKSpace.C \
 	src/PmeKSpace.h \
 	src/PmeBase.h \
@@ -5700,6 +5862,7 @@ obj/PmeKSpace.o: \
 	inc/Node.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PmeKSpace.o $(COPTC) src/PmeKSpace.C
 obj/PmeRealSpace.o: \
+	obj/.exists \
 	src/PmeRealSpace.C \
 	src/PmeBase.inl \
 	src/PmeBase.h \
@@ -5725,6 +5888,7 @@ obj/PmeRealSpace.o: \
 	src/MStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PmeRealSpace.o $(COPTC) src/PmeRealSpace.C
 obj/ProcessorPrivate.o: \
+	obj/.exists \
 	src/ProcessorPrivate.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
@@ -5732,6 +5896,7 @@ obj/ProcessorPrivate.o: \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ProcessorPrivate.o $(COPTC) src/ProcessorPrivate.C
 obj/ProxyMgr.o: \
+	obj/.exists \
 	src/ProxyMgr.C \
 	src/InfoStream.h \
 	src/main.h \
@@ -5781,6 +5946,7 @@ obj/ProxyMgr.o: \
 	inc/ProxyMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ProxyMgr.o $(COPTC) src/ProxyMgr.C
 obj/ProxyPatch.o: \
+	obj/.exists \
 	src/ProxyPatch.C \
 	src/InfoStream.h \
 	src/Lattice.h \
@@ -5842,6 +6008,7 @@ obj/ProxyPatch.o: \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ProxyPatch.o $(COPTC) src/ProxyPatch.C
 obj/Rebalancer.o: \
+	obj/.exists \
 	src/Rebalancer.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -5880,6 +6047,7 @@ obj/Rebalancer.o: \
 	src/memusage.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Rebalancer.o $(COPTC) src/Rebalancer.C
 obj/RecBisection.o: \
+	obj/.exists \
 	src/RecBisection.C \
 	src/RecBisection.h \
 	src/PatchMap.inl \
@@ -5913,6 +6081,7 @@ obj/RecBisection.o: \
 	src/Settle.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/RecBisection.o $(COPTC) src/RecBisection.C
 obj/ReductionMgr.o: \
+	obj/.exists \
 	src/ReductionMgr.C \
 	src/InfoStream.h \
 	src/PatchMap.h \
@@ -5942,6 +6111,7 @@ obj/ReductionMgr.o: \
 	inc/ReductionMgr.def.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/ReductionMgr.o $(COPTC) src/ReductionMgr.C
 obj/RefineOnly.o: \
+	obj/.exists \
 	src/RefineOnly.C \
 	src/InfoStream.h \
 	src/RefineOnly.h \
@@ -5967,6 +6137,7 @@ obj/RefineOnly.o: \
 	src/BOCgroup.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/RefineOnly.o $(COPTC) src/RefineOnly.C
 obj/RefineTorusLB.o: \
+	obj/.exists \
 	src/RefineTorusLB.C \
 	src/RefineTorusLB.h \
 	src/Rebalancer.h \
@@ -5992,6 +6163,7 @@ obj/RefineTorusLB.o: \
 	src/BOCgroup.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/RefineTorusLB.o $(COPTC) src/RefineTorusLB.C
 obj/ScriptTcl.o: \
+	obj/.exists \
 	src/ScriptTcl.C \
 	src/InfoStream.h \
 	src/BackEnd.h \
@@ -6077,6 +6249,7 @@ obj/ScriptTcl.o: \
 	inc/ComputeMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ScriptTcl.o $(COPTC) src/ScriptTcl.C
 obj/Sequencer.o: \
+	obj/.exists \
 	src/Sequencer.C \
 	src/InfoStream.h \
 	src/Node.h \
@@ -6158,12 +6331,14 @@ obj/Sequencer.o: \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/Sequencer.o $(COPTC) src/Sequencer.C
 obj/Set.o: \
+	obj/.exists \
 	src/Set.C \
 	src/InfoStream.h \
 	src/Set.h \
 	src/elements.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Set.o $(COPTC) src/Set.C
 obj/Settle.o: \
+	obj/.exists \
 	src/Settle.C \
 	src/Settle.h \
 	src/Vector.h \
@@ -6171,6 +6346,7 @@ obj/Settle.o: \
 	src/Tensor.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Settle.o $(COPTC) src/Settle.C
 obj/SimParameters.o: \
+	obj/.exists \
 	src/SimParameters.C \
 	src/InfoStream.h \
 	src/ComputeNonbondedUtil.h \
@@ -6209,6 +6385,7 @@ obj/SimParameters.o: \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
 obj/SortAtoms.o: \
+	obj/.exists \
 	src/SortAtoms.C \
 	src/SortAtoms.h \
 	src/NamdTypes.h \
@@ -6218,6 +6395,7 @@ obj/SortAtoms.o: \
 	src/ResizeArrayRaw.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/SortAtoms.o $(COPTC) src/SortAtoms.C
 obj/Sync.o: \
+	obj/.exists \
 	src/Sync.C \
 	src/InfoStream.h \
 	src/Patch.h \
@@ -6253,6 +6431,7 @@ obj/Sync.o: \
 	inc/Sync.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Sync.o $(COPTC) src/Sync.C
 obj/TclCommands.o: \
+	obj/.exists \
 	src/TclCommands.C \
 	src/TclCommands.h \
 	src/Vector.h \
@@ -6265,6 +6444,7 @@ obj/TclCommands.o: \
 	src/TclVec.C
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/TclCommands.o $(COPTC) src/TclCommands.C
 obj/TorusLB.o: \
+	obj/.exists \
 	src/TorusLB.C \
 	src/TorusLB.h \
 	src/Rebalancer.h \
@@ -6291,6 +6471,7 @@ obj/TorusLB.o: \
 	src/RefineTorusLB.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/TorusLB.o $(COPTC) src/TorusLB.C
 obj/WorkDistrib.o: \
+	obj/.exists \
 	src/WorkDistrib.C \
 	src/InfoStream.h \
 	src/Communicate.h \
@@ -6386,14 +6567,17 @@ obj/WorkDistrib.o: \
 	inc/WorkDistrib.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/WorkDistrib.o $(COPTC) src/WorkDistrib.C
 obj/pub3dfft.o: \
+	obj/.exists \
 	src/pub3dfft.C \
 	src/pub3dfft.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/pub3dfft.o $(COPTC) src/pub3dfft.C
 obj/vmdsock.o: \
+	obj/.exists \
 	src/vmdsock.C \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/vmdsock.o $(COPTC) src/vmdsock.C
 obj/parm.o: \
+	obj/.exists \
 	src/parm.C \
 	src/strlib.h \
 	src/common.h \
@@ -6401,11 +6585,13 @@ obj/parm.o: \
 	src/parm.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/parm.o $(COPTC) src/parm.C
 obj/imd.o: \
+	obj/.exists \
 	src/imd.C \
 	src/imd.h \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/imd.o $(COPTC) src/imd.C
 obj/CompressPsf.o: \
+	obj/.exists \
 	src/CompressPsf.C \
 	src/CompressPsf.h \
 	src/structures.h \
@@ -6436,6 +6622,7 @@ obj/CompressPsf.o: \
 	src/UniqueSetIter.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/CompressPsf.o $(COPTC) src/CompressPsf.C
 obj/PluginIOMgr.o: \
+	obj/.exists \
 	src/PluginIOMgr.C \
 	src/PluginIOMgr.h \
 	plugins/include/molfile_plugin.h \
@@ -6443,6 +6630,7 @@ obj/PluginIOMgr.o: \
 	plugins/include/libmolfile_plugin.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PluginIOMgr.o $(COPTC) src/PluginIOMgr.C
 obj/DataExchanger.o: \
+	obj/.exists \
 	src/DataExchanger.C \
 	src/DataExchanger.h \
 	src/main.h \
@@ -6516,6 +6704,7 @@ obj/DataExchanger.o: \
 	inc/DataExchanger.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/DataExchanger.o $(COPTC) src/DataExchanger.C
 obj/ParallelIOMgr.o: \
+	obj/.exists \
 	src/ParallelIOMgr.C \
 	src/largefiles.h \
 	src/BOCgroup.h \
@@ -6584,6 +6773,7 @@ obj/ParallelIOMgr.o: \
 	inc/ParallelIOMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ParallelIOMgr.o $(COPTC) src/ParallelIOMgr.C
 obj/dcdplugin.o: \
+	obj/.exists \
 	plugins/molfile_plugin/src/dcdplugin.c \
 	plugins/molfile_plugin/src/largefiles.h \
 	plugins/molfile_plugin/src/fastio.h \
@@ -6592,6 +6782,7 @@ obj/dcdplugin.o: \
 	plugins/include/vmdplugin.h
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/dcdplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_dcdplugin plugins/molfile_plugin/src/dcdplugin.c
 obj/jsplugin.o: \
+	obj/.exists \
 	plugins/molfile_plugin/src/jsplugin.c \
 	plugins/molfile_plugin/src/largefiles.h \
 	plugins/molfile_plugin/src/fastio.h \
@@ -6602,11 +6793,13 @@ obj/jsplugin.o: \
 	plugins/include/vmdplugin.h
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/jsplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_jsplugin plugins/molfile_plugin/src/jsplugin.c
 obj/namdbinplugin.o: \
+	obj/.exists \
 	plugins/molfile_plugin/src/namdbinplugin.c \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/namdbinplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_namdbinplugin plugins/molfile_plugin/src/namdbinplugin.c
 obj/pdbplugin.o: \
+	obj/.exists \
 	plugins/molfile_plugin/src/pdbplugin.c \
 	plugins/molfile_plugin/src/largefiles.h \
 	plugins/include/molfile_plugin.h \
@@ -6615,6 +6808,7 @@ obj/pdbplugin.o: \
 	plugins/molfile_plugin/src/periodic_table.h
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/pdbplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_pdbplugin plugins/molfile_plugin/src/pdbplugin.c
 obj/psfplugin.o: \
+	obj/.exists \
 	plugins/molfile_plugin/src/psfplugin.c \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -6622,9 +6816,11 @@ obj/psfplugin.o: \
 	plugins/molfile_plugin/src/endianswap.h
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/psfplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_psfplugin plugins/molfile_plugin/src/psfplugin.c
 obj/tcl_main.o: \
+	obj/.exists \
 	sb/src/tcl_main.c
 	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_main.o $(COPTC) sb/src/tcl_main.c
 obj/tcl_psfgen.o: \
+	obj/.exists \
 	sb/src/tcl_psfgen.c \
 	sb/src/psfgen.h \
 	sb/src/topo_defs.h \
@@ -6642,39 +6838,47 @@ obj/tcl_psfgen.o: \
 	sb/src/extract_alias.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_psfgen.o $(COPTC) sb/src/tcl_psfgen.c
 obj/charmm_file.o: \
+	obj/.exists \
 	sb/src/charmm_file.c \
 	sb/src/charmm_file.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/charmm_file.o $(COPTC) sb/src/charmm_file.c
 obj/charmm_parse_topo_defs.o: \
+	obj/.exists \
 	sb/src/charmm_parse_topo_defs.c \
 	sb/src/charmm_file.h \
 	sb/src/topo_defs.h \
 	sb/src/charmm_parse_topo_defs.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/charmm_parse_topo_defs.o $(COPTC) sb/src/charmm_parse_topo_defs.c
 obj/extract_alias.o: \
+	obj/.exists \
 	sb/src/extract_alias.c \
 	sb/src/stringhash.h \
 	sb/src/extract_alias.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/extract_alias.o $(COPTC) sb/src/extract_alias.c
 obj/hash.o: \
+	obj/.exists \
 	sb/src/hash.c \
 	sb/src/hash.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/hash.o $(COPTC) sb/src/hash.c
 obj/hasharray.o: \
+	obj/.exists \
 	sb/src/hasharray.c \
 	sb/src/hash.h \
 	sb/src/memarena.h \
 	sb/src/hasharray.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/hasharray.o $(COPTC) sb/src/hasharray.c
 obj/memarena.o: \
+	obj/.exists \
 	sb/src/memarena.c \
 	sb/src/memarena.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/memarena.o $(COPTC) sb/src/memarena.c
 obj/pdb_file.o: \
+	obj/.exists \
 	sb/src/pdb_file.c \
 	sb/src/pdb_file.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/pdb_file.o $(COPTC) sb/src/pdb_file.c
 obj/pdb_file_extract.o: \
+	obj/.exists \
 	sb/src/pdb_file_extract.c \
 	sb/src/pdb_file_extract.h \
 	sb/src/stringhash.h \
@@ -6684,10 +6888,12 @@ obj/pdb_file_extract.o: \
 	sb/src/extract_alias.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/pdb_file_extract.o $(COPTC) sb/src/pdb_file_extract.c
 obj/psf_file.o: \
+	obj/.exists \
 	sb/src/psf_file.c \
 	sb/src/psf_file.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/psf_file.o $(COPTC) sb/src/psf_file.c
 obj/psf_file_extract.o: \
+	obj/.exists \
 	sb/src/psf_file_extract.c \
 	sb/src/psf_file.h \
 	sb/src/psf_file_extract.h \
@@ -6700,6 +6906,7 @@ obj/psf_file_extract.o: \
 	sb/src/topo_defs_struct.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/psf_file_extract.o $(COPTC) sb/src/psf_file_extract.c
 obj/topo_defs.o: \
+	obj/.exists \
 	sb/src/topo_defs.c \
 	sb/src/topo_defs_struct.h \
 	sb/src/memarena.h \
@@ -6707,6 +6914,7 @@ obj/topo_defs.o: \
 	sb/src/topo_defs.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_defs.o $(COPTC) sb/src/topo_defs.c
 obj/topo_mol.o: \
+	obj/.exists \
 	sb/src/topo_mol.c \
 	sb/src/topo_defs_struct.h \
 	sb/src/memarena.h \
@@ -6716,6 +6924,7 @@ obj/topo_mol.o: \
 	sb/src/topo_mol.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_mol.o $(COPTC) sb/src/topo_mol.c
 obj/topo_mol_output.o: \
+	obj/.exists \
 	sb/src/topo_mol_output.c \
 	sb/src/topo_mol_output.h \
 	sb/src/topo_mol.h \
@@ -6727,6 +6936,7 @@ obj/topo_mol_output.o: \
 	sb/src/pdb_file.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_mol_output.o $(COPTC) sb/src/topo_mol_output.c
 obj/topo_mol_pluginio.o: \
+	obj/.exists \
 	sb/src/topo_mol_pluginio.c \
 	sb/src/topo_mol_pluginio.h \
 	sb/src/topo_mol.h \
@@ -6743,6 +6953,7 @@ obj/topo_mol_pluginio.o: \
 	sb/src/hash.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_mol_pluginio.o $(COPTC) sb/src/topo_mol_pluginio.c
 obj/stringhash.o: \
+	obj/.exists \
 	sb/src/stringhash.c \
 	sb/src/memarena.h \
 	sb/src/hasharray.h \
