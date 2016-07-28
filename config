@@ -50,6 +50,9 @@ syntax:
           breaksw
           case x86_64:
             set ARCH_PAT = Linux-x86_64
+            set ARCH_PAT2 = Linux-KNL
+            grep 'Xeon Phi' /proc/cpuinfo > /dev/null
+            if ( ! $? ) set ARCH_PAT = Linux-KNL
             if ( $?CRAY_PRE_COMPILE_OPTS ) then
               switch ( $CRAY_PRE_COMPILE_OPTS )
               case *seastar*:
@@ -95,6 +98,7 @@ syntax:
         set ARCH_PAT2 = Cygwin
       breaksw
     endsw
+    if ( XX$ARCH_PAT == XX$ARCH_PAT2 ) set ARCH_PAT = XXXXXX
     echo 'Possible options for <arch> on this machine based on uname: ' 
     ( cd arch ; ls -1 $ARCH_PAT*.arch $ARCH_PAT2*.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -2 -t)
     if ( XX$ARCH_PAT != XX ) then

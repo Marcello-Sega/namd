@@ -1,0 +1,13 @@
+NAMD_ARCH = Linux-KNL
+CHARMARCH = multicore-linux64-iccstatic
+
+FLOATOPTS = -ip -xMIC-AVX512
+
+CXX = icpc -std=c++11 -DNAMD_KNL
+CXXOPTS = -static-intel -O2 $(FLOATOPTS)
+CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS)
+CXXCOLVAROPTS = -O2 -ip
+
+CC = icc
+COPTS = -static-intel -O2 $(FLOATOPTS)
+
