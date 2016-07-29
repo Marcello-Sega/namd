@@ -21,6 +21,9 @@ syntax:
   echo '  --with-fftw3 (use fftw3 API, your fftw-prefix should match) '
   echo '  --fftw-prefix <directory containing FFTW lib and include>'
   echo '      (defaults to ./fftw or ~/fftw)'
+  echo '  --with-mkl (use Intel Math Kernel Library via fftw3 API) '
+  echo '  --mkl-prefix <directory containing Intel MKL lib and include>'
+  echo '      (defaults to $MKLROOT)'
   echo '  --cxx <C++ compiler command>'
   echo '  --cxx-opts <C++ compiler options (quote list)>'
   echo '  --cxx-noalias-opts <C++ compiler options (quote list)>'
@@ -127,6 +130,7 @@ begin:
   set use_python = 0
   set use_fftw = 1
   set use_fftw3 = 0
+  set use_mkl = 0
   set use_cuda = 0
   set use_memopt = 0
   set use_mic = 0
@@ -266,6 +270,19 @@ begin:
         endif
         set FFTW_PREFIX=$1
       breaksw
+      case --with-mkl
+        set use_mkl = 1
+        set use_fftw = 0
+        set use_fftw3 = 0
+      breaksw
+      case --mkl-prefix:
+        shift
+        if ( ! -d $1 ) then
+          echo "ERROR: No such directory $1"
+          goto syntax
+        endif
+        set MKL_PREFIX=$1
+      breaksw
 
       case --with-cuda:
         set use_cuda = 1
@@ -365,6 +382,11 @@ begin:
       echo "ERROR: No such directory $CHARM_BASE/$CHARM_ARCH"
       goto syntax
     endif
+  endif
+
+  if ( $use_fftw && $use_mkl ) then
+    echo "ERROR: Do not specify both FFTW and Intel MKL"
+    goto syntax
   endif
 
   if ( $use_cuda || $use_mic ) then
@@ -548,7 +570,9 @@ begin:
 
   echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Make.config
   if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Make.config
-  if ( $use_fftw3 ) then
+  if ( $use_mkl ) then
+    echo 'include .rootdir/arch/$(NAMD_ARCH).mkl' >> Make.config
+  else if ( $use_fftw3 ) then
     echo 'include .rootdir/arch/$(NAMD_ARCH).fftw3' >> Make.config
   else if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Make.config
   endif
@@ -588,7 +612,11 @@ begin:
     echo "PYTHONLIB = -l$python_lib" >> Make.config
   endif
 
-  if ( $use_fftw ) then
+  if ( $use_mkl ) then
+    if ( $?MKL_PREFIX ) then
+      echo "FFTDIR = $MKL_PREFIX" >> Make.config
+    endif
+  else if ( $use_fftw ) then
     if ( $?FFTW_PREFIX ) then
       echo "FFTDIR = $FFTW_PREFIX" >> Make.config
     else if ( -d .rootdir/fftw/lib && -d .rootdir/fftw/include ) then
