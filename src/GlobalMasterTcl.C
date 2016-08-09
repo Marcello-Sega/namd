@@ -584,7 +584,7 @@ void GlobalMasterTcl::initialize() {
     DebugM(1,"here\n");
     if (code != TCL_OK) {
       const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
-      NAMD_die(errorInfo);
+      NAMD_die(errorInfo ? errorInfo : "Unknown Tcl error");
     }
   }
 
@@ -634,7 +634,7 @@ void GlobalMasterTcl::calculate() {
   if (*result != 0) CkPrintf("TCL: %s\n",result);
   if (code != TCL_OK) {
     const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
-    NAMD_die(errorInfo);
+    NAMD_die(errorInfo ? errorInfo : "Unknown Tcl error");
   }
 #endif
 

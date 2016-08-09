@@ -55,7 +55,7 @@ ComputeTclBC::ComputeTclBC(ComputeID c)
     if (result && *result != 0) CkPrintf("TCL: %s\n",result);
     if (code != TCL_OK) {
       const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
-      NAMD_die(errorInfo);
+      NAMD_die(errorInfo ? errorInfo : "Unknown Tcl error");
     }
   } else NAMD_bug("tclBCScript pointer was NULL");
 
@@ -111,7 +111,7 @@ void ComputeTclBC::doWork() {
   int code = Tcl_Eval(interp,cmd);
   if (code != TCL_OK) {
     const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
-    NAMD_die(errorInfo);
+    NAMD_die(errorInfo ? errorInfo : "Unknown Tcl error");
   }
   if (n_atom != -2) {
     NAMD_die("tclBCScript failed to call nextatom until failure");

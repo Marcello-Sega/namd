@@ -1531,7 +1531,7 @@ void ScriptTcl::doCallback(const char *labels, const char *data) {
   delete [] cmd;
   if (rval != TCL_OK) {
     const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
-    NAMD_die(errorInfo);
+    NAMD_die(errorInfo ? errorInfo : "Unknown Tcl error");
   }
 }
 
@@ -2038,7 +2038,7 @@ void ScriptTcl::eval(char *script) {
   if (*result != 0) CkPrintf("TCL: %s\n",result);
   if (code != TCL_OK) {
     const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
-    NAMD_die(errorInfo);
+    NAMD_die(errorInfo ? errorInfo : "Unknown Tcl error");
   }
 #else
   NAMD_bug("ScriptTcl::eval called without Tcl.");
@@ -2054,7 +2054,7 @@ void ScriptTcl::load(char *scriptFile) {
   if (*result != 0) CkPrintf("TCL: %s\n",result);
   if (code != TCL_OK) {
     const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
-    NAMD_die(errorInfo);
+    NAMD_die(errorInfo ? errorInfo : "Unknown Tcl error");
   }
 #else
   NAMD_bug("ScriptTcl::load called without Tcl.");
