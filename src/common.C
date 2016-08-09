@@ -64,6 +64,7 @@ char *NAMD_stringdup(const char *s) {
 void NAMD_quit(const char *err_msg)
 
 {
+   if ( ! err_msg ) err_msg = "(unknown error)";
    char *new_err_msg = new char[strlen(err_msg) + 40];
    sprintf(new_err_msg,"EXITING: %s\n",err_msg);
    CkPrintf(new_err_msg);
@@ -80,6 +81,7 @@ void NAMD_quit(const char *err_msg)
 void NAMD_die(const char *err_msg)
 
 {
+   if ( ! err_msg ) err_msg = "(unknown error)";
    char *new_err_msg = new char[strlen(err_msg) + 40];
    sprintf(new_err_msg,"FATAL ERROR: %s\n",err_msg);
    CkPrintf(new_err_msg);
@@ -96,6 +98,7 @@ void NAMD_die(const char *err_msg)
 void NAMD_err(const char *err_msg)
 
 {
+   if ( ! err_msg ) err_msg = "(unknown error)";
    char *sys_err_msg = strerror(errno);
    if ( ! sys_err_msg ) sys_err_msg = "(unknown error)";
    char *new_err_msg = new char[strlen(err_msg) + 40 + strlen(sys_err_msg)];
@@ -114,6 +117,7 @@ void NAMD_err(const char *err_msg)
 void NAMD_bug(const char *err_msg)
 
 {
+   if ( ! err_msg ) err_msg = "(unknown error)";
    const char *bug_msg = 
      "FATAL ERROR: See http://www.ks.uiuc.edu/Research/namd/bugreport.html";
    char *new_err_msg = new char[strlen(err_msg) + 40 + strlen(bug_msg)];
