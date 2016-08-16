@@ -199,10 +199,12 @@ proc init_replica {index} {
   }
   dict set dict num_neighbors $nnbr
   dict with dict {
+    global first_timestep
     if {[info exists first_timestep]} {
       set i_step $first_timestep
     }
     firsttimestep $i_step
+    global input_root
     if { [info exists input_root] } {
       set ir [format $input_root $r $r]
       reinitatoms $ir

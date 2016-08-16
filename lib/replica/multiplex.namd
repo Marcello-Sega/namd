@@ -169,6 +169,7 @@ proc init_replica {index} {
             checkpointname init \
             checkpointloc 0]
   dict with dict {
+    global first_timestep
     if {[info exists first_timestep]} {
       set i_step $first_timestep
     }
