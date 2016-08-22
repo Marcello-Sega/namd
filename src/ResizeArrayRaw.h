@@ -50,11 +50,11 @@ template <class Elem> class ResizeArrayRaw {
       if ( (size-allocSize) < ResizeArrayMinSize) 
         size = allocSize+ResizeArrayMinSize;
 
-      // align everything to 32-byte boundaries (if possible)
-      unsigned char *tmpv = new unsigned char[size*sizeof(Elem)+31];
-      //Elem *tmpa = (Elem *)((((long)tmpv)+31L)&(-32L));
+      // align everything to 64-byte boundaries (if possible)
+      unsigned char *tmpv = new unsigned char[size*sizeof(Elem)+63];
+      //Elem *tmpa = (Elem *)((((long)tmpv)+63L)&(-64L));
       // Someday we might need this alternate form.
-      Elem *tmpa = (Elem *)(tmpv+31 - (((long)(tmpv+31))&(31L)));
+      Elem *tmpa = (Elem *)(tmpv+63 - (((long)(tmpv+63))&(63L)));
       if (arraySize) CmiMemcpy((void *)tmpa, (void *)array, sizeof(Elem)*arraySize);
   
       if (allocSize) delete[] varray;
