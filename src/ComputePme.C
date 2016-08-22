@@ -4449,6 +4449,7 @@ public:
 	void send_subset_ungrid(int fromIdx, int toIdx, int specialIdx);
 private:
     ResizeArray<PmeGridMsg *> grid_msgs;
+    ResizeArray<int> work_zlist;
 #ifdef NAMD_FFTW
 #ifdef NAMD_FFTW_3
     fftwf_plan forward_plan, backward_plan;
@@ -5000,15 +5001,25 @@ void PmeZPencil::recv_grid(const PmeGridMsg *msg) {
   if ( ! msg->hasData ) return;
 
   int zlistlen = msg->zlistlen;
-  int *zlist = msg->zlist;
-  char *fmsg = msg->fgrid;
-  float *qmsg = msg->qgrid;
-  float *d = data;
+#ifdef NAMD_KNL
+  int * __restrict msg_zlist = msg->zlist;
+  int * __restrict zlist = work_zlist.begin();
+  __assume_aligned(zlist,64);
+  for ( int k=0; k<zlistlen; ++k ) {
+    zlist[k] = msg_zlist[k];
+  }
+#else
+  int * __restrict zlist = msg->zlist;
+#endif
+  char * __restrict fmsg = msg->fgrid;
+  float * __restrict qmsg = msg->qgrid;
+  float * __restrict d = data;
   int numGrids = 1;  // pencil FFT doesn't support multiple grids
   for ( int g=0; g<numGrids; ++g ) {
     for ( int i=0; i<nx; ++i ) {
      for ( int j=0; j<ny; ++j, d += dim3 ) {
       if( *(fmsg++) ) {
+        #pragma ivdep
         for ( int k=0; k<zlistlen; ++k ) {
           d[zlist[k]] += *(qmsg++);
         }

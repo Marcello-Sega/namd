@@ -44,6 +44,7 @@ module ComputePmeMgr {
 	// CkPrintf("z pencil init %d %d %d on %d\n",
 	// thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
 	base_init(initmsg); delete initmsg;
+	work_zlist.resize(initdata.grid.dim3);
 	fft_init();
 	// now count how many nodes send us data
 	imsg = 0; grid_msgs.resize(0);
