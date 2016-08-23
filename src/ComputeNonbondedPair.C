@@ -236,39 +236,16 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
     const Lattice &lattice = patch[0]->lattice;
     params.offset = lattice.offset(trans[a]) - lattice.offset(trans[b]);
 
+    PatchMap* patchMap = PatchMap::Object();
+    params.offset_f = params.offset + lattice.unscale(patchMap->center(patchID[a]))
+                                    - lattice.unscale(patchMap->center(patchID[b]));
+
     // Atom Sorting : If we are sorting the atoms along the line connecting
     //   the patch centers, then calculate a normalized vector pointing from
     //   patch a to patch b (i.e. outer loop patch to inner loop patch).
     #if NAMD_ComputeNonbonded_SortAtoms != 0
 
-      // Center of patch a (outer-loop; i-loop) and patch b (inner-loop; j/k-loop)
-      PatchMap* patchMap = PatchMap::Object();
-      ScaledPosition p_a_center, p_b_center;
-      p_a_center.x = patchMap->min_a(patchID[a]);
-      p_a_center.y = patchMap->min_b(patchID[a]);
-      p_a_center.z = patchMap->min_c(patchID[a]);
-      p_b_center.x = patchMap->min_a(patchID[b]);
-      p_b_center.y = patchMap->min_b(patchID[b]);
-      p_b_center.z = patchMap->min_c(patchID[b]);
-      p_a_center.x += patchMap->max_a(patchID[a]);
-      p_a_center.y += patchMap->max_b(patchID[a]);
-      p_a_center.z += patchMap->max_c(patchID[a]);
-      p_b_center.x += patchMap->max_a(patchID[b]);
-      p_b_center.y += patchMap->max_b(patchID[b]);
-      p_b_center.z += patchMap->max_c(patchID[b]);
-      p_a_center *= (BigReal)0.5;
-      p_b_center *= (BigReal)0.5;
-      p_a_center = lattice.unscale(p_a_center);
-      p_b_center = lattice.unscale(p_b_center);
-
-      // Adjust patch a's center by the offset
-      p_a_center.x += params.offset.x;
-      p_a_center.y += params.offset.y;
-      p_a_center.z += params.offset.z;
-
-      // Calculate and fill in the projected line vector
-      params.projLineVec = p_b_center - p_a_center;
-      params.projLineVec /= params.projLineVec.length(); // Normalize the vector
+      params.projLineVec = params.offset_f * ( -1. / params.offset_f.length() );
 
     #endif
 
@@ -276,6 +253,10 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
       params.p[1] = p[b];
       params.pExt[0] = pExt[a]; 
       params.pExt[1] = pExt[b];
+#ifdef NAMD_KNL
+      params.pFlt[0] = patch[a]->getCompAtomFlt();
+      params.pFlt[1] = patch[b]->getCompAtomFlt();
+#endif
       // BEGIN LA
       params.doLoweAndersen = patch[0]->flags.doLoweAndersen;
       if (params.doLoweAndersen) {

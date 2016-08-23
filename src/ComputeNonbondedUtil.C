@@ -37,6 +37,7 @@ Bool		ComputeNonbondedUtil::commOnly;
 Bool		ComputeNonbondedUtil::fixedAtomsOn;
 BigReal         ComputeNonbondedUtil::cutoff;
 BigReal         ComputeNonbondedUtil::cutoff2;
+float           ComputeNonbondedUtil::cutoff2_f;
 BigReal         ComputeNonbondedUtil::dielectric_1;
 const LJTable*  ComputeNonbondedUtil::ljTable = 0;
 const Molecule* ComputeNonbondedUtil::mol;
@@ -62,6 +63,19 @@ BigReal*	ComputeNonbondedUtil::r2_table;
   int           ComputeNonbondedUtil::mic_table_n;
   int           ComputeNonbondedUtil::mic_table_n_16;
 #endif
+#ifdef NAMD_KNL
+float*          ComputeNonbondedUtil::knl_table_alloc;
+float*          ComputeNonbondedUtil::knl_fast_ener_table;
+float*          ComputeNonbondedUtil::knl_fast_grad_table;
+float*          ComputeNonbondedUtil::knl_scor_ener_table;
+float*          ComputeNonbondedUtil::knl_scor_grad_table;
+float*          ComputeNonbondedUtil::knl_slow_ener_table;
+float*          ComputeNonbondedUtil::knl_slow_grad_table;
+float*          ComputeNonbondedUtil::knl_corr_ener_table;
+float*          ComputeNonbondedUtil::knl_corr_grad_table;
+float*          ComputeNonbondedUtil::knl_full_ener_table;
+float*          ComputeNonbondedUtil::knl_full_grad_table;
+#endif
 BigReal         ComputeNonbondedUtil::scaling;
 BigReal         ComputeNonbondedUtil::scale14;
 BigReal         ComputeNonbondedUtil::switchOn;
@@ -73,6 +87,12 @@ BigReal         ComputeNonbondedUtil::k_vdwa;
 BigReal         ComputeNonbondedUtil::k_vdwb;
 BigReal         ComputeNonbondedUtil::cutoff_3;
 BigReal         ComputeNonbondedUtil::cutoff_6;
+float           ComputeNonbondedUtil::v_vdwa_f;
+float           ComputeNonbondedUtil::v_vdwb_f;
+float           ComputeNonbondedUtil::k_vdwa_f;
+float           ComputeNonbondedUtil::k_vdwb_f;
+float           ComputeNonbondedUtil::cutoff_3_f;
+float           ComputeNonbondedUtil::cutoff_6_f;
 BigReal         ComputeNonbondedUtil::c0;
 BigReal         ComputeNonbondedUtil::c1;
 BigReal         ComputeNonbondedUtil::c3;
@@ -121,6 +141,8 @@ Bool            ComputeNonbondedUtil::drudeNbthole;
 
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
+
+int		ComputeNonbondedUtil::vdw_switch_mode;
 
 // Ported by JLai -- JE - Go
 Bool            ComputeNonbondedUtil::goGroPair;
@@ -258,6 +280,7 @@ void ComputeNonbondedUtil::select(void)
 
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
+  cutoff2_f = cutoff2;
 
 //fepb
   alchFepOn = simParams->alchFepOn;
@@ -512,12 +535,12 @@ void ComputeNonbondedUtil::select(void)
       double cutoff3 = cutoff * cutoff2;
       double switchOn6 = switchOn3 * switchOn3;
       double cutoff6 = cutoff3 * cutoff3;
-      v_vdwa = -1. / ( switchOn6 * cutoff6 );
-      v_vdwb = -1. / ( switchOn3 * cutoff3 );
-      k_vdwa = cutoff6 / ( cutoff6 - switchOn6 );
-      k_vdwb = cutoff3 / ( cutoff3 - switchOn3 );
-      cutoff_3 = 1. / cutoff3;
-      cutoff_6 = 1. / cutoff6;
+      v_vdwa_f = v_vdwa = -1. / ( switchOn6 * cutoff6 );
+      v_vdwb_f = v_vdwb = -1. / ( switchOn3 * cutoff3 );
+      k_vdwa_f = k_vdwa = cutoff6 / ( cutoff6 - switchOn6 );
+      k_vdwb_f = k_vdwb = cutoff3 / ( cutoff3 - switchOn3 );
+      cutoff_3_f = cutoff_3 = 1. / cutoff3;
+      cutoff_6_f = cutoff_6 = 1. / cutoff6;
     }
   }
   else
@@ -643,16 +666,54 @@ void ComputeNonbondedUtil::select(void)
   if ( r2_limit < r2_delta ) r2_limit = r2_delta;
   int r2_delta_i = 0;  // entry for r2 == r2_delta
 
+#ifdef NAMD_KNL
+ if ( knl_table_alloc ) delete [] knl_table_alloc;
+ knl_table_alloc = new float[10*KNL_TABLE_SIZE];
+ knl_fast_ener_table = knl_table_alloc;
+ knl_fast_grad_table = knl_table_alloc + KNL_TABLE_SIZE;
+ knl_scor_ener_table = knl_table_alloc + 2*KNL_TABLE_SIZE;
+ knl_scor_grad_table = knl_table_alloc + 3*KNL_TABLE_SIZE;
+ knl_slow_ener_table = knl_table_alloc + 4*KNL_TABLE_SIZE;
+ knl_slow_grad_table = knl_table_alloc + 5*KNL_TABLE_SIZE;
+ knl_corr_ener_table = knl_table_alloc + 6*KNL_TABLE_SIZE;
+ knl_corr_grad_table = knl_table_alloc + 7*KNL_TABLE_SIZE;
+ knl_full_ener_table = knl_table_alloc + 8*KNL_TABLE_SIZE;
+ knl_full_grad_table = knl_table_alloc + 9*KNL_TABLE_SIZE;
+ knl_fast_ener_table[0] = 0.;
+ knl_fast_grad_table[0] = 0.;
+ knl_scor_ener_table[0] = 0.;
+ knl_scor_grad_table[0] = 0.;
+ knl_slow_ener_table[0] = 0.;
+ knl_slow_grad_table[0] = 0.;
+ knl_corr_ener_table[0] = 0.;
+ knl_corr_grad_table[0] = 0.;
+ knl_full_ener_table[0] = 0.;
+ knl_full_grad_table[0] = 0.;
+ for ( int knl_table = 0; knl_table < 2; ++knl_table ) {
+  int nn = n;
+  if ( knl_table ) {
+    nn = KNL_TABLE_SIZE-1;
+  }
+  for ( i=1; i<nn; ++i ) {
+#else
   // fill in the table, fix up i==0 (r2==0) below
   for ( i=1; i<n; ++i ) {
+#endif
 
     const BigReal r2_base = r2_delta * ( 1 << (i/64) );
     const BigReal r2_del = r2_base / 64.0;
-    const BigReal r2 = r2_base - r2_delta + r2_del * (i%64);
+    BigReal r2 = r2_base - r2_delta + r2_del * (i%64);
 
+    BigReal r = sqrt(r2);
+
+#ifdef NAMD_KNL
+    if ( knl_table ) {
+      r = (double)(nn-1)/(double)(i);
+      r2 = r*r;
+    } else
+#endif
     if ( r2 <= r2_limit ) r2_delta_i = i;
 
-    const BigReal r = sqrt(r2);
     const BigReal r_1 = 1.0/r;
     const BigReal r_2 = 1.0/r2;
 
@@ -774,6 +835,8 @@ void ComputeNonbondedUtil::select(void)
 
     // Lennard-Jones switching function
   if ( simParams->vdwForceSwitching ) {  // switch force
+    vdw_switch_mode = VDW_SWITCH_MODE_FORCE;
+
     // from Steinbach & Brooks, JCC 15, pgs 667-683, 1994, eqns 10-13
     if ( r2 > switchOn2 ) {
       BigReal tmpa = r_6 - cutoff_6;
@@ -789,6 +852,7 @@ void ComputeNonbondedUtil::select(void)
       vdwb_gradient = -3.0 * r_2 * r_6;
     }
   } else if ( simParams->martiniSwitching ) { // switching fxn for Martini RBCG
+    vdw_switch_mode = VDW_SWITCH_MODE_MARTINI;
 
     BigReal r12 = (r-switchOn)*(r-switchOn);        BigReal r13 = (r-switchOn)*(r-switchOn)*(r-switchOn);
 
@@ -831,6 +895,8 @@ void ComputeNonbondedUtil::select(void)
     vdwb_gradient = -3/pow(r,8) + dshiftValB;
 
   } else {  // switch energy
+    vdw_switch_mode = VDW_SWITCH_MODE_ENERGY;
+
     const BigReal c2 = cutoff2-r2;
     const BigReal c4 = c2*(c3-2.0*c2);
     const BigReal switchVal =         // used for Lennard-Jones
@@ -846,6 +912,32 @@ void ComputeNonbondedUtil::select(void)
   }
 
 
+#ifdef NAMD_KNL
+   if ( knl_table ) {
+    knl_fast_ener_table[i] = -1.*fast_energy;
+    knl_fast_grad_table[i] = -2.*fast_gradient;
+    knl_scor_ener_table[i] = -1.*scor_energy;
+    knl_scor_grad_table[i] = -2.*scor_gradient;
+    knl_slow_ener_table[i] = -1.*slow_energy;
+    knl_slow_grad_table[i] = -2.*slow_gradient;
+    knl_corr_ener_table[i] = -1.*(fast_energy + scor_energy);
+    knl_corr_grad_table[i] = -2.*(fast_gradient + scor_gradient);
+    knl_full_ener_table[i] = -1.*(fast_energy + slow_energy);
+    knl_full_grad_table[i] = -2.*(fast_gradient + slow_gradient);
+    if ( i == nn-1 ) {
+      knl_fast_ener_table[nn] = knl_fast_ener_table[i];
+      knl_fast_grad_table[nn] = knl_fast_grad_table[i];
+      knl_scor_ener_table[nn] = knl_scor_ener_table[i];
+      knl_scor_grad_table[nn] = knl_scor_grad_table[i];
+      knl_slow_ener_table[nn] = knl_slow_ener_table[i];
+      knl_slow_grad_table[nn] = knl_slow_grad_table[i];
+      knl_corr_ener_table[nn] = knl_corr_ener_table[i];
+      knl_corr_grad_table[nn] = knl_corr_grad_table[i];
+      knl_full_ener_table[nn] = knl_full_ener_table[i];
+      knl_full_grad_table[nn] = knl_full_grad_table[i];
+    }
+   } else {
+#endif
     *(fast_i++) = fast_energy;
     *(fast_i++) = fast_gradient;
     *(fast_i++) = 0;
@@ -867,8 +959,14 @@ void ComputeNonbondedUtil::select(void)
     *(vdwb_i++) = 0;
     *(vdwb_i++) = 0;
     *(r2_i++) = r2 + r2_delta;
+#ifdef NAMD_KNL
+   }
+#endif
 
   }
+#ifdef NAMD_KNL
+ } // knl_table loop
+#endif
 
   if ( ! r2_delta_i ) {
     NAMD_bug("Failed to find table entry for r2 == r2_limit\n");

@@ -57,6 +57,18 @@ struct CompAtom {
   unsigned int isWater : 1;  // 0 = particle is not in water, 1 = is in water
 };
 
+#ifdef NAMD_KNL
+struct CompAtomFlt {
+  FloatVector position;
+  int32 nonbondedGroupSize;
+
+  inline CompAtomFlt& operator=(const CompAtom& a) {
+    position = a.position;
+    nonbondedGroupSize = a.nonbondedGroupSize;
+  }
+};
+#endif
+
 //CompAtomExt is now needed even in normal case
 //for changing the packed msg type related to
 //ProxyPatch into varsize msg type where
@@ -141,6 +153,9 @@ struct CudaAtom {
 typedef ResizeArray<CudaAtom> CudaAtomList;
 typedef ResizeArray<CompAtom> CompAtomList;
 typedef ResizeArray<CompAtomExt> CompAtomExtList;
+#ifdef NAMD_KNL
+typedef ResizeArray<CompAtomFlt> CompAtomFltList;
+#endif
 typedef ResizeArray<FullAtom> FullAtomList;
 typedef ResizeArray<InputAtom> InputAtomList;
 typedef ResizeArray<Position> PositionList;

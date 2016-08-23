@@ -179,10 +179,16 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     }
 
     params.offset = 0.;
+    params.offset_f = 0.;
     params.p[0] = p;
     params.p[1] = p;
     params.pExt[0] = pExt;
     params.pExt[1] = pExt;
+#ifdef NAMD_KNL
+    CompAtomFlt *pFlt = patch->getCompAtomFlt();
+    params.pFlt[0] = pFlt;
+    params.pFlt[1] = pFlt;
+#endif
     params.step = patch->flags.step;
     // BEGIN LA
     params.doLoweAndersen = patch->flags.doLoweAndersen;

@@ -30,20 +30,93 @@
 
 #include <algorithm>
 
+#ifdef NAMD_KNL
+inline int pairlist_from_pairlist_knl(float cutoff2,
+                                  float p_i_x, float p_i_y, float p_i_z,
+                                  const CompAtomFlt *p_j,
+                                  const plint *list, int list_size, int *newlist,
+                                  float *r2list, float *xlist, float *ylist, float *zlist) {
+
+  int *nli = newlist;
+  float *r2i = r2list;
+  float *xli = xlist;
+  float *yli = ylist;
+  float *zli = zlist;
+
+  if ( list_size <= 0) return 0;
+
+  int g = 0;
+
+  float p_j_x, p_j_y, p_j_z;
+  float x2, y2, z2, r2;
+#pragma vector aligned
+#pragma ivdep
+  for ( g = 0 ; g < list_size; ++g ) {
+    int gi=list[g];
+    p_j_x = p_j[ gi ].position.x;
+    p_j_y = p_j[ gi ].position.y;
+    p_j_z = p_j[ gi ].position.z;
+
+    x2 = p_i_x - p_j_x;
+    r2 = x2 * x2;
+    y2 = p_i_y - p_j_y;
+    r2 += y2 * y2;
+    z2 = p_i_z - p_j_z;
+    r2 += z2 * z2;
+
+    if ( r2 <= cutoff2 ) {
+      *nli = gi;  ++nli;
+      *r2i = r2;  ++r2i;
+      *xli = x2;  ++xli;
+      *yli = y2;  ++yli;
+      *zli = z2;  ++zli;
+    }
+  }
+
+  return nli - newlist;
+}
+#endif// NAMD_KNL
+
 inline int pairlist_from_pairlist(BigReal cutoff2,
 				  BigReal p_i_x, BigReal p_i_y, BigReal p_i_z,
 				  const CompAtom *p_j,
-				  const plint *list, int list_size, plint *newlist,
+				  const plint *list, int list_size, int *newlist,
 				  BigReal r2_delta, BigReal *r2list) {
   
   BigReal cutoff2_delta = cutoff2 + r2_delta;
-  plint *nli = newlist;
+  int *nli = newlist;
   BigReal *r2i = r2list;
 
   if ( list_size <= 0) return 0;
 
   int g = 0;
 
+#ifdef NAMD_KNL
+
+  BigReal p_j_x, p_j_y, p_j_z;
+  BigReal x2, y2, z2, r2;
+#pragma vector aligned
+#pragma ivdep
+  for ( g = 0 ; g < list_size; ++g ) {
+    int gi=list[g];
+    p_j_x = p_j[ gi ].position.x;
+    p_j_y = p_j[ gi ].position.y;
+    p_j_z = p_j[ gi ].position.z;
+
+    x2 = p_i_x - p_j_x;
+    r2 = x2 * x2 + r2_delta;
+    y2 = p_i_y - p_j_y;
+    r2 += y2 * y2;
+    z2 = p_i_z - p_j_z;
+    r2 += z2 * z2;
+
+    if ( r2 <= cutoff2_delta ) {
+      *nli = gi;  ++nli;
+      *r2i = r2;  ++r2i;
+    }
+  }
+
+#else // NAMD_KNL
 #ifndef SIMPLE_PAIRLIST
 #ifdef  A2_QPX
   //***************************************************************
@@ -262,6 +335,8 @@ inline int pairlist_from_pairlist(BigReal cutoff2,
       *r2i = r2; ++r2i;
     }
   }
+
+#endif // NAMD_KNL
 
   return nli - newlist;
 }

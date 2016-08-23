@@ -2496,6 +2496,7 @@ obj/ComputeNonbondedStd.o: \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
+	src/ComputeNonbondedBase2KNL.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedStd.o $(COPTC) src/ComputeNonbondedStd.C
 obj/ComputeNonbondedFEP.o: \
@@ -2541,6 +2542,7 @@ obj/ComputeNonbondedFEP.o: \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
+	src/ComputeNonbondedBase2KNL.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedFEP.o $(COPTC) src/ComputeNonbondedFEP.C
 obj/ComputeNonbondedGo.o: \
@@ -2586,6 +2588,7 @@ obj/ComputeNonbondedGo.o: \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
+	src/ComputeNonbondedBase2KNL.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedGo.o $(COPTC) src/ComputeNonbondedGo.C
 obj/ComputeNonbondedTI.o: \
@@ -2631,6 +2634,7 @@ obj/ComputeNonbondedTI.o: \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
+	src/ComputeNonbondedBase2KNL.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedTI.o $(COPTC) src/ComputeNonbondedTI.C
 obj/ComputeNonbondedLES.o: \
@@ -2676,6 +2680,7 @@ obj/ComputeNonbondedLES.o: \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
+	src/ComputeNonbondedBase2KNL.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedLES.o $(COPTC) src/ComputeNonbondedLES.C
 obj/ComputeNonbondedPProf.o: \
@@ -2721,6 +2726,7 @@ obj/ComputeNonbondedPProf.o: \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
+	src/ComputeNonbondedBase2KNL.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedPProf.o $(COPTC) src/ComputeNonbondedPProf.C
 obj/ComputeNonbondedTabEnergies.o: \
@@ -2766,6 +2772,7 @@ obj/ComputeNonbondedTabEnergies.o: \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
+	src/ComputeNonbondedBase2KNL.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedTabEnergies.o $(COPTC) src/ComputeNonbondedTabEnergies.C
 obj/ComputeNonbondedCUDA.o: \

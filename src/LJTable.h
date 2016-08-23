@@ -16,8 +16,12 @@ public:
   struct TableEntry
   {
     // BigReal exclcut2;
+#ifdef NAMD_KNL
+    float A,B;
+#else
     BigReal A;
     BigReal B;
+#endif
   };
 
   LJTable(void);

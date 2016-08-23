@@ -310,6 +310,25 @@ void Patch::positionsReady(int doneMigration)
 
    }
 
+#ifdef NAMD_KNL
+   {
+     const Vector center = lattice.unscale( PatchMap::Object()->center(patchID) );
+     const int n = numAtoms;
+     pFlt.resize(n);
+     CompAtomFlt * const pf = pFlt.begin();
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+     const CompAtom * const pd = positionPtrBegin;
+#else
+     const CompAtom * const pd = p.begin();
+#endif
+     for ( int i=0; i<n; ++i ) {
+       pf[i].position.x = pd[i].position.x - center.x;
+       pf[i].position.y = pd[i].position.y - center.y;
+       pf[i].position.z = pd[i].position.z - center.z;
+     }
+   }
+#endif
+
    boxesOpen = 2;
    if ( flags.doMolly ) boxesOpen++;
    // BEGIN LA

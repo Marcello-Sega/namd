@@ -92,7 +92,7 @@ public:
 #define NBWORKARRAY(TYPE,NAME,SIZE) \
   computeNonbondedWorkArrays->NAME.resize(SIZE); \
   TYPE * const NAME = computeNonbondedWorkArrays->NAME.begin(); \
-  __assume_aligned(NAME,32);
+  __assume_aligned(NAME,64);
 #else
 #define NBWORKARRAY(TYPE,NAME,SIZE) \
   computeNonbondedWorkArrays->NAME.resize(SIZE); \
@@ -101,8 +101,14 @@ public:
 
 class ComputeNonbondedWorkArrays {
 public:
-  ResizeArray<plint> pairlisti;
+  ResizeArray<int> pairlisti;
   ResizeArray<BigReal> r2list;
+#ifdef NAMD_KNL
+  ResizeArray<float> r2list_f;
+  ResizeArray<float> xlist;
+  ResizeArray<float> ylist;
+  ResizeArray<float> zlist;
+#endif
 
   // DMK - Atom Sort
   // NOTE : TODO : For pair nonbonded compute objects, these arrays are needed
@@ -176,6 +182,9 @@ struct GBISParamStruct {
 // function arguments
 struct nonbonded {
   CompAtom* p[2];
+#ifdef NAMD_KNL
+  CompAtomFlt *pFlt[2];
+#endif
   CompAtomExt *pExt[2];
   // BEGIN LA
   CompAtom* v[2];
@@ -187,6 +196,7 @@ struct nonbonded {
   int numAtoms[2];
 
   Vector offset;
+  Vector offset_f;
 
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0
@@ -269,6 +279,7 @@ public:
   static Bool fixedAtomsOn;
   static BigReal cutoff;
   static BigReal cutoff2;
+  static float cutoff2_f;
   static BigReal dielectric_1;
   static const LJTable* ljTable;
   static const Molecule* mol;
@@ -293,6 +304,20 @@ public:
     static int mic_table_n;
     static int mic_table_n_16;
   #endif
+  #ifdef NAMD_KNL
+  #define KNL_TABLE_SIZE (4096+2)
+  static float *knl_table_alloc;
+  static float *knl_fast_ener_table;
+  static float *knl_fast_grad_table;
+  static float *knl_scor_ener_table;
+  static float *knl_scor_grad_table;
+  static float *knl_slow_ener_table;
+  static float *knl_slow_grad_table;
+  static float *knl_corr_ener_table;
+  static float *knl_corr_grad_table;
+  static float *knl_full_ener_table;
+  static float *knl_full_grad_table;
+  #endif
   static BigReal scaling;
   static BigReal scale14;
   static BigReal switchOn;
@@ -304,6 +329,12 @@ public:
   static BigReal k_vdwb;
   static BigReal cutoff_3;
   static BigReal cutoff_6;
+  static float   v_vdwa_f;
+  static float   v_vdwb_f;
+  static float   k_vdwa_f;
+  static float   k_vdwb_f;
+  static float   cutoff_3_f;
+  static float   cutoff_6_f;
   static BigReal c0;
   static BigReal c1;
   static BigReal c3;
@@ -353,6 +384,12 @@ public:
   // for particle mesh Ewald
   static BigReal ewaldcof;
   static BigReal pi_ewaldcof;
+
+  // need macros for preprocessor
+  #define VDW_SWITCH_MODE_ENERGY  0
+  #define VDW_SWITCH_MODE_MARTINI 1
+  #define VDW_SWITCH_MODE_FORCE   2
+  static int vdw_switch_mode;
 
   // Ported by JLai -- JE - Go
   static Bool goGroPair;

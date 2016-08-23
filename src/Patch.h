@@ -113,6 +113,9 @@ class Patch
      int getNumComputes() { return positionComputeList.size(); }
 
      CompAtomExt* getCompAtomExtInfo() { return pExt.begin(); }
+#ifdef NAMD_KNL
+     CompAtomFlt* getCompAtomFlt() { return pFlt.begin(); }
+#endif
      CudaAtom* getCudaAtomList() { return cudaAtomPtr; }
 
      Lattice &lattice;
@@ -164,6 +167,9 @@ class Patch
      #endif
 
      CompAtomExtList pExt;
+#ifdef NAMD_KNL
+     CompAtomFltList pFlt;
+#endif
 
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
      //1. Those fields are declared for reusing position info

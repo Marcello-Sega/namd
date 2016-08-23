@@ -72,11 +72,14 @@
 
 #undef SLOWONLYNAME
 #undef FAST
+#undef NOFAST
 #ifdef SLOWONLY
   #define FAST(X)
+  #define NOFAST(X) X
   #define SLOWONLYNAME(X) MERGEELECTNAME( X ## _slow )
 #else
   #define FAST(X) X
+  #define NOFAST(X)
   #define SLOWONLYNAME(X) MERGEELECTNAME( X )
 #endif
 
@@ -210,6 +213,25 @@ FEP( NOENERGY( foo bar ) )
 ENERGY( NOENERGY( foo bar ) )
 TABENERGY(NOTABENERGY( foo bar ) )
 
+#define KNL_MAKE_DEPENDS_INCLUDE
+#include  "ComputeNonbondedBase2KNL.h"
+#undef KNL_MAKE_DEPENDS_INCLUDE
+
+#undef KNL
+#undef NOKNL
+#ifdef NAMD_KNL
+  #if ( TABENERGY(1+) FEP(1+) TI(1+) INT(1+) LES(1+) GO(1+) PPROF(1+) NOFAST(1+) 0 )
+    #define KNL(X)
+    #define NOKNL(X) X
+  #else
+    #define KNL(X) X
+    #define NOKNL(X)
+  #endif
+#else
+  #define KNL(X)
+  #define NOKNL(X) X
+#endif
+
 #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR( + 1 ) )
   #define COMPONENT_DOTPRODUCT(A,B)  ((A##_x * B##_x) + (A##_y * B##_y) + (A##_z * B##_z))
 #endif
@@ -322,6 +344,11 @@ void ComputeNonbondedUtil :: NAME
   const BigReal offset_y = params->offset.y;
   const BigReal offset_z = params->offset.z;
 
+  // Note that offset_f assumes positions are relative to patch centers
+  const float offset_x_f = params->offset_f.x;
+  const float offset_y_f = params->offset_f.y;
+  const float offset_z_f = params->offset_f.z;
+
   register const BigReal plcutoff2 = \
  			params->plcutoff * params->plcutoff;
   register const BigReal groupplcutoff2 = \
@@ -351,6 +378,7 @@ void ComputeNonbondedUtil :: NAME
   )
   )
   BigReal scaling = ComputeNonbondedUtil:: scaling;
+  const float scaling_f = scaling;
 #ifdef  A2_QPX
   vector4double scalingv = vec_splats(scaling);
 #endif
@@ -358,8 +386,12 @@ void ComputeNonbondedUtil :: NAME
   FAST
   (
   const BigReal switchOn2 = ComputeNonbondedUtil:: switchOn2;
+  const float switchOn2_f = switchOn2;
+  const float cutoff2_f = ComputeNonbondedUtil::cutoff2;
   const BigReal c1 = ComputeNonbondedUtil:: c1;
   const BigReal c3 = ComputeNonbondedUtil:: c3;
+  const float c1_f = c1;
+  const float c3_f = c3;
   )
   const BigReal r2_delta = ComputeNonbondedUtil:: r2_delta;
   const int r2_delta_exp = ComputeNonbondedUtil:: r2_delta_exp;
@@ -507,6 +539,8 @@ void ComputeNonbondedUtil :: NAME
   register int i;
   const CompAtom *p_0 = params->p[0];
   const CompAtom *p_1 = params->p[1];
+  KNL( const CompAtomFlt *pFlt_0 = params->pFlt[0]; )
+  KNL( const CompAtomFlt *pFlt_1 = params->pFlt[1]; )
   const CompAtomExt *pExt_0 = params->pExt[0];
   const CompAtomExt *pExt_1 = params->pExt[1];
 
@@ -531,8 +565,12 @@ void ComputeNonbondedUtil :: NAME
 
   int arraysize = j_upper+5;
 
-  NBWORKARRAY(plint,pairlisti,arraysize)
+  NBWORKARRAY(int,pairlisti,arraysize)
   NBWORKARRAY(BigReal,r2list,arraysize)
+  KNL( NBWORKARRAY(float,r2list_f,arraysize) )
+  KNL( NBWORKARRAY(float,xlist,arraysize) )
+  KNL( NBWORKARRAY(float,ylist,arraysize) )
+  KNL( NBWORKARRAY(float,zlist,arraysize) )
 
   union { double f; int32 i[2]; } byte_order_test;
   byte_order_test.f = 1.0;  // should occupy high-order bits only
@@ -805,6 +843,7 @@ void ComputeNonbondedUtil :: NAME
    PAIR(for ( ; i < (i_upper);)) SELF(for ( i=0; i < (i_upper- 1);i++))
     {
     const CompAtom &p_i = p_0[i];
+    KNL( const CompAtomFlt &pFlt_i = pFlt_0[i]; )
     const CompAtomExt &pExt_i = pExt_0[i];
 
     PAIR(if (savePairlists || ! usePairlists){)
@@ -826,6 +865,11 @@ void ComputeNonbondedUtil :: NAME
     register const BigReal p_i_x = p_i.position.x + offset_x;
     register const BigReal p_i_y = p_i.position.y + offset_y;
     register const BigReal p_i_z = p_i.position.z + offset_z;
+#if KNL(1)+0
+    register const BigReal p_i_x_f = pFlt_i.position.x + offset_x_f;
+    register const BigReal p_i_y_f = pFlt_i.position.y + offset_y_f;
+    register const BigReal p_i_z_f = pFlt_i.position.z + offset_z_f;
+#endif
 #ifdef A2_QPX
     vector4double p_i_v = {p_i_x, p_i_y, p_i_z, 0.0};
 #endif
@@ -1667,9 +1711,19 @@ void ComputeNonbondedUtil :: NAME
     int npairi;
     int k;
 
+#if KNL(1)+0
+    const float kq_i_f = kq_i;
+
+    npairi = pairlist_from_pairlist_knl(ComputeNonbondedUtil::cutoff2_f,
+	p_i_x_f, p_i_y_f, p_i_z_f, pFlt_1, pairlistn_save, npairn, pairlisti,
+	r2list_f, xlist, ylist, zlist);
+#else
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistn_save, npairn, pairlisti,
 	r2_delta, r2list);
+#endif
+
+    if ( npairi ) {
 
 // BEGIN NBTHOLE OF DRUDE MODEL
 #if (FAST(1+)0)
@@ -1679,12 +1733,14 @@ void ComputeNonbondedUtil :: NAME
       const NbtholePairValue * const nbthole_array = parameters->nbthole_array;
       const int NumNbtholePairParams = parameters->NumNbtholePairParams;
       BigReal drudeNbtholeCut = simParams -> drudeNbtholeCut;
-      BigReal drudeNbtholeCut2 = (drudeNbtholeCut * drudeNbtholeCut) + r2_delta;
+      NOKNL( BigReal drudeNbtholeCut2 = (drudeNbtholeCut * drudeNbtholeCut) + r2_delta; )
+      KNL( float drudeNbtholeCut2 = (drudeNbtholeCut * drudeNbtholeCut); )
       BigReal CC = COULOMB * scaling * dielectric_1;
       int kk;
 
       for (k = 0; k < npairi; k++) {
-            if (r2list[k] > drudeNbtholeCut2) { continue; }
+            NOKNL( if (r2list[k] > drudeNbtholeCut2) { continue; } )
+            KNL( if (r2list_f[k] > drudeNbtholeCut2) { continue; } )
   
             const int j = pairlisti[k];
             const CompAtom& p_j = p_1[j];
@@ -1900,11 +1956,37 @@ void ComputeNonbondedUtil :: NAME
 #define EXCLUDED(X)
 #define MODIFIED(X)
 #define PRAGMA_SIMD
+#if KNL(1+)0
+  switch ( vdw_switch_mode ) {
+
+#define VDW_SWITCH_MODE VDW_SWITCH_MODE_ENERGY
+    case VDW_SWITCH_MODE:
+#include  "ComputeNonbondedBase2KNL.h"
+    break;
+#undef VDW_SWITCH_MODE
+
+#define VDW_SWITCH_MODE VDW_SWITCH_MODE_MARTINI
+    case VDW_SWITCH_MODE:
+#include  "ComputeNonbondedBase2KNL.h"
+    break;
+#undef VDW_SWITCH_MODE
+
+#define VDW_SWITCH_MODE VDW_SWITCH_MODE_FORCE
+    case VDW_SWITCH_MODE:
+#include  "ComputeNonbondedBase2KNL.h"
+    break;
+#undef VDW_SWITCH_MODE
+
+  }
+#else
 #include  "ComputeNonbondedBase2.h"
+#endif
 #undef PRAGMA_SIMD
 #undef NORMAL
 #undef EXCLUDED
 #undef MODIFIED
+
+    }  // if ( npairi )
 
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistm_save, npairm, pairlisti,
