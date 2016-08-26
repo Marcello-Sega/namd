@@ -5,7 +5,7 @@ FLOATOPTS = -ip -xMIC-AVX512
 
 CXX = icpc -std=c++11 -DNAMD_KNL
 CXXOPTS = -static-intel -O2 $(FLOATOPTS)
-CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS)
+CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS) -qopt-report-phase=loop,vec -qopt-report=4
 CXXCOLVAROPTS = -O2 -ip
 
 CC = icc
