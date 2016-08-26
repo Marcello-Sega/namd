@@ -57,6 +57,7 @@ NOFAST( foo bar )
       const int j = pairlisti[k];
       //register const CompAtom *p_j = p_1 + j;
 #define p_j (p_1+j)
+#define pFlt_j (pFlt_1+j)
 
 #if (VDW_SWITCH_MODE == VDW_SWITCH_MODE_FORCE) || (VDW_SWITCH_MODE == VDW_SWITCH_MODE_MARTINI)
 #if 0
@@ -70,7 +71,7 @@ NOFAST( foo bar )
 
       //const LJTable::TableEntry * lj_pars = 
       //        lj_row + 2 * p_j->vdwType MODIFIED(+ 1);
-      const int lj_index = 2 * p_j->vdwType MODIFIED(+ 1);
+      const int lj_index = 2 * pFlt_j->vdwType MODIFIED(+ 1);
 #define lj_pars (lj_row+lj_index)
       
 #if ( SHORT( 1+ ) 0 ) 

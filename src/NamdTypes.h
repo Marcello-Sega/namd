@@ -60,12 +60,7 @@ struct CompAtom {
 #ifdef NAMD_KNL
 struct CompAtomFlt {
   FloatVector position;
-  int32 nonbondedGroupSize;
-
-  inline CompAtomFlt& operator=(const CompAtom& a) {
-    position = a.position;
-    nonbondedGroupSize = a.nonbondedGroupSize;
-  }
+  int32 vdwType;
 };
 #endif
 

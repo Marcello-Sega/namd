@@ -322,9 +322,11 @@ void Patch::positionsReady(int doneMigration)
      const CompAtom * const pd = p.begin();
 #endif
      for ( int i=0; i<n; ++i ) {
+       // need to subtract center in double precision, then assign to float
        pf[i].position.x = pd[i].position.x - center.x;
        pf[i].position.y = pd[i].position.y - center.y;
        pf[i].position.z = pd[i].position.z - center.z;
+       pf[i].vdwType = pd[i].vdwType;
      }
    }
 #endif
