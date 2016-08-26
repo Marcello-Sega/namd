@@ -54,8 +54,7 @@ protected:
     void correctMomentum(int step, BigReal drifttime);
 
     void saveForce(const int ftag = Results::normal);
-    void addForceToMomentum(BigReal, const int ftag = Results::normal,
-						const int useSaved = 0, const int pressure = 0);
+    void addForceToMomentum(BigReal, const int ftag = Results::normal, const int useSaved = 0);
     void addForceToMomentum3(const BigReal timestep1, const int ftag1, const int useSaved1,
         const BigReal timestep2, const int ftag2, const int useSaved2,
         const BigReal timestep3, const int ftag3, const int useSaved3);
@@ -94,6 +93,8 @@ protected:
       int checkpoint_berendsenPressure_count;
     void langevinPiston(int);
       int slowFreq;
+    void newtonianVelocities(BigReal, const BigReal, const BigReal, 
+                             const BigReal, const int, const int, const int);
     void langevinVelocities(BigReal);
     void langevinVelocitiesBBK1(BigReal);
     void langevinVelocitiesBBK2(BigReal);

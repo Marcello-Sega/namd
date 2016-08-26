@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2016/03/02 21:33:06 $
- * $Revision: 1.1229 $
+ * $Date: 2016/08/26 19:40:32 $
+ * $Revision: 1.1230 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -292,21 +292,13 @@ void Sequencer::integrate(int scriptTask) {
       if ( doFullElectrostatics ) saveForce(Results::slow);
     }
     if ( ! commOnly ) {
-      addForceToMomentum(-0.5*timestep);
-      if (staleForces || doNonbonded)
-        addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,0);
-      if (staleForces || doFullElectrostatics)
-        addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
+      newtonianVelocities(-0.5,timestep,nbondstep,slowstep,0,1,1);
     }
     minimizationQuenchVelocity();
     rattle1(-timestep,0);
     submitHalfstep(step);
     if ( ! commOnly ) {
-      addForceToMomentum(timestep);
-      if (staleForces || doNonbonded)
-        addForceToMomentum(nbondstep,Results::nbond,staleForces,0);
-      if (staleForces || doFullElectrostatics)
-        addForceToMomentum(slowstep,Results::slow,staleForces,0);
+      newtonianVelocities(1.0,timestep,nbondstep,slowstep,0,1,1);
     }
     rattle1(timestep,1);
     if (doTcl || doColvars)  // include constraint forces
@@ -314,11 +306,7 @@ void Sequencer::integrate(int scriptTask) {
     submitHalfstep(step);
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
     if ( ! commOnly ) {
-      addForceToMomentum(-0.5*timestep);
-      if (staleForces || doNonbonded)
-		    addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,1);
-      if (staleForces || doFullElectrostatics)
-		    addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
+      newtonianVelocities(-0.5,timestep,nbondstep,slowstep,0,1,1);
     }
     submitReductions(step);
     if(traceIsOn()){
@@ -340,17 +328,7 @@ void Sequencer::integrate(int scriptTask) {
       berendsenPressure(step);
 
       if ( ! commOnly ) {
-        if (staleForces || (doNonbonded && doFullElectrostatics)) {
-          addForceToMomentum3(0.5*timestep,Results::normal,0,
-            0.5*nbondstep,Results::nbond,staleForces,
-            0.5*slowstep,Results::slow,staleForces);
-        } else {
-          addForceToMomentum(0.5*timestep);
-          if (staleForces || doNonbonded)
-            addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces,1);
-          if (staleForces || doFullElectrostatics)
-            addForceToMomentum(0.5*slowstep,Results::slow,staleForces,1);
-        }
+        newtonianVelocities(0.5,timestep,nbondstep,slowstep,staleForces,doNonbonded,doFullElectrostatics); 
       }
 
       // We do RATTLE here if multigrator thermostat was applied in the previous step
@@ -371,12 +349,12 @@ void Sequencer::integrate(int scriptTask) {
       if ( simParams->langevinPistonOn || (simParams->langevinOn && simParams->langevin_useBAOAB) ) {
         if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
         // We add an Ornstein-Uhlenbeck integration step for the case of BAOAB (Langevin)
-        if ( simParams->langevinOn && simParams->langevin_useBAOAB ) langevinVelocities(timestep);
+        langevinVelocities(timestep);
         langevinPiston(step);
         if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
       } else {
-        // If Langevin is not used, take full time step directly instread of two half steps
-        if ( ! commOnly ) addVelocityToPosition(timestep);        
+        // If Langevin is not used, take full time step directly instread of two half steps      
+        if ( ! commOnly ) addVelocityToPosition(timestep); 
       }
 
       // impose hard wall potential for Drude bond length
@@ -431,35 +409,13 @@ void Sequencer::integrate(int scriptTask) {
       // reassignment based on full-step velocities
       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
         reassignVelocities(timestep,step);
-        if (staleForces || (doNonbonded && doFullElectrostatics)) {
-          addForceToMomentum3(-0.5*timestep,Results::normal,0,
-            -0.5*nbondstep,Results::nbond,staleForces,
-            -0.5*slowstep,Results::slow,staleForces);
-        } else {
-          addForceToMomentum(-0.5*timestep);
-          if (staleForces || doNonbonded)
-            addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,0);
-          if (staleForces || doFullElectrostatics)
-            addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,0);
-        }
+        newtonianVelocities(-0.5,timestep,nbondstep,slowstep,staleForces,doNonbonded,doFullElectrostatics);
         rattle1(-timestep,0);
       }
 
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
-        if (staleForces || (doNonbonded && doFullElectrostatics)) {
-          addForceToMomentum3(timestep,Results::normal,0,
-            nbondstep,Results::nbond,staleForces,
-            slowstep,Results::slow,staleForces);
-        } else {
-          addForceToMomentum(timestep);
-          if (staleForces || doNonbonded) {
-            addForceToMomentum(nbondstep,Results::nbond,staleForces,1);
-          }
-          if (staleForces || doFullElectrostatics) {
-            addForceToMomentum(slowstep,Results::slow,staleForces,1);
-          }
-        }
+        newtonianVelocities(1.0,timestep,nbondstep,slowstep,staleForces,doNonbonded,doFullElectrostatics);
         langevinVelocitiesBBK2(timestep);
       }
 
@@ -475,17 +431,7 @@ void Sequencer::integrate(int scriptTask) {
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
       if ( ! commOnly ) {
-        if (staleForces || (doNonbonded && doFullElectrostatics)) {
-          addForceToMomentum3(-0.5*timestep,Results::normal,0,
-            -0.5*nbondstep,Results::nbond,staleForces,
-            -0.5*slowstep,Results::slow,staleForces);
-        } else {
-          addForceToMomentum(-0.5*timestep);
-          if (staleForces || doNonbonded)
-            addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,1);
-          if (staleForces || doFullElectrostatics)
-            addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
-        }
+        newtonianVelocities(-0.5,timestep,nbondstep,slowstep,staleForces,doNonbonded,doFullElectrostatics);
       }
 
 	// rattle2(timestep,step);
@@ -1099,6 +1045,27 @@ void Sequencer::multigratorTemperature(int step, int callNumber) {
 }
 // --------- End Multigrator ---------
 
+void Sequencer::newtonianVelocities(BigReal stepscale, const BigReal timestep, 
+                                    const BigReal nbondstep, 
+                                    const BigReal slowstep, 
+                                    const int staleForces, 
+                                    const int doNonbonded,
+                                    const int doFullElectrostatics)
+{
+  // Deterministic velocity update, account for multigrator
+  if (staleForces || (doNonbonded && doFullElectrostatics)) {
+    addForceToMomentum3(stepscale*timestep, Results::normal, 0,
+                        stepscale*nbondstep, Results::nbond, staleForces,
+                        stepscale*slowstep, Results::slow, staleForces);
+  } else {
+    addForceToMomentum(stepscale*timestep);
+    if (staleForces || doNonbonded)
+      addForceToMomentum(stepscale*nbondstep, Results::nbond, staleForces);
+    if (staleForces || doFullElectrostatics)
+      addForceToMomentum(stepscale*slowstep, Results::slow, staleForces);
+  }
+}
+
 void Sequencer::langevinVelocities(BigReal dt_fs)
 {
 // This routine is used for the BAOAB integrator,
@@ -1106,7 +1073,7 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
 // See B. Leimkuhler and C. Matthews, AMRX (2012)
 // Routine originally written by JPhillips, with fresh errors by CMatthews June2012
 
-  if ( simParams->langevinOn )
+  if ( simParams->langevinOn && simParams->langevin_useBAOAB )
   {
     FullAtom *a = patch->atom.begin();
     int numAtoms = patch->numAtoms;
@@ -1123,10 +1090,12 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
 
     for ( int i = 0; i < numAtoms; ++i )
     {
-      BigReal f1 = exp( -1. * dt * a[i].langevinParam );
+      BigReal dt_gamma = dt * a[i].langevinParam;
+      if ( ! dt_gamma ) continue;
+
+      BigReal f1 = exp( -dt_gamma );
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT * 
                          ( a[i].partition ? tempFactor : 1.0 ) / a[i].mass );
-
       a[i].velocity *= f1;
       a[i].velocity += f2 * random->gaussian_vector();
     }
@@ -1600,8 +1569,7 @@ void Sequencer::saveForce(const int ftag)
   patch->saveForce(ftag);
 }
 
-void Sequencer::addForceToMomentum(BigReal dt, const int ftag,
-					const int useSaved, int pressure)
+void Sequencer::addForceToMomentum(BigReal dt, const int ftag, const int useSaved)
 {
 #if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
