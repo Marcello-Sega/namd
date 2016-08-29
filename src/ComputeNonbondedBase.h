@@ -289,6 +289,7 @@ void ComputeNonbondedUtil :: NAME
   SHORT
   (
   ENERGY( BigReal electEnergy = 0; )
+  Vector f_net = 0.;
   )
 
   FEP
@@ -302,39 +303,17 @@ void ComputeNonbondedUtil :: NAME
   )
     
 #ifndef A2_QPX
-  FAST 
-  (
-  SHORT
-  (
-  BigReal virial_xx = 0;
-  BigReal virial_xy = 0;
-  BigReal virial_xz = 0;
-  BigReal virial_yy = 0;
-  BigReal virial_yz = 0;
-  BigReal virial_zz = 0;
-  )
-  )
   FULL
   (
   ENERGY( BigReal fullElectEnergy = 0; )
+  Vector fullf_net = 0.;
   FEP
   (
   ENERGY( BigReal fullElectEnergy_s = 0; )
   )
-  BigReal fullElectVirial_xx = 0;
-  BigReal fullElectVirial_xy = 0;
-  BigReal fullElectVirial_xz = 0;
-  BigReal fullElectVirial_yy = 0;
-  BigReal fullElectVirial_yz = 0;
-  BigReal fullElectVirial_zz = 0;
   )
 #else 
-  vector4double virial_v0   = (vector4double)(0.0);
-  vector4double virial_v1   = (vector4double)(0.0);
-  vector4double virial_v2   = (vector4double)(0.0);
-  vector4double fullvirial_v0   = (vector4double) (0.0);
-  vector4double fullvirial_v1   = (vector4double) (0.0);
-  vector4double fullvirial_v2   = (vector4double) (0.0);
+  Vector fullf_net = 0.;
   BigReal fullElectEnergy = 0;
   BigReal fullElectEnergy_s = 0;
 #endif
@@ -809,23 +788,19 @@ void ComputeNonbondedUtil :: NAME
   
 
 #if ( SHORT( FAST( 1+ ) ) 0 )
-#if ( PAIR( 1+ ) 0 )
     Force *f_0 = params->ff[0];
+#if ( PAIR( 1+ ) 0 )
     Force *f_1 = params->ff[1];
 #else
 #define f_1 f_0
-    NBWORKARRAY(Force,f_0,i_upper)
-    memset( (void*) f_0, 0, i_upper * sizeof(Force) );
 #endif
 #endif
 #if ( FULL( 1+ ) 0 )
-#if ( PAIR( 1+ ) 0 )
     Force *fullf_0 = params->fullf[0];
+#if ( PAIR( 1+ ) 0 )
     Force *fullf_1 = params->fullf[1];
 #else
 #define fullf_1 fullf_0
-    NBWORKARRAY(Force,fullf_0,i_upper);
-    memset( (void*) fullf_0, 0, i_upper * sizeof(Force) );
 #endif
 #endif
     
@@ -1816,29 +1791,12 @@ void ComputeNonbondedUtil :: NAME
                 Vector fda = -dfda * rda;
                 Vector fdd = -dfdd * rdd;
 
+                SHORT(f_net) NOSHORT(fullf_net) += (faa + fad) + (fda + fdd);
                 params->ff[0][i] += faa + fad;
                 params->ff[0][i+1] += fda + fdd;
                 params->ff[1][j] -= faa + fda;
                 params->ff[1][j+1] -= fad + fdd;
 
-                reduction[virialIndex_XX] += faa.x * raa.x + fad.x * rad.x
-                + fda.x * rda.x + fdd.x * rdd.x;
-                reduction[virialIndex_XY] += faa.x * raa.y + fad.x * rad.y
-                + fda.x * rda.y + fdd.x * rdd.y;
-                reduction[virialIndex_XZ] += faa.x * raa.z + fad.x * rad.z
-                + fda.x * rda.z + fdd.x * rdd.z;
-                reduction[virialIndex_YX] += faa.y * raa.x + fad.y * rad.x
-                + fda.y * rda.x + fdd.y * rdd.x;
-                reduction[virialIndex_YY] += faa.y * raa.y + fad.y * rad.y
-                + fda.y * rda.y + fdd.y * rdd.y;
-                reduction[virialIndex_YZ] += faa.y * raa.z + fad.y * rad.z
-                + fda.y * rda.z + fdd.y * rdd.z;
-                reduction[virialIndex_ZX] += faa.z * raa.x + fad.z * rad.x
-                + fda.z * rda.x + fdd.z * rdd.x;
-                reduction[virialIndex_ZY] += faa.z * raa.y + fad.z * rad.y
-                + fda.z * rda.y + fdd.z * rdd.y;
-                reduction[virialIndex_ZZ] += faa.z * raa.z + fad.z * rad.z
-                + fda.z * rda.z + fdd.z * rdd.z;
                 reduction[electEnergyIndex] += ethole;
           }
        }
@@ -1937,16 +1895,7 @@ void ComputeNonbondedUtil :: NAME
 		params->ff[0][i] += force;
 		params->ff[1][j] -= force;
 	    }
-		
-	    reduction[virialIndex_XX] += force.x * sep.x;
-	    reduction[virialIndex_XY] += force.x * sep.y;
-	    reduction[virialIndex_XZ] += force.x * sep.z;
-	    reduction[virialIndex_YX] += force.y * sep.x;
-	    reduction[virialIndex_YY] += force.y * sep.y;
-	    reduction[virialIndex_YZ] += force.y * sep.z;
-	    reduction[virialIndex_ZX] += force.z * sep.x;
-	    reduction[virialIndex_ZY] += force.z * sep.y;
-	    reduction[virialIndex_ZZ] += force.z * sep.z;
+	    SHORT(f_net) NOSHORT(fullf_net) += force;
 	}
     }
 #endif
@@ -2161,6 +2110,12 @@ void ComputeNonbondedUtil :: NAME
 #endif
 
 #ifndef NAMD_CUDA
+    SHORT( FAST( f_net.x += f_i_x; ) )
+    SHORT( FAST( f_net.y += f_i_y; ) )
+    SHORT( FAST( f_net.z += f_i_z; ) )
+    FULL( fullf_net.x += fullf_i_x; )
+    FULL( fullf_net.y += fullf_i_y; )
+    FULL( fullf_net.z += fullf_i_z; )
     SHORT( FAST( f_0[i].x += f_i_x; ) )
     SHORT( FAST( f_0[i].y += f_i_y; ) )
     SHORT( FAST( f_0[i].z += f_i_z; ) )
@@ -2182,71 +2137,57 @@ PAIR(
   // PAIR(iout << "++++++++\n" << endi;)
   PAIR( if ( savePairlists ) { pairlists.setIndexValue(i); } )
 
-#ifdef A2_QPX
-    BigReal  virial_xx   =  vec_extract (virial_v0, 0);
-    BigReal  virial_xy   =  vec_extract (virial_v0, 1);
-    BigReal  virial_xz   =  vec_extract (virial_v0, 2);
-    BigReal  virial_yy   =  vec_extract (virial_v1, 1);
-    BigReal  virial_yz   =  vec_extract (virial_v1, 2);
-    BigReal  virial_zz   =  vec_extract (virial_v2, 2);
-#endif
 #ifdef f_1
 #undef f_1
 #endif
 #if ( SHORT( FAST( 1+ ) ) 0 )
-#if ( SELF( 1+ ) 0 )
+#if ( PAIR( 1+ ) 0 )
   {
-    Force *patch_f_0 = params->ff[0];
 #ifndef NAMD_CUDA
-#ifndef ARCH_POWERPC 
-#pragma ivdep
-#endif
-    for ( int i = 0; i < i_upper; ++i ) {
-      patch_f_0[i].x += f_0[i].x;
-      patch_f_0[i].y += f_0[i].y;
-      patch_f_0[i].z += f_0[i].z;
-      virial_xx += f_0[i].x * p_0[i].position.x;
-      virial_xy += f_0[i].x * p_0[i].position.y;
-      virial_xz += f_0[i].x * p_0[i].position.z;
-      virial_yy += f_0[i].y * p_0[i].position.y;
-      virial_yz += f_0[i].y * p_0[i].position.z;
-      virial_zz += f_0[i].z * p_0[i].position.z;
-    }
+    BigReal virial_xx = f_net.x * params->offset_f.x;
+    BigReal virial_xy = f_net.x * params->offset_f.y;
+    BigReal virial_xz = f_net.x * params->offset_f.z;
+    BigReal virial_yy = f_net.y * params->offset_f.y;
+    BigReal virial_yz = f_net.y * params->offset_f.z;
+    BigReal virial_zz = f_net.z * params->offset_f.z;
+
+    reduction[virialIndex_XX] += virial_xx;
+    reduction[virialIndex_XY] += virial_xy;
+    reduction[virialIndex_XZ] += virial_xz;
+    reduction[virialIndex_YX] += virial_xy;
+    reduction[virialIndex_YY] += virial_yy;
+    reduction[virialIndex_YZ] += virial_yz;
+    reduction[virialIndex_ZX] += virial_xz;
+    reduction[virialIndex_ZY] += virial_yz;
+    reduction[virialIndex_ZZ] += virial_zz;
 #endif
   }
 #endif
 #endif
 
-#ifdef A2_QPX
-    BigReal  fullElectVirial_xx  =  vec_extract(fullvirial_v0, 0);
-    BigReal  fullElectVirial_xy  =  vec_extract(fullvirial_v0, 1);
-    BigReal  fullElectVirial_xz  =  vec_extract(fullvirial_v0, 2);    
-    BigReal  fullElectVirial_yy  =  vec_extract(fullvirial_v1, 1);
-    BigReal  fullElectVirial_yz  =  vec_extract(fullvirial_v1, 2);
-    BigReal  fullElectVirial_zz  =  vec_extract(fullvirial_v2, 2);
-#endif
 #ifdef fullf_1
 #undef fullf_1
 #endif
 #if ( FULL( 1+ ) 0 )
-#if ( SELF( 1+ ) 0 )
+#if ( PAIR( 1+ ) 0 )
   {
-    Force *patch_fullf_0 = params->fullf[0];
 #ifndef NAMD_CUDA
-#ifndef ARCH_POWERPC 
-#pragma ivdep
-#endif
-    for ( int i = 0; i < i_upper; ++i ) {
-      patch_fullf_0[i].x += fullf_0[i].x;
-      patch_fullf_0[i].y += fullf_0[i].y;
-      patch_fullf_0[i].z += fullf_0[i].z;
-      fullElectVirial_xx += fullf_0[i].x * p_0[i].position.x;
-      fullElectVirial_xy += fullf_0[i].x * p_0[i].position.y;
-      fullElectVirial_xz += fullf_0[i].x * p_0[i].position.z;
-      fullElectVirial_yy += fullf_0[i].y * p_0[i].position.y;
-      fullElectVirial_yz += fullf_0[i].y * p_0[i].position.z;
-      fullElectVirial_zz += fullf_0[i].z * p_0[i].position.z;
-    }
+    BigReal fullElectVirial_xx = fullf_net.x * params->offset_f.x;
+    BigReal fullElectVirial_xy = fullf_net.x * params->offset_f.y;
+    BigReal fullElectVirial_xz = fullf_net.x * params->offset_f.z;
+    BigReal fullElectVirial_yy = fullf_net.y * params->offset_f.y;
+    BigReal fullElectVirial_yz = fullf_net.y * params->offset_f.z;
+    BigReal fullElectVirial_zz = fullf_net.z * params->offset_f.z;
+
+    reduction[fullElectVirialIndex_XX] += fullElectVirial_xx;
+    reduction[fullElectVirialIndex_XY] += fullElectVirial_xy;
+    reduction[fullElectVirialIndex_XZ] += fullElectVirial_xz;
+    reduction[fullElectVirialIndex_YX] += fullElectVirial_xy;
+    reduction[fullElectVirialIndex_YY] += fullElectVirial_yy;
+    reduction[fullElectVirialIndex_YZ] += fullElectVirial_yz;
+    reduction[fullElectVirialIndex_ZX] += fullElectVirial_xz;
+    reduction[fullElectVirialIndex_ZY] += fullElectVirial_yz;
+    reduction[fullElectVirialIndex_ZZ] += fullElectVirial_zz;
 #endif
   }
 #endif
@@ -2280,18 +2221,6 @@ PAIR(
     TI(reduction[electEnergyIndex_ti_2] += electEnergy_ti_2;) 
   )
   )
-  SHORT
-  (
-  reduction[virialIndex_XX] += virial_xx;
-  reduction[virialIndex_XY] += virial_xy;
-  reduction[virialIndex_XZ] += virial_xz;
-  reduction[virialIndex_YX] += virial_xy;
-  reduction[virialIndex_YY] += virial_yy;
-  reduction[virialIndex_YZ] += virial_yz;
-  reduction[virialIndex_ZX] += virial_xz;
-  reduction[virialIndex_ZY] += virial_yz;
-  reduction[virialIndex_ZZ] += virial_zz;
-  )
   )
   FULL
   (
@@ -2302,15 +2231,6 @@ PAIR(
     TI(reduction[fullElectEnergyIndex_ti_1] += fullElectEnergy_ti_1;) 
     TI(reduction[fullElectEnergyIndex_ti_2] += fullElectEnergy_ti_2;) 
   )
-  reduction[fullElectVirialIndex_XX] += fullElectVirial_xx;
-  reduction[fullElectVirialIndex_XY] += fullElectVirial_xy;
-  reduction[fullElectVirialIndex_XZ] += fullElectVirial_xz;
-  reduction[fullElectVirialIndex_YX] += fullElectVirial_xy;
-  reduction[fullElectVirialIndex_YY] += fullElectVirial_yy;
-  reduction[fullElectVirialIndex_YZ] += fullElectVirial_yz;
-  reduction[fullElectVirialIndex_ZX] += fullElectVirial_xz;
-  reduction[fullElectVirialIndex_ZY] += fullElectVirial_yz;
-  reduction[fullElectVirialIndex_ZZ] += fullElectVirial_zz;
   )
 
   delete [] excl_flags_buff;

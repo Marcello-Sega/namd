@@ -25,6 +25,7 @@ class Compute;
 class Sequencer;
 class PatchMap;
 class AtomMapper;
+class SubmitReduction;
 
 // This the base class of homepatches and proxy patches. It maintains
 // common functions of these patches. These include managing dependences
@@ -255,7 +256,8 @@ class Patch
 	int nChild;
 
   private:
-  
+
+    SubmitReduction *reduction;
 
 };
 

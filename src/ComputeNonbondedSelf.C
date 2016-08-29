@@ -199,8 +199,8 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
 	params.v[1] = v;
     }
     // END LA
-    params.ff[0] = r->f[Results::nbond];
-    params.ff[1] = r->f[Results::nbond];
+    params.ff[0] = r->f[Results::nbond_virial];
+    params.ff[1] = r->f[Results::nbond_virial];
     params.numAtoms[0] = numAtoms;
     params.numAtoms[1] = numAtoms;
 
@@ -253,8 +253,8 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     if (numAtoms) {
     if ( patch->flags.doFullElectrostatics )
     {
-      params.fullf[0] = r->f[Results::slow];
-      params.fullf[1] = r->f[Results::slow];
+      params.fullf[0] = r->f[Results::slow_virial];
+      params.fullf[1] = r->f[Results::slow_virial];
       if ( patch->flags.doMolly ) {
         if ( doEnergy ) calcSelfEnergy(&params);
   else calcSelf(&params);

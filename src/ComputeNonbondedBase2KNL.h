@@ -36,8 +36,8 @@ NOFAST( foo bar )
 #else
 #ifdef PRAGMA_SIMD
 #ifndef TABENERGYFLAG
-#pragma simd assert SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z) PAIR(reduction(+:virial_xx,virial_xy,virial_xz,virial_yy,virial_yz,virial_zz))) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
-             FULL(reduction(+:fullf_i_x,fullf_i_y,fullf_i_z) PAIR(reduction(+:fullElectVirial_xx,fullElectVirial_xy,fullElectVirial_xz,fullElectVirial_yy,fullElectVirial_yz,fullElectVirial_zz)) ENERGY(reduction(+:fullElectEnergy)))
+#pragma simd assert SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z)) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
+             FULL(reduction(+:fullf_i_x,fullf_i_y,fullf_i_z) ENERGY(reduction(+:fullElectEnergy)))
 #endif
 #pragma loop_count avg=100
 #else // PRAGMA_SIMD
@@ -181,22 +181,15 @@ NOFAST( foo bar )
 
       float force_r =  LAM(lambda_pair *) fast_dir;
           
-      register float tmp_x = force_r * p_ij_x;
-      PAIR( virial_xx += tmp_x * p_ij_x; )
-      PAIR( virial_xy += tmp_x * p_ij_y; )
-      PAIR( virial_xz += tmp_x * p_ij_z; )
-
+      BigReal tmp_x = force_r * p_ij_x;
       f_i_x += tmp_x;
       f_j->x -= tmp_x;
 
-      register float tmp_y = force_r * p_ij_y;
-      PAIR( virial_yy += tmp_y * p_ij_y; )
-      PAIR( virial_yz += tmp_y * p_ij_z; )
+      BigReal tmp_y = force_r * p_ij_y;
       f_i_y += tmp_y;
       f_j->y -= tmp_y;
       
-      register float tmp_z = force_r * p_ij_z;
-      PAIR( virial_zz += tmp_z * p_ij_z; )
+      BigReal tmp_z = force_r * p_ij_z;
       f_i_z += tmp_z;
       f_j->z -= tmp_z;
 
@@ -231,19 +224,13 @@ NOFAST( foo bar )
       float fullforce_r = slow_dir LAM(* lambda_pair);
           
       {
-      register float ftmp_x = fullforce_r * p_ij_x;
-      PAIR( fullElectVirial_xx += ftmp_x * p_ij_x; )
-      PAIR( fullElectVirial_xy += ftmp_x * p_ij_y; )
-      PAIR( fullElectVirial_xz += ftmp_x * p_ij_z; )
+      BigReal ftmp_x = fullforce_r * p_ij_x;
       fullf_i_x += ftmp_x;
       fullf_j->x -= ftmp_x;
-      register float ftmp_y = fullforce_r * p_ij_y;
-      PAIR( fullElectVirial_yy += ftmp_y * p_ij_y; )
-      PAIR( fullElectVirial_yz += ftmp_y * p_ij_z; )
+      BigReal ftmp_y = fullforce_r * p_ij_y;
       fullf_i_y += ftmp_y;
       fullf_j->y -= ftmp_y;
-      register float ftmp_z = fullforce_r * p_ij_z;
-      PAIR( fullElectVirial_zz += ftmp_z * p_ij_z; )
+      BigReal ftmp_z = fullforce_r * p_ij_z;
       fullf_i_z += ftmp_z;
       fullf_j->z -= ftmp_z;
       }

@@ -17,6 +17,7 @@
 #include "ResizeArrayPrimIter.h"
 #include "ComputeNonbondedMICKernel.h"
 #include "Priorities.h"
+#include "ReductionMgr.h"
 
 #include "Sync.h"
 
@@ -36,6 +37,7 @@ struct cptr_sortop_priority {
 
 Patch::~Patch() {
   delete atomMapper;
+  delete reduction;
 }
 
 Patch::Patch(PatchID pd) :
@@ -78,6 +80,7 @@ Patch::Patch(PatchID pd) :
 
   lattice = Node::Object()->simParameters->lattice;
   atomMapper = new AtomMapper(pd);
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
   // DMK
   #if defined(NAMD_MIC)
@@ -246,6 +249,57 @@ void Patch::positionBoxClosed(void)
 void Patch::forceBoxClosed(void)
 {
    DebugM(4, "patchID("<<patchID<<") forceBoxClosed! call\n");
+   // calculate direct nonbonded virial from segregated forces and aggregate forces
+   const Vector center = lattice.unscale( PatchMap::Object()->center(patchID) );
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+   const CompAtom * const __restrict pd = positionPtrBegin;
+#else
+   const CompAtom * const __restrict pd = p.begin();
+#endif
+   const int n = numAtoms;
+   int roff = 0;
+   for ( int j1 = Results::nbond; j1 <= Results::slow; ++j1, roff += REDUCTION_VIRIAL_SLOW_XX - REDUCTION_VIRIAL_NBOND_XX ) {
+      int j2 = j1 + ( Results::nbond_virial - Results::nbond );
+      Force * __restrict f1 = results.f[j1];
+      Force * __restrict f2 = results.f[j2];
+      BigReal virial_xx = 0.;
+      BigReal virial_xy = 0.;
+      BigReal virial_xz = 0.;
+      BigReal virial_yy = 0.;
+      BigReal virial_yz = 0.;
+      BigReal virial_zz = 0.;
+#pragma simd reduction(+:virial_xx,virial_xy,virial_xz,virial_yy,virial_yz,virial_zz)
+#pragma ivdep
+      for ( int i=0; i<n; ++i ) {
+        BigReal p_x = pd[i].position.x - center.x;
+        BigReal p_y = pd[i].position.y - center.y;
+        BigReal p_z = pd[i].position.z - center.z;
+        BigReal f_x = f2[i].x;
+        BigReal f_y = f2[i].y;
+        BigReal f_z = f2[i].z;
+        virial_xx += f_x * p_x;
+        virial_xy += f_x * p_y;
+        virial_xz += f_x * p_z;
+        virial_yy += f_y * p_y;
+        virial_yz += f_y * p_z;
+        virial_zz += f_z * p_z;
+        f1[i].x += f_x;
+        f1[i].y += f_y;
+        f1[i].z += f_z;
+      }
+      f[j2].resize(0);
+      reduction->item(roff + REDUCTION_VIRIAL_NBOND_XX) += virial_xx;
+      reduction->item(roff + REDUCTION_VIRIAL_NBOND_XY) += virial_xy;
+      reduction->item(roff + REDUCTION_VIRIAL_NBOND_XZ) += virial_xz;
+      reduction->item(roff + REDUCTION_VIRIAL_NBOND_YX) += virial_xy;
+      reduction->item(roff + REDUCTION_VIRIAL_NBOND_YY) += virial_yy;
+      reduction->item(roff + REDUCTION_VIRIAL_NBOND_YZ) += virial_yz;
+      reduction->item(roff + REDUCTION_VIRIAL_NBOND_ZX) += virial_xz;
+      reduction->item(roff + REDUCTION_VIRIAL_NBOND_ZY) += virial_yz;
+      reduction->item(roff + REDUCTION_VIRIAL_NBOND_ZZ) += virial_zz;
+   }
+   reduction->submit();
+
    for (int j = 0; j < Results::maxNumForces; ++j )
    {
      results.f[j] = 0;

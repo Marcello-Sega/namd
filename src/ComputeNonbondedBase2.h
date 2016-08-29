@@ -68,8 +68,8 @@ MODIFIED(
 #else
 #ifdef PRAGMA_SIMD
 #ifndef TABENERGYFLAG
-#pragma simd assert SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z) PAIR(reduction(+:virial_xx,virial_xy,virial_xz,virial_yy,virial_yz,virial_zz))) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
-             FULL(reduction(+:fullf_i_x,fullf_i_y,fullf_i_z) PAIR(reduction(+:fullElectVirial_xx,fullElectVirial_xy,fullElectVirial_xz,fullElectVirial_yy,fullElectVirial_yz,fullElectVirial_zz)) ENERGY(reduction(+:fullElectEnergy)))
+#pragma simd assert SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z)) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
+             FULL(reduction(+:fullf_i_x,fullf_i_y,fullf_i_z) ENERGY(reduction(+:fullElectEnergy)))
 #endif
 #pragma loop_count avg=100
 #else // PRAGMA_SIMD
@@ -490,35 +490,20 @@ MODIFIED(
 #ifndef NAMD_CUDA
 #ifndef  A2_QPX
       register BigReal tmp_x = force_r * p_ij_x;
-      PAIR( virial_xx += tmp_x * p_ij_x; )
-      PAIR( virial_xy += tmp_x * p_ij_y; )
-      PAIR( virial_xz += tmp_x * p_ij_z; )
-
       f_i_x += tmp_x;
       f_j->x -= tmp_x;
 
       register BigReal tmp_y = force_r * p_ij_y;
-      PAIR( virial_yy += tmp_y * p_ij_y; )
-      PAIR( virial_yz += tmp_y * p_ij_z; )
       f_i_y += tmp_y;
       f_j->y -= tmp_y;
       
       register BigReal tmp_z = force_r * p_ij_z;
-      PAIR( virial_zz += tmp_z * p_ij_z; )
       f_i_z += tmp_z;
       f_j->z -= tmp_z;
 #else
       vector4double force_rv = vec_splats (force_r);
       vector4double tmp_v = vec_mul(force_rv, p_ij_v);
       f_i_v = vec_add(f_i_v, tmp_v);
-
-      PAIR (
-	    vector4double tmp_xv = vec_splat(tmp_v, 0);
-	    vector4double tmp_yv = vec_splat(tmp_v, 1);
-	    virial_v0 = vec_madd(tmp_xv, p_ij_v, virial_v0);
-	    virial_v1 = vec_madd(tmp_yv, p_ij_v, virial_v1);
-	    virial_v2 = vec_madd(tmp_v,  p_ij_v, virial_v2);
-	    )
 
 #define tmp_x   vec_extract(tmp_v, 0)
 #define tmp_y   vec_extract(tmp_v, 1)
@@ -706,18 +691,12 @@ MODIFIED(
       {
 #ifndef  A2_QPX
       register BigReal ftmp_x = fullforce_r * p_ij_x;
-      PAIR( fullElectVirial_xx += ftmp_x * p_ij_x; )
-      PAIR( fullElectVirial_xy += ftmp_x * p_ij_y; )
-      PAIR( fullElectVirial_xz += ftmp_x * p_ij_z; )
       fullf_i_x += ftmp_x;
       fullf_j->x -= ftmp_x;
       register BigReal ftmp_y = fullforce_r * p_ij_y;
-      PAIR( fullElectVirial_yy += ftmp_y * p_ij_y; )
-      PAIR( fullElectVirial_yz += ftmp_y * p_ij_z; )
       fullf_i_y += ftmp_y;
       fullf_j->y -= ftmp_y;
       register BigReal ftmp_z = fullforce_r * p_ij_z;
-      PAIR( fullElectVirial_zz += ftmp_z * p_ij_z; )
       fullf_i_z += ftmp_z;
       fullf_j->z -= ftmp_z;
 #else
@@ -725,14 +704,6 @@ MODIFIED(
       vector4double ftmp_v = vec_mul(fforce_rv, p_ij_v);
       fullf_i_v = vec_add(fullf_i_v, ftmp_v);
       
-      PAIR (
-	    vector4double ftmp_xv = vec_splat(ftmp_v, 0);
-	    vector4double ftmp_yv = vec_splat(ftmp_v, 1);
-	    fullvirial_v0 = vec_madd(ftmp_xv, p_ij_v, fullvirial_v0);
-	    fullvirial_v1 = vec_madd(ftmp_yv, p_ij_v, fullvirial_v1);
-	    fullvirial_v2 = vec_madd(ftmp_v,  p_ij_v, fullvirial_v2);
-	    )
-	
 #define ftmp_x  vec_extract(ftmp_v, 0)
 #define ftmp_y  vec_extract(ftmp_v, 1)
 #define ftmp_z  vec_extract(ftmp_v, 2)
