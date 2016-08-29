@@ -305,7 +305,7 @@ public:
     static int mic_table_n_16;
   #endif
   #ifdef NAMD_KNL
-  #define KNL_TABLE_SIZE (4096+2)
+  #define KNL_TABLE_SIZE (4080+2)
   static float *knl_table_alloc;
   static float *knl_fast_ener_table;
   static float *knl_fast_grad_table;
