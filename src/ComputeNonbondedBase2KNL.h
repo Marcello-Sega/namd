@@ -211,11 +211,11 @@ NOFAST( foo bar )
                                  knl_scor_ener_table[knl_table_i+1] * knl_diff );
       )
   #else
-      float slow_b = kqq * ( knl_fast_grad_table[knl_table_i] * (1.f-knl_diff) +
-                             knl_fast_grad_table[knl_table_i+1] * knl_diff );
+      float slow_b = kqq * ( knl_corr_grad_table[knl_table_i] * (1.f-knl_diff) +
+                             knl_corr_grad_table[knl_table_i+1] * knl_diff );
       ENERGY(
-        float slow_val = kqq * ( knl_fast_ener_table[knl_table_i] * (1.f-knl_diff) +
-                                 knl_fast_ener_table[knl_table_i+1] * knl_diff );
+        float slow_val = kqq * ( knl_corr_ener_table[knl_table_i] * (1.f-knl_diff) +
+                                 knl_corr_ener_table[knl_table_i+1] * knl_diff );
       )
   #endif
 
