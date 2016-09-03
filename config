@@ -296,11 +296,11 @@ begin:
           goto syntax
         endif
         shift
-        if ( ! -d $1 ) then
+        if ( ! -d "$1" ) then
           echo "ERROR: No such directory $1"
           goto syntax
         endif
-        set CUDA_PREFIX=$1
+        set CUDA_PREFIX="$1"
       breaksw
       case --cuda-gencode:
         shift
@@ -629,16 +629,23 @@ begin:
   endif
 
   if ( $use_cuda ) then
-    set CUDA_SO_PAT = 'lib64/libcudart.so.[1-9]'
+    set CUDART_SO_PAT = 'lib64/libcudart.so.[1-9]'
+    set CUFFT_SO_PAT = 'lib64/libcufft.so.[1-9]'
     switch ( `uname -s` )
       case Darwin:
-        set CUDA_SO_PAT = 'lib/libcudart.dylib'
+        set CUDART_SO_PAT = 'lib/libcudart.dylib'
+        set CUFFT_SO_PAT = 'lib/libcufft.dylib'
       breaksw
       case CYGWIN*:
-        set CUDA_SO_PAT = 'bin/cudart64_*.dll'
+        set CUDART_SO_PAT = 'bin/cudart64_*.dll'
+        set CUFFT_SO_PAT = 'bin/cufft64_*.dll'
       breaksw
     endsw
     if ( $?CUDA_PREFIX ) then
+      if ( `uname -s` =~ 'CYGWIN*' ) then
+        set CUDA_PREFIX=`cygpath -d "$CUDA_PREFIX"`
+        set CUDA_PREFIX=`cygpath "$CUDA_PREFIX"`
+      endif
       echo "CUDADIR = $CUDA_PREFIX" >> Make.config
     else if ( -d .rootdir/cuda/lib && -d .rootdir/cuda/include ) then
       echo "Using CUDA build found in main build directory"
@@ -650,14 +657,28 @@ begin:
       set CUDA_PREFIX = $HOME/cuda
     endif
     if ( $?CUDA_PREFIX ) then
-      set CUDA_SO_FULL=`ls $CUDA_PREFIX/$CUDA_SO_PAT`
-      if ( x$CUDA_SO_FULL == x ) set CUDA_SO_FULL=`ls $CUDA_PREFIX/$CUDA_SO_PAT.[0-9]`
-      if ( x$CUDA_SO_FULL == x ) set CUDA_SO_FULL=`ls $CUDA_PREFIX/$CUDA_SO_PAT.[0-9].[0-9]`
-      if ( x$CUDA_SO_FULL == x || $CUDA_SO_FULL !~ */* ) unset CUDA_SO_FULL
+      set CUDART_SO_FULL=`glob "$CUDA_PREFIX"/$CUDART_SO_PAT`
+      if ( "x$CUDART_SO_FULL" == x ) set CUDART_SO_FULL=`glob "$CUDA_PREFIX"/$CUDART_SO_PAT.[0-9]`
+      if ( "x$CUDART_SO_FULL" == x ) set CUDART_SO_FULL=`glob "$CUDA_PREFIX"/$CUDART_SO_PAT.[0-9].[0-9]`
+      if ( "x$CUDART_SO_FULL" == x || "$CUDART_SO_FULL" !~ */* ) unset CUDART_SO_FULL
+      set CUFFT_SO_FULL=`glob "$CUDA_PREFIX"/$CUFFT_SO_PAT`
+      if ( "x$CUFFT_SO_FULL" == x ) set CUFFT_SO_FULL=`glob "$CUDA_PREFIX"/$CUFFT_SO_PAT.[0-9]`
+      if ( "x$CUFFT_SO_FULL" == x ) set CUFFT_SO_FULL=`glob "$CUDA_PREFIX"/$CUFFT_SO_PAT.[0-9].[0-9]`
+      if ( "x$CUFFT_SO_FULL" == x || "$CUFFT_SO_FULL" !~ */* ) unset CUFFT_SO_FULL
     endif
-    if ( $?CUDA_SO_FULL ) then
-      echo "CUDASODIR = $CUDA_SO_FULL:h" >> Make.config
-      echo "LIBCUDARTSO = $CUDA_SO_FULL:t" >> Make.config
+    if ( $?CUDART_SO_FULL ) then
+      set CUDART_SO_FULL="$CUDART_SO_FULL"
+      echo "CUDASODIR = $CUDART_SO_FULL:h" >> Make.config
+      echo "LIBCUDARTSO = $CUDART_SO_FULL:t" >> Make.config
+      if ( $?CUFFT_SO_FULL ) then
+        set CUFFT_SO_FULL="$CUFFT_SO_FULL"
+        if ( "x$CUDART_SO_FULL:h" != "x$CUFFT_SO_FULL:h" ) then
+          echo "Warning: Found $CUDART_SO_FULL and $CUFFT_SO_FULL in different directories"
+        endif
+        echo "LIBCUFFTSO = $CUFFT_SO_FULL:t" >> Make.config
+      else
+        echo "Warning: Found $CUDART_SO_FULL but no cufft"
+      endif
     endif
   endif
 
