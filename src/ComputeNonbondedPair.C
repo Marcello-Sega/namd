@@ -267,8 +267,10 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
 	  params.v[1] = v[b];
       }
       // END LA
+#ifndef NAMD_CUDA
       params.ff[0] = r[a]->f[Results::nbond_virial];
       params.ff[1] = r[b]->f[Results::nbond_virial];
+#endif
       params.numAtoms[0] = numAtoms[a];
       params.numAtoms[1] = numAtoms[b];
       params.step = patch[0]->flags.step;
@@ -288,8 +290,10 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
       //force calculation calls
       if ( patch[0]->flags.doFullElectrostatics )
       {
+#ifndef NAMD_CUDA
 	params.fullf[0] = r[a]->f[Results::slow_virial];
 	params.fullf[1] = r[b]->f[Results::slow_virial];
+#endif
 	if ( patch[0]->flags.doMolly ) {
           if ( doEnergy )
             calcPairEnergy(&params);

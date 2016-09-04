@@ -37,7 +37,9 @@ struct cptr_sortop_priority {
 
 Patch::~Patch() {
   delete atomMapper;
+#ifndef NAMD_CUDA
   delete reduction;
+#endif
 }
 
 Patch::Patch(PatchID pd) :
@@ -80,7 +82,9 @@ Patch::Patch(PatchID pd) :
 
   lattice = Node::Object()->simParameters->lattice;
   atomMapper = new AtomMapper(pd);
+#ifndef NAMD_CUDA
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+#endif
 
   // DMK
   #if defined(NAMD_MIC)
@@ -249,6 +253,7 @@ void Patch::positionBoxClosed(void)
 void Patch::forceBoxClosed(void)
 {
    DebugM(4, "patchID("<<patchID<<") forceBoxClosed! call\n");
+#ifndef NAMD_CUDA
    // calculate direct nonbonded virial from segregated forces and aggregate forces
    const Vector center = lattice.unscale( PatchMap::Object()->center(patchID) );
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
@@ -299,6 +304,7 @@ void Patch::forceBoxClosed(void)
       reduction->item(roff + REDUCTION_VIRIAL_NBOND_ZZ) += virial_zz;
    }
    reduction->submit();
+#endif
 
    for (int j = 0; j < Results::maxNumForces; ++j )
    {

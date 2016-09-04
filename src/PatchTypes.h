@@ -50,8 +50,12 @@ public:
 class Results
 {
 public:
-  enum { normal=0, nbond=1, slow=2, amdf=3, nbond_virial=4, slow_virial=5, maxNumForces=6 };
-//  enum { normal=0, nbond=1, slow=2, maxNumForces=3 };
+  enum { normal=0, nbond=1, slow=2, amdf=3,
+#ifdef NAMD_CUDA
+    maxNumForces=4 };
+#else
+    nbond_virial=4, slow_virial=5, maxNumForces=6 };
+#endif
   Force *f[maxNumForces];
 };
 

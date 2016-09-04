@@ -199,8 +199,10 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
 	params.v[1] = v;
     }
     // END LA
+#ifndef NAMD_CUDA
     params.ff[0] = r->f[Results::nbond_virial];
     params.ff[1] = r->f[Results::nbond_virial];
+#endif
     params.numAtoms[0] = numAtoms;
     params.numAtoms[1] = numAtoms;
 
@@ -253,8 +255,10 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     if (numAtoms) {
     if ( patch->flags.doFullElectrostatics )
     {
+#ifndef NAMD_CUDA
       params.fullf[0] = r->f[Results::slow_virial];
       params.fullf[1] = r->f[Results::slow_virial];
+#endif
       if ( patch->flags.doMolly ) {
         if ( doEnergy ) calcSelfEnergy(&params);
   else calcSelf(&params);
