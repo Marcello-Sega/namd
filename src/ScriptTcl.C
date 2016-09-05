@@ -163,7 +163,7 @@ static Tcl_Obj* python_tcl_convert(PyObject *obj) {
   return robj;
 }
 
-int atoBool(const char *s);
+static int atoBool(const char *s);
 
 static PyObject* tcl_python_convert(Tcl_Obj *obj) {
   long rlong;

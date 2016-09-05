@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/06/08 22:06:21 $
- * $Revision: 1.1319 $
+ * $Date: 2016/09/05 18:25:42 $
+ * $Revision: 1.1320 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -3096,7 +3096,6 @@ void Controller::outputFepEnergy(int step) {
   dE = bondedEnergyDiff_f + electEnergy_f + electEnergySlow_f + ljEnergy_f -
        electEnergy - electEnergySlow - ljEnergy;
   BigReal RT = BOLTZMANN * simParams->alchTemp;
-  iout << step << " bondedEnergyDiff: " << bondedEnergyDiff_f << "\n" << endi;
 
   if (alchEnsembleAvg){
     FepNo++;
