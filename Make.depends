@@ -5683,6 +5683,7 @@ obj/Patch.o: \
 	src/ResizeArrayPrimIter.h \
 	src/ComputeNonbondedMICKernel.h \
 	src/Priorities.h \
+	src/ReductionMgr.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/Debug.h
