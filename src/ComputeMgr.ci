@@ -50,6 +50,7 @@ module ComputeMgr {
     entry void recvComputeEwaldResults(ComputeEwaldMsg *);
 
     entry void recvYieldDevice(int pe);
+    entry void recvBuildCudaExclusions();
     entry void recvBuildCudaForceTable();
     entry void recvBuildMICForceTable();
     entry void recvCreateNonbondedCUDASlave(NonbondedCUDASlaveMsg *);

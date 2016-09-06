@@ -573,6 +573,11 @@ struct exlist_sortop {
   }
 };
 
+void build_cuda_exclusions() {
+  if ( deviceCUDA->getMasterPe() != CkMyPe() ) return;
+  ComputeNonbondedCUDA::build_exclusions();
+}
+
 static __thread int2 *exclusionsByAtom;
 
 void ComputeNonbondedCUDA::build_exclusions() {
@@ -584,6 +589,7 @@ void ComputeNonbondedCUDA::build_exclusions() {
   int natoms = mol->numAtoms; 
 #endif
 
+  delete [] exclusionsByAtom;
   exclusionsByAtom = new int2[natoms];
 
   // create unique sorted lists

@@ -21,8 +21,21 @@ static __thread unsigned int *overflow_exclusions;
 
 void cuda_bind_exclusions(const unsigned int *t, int n) {
   exclusions_size = n;
-  cudaMalloc((void**) &exclusions, n*sizeof(unsigned int));
-  cuda_errcheck("malloc exclusions");
+  static __thread int exclusions_alloc;
+  if ( exclusions && exclusions_alloc < exclusions_size ) {
+    cudaFree(exclusions);
+    cuda_errcheck("freeing exclusions");
+    cudaFree(overflow_exclusions);
+    cuda_errcheck("freeing overflow_exclusions");
+    exclusions = 0;
+  }
+  if ( ! exclusions ) {
+    exclusions_alloc = exclusions_size;
+    cudaMalloc((void**) &exclusions, n*sizeof(unsigned int));
+    cuda_errcheck("malloc exclusions");
+    cudaMalloc((void**) &overflow_exclusions, n*sizeof(unsigned int));
+    cuda_errcheck("malloc overflow_exclusions");
+  }
   cudaMemcpy(exclusions, t, n*sizeof(unsigned int), cudaMemcpyHostToDevice);
   cuda_errcheck("memcpy exclusions");
   tex_exclusions.normalized = false;
@@ -31,8 +44,6 @@ void cuda_bind_exclusions(const unsigned int *t, int n) {
   cudaBindTexture(NULL, tex_exclusions, exclusions, n*sizeof(unsigned int));
   cuda_errcheck("binding exclusions to texture");
 
-  cudaMalloc((void**) &overflow_exclusions, n*sizeof(unsigned int));
-  cuda_errcheck("malloc overflow_exclusions");
   cudaMemcpy(overflow_exclusions, t,
 		n*sizeof(unsigned int), cudaMemcpyHostToDevice);
   cuda_errcheck("memcpy to overflow_exclusions");

@@ -85,7 +85,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
   static void build_lj_table();
   static void build_force_table();
 
-  void build_exclusions();
+  static void build_exclusions();
 
   void requirePatch(int pid);
   void assignPatches();

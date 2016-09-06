@@ -987,6 +987,7 @@ void Node::resendMolecule() {
   }
   node_molecule = molecule;
   SimParameters::nonbonded_select();
+  computeMgr->sendBuildCudaExclusions();
   CProxy_Node nodeProxy(thisgroup);
   for ( int i=0; i<CmiMyNodeSize(); ++i ) {
     nodeProxy[CmiMyPe()+i].resendMolecule2();

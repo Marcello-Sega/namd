@@ -95,6 +95,8 @@ public:
 
   void sendYieldDevice(int pe);
   void recvYieldDevice(int pe);
+  void sendBuildCudaExclusions();
+  void recvBuildCudaExclusions();
   void sendBuildCudaForceTable();
   void recvBuildCudaForceTable();
 

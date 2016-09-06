@@ -1151,6 +1151,25 @@ void ComputeMgr::recvYieldDevice(int pe) {
 #endif
 }
 
+void ComputeMgr::sendBuildCudaExclusions() {
+    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+    int pe = CkNodeFirst(CkMyNode());
+    int end = pe + CkNodeSize(CkMyNode());
+    for( ; pe != end; ++pe ) {
+      cm[pe].recvBuildCudaExclusions();
+    }
+}
+
+#ifdef NAMD_CUDA
+  void build_cuda_exclusions();
+#endif
+
+void ComputeMgr::recvBuildCudaExclusions() {
+#ifdef NAMD_CUDA
+    build_cuda_exclusions();
+#endif
+}
+
 void ComputeMgr::sendBuildCudaForceTable() {
     CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
     int pe = CkNodeFirst(CkMyNode());
