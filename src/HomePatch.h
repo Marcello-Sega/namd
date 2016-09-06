@@ -58,6 +58,8 @@ private:
   ScaledPosition min, max, center;
   BigReal aAwayDist, bAwayDist, cAwayDist;
 
+  Bool doAtomUpdate;  // atom changes other than migration
+
   //Note: If new proxies are added to this HomePatch
   // after load balancing, and it is not the immediate step
   // after atom migration (where ProxyAllMsg will be sent), 

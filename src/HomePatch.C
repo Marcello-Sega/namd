@@ -92,6 +92,7 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
 {
   settle_initialized = 0;
 
+  doAtomUpdate = true;
   rattleListValid = false;
 
   exchange_msg = 0;
@@ -201,6 +202,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList &al) : Patch(pd)
   atom.swap(al);
   settle_initialized = 0;
 
+  doAtomUpdate = true;
   rattleListValid = false;
 
   exchange_msg = 0;
@@ -328,6 +330,9 @@ void HomePatch::reinitAtoms(FullAtomList &al) {
 
   atom.swap(al);
   numAtoms = atom.size();
+
+  doAtomUpdate = true;
+  rattleListValid = false;
 
   if ( ! numNeighbors ) atomMapper->registerIDsFullAtom(atom.begin(),atom.end());
 
@@ -962,9 +967,6 @@ void HomePatch::positionsReady(int doMigration)
     }
   }
 
-  // Invalidate rattle -lists
-  if (doMigration) rattleListValid = false;
-
 #if defined(NAMD_CUDA) || defined(NAMD_MIC)
   if ( doMigration ) {
     int n = numAtoms;
@@ -1042,6 +1044,12 @@ void HomePatch::positionsReady(int doMigration)
   doMigration = doMigration && numNeighbors;
 #endif
   doMigration = doMigration || ! patchMapRead;
+
+  doMigration = doMigration || doAtomUpdate;
+  doAtomUpdate = false;
+
+  // Invalidate rattle -lists
+  if (doMigration) rattleListValid = false;
 
   // Workaround for oversize groups
   doGroupSizeCheck();
