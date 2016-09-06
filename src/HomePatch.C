@@ -961,6 +961,7 @@ void HomePatch::positionsReady(int doMigration)
       
   if (numNeighbors && ! simParams->staticAtomAssignment) {
     if (doMigration) {
+      rattleListValid = false;
       doAtomMigration();
     } else {
       doMarginCheck();
@@ -1047,9 +1048,6 @@ void HomePatch::positionsReady(int doMigration)
 
   doMigration = doMigration || doAtomUpdate;
   doAtomUpdate = false;
-
-  // Invalidate rattle -lists
-  if (doMigration) rattleListValid = false;
 
   // Workaround for oversize groups
   doGroupSizeCheck();
