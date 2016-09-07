@@ -476,7 +476,7 @@ private:
 #endif
 
   int qsize, fsize, bsize;
-  int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
+  int alchOn, alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
   int alchDecouple;
   int offload;
   BigReal alchElecLambdaStart;
@@ -875,12 +875,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   alchLambda = -1.;  // illegal value to catch if not updated
 
+  alchOn = simParams->alchOn;
   alchFepOn = simParams->alchFepOn;
   alchThermIntOn = simParams->alchThermIntOn;
-  alchDecouple = (alchFepOn || alchThermIntOn) && (simParams->alchDecouple);
-  alchElecLambdaStart = (alchFepOn || alchThermIntOn) ? 
-    simParams->alchElecLambdaStart : 0;
-  if (alchFepOn || alchThermIntOn) {
+  alchDecouple = alchOn && simParams->alchDecouple;
+  alchElecLambdaStart = alchOn ? simParams->alchElecLambdaStart : 0;
+  if (alchOn) {
     numGrids = 2;
     if (alchDecouple) numGrids += 2;
     if (alchElecLambdaStart || alchThermIntOn) numGrids ++;
@@ -2596,13 +2596,13 @@ ComputePme::ComputePme(ComputeID c, PatchID pid) : Compute(c), patchID(pid)
 
   offload = simParams->PMEOffload;
 
+  alchOn = simParams->alchOn;
   alchFepOn = simParams->alchFepOn;
   alchThermIntOn = simParams->alchThermIntOn;
-  alchDecouple = (alchFepOn || alchThermIntOn) && (simParams->alchDecouple);
-  alchElecLambdaStart = (alchFepOn || alchThermIntOn) ? 
-    simParams->alchElecLambdaStart : 0;
+  alchDecouple = alchOn && simParams->alchDecouple;
+  alchElecLambdaStart = alchOn ? simParams->alchElecLambdaStart : 0;
             
-  if (alchFepOn || alchThermIntOn) {
+  if (alchOn) {
     numGrids = 2;
     if (alchDecouple) numGrids += 2;
     if (alchElecLambdaStart || alchThermIntOn) numGrids ++;
@@ -3031,7 +3031,7 @@ void ComputePme::doWork()
   }
 
   // copy to other grids if needed
-  if ( ((alchFepOn || alchThermIntOn) && (!alchDecouple)) || lesOn ) {
+  if ( (alchOn && (!alchDecouple)) || lesOn ) {
     for ( g=0; g<numGrids; ++g ) {
       PmeParticle *lgd = localGridData[g];
       int nga = 0;
@@ -3045,7 +3045,7 @@ void ComputePme::doWork()
       }
       numGridAtoms[g] = nga;
     }
-  } else if ( (alchFepOn || alchThermIntOn) && alchDecouple) {
+  } else if ( alchOn && alchDecouple) {
     // alchemical decoupling: four grids
     // g=0: partition 0 and partition 1
     // g=1: partition 0 and partition 2
@@ -3863,7 +3863,7 @@ void ComputePme::ungridForces() {
     localResults_alloc.resize(numLocalAtoms* ((numGrids>1 || selfOn)?2:1));
     Vector *localResults = localResults_alloc.begin();
     Vector *gridResults;
-    if ( alchFepOn || alchThermIntOn || lesOn || selfOn || pairOn ) {
+    if ( alchOn || lesOn || selfOn || pairOn ) {
       for(int i=0; i<numLocalAtoms; ++i) { localResults[i] = 0.; }
       gridResults = localResults + numLocalAtoms;
     } else {
@@ -3893,7 +3893,7 @@ void ComputePme::ungridForces() {
 	}
       scale_forces(gridResults, numGridAtoms[g], lattice);
       
-      if ( alchFepOn || alchThermIntOn ) {
+      if (alchOn) {
         float scale = 1.;
         BigReal elecLambdaUp, elecLambdaDown;
         if ( simParams->alchFepWhamOn ) {
@@ -4051,7 +4051,7 @@ void ComputePmeMgr::submitReductions() {
 
     for ( int g=0; g<numGrids; ++g ) {
       float scale = 1.;
-      if ( alchFepOn || alchThermIntOn ) {
+      if (alchOn) {
         BigReal elecLambdaUp, elecLambdaDown;
         if( simParams->alchFepWhamOn ) {
           if( simParams->alchFepElecOn ) {

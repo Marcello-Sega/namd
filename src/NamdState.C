@@ -500,7 +500,7 @@ int NamdState::loadStructure(const char *molFilename, const char *pdbFilename, i
         }
 //fepe
         if (simParameters->lesOn) {
-	   if (simParameters->alchFepOn || simParameters->alchThermIntOn) NAMD_bug("FEP/TI and LES are incompatible!");
+	   if (simParameters->alchOn) NAMD_bug("FEP/TI and LES are incompatible!");
            molecule->build_fep_flags(configList->find("lesfile"),
                 configList->find("lescol"), pdb, NULL, "les");
         }
@@ -624,7 +624,7 @@ int NamdState::loadStructure(const char *molFilename, const char *pdbFilename, i
 	/* END gf */
 
 //Modifications for alchemical fep
-        if (simParameters->alchFepOn || simParameters->alchThermIntOn) {
+        if (simParameters->alchOn) {
           iout << iINFO << "ALCH: " 
                << molecule->numFepInitial <<
                " ATOMS TO DISAPPEAR IN FINAL STATE\n";

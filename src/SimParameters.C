@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2016/09/05 18:25:43 $
- * $Revision: 1.1464 $
+ * $Date: 2016/09/07 18:09:59 $
+ * $Revision: 1.1465 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -264,12 +264,16 @@ void SimParameters::scriptSet(const char *param, const char *value) {
     fixedAtomsOn = atobool(value);
     return;
   }
-//  SCRIPT_PARSE_BOOL("extraBonds", extraBondsOn)
-//  SCRIPT_PARSE_STRING("binCoordinates", binCoordinateFilename)
 
 //fepb
-//  SCRIPT_PARSE_BOOL("alch", alchOn)
-
+  if ( ! strncasecmp(param,"alch",MAX_SCRIPT_PARAM_SIZE) ) {
+    alchOn = atobool(value);
+    if ( alchOn && ! alchOnAtStartup ) {
+       NAMD_die("Alchemy must be enabled at startup to disable and re-enable in script.");
+    }
+    ComputeNonbondedUtil::select();
+    return;
+  }
   SCRIPT_PARSE_INT("alchEquilSteps",alchEquilSteps)
 
   if ( ! strncasecmp(param,"alchRepLambda",MAX_SCRIPT_PARAM_SIZE) ) {
@@ -3179,6 +3183,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 //fepb
    alchFepOn = FALSE;
    alchThermIntOn = FALSE;
+   alchOnAtStartup = alchOn;
 
    if (alchOn) {
      if (vdwForceSwitching && (alchFepWCARepuOn || alchFepWCADispOn)) {
@@ -3301,13 +3306,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      NAMD_die("Sorry, combined LES with FEP or TI is not implemented.\n");
    if ( alchOn && alchThermIntOn && lesOn )
      NAMD_die("Sorry, combined LES and TI is not implemented.\n");
-   if ( alchDecouple && (! (alchFepOn || alchThermIntOn) ) ) {
+   if ( alchDecouple && !alchOn ) {
          iout << iWARN << "Alchemical decoupling was requested but \
            alchemical free energy calculation is not active. Setting \
            alchDecouple to off.\n" << endi;
          alchDecouple = FALSE;
    }
-   if ( alchBondDecouple && (! (alchFepOn || alchThermIntOn) ) ) {
+   if ( alchBondDecouple && !alchOn ) {
          iout << iWARN << "Alchemical bond decoupling was requested but \
            alchemical free energy calculation is not active. Setting \
            alchBondDecouple to off.\n" << endi;
@@ -3317,7 +3322,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if ( lesOn && ( lesFactor < 1 || lesFactor > 255 ) ) {
      NAMD_die("lesFactor must be positive and less than 256");
    }
-   if ((pairInteractionOn && alchFepOn) || (pairInteractionOn && lesOn) || (pairInteractionOn && alchThermIntOn) ) 
+   if ((pairInteractionOn && alchOn) || (pairInteractionOn && lesOn)) 
      NAMD_die("Sorry, pair interactions may not be calculated when LES, FEP or TI is enabled.");
 
    // Drude model

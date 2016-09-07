@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2016/09/05 18:25:43 $
- * $Revision: 1.1242 $
+ * $Date: 2016/09/07 18:09:59 $
+ * $Revision: 1.1243 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -372,6 +372,7 @@ public:
 
         
 //fepb
+  Bool alchOnAtStartup;     //  Ensure that alchemy is set up properly
   Bool alchOn;              //  Doing alchemical simulation?
   Bool alchFepOn;           //  Doing alchemical simulation?
   Bool alchThermIntOn;      //  Doing thermodynamic integration?

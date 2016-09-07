@@ -4116,7 +4116,7 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
     UniqueSet<Exclusion> fepExclusionSet;
     UniqueSetIter<Exclusion> exclIter(exclusionSet);
 
-    if ( simParams->alchFepOn || simParams->alchThermIntOn || simParams->lesOn ) {
+    if ( simParams->alchOn || simParams->lesOn ) {
        for ( exclIter=exclIter.begin(); exclIter != exclIter.end(); exclIter++ )
        {
          int t1 = get_fep_type(exclIter->atom1);
@@ -5239,7 +5239,7 @@ void Molecule::send_Molecule(MOStream *msg){
   
   //fepb
   // send fep atom info
-  if (simParams->alchFepOn || simParams->alchThermIntOn || simParams->lesOn || simParams->pairInteractionOn) {
+  if (simParams->alchOn || simParams->lesOn || simParams->pairInteractionOn) {
     msg->put(numFepInitial);
     msg->put(numFepFinal);
     msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
@@ -5640,7 +5640,7 @@ void Molecule::receive_Molecule(MIStream *msg){
 
 //fepb
       //receive fep atom info
-      if (simParams->alchFepOn || simParams->lesOn || simParams->alchThermIntOn || simParams->pairInteractionOn) {
+      if (simParams->alchOn || simParams->lesOn || simParams->pairInteractionOn) {
         delete [] fepAtomFlags;
         fepAtomFlags = new unsigned char[numAtoms];
 
@@ -8166,136 +8166,135 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
 
 
 //Modifications for alchemical fep
-   //
-   //  FUNCTION build_fep_flags
-   //
-   // INPUTS:
-   // alchfile - Value of alchfile read from config file
-   // alchcol - Value of alch column, read from config file
-   // initial_pdb - PDB object that contains the initial positions
-   //  cwd - current working directory
-   //
-   // This function builds the array of state values necessary
-   // for FEP or TI. It takes the name of the PDB file and column in
-   // the PDB file that contains the alch flag. It then builds
-   // the array FepParams for use in the program.
-   //
-   // function doubles up for TI as well
-   
-   void Molecule::build_fep_flags(StringList *alchfile,
-         StringList *alchcol,
-         PDB *initial_pdb,
-         char *cwd, const char *simmethod)
-   {
-     PDB *bPDB;  //Pointer to PDB object to use
-     int bcol = 5;  //Column that the data is in
-     Real bval = 0; //flag from PDB file
-     int i;         // loop counter
-     char filename[129]; // filename
+/*
+ FUNCTION build_fep_flags
 
+ INPUTS:
+ alchfile - Value of alchfile read from config file
+ alchcol - Value of alch column, read from config file
+ initial_pdb - PDB object that contains the initial positions
+  cwd - current working directory
 
-     // get the pdb object that contains the alch flags.
-     // if the user gave another filename, use it, else
-     // use the pdb file with the initial coordinates
-     if (alchfile == NULL) {
-       if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, alchfile required.");
-       bPDB = initial_pdb;
-       strcpy(filename, "coordinate pdb file (default)");
-     }
-     else {
-       if (alchfile->next != NULL) {
-        char *new_err_msg = new char[24 + strlen(simmethod) + 26];
-        sprintf(new_err_msg,"Multiple definitions of %sFile in configuration file",simmethod);
-        NAMD_die(new_err_msg);
-       }
-   
-       if ((cwd == NULL) || (alchfile->data[0] == '/')) {
-         strcpy(filename, alchfile->data);
-       }
-       else {
-         strcpy(filename, cwd);
-         strcat(filename, alchfile->data);
-       }
+ This function builds the array of state values necessary
+ for FEP or TI. It takes the name of the PDB file and column in
+ the PDB file that contains the alch flag. It then builds
+ the array FepParams for use in the program.
 
-       bPDB = new PDB(filename);
-       if (bPDB == NULL) {
-         NAMD_die("Memory allocation failed in Molecule:build_fep_flags");
-       }
+ function doubles up for TI as well 
+*/
+void Molecule::build_fep_flags(StringList *alchfile, StringList *alchcol,
+                              PDB *initial_pdb, char *cwd, 
+                              const char *simmethod) {
+  PDB *bPDB;  //Pointer to PDB object to use
+  int bcol = 5;  //Column that the data is in
+  Real bval = 0; //flag from PDB file
+  int i;         // loop counter
+  char filename[129]; // filename
 
-       if (bPDB->num_atoms() != numAtoms) {
-        char *new_err_msg = new char[19 + strlen(simmethod) + 38];
-        sprintf(new_err_msg,"Number of atoms in %sFile PDB does not match coordinate PDB",simmethod);
-        NAMD_die(new_err_msg);
-       }
+  // get the pdb object that contains the alch flags.
+  // if the user gave another filename, use it, else
+  // use the pdb file with the initial coordinates
+  if (alchfile == NULL) {
+    if ( ! initial_pdb ) NAMD_die("Initial PDB file unavailable, alchfile required.");
+    bPDB = initial_pdb;
+    strcpy(filename, "coordinate pdb file (default)");
+  }
+  else {
+    if (alchfile->next != NULL) {
+      char *new_err_msg = new char[24 + strlen(simmethod) + 26];
+      sprintf(new_err_msg,"Multiple definitions of %sFile in configuration file",simmethod);
+      NAMD_die(new_err_msg);
     }
    
-    // Get the column that the alch flag is in. It can be in any of the 5 
-    // floating point fields in the PDB ie X, Y, Z, O or B.
-    // The default is 5th field ie the beta field
-    if (alchcol == NULL) {
+    if ((cwd == NULL) || (alchfile->data[0] == '/')) {
+      strcpy(filename, alchfile->data);
+    }
+    else {
+      strcpy(filename, cwd);
+      strcat(filename, alchfile->data);
+    }
+
+    bPDB = new PDB(filename);
+    if (bPDB == NULL) {
+      NAMD_die("Memory allocation failed in Molecule:build_fep_flags");
+    }
+
+    if (bPDB->num_atoms() != numAtoms) {
+      char *new_err_msg = new char[19 + strlen(simmethod) + 38];
+      sprintf(new_err_msg,"Number of atoms in %sFile PDB does not match coordinate PDB",simmethod);
+      NAMD_die(new_err_msg);
+    }
+  }
+   
+  // Get the column that the alch flag is in. It can be in any of the 5 
+  // floating point fields in the PDB ie X, Y, Z, O or B.
+  // The default is 5th field ie the beta field
+  if (alchcol == NULL) {
+    bcol = 5;
+  }
+  else {
+    if (alchcol->next != NULL) {
+      char *new_err_msg = new char[24 + strlen(simmethod) + 35];
+      sprintf(new_err_msg,"Multiple definitions of %s parameter column in config file",simmethod);
+      NAMD_die(new_err_msg);
+    }
+
+    if (strcasecmp(alchcol->data, "X") == 0) {
+      bcol = 1;
+    }
+    else if (strcasecmp(alchcol->data, "Y") == 0) {
+      bcol = 2;
+    }
+    else if (strcasecmp(alchcol->data, "Z") == 0) {
+      bcol = 3;
+    }
+    else if (strcasecmp(alchcol->data, "O") == 0) {
+      bcol = 4;
+    }
+    else if (strcasecmp(alchcol->data, "B") == 0) {
       bcol = 5;
     }
     else {
-      if (alchcol->next != NULL) {
-        char *new_err_msg = new char[24 + strlen(simmethod) + 35];
-        sprintf(new_err_msg,"Multiple definitions of %s parameter column in config file",simmethod);
-        NAMD_die(new_err_msg);
-      }
-
-      if (strcasecmp(alchcol->data, "X") == 0) {
-       bcol = 1;
-      }
-      else if (strcasecmp(alchcol->data, "Y") == 0) {
-       bcol = 2;
-      }
-      else if (strcasecmp(alchcol->data, "Z") == 0) {
-       bcol = 3;
-      }
-      else if (strcasecmp(alchcol->data, "O") == 0) {
-       bcol = 4;
-      }
-      else if (strcasecmp(alchcol->data, "B") == 0) {
-       bcol = 5;
-      }
-      else {
-       NAMD_die("alchcol must have value of X, Y, Z, O or B");
-      }
+      NAMD_die("alchcol must have value of X, Y, Z, O or B");
     }
+  }
 
-   iout << iINFO << "To read " << simmethod << "data from file: " << filename << "\n" << endi;
-   iout << iINFO << "To read " << simmethod << "flag data from column: " << bcol << "\n" << endi;
+  iout << iINFO << "To read " << simmethod << "data from file: " << filename 
+       << "\n" << endi;
+  iout << iINFO << "To read " << simmethod << "flag data from column: " << bcol
+       << "\n" << endi;
  
-   //  Allocate the array to hold all the alch data
-   fepAtomFlags = new unsigned char[numAtoms];
+  //  Allocate the array to hold all the alch data
+  fepAtomFlags = new unsigned char[numAtoms];
        
-   if (fepAtomFlags == NULL) {
+  if (fepAtomFlags == NULL) {
     NAMD_die("Memory allocation failed in Molecule::build_fep_params()");
-   }
+  }
 
-   double lesMassFactor = 1.0;
-   if ( simParams->lesOn && simParams->lesReduceMass ) {
-     lesMassFactor = 1.0 / simParams->lesFactor;
-   }
+  double lesMassFactor = 1.0;
+  if ( simParams->lesOn && simParams->lesReduceMass ) {
+    lesMassFactor = 1.0 / simParams->lesFactor;
+  }
 
-   // loop through all the atoms and get the b value
-   for (i = 0; i < numAtoms; i++) {
-   // Get the alch flag value
+  // loop through all the atoms and get the b value
+  for (i = 0; i < numAtoms; i++) {
+    // Get the alch flag value
     switch (bcol) {
       case 1:
-       bval = (bPDB->atom(i))->xcoor();
-       break;
+        bval = (bPDB->atom(i))->xcoor();
+        break;
       case 2:
-       bval = (bPDB->atom(i))->ycoor();
-       break;
+        bval = (bPDB->atom(i))->ycoor();
+        break;
       case 3:
-       bval = (bPDB->atom(i))->zcoor();
-       break;
+        bval = (bPDB->atom(i))->zcoor();
+        break;
       case 4:
-       bval = (bPDB->atom(i))->occupancy();
-       break;
+        bval = (bPDB->atom(i))->occupancy();
+        break;
       case 5:
-       bval = (bPDB->atom(i))->temperaturefactor();
-       break;
+        bval = (bPDB->atom(i))->temperaturefactor();
+        break;
     }
 
     // Assign alch flag value
@@ -8315,7 +8314,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       } else {
         fepAtomFlags[i] = 0;
       }
-    } else if (simParams->alchFepOn || simParams->alchThermIntOn) {
+    } else if (simParams->alchOn) {
       if (bval == 1.0) {
         fepAtomFlags[i] = 1;
         numFepFinal++;
@@ -8355,9 +8354,8 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
   if (alchfile != NULL) {
     delete bPDB;
   }
-
 }
- // End of function build_fep_flags
+// End of function build_fep_flags
  
    //
    //

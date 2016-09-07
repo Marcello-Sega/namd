@@ -47,7 +47,7 @@ public:
   Box<Patch,Results> *forceBox;
 
   PmeGrid myGrid;
-  int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
+  int alchOn, alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
   int alchDecouple;
   int offload;
   BigReal alchElecLambdaStart;

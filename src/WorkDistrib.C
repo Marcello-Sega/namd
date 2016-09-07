@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2016/01/27 23:24:05 $
- * $Revision: 1.1287 $
+ * $Date: 2016/09/07 18:09:59 $
+ * $Revision: 1.1288 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -478,7 +478,7 @@ void WorkDistrib::fillAtomListForOnePatch(int pid, FullAtomList &alist){
 /* 
     //Those options are not supported in MEM_OPT_VERSIOn -Chao Mei 
 //Modifications for alchemical fep
-      if ( alchFepOn || alchThermIntOn || lesOn || pairInteractionOn || pressureProfileTypes) {
+      if ( alchOn || lesOn || pairInteractionOn || pressureProfileTypes) {
         a[j].partition = molecule->get_fep_type(aid);
       } 
       else {
@@ -775,8 +775,7 @@ CkPrintf("patch %d (%d %d %d) has %d atoms\n",
     FullAtom *a = atoms[i].begin();
     int j;
 //Modifications for alchemical fep
-    Bool alchFepOn = params->alchFepOn;
-    Bool alchThermIntOn = params->alchThermIntOn;
+    Bool alchOn = params->alchOn;
 //fepe
     Bool lesOn = params->lesOn;
   
@@ -823,7 +822,7 @@ CkPrintf("patch %d (%d %d %d) has %d atoms\n",
       a[j].charge = molecule->atomcharge(aid);
 
 //Modifications for alchemical fep
-      if ( alchFepOn || alchThermIntOn || lesOn || pairInteractionOn || pressureProfileTypes) {
+      if ( alchOn || lesOn || pairInteractionOn || pressureProfileTypes) {
         a[j].partition = molecule->get_fep_type(aid);
       } 
       else {
