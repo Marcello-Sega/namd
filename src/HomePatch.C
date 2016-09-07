@@ -3293,6 +3293,9 @@ void HomePatch::revert(void) {
   numAtoms = atom.size();
   lattice = checkpoint_lattice;
 
+  doAtomUpdate = true;
+  rattleListValid = false;
+
   if ( ! numNeighbors ) atomMapper->registerIDsFullAtom(atom.begin(),atom.end());
 
   // DMK - Atom Separation (water vs. non-water)
@@ -3368,6 +3371,8 @@ void HomePatch::recvCheckpointLoad(CheckpointAtomsMsg *msg) {  // initiating rep
     numAtoms = msg->numAtoms;
     atom.resize(numAtoms);
     memcpy(atom.begin(),msg->atoms,numAtoms*sizeof(FullAtom));
+    doAtomUpdate = true;
+    rattleListValid = false;
     if ( ! numNeighbors ) atomMapper->registerIDsFullAtom(atom.begin(),atom.end());
   }
   if ( checkpoint_task == SCRIPT_CHECKPOINT_LOAD ) {
@@ -3436,6 +3441,8 @@ void HomePatch::recvExchangeMsg(ExchangeAtomsMsg *msg) {
   memcpy(atom.begin(),msg->atoms,numAtoms*sizeof(FullAtom));
   delete msg;
   CkpvAccess(_qd)->process();
+  doAtomUpdate = true;
+  rattleListValid = false;
   if ( ! numNeighbors ) atomMapper->registerIDsFullAtom(atom.begin(),atom.end());
 }
 
