@@ -36,8 +36,12 @@ NOFAST( foo bar )
 #else
 #ifdef PRAGMA_SIMD
 #ifndef TABENERGYFLAG
+#if __INTEL_COMPILER_BUILD_DATE == 20160721
+#warning disabled pragma simd on innner loop due to compiler segfault
+#else
 #pragma simd assert SHORT(FAST(reduction(+:f_i_x,f_i_y,f_i_z)) ENERGY(FAST(reduction(+:vdwEnergy) SHORT(reduction(+:electEnergy))))) \
              FULL(reduction(+:fullf_i_x,fullf_i_y,fullf_i_z) ENERGY(reduction(+:fullElectEnergy)))
+#endif
 #endif
 #pragma loop_count avg=100
 #else // PRAGMA_SIMD
