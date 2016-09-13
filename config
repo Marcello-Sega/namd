@@ -345,7 +345,7 @@ begin:
 
       case --cxx:
         shift
-        set CXX="$1"
+        set CXX_COMMAND="$1"
       breaksw
       case --cxx-opts:
         shift
@@ -361,7 +361,7 @@ begin:
       breaksw
       case --cc:
         shift
-        set CC="$1"
+        set CC_COMMAND="$1"
       breaksw
       case --cc-opts:
         shift
@@ -682,8 +682,8 @@ begin:
     endif
   endif
 
-  if ( $?CXX ) then
-    echo "CXX = $CXX" >> Make.config
+  if ( $?CXX_COMMAND ) then
+    echo "CXX = $CXX_COMMAND" >> Make.config
   endif
   if ( $?CXX_OPTS ) then
     echo "CXXOPTS = $CXX_OPTS" >> Make.config
@@ -694,8 +694,8 @@ begin:
   if ( $?CXX_THREAD_OPTS ) then
     echo "CXXTHREADOPTS = $CXX_THREAD_OPTS" >> Make.config
   endif
-  if ( $?CC ) then
-    echo "CC = $CC" >> Make.config
+  if ( $?CC_COMMAND ) then
+    echo "CC = $CC_COMMAND" >> Make.config
   endif
   if ( $?CC_OPTS ) then
     echo "COPTS = $CC_OPTS" >> Make.config
