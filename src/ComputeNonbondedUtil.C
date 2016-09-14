@@ -111,7 +111,6 @@ Bool      ComputeNonbondedUtil::Fep_Wham;
 BigReal   ComputeNonbondedUtil::WCA_rcut1;
 BigReal   ComputeNonbondedUtil::WCA_rcut2;
 BigReal   ComputeNonbondedUtil::WCA_rcut3;
-BigReal   ComputeNonbondedUtil::alchLambda;
 BigReal   ComputeNonbondedUtil::alchLambda2;
 BigReal   ComputeNonbondedUtil::alchRepLambda;
 BigReal   ComputeNonbondedUtil::alchDispLambda;
@@ -289,7 +288,7 @@ void ComputeNonbondedUtil::select(void)
   Fep_ElecOn = simParams->alchFepElecOn;
   Fep_Wham = simParams->alchFepWhamOn;
   alchThermIntOn = simParams->alchThermIntOn;
-  alchLambda = alchLambda2 = 0;
+  alchLambda2 = 0;
   lesOn = simParams->lesOn;
   lesScaling = lesFactor = 0;
   Bool tabulatedEnergies = simParams->tabulatedEnergies;

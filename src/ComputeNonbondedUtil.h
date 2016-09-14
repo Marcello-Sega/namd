@@ -346,7 +346,6 @@ public:
 //sd-db
   static Bool alchFepOn;
   static Bool alchThermIntOn;
-  static BigReal alchLambda;
   static BigReal alchLambda2;
   static BigReal alchVdwShiftCoeff;
   static Bool vdwForceSwitching;
