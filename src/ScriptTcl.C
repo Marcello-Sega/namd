@@ -1855,6 +1855,20 @@ int ScriptTcl::Tcl_reloadStructure(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
+
+  if ( argc == 1 ) { // get param value
+    char buf[MAX_SCRIPT_PARAM_SIZE];
+    SimParameters *simParams = Node::Object()->simParameters;
+    char *result = simParams->getfromparseopts("structure",buf);
+    if ( result ) {
+      Tcl_SetResult(interp, result,TCL_VOLATILE);
+      return TCL_OK;
+    } else {
+      Tcl_SetResult(interp,"unknown structure",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  }
+
   int ok = 0;
   if (argc == 2) ok = 1;
   if (argc == 4 && ! strcmp(argv[2],"pdb")) ok = 1;
@@ -1866,6 +1880,8 @@ int ScriptTcl::Tcl_reloadStructure(ClientData clientData,
   iout << "TCL: Reloading molecular structure from file " << argv[1];
   if ( argc == 4 ) iout << " and pdb file " << argv[3];
   iout << "\n" << endi;
+  script->config->find("structure")->set(argv[1]);
+  if (argc == 4) script->config->find("coordinates")->set(argv[3]);
   Node::Object()->reloadStructure(argv[1], (argc == 4) ? argv[3] : 0);
 
   script->barrier();

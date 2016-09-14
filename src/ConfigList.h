@@ -56,6 +56,15 @@ class StringList {
      strcpy( data, newdata);
      next = NULL;
   }
+  void set(const char *newdata) {  // take a string, and copy it
+    delete [] data;
+    data = new char[strlen(newdata)+1];
+    if ( data == NULL )
+    {
+      NAMD_die("new failed in struct StringList");
+    }
+    strcpy( data, newdata);
+  }
   ~StringList( void) {  // just clear out my info
     delete [] data;
     data = NULL;
