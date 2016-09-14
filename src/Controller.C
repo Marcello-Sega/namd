@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/09/05 18:25:42 $
- * $Revision: 1.1320 $
+ * $Date: 2016/09/14 20:22:03 $
+ * $Revision: 1.1321 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1261,7 +1261,8 @@ void Controller::correctMomentum(int step) {
 //Modifications for alchemical fep
 void Controller::printFepMessage(int step)
 {
-  if (simParams->alchFepOn) {
+  if (simParams->alchOn && simParams->alchFepOn 
+      && !simParams->alchLambdaFreq) {
     const BigReal alchLambda = simParams->alchLambda;
     const BigReal alchLambda2 = simParams->alchLambda2;
     const BigReal alchTemp = simParams->alchTemp;
@@ -1276,9 +1277,9 @@ void Controller::printFepMessage(int step)
 } 
 void Controller::printTiMessage(int step)
 {
-  if (simParams->alchThermIntOn) {
+  if (simParams->alchOn && simParams->alchThermIntOn 
+      && !simParams->alchLambdaFreq) {
     const BigReal alchLambda = simParams->alchLambda;
-    const BigReal alchTemp = simParams->alchTemp;
     const int alchEquilSteps = simParams->alchEquilSteps;
     iout << "TI: RESETTING FOR NEW WINDOW "
          << "LAMBDA SET TO " << alchLambda 
@@ -2250,10 +2251,10 @@ void Controller::compareChecksums(int step, int forgiving) {
 
     // Some basic correctness checking
     BigReal checksum, checksum_b;
+    char errmsg[256];
 
     checksum = reduction->item(REDUCTION_ATOM_CHECKSUM);
     if ( ((int)checksum) != molecule->numAtoms ) {
-      char errmsg[256];
       sprintf(errmsg, "Bad global atom count! (%d vs %d)\n",
               (int)checksum, molecule->numAtoms);
       NAMD_bug(errmsg);
@@ -2273,51 +2274,65 @@ void Controller::compareChecksums(int step, int forgiving) {
 
     checksum_b = checksum = reduction->item(REDUCTION_BOND_CHECKSUM);
     if ( checksum_b && (((int)checksum) != molecule->numCalcBonds) ) {
+      sprintf(errmsg, "Bad global bond count! (%d vs %d)\n",
+              (int)checksum, molecule->numCalcBonds);
       if ( forgiving && (((int)checksum) < molecule->numCalcBonds) )
-        iout << iWARN << "Bad global bond count!\n" << endi;
-      else NAMD_bug("Bad global bond count!\n");
+        iout << iWARN << errmsg << endi;
+      else NAMD_bug(errmsg);
     }
 
     checksum = reduction->item(REDUCTION_ANGLE_CHECKSUM);
     if ( checksum_b && (((int)checksum) != molecule->numCalcAngles) ) {
+      sprintf(errmsg, "Bad global angle count! (%d vs %d)\n",
+              (int)checksum, molecule->numCalcAngles);
       if ( forgiving && (((int)checksum) < molecule->numCalcAngles) )
-        iout << iWARN << "Bad global angle count!\n" << endi;
-      else NAMD_bug("Bad global angle count!\n");
+        iout << iWARN << errmsg << endi;
+      else NAMD_bug(errmsg);
     }
 
     checksum = reduction->item(REDUCTION_DIHEDRAL_CHECKSUM);
     if ( checksum_b && (((int)checksum) != molecule->numCalcDihedrals) ) {
+      sprintf(errmsg, "Bad global dihedral count! (%d vs %d)\n",
+              (int)checksum, molecule->numCalcDihedrals);
       if ( forgiving && (((int)checksum) < molecule->numCalcDihedrals) )
-        iout << iWARN << "Bad global dihedral count!\n" << endi;
-      else NAMD_bug("Bad global dihedral count!\n");
+        iout << iWARN << errmsg << endi;
+      else NAMD_bug(errmsg);
     }
 
     checksum = reduction->item(REDUCTION_IMPROPER_CHECKSUM);
     if ( checksum_b && (((int)checksum) != molecule->numCalcImpropers) ) {
+      sprintf(errmsg, "Bad global improper count! (%d vs %d)\n",
+              (int)checksum, molecule->numCalcImpropers);
       if ( forgiving && (((int)checksum) < molecule->numCalcImpropers) )
-        iout << iWARN << "Bad global improper count!\n" << endi;
-      else NAMD_bug("Bad global improper count!\n");
+        iout << iWARN << errmsg << endi;
+      else NAMD_bug(errmsg);
     }
 
     checksum = reduction->item(REDUCTION_THOLE_CHECKSUM);
     if ( checksum_b && (((int)checksum) != molecule->numCalcTholes) ) {
+      sprintf(errmsg, "Bad global Thole count! (%d vs %d)\n",
+              (int)checksum, molecule->numCalcTholes);
       if ( forgiving && (((int)checksum) < molecule->numCalcTholes) )
-        iout << iWARN << "Bad global Thole count!\n" << endi;
-      else NAMD_bug("Bad global Thole count!\n");
+        iout << iWARN << errmsg << endi;
+      else NAMD_bug(errmsg);
     }
 
     checksum = reduction->item(REDUCTION_ANISO_CHECKSUM);
     if ( checksum_b && (((int)checksum) != molecule->numCalcAnisos) ) {
+      sprintf(errmsg, "Bad global Aniso count! (%d vs %d)\n",
+              (int)checksum, molecule->numCalcAnisos);
       if ( forgiving && (((int)checksum) < molecule->numCalcAnisos) )
-        iout << iWARN << "Bad global Aniso count!\n" << endi;
-      else NAMD_bug("Bad global Aniso count!\n");
+        iout << iWARN << errmsg << endi;
+      else NAMD_bug(errmsg);
     }
 
     checksum = reduction->item(REDUCTION_CROSSTERM_CHECKSUM);
     if ( checksum_b && (((int)checksum) != molecule->numCalcCrossterms) ) {
+      sprintf(errmsg, "Bad global crossterm count! (%d vs %d)\n",
+              (int)checksum, molecule->numCalcCrossterms);
       if ( forgiving && (((int)checksum) < molecule->numCalcCrossterms) )
-        iout << iWARN << "Bad global crossterm count!\n" << endi;
-      else NAMD_bug("Bad global crossterm count!\n");
+        iout << iWARN << errmsg << endi;
+      else NAMD_bug(errmsg);
     }
 
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
@@ -2785,7 +2800,7 @@ void Controller::printEnergies(int step, int minimize)
         } else if (simParameters->alchFepOn) {
           CALLBACKLIST("BOND2", bondEnergy + angleEnergy + dihedralEnergy +
                                 improperEnergy + bondedEnergyDiff_f);
-          CALLBACKLIST("ELEC2", electEnergy_f);
+          CALLBACKLIST("ELEC2", electEnergy_f + electEnergySlow_f);
           CALLBACKLIST("VDW2", ljEnergy_f);
         } 
       }
@@ -2894,14 +2909,15 @@ void Controller::printEnergies(int step, int minimize)
 	  //iout << FORMAT("GOAVG");
 	}
 	// End of port -- JLai
+
         if (simParameters->alchOn && simParameters->alchThermIntOn) {
-          iout << "     ";
+          iout << "\n#TITITLE:    TS";
           iout << FORMAT("BOND1");
           iout << FORMAT("ELECT1");
           iout << FORMAT("VDW1");
           iout << FORMAT("BOND2");
-          iout << FORMAT("ELECT2");
           iout << "     ";
+          iout << FORMAT("ELECT2");
           iout << FORMAT("VDW2");
           if (simParameters->alchLambdaFreq > 0) {
             iout << FORMAT("LAMBDA");
@@ -2910,6 +2926,7 @@ void Controller::printEnergies(int step, int minimize)
         }
 
 	iout << "\n\n" << endi;
+
     }
 
     // N.B.  HP's aCC compiler merges FORMAT calls in the same expression.
@@ -2967,16 +2984,18 @@ void Controller::printEnergies(int step, int minimize)
       iout << FORMAT(goTotalEnergy);
       //iout << FORMAT("not implemented");
     } // End of port -- JLai
+
     if (simParameters->alchOn && simParameters->alchThermIntOn) {
-      iout << "     ";
+      iout << "\n";
+      iout << TITITLE(step);
       iout << FORMAT(bondedEnergy_ti_1);
       iout << FORMAT(electEnergy_ti_1 + electEnergySlow_ti_1 + 
                      electEnergyPME_ti_1);
       iout << FORMAT(ljEnergy_ti_1);
       iout << FORMAT(bondedEnergy_ti_2);
+      iout << "     ";
       iout << FORMAT(electEnergy_ti_2 + electEnergySlow_ti_2 +
                      electEnergyPME_ti_2);
-      iout << "     ";
       iout << FORMAT(ljEnergy_ti_2);
       if (simParameters->alchLambdaFreq > 0) {
         iout << FORMAT(simParameters->getCurrentLambda(step));
@@ -3065,22 +3084,8 @@ void Controller::enqueueCollections(int timestep)
 }
 
 //Modifications for alchemical fep
-static char *FEPTITLE(int X)
-{ 
-  static char tmp_string[21];
-  sprintf(tmp_string, "FepEnergy: %6d ",X);
-  return tmp_string;
-}
-
-static char *TITITLE(int X)
-{ 
-  static char tmp_string[21];
-  sprintf(tmp_string, "TI:     %7d",X); 
-  return tmp_string;
-}
-
 void Controller::outputFepEnergy(int step) {
- if (simParams->alchFepOn) {
+ if (simParams->alchOn && simParams->alchFepOn) {
   const int stepInRun = step - simParams->firstTimestep;
   const int alchEquilSteps = simParams->alchEquilSteps;
   const BigReal alchLambda = simParams->alchLambda;
@@ -3102,58 +3107,59 @@ void Controller::outputFepEnergy(int step) {
     exp_dE_ByRT += exp(-dE/RT);
     net_dE += dE;
   }
- 
-  if (stepInRun == 0) {
-    if (!fepFile.is_open()) {
-      NAMD_backup_file(simParams->alchOutFile);
-      fepFile.open(simParams->alchOutFile);
-      iout << "OPENING FEP ENERGY OUTPUT FILE\n" << endi;
-      if(alchEnsembleAvg){
-        fepSum = 0.0;
-        fepFile << "#            STEP                 Elec                            "
-                << "vdW                    dE           dE_avg         Temp             dG\n"
-                << "#                           l             l+dl      "
-                << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
-      }
-      else{
-        if(!FepWhamOn){ 
+
+  if (simParams->alchOutFreq) { 
+    if (stepInRun == 0) {
+      if (!fepFile.is_open()) {
+        NAMD_backup_file(simParams->alchOutFile);
+        fepFile.open(simParams->alchOutFile);
+        iout << "OPENING FEP ENERGY OUTPUT FILE\n" << endi;
+        if(alchEnsembleAvg){
+          fepSum = 0.0;
           fepFile << "#            STEP                 Elec                            "
-                  << "vdW                    dE         Temp\n"
+                  << "vdW                    dE           dE_avg         Temp             dG\n"
                   << "#                           l             l+dl      "
                   << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
-        } 
+        }
+        else{
+          if(!FepWhamOn){ 
+            fepFile << "#            STEP                 Elec                            "
+                    << "vdW                    dE         Temp\n"
+                    << "#                           l             l+dl      "
+                    << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
+          } 
+        }
+      }
+      if(!step){
+        if(!FepWhamOn){ 
+          fepFile << "#NEW FEP WINDOW: "
+                  << "LAMBDA SET TO " << alchLambda << " LAMBDA2 " 
+                  << alchLambda2 << std::endl;
+        }
       }
     }
-    if(!step){
-      if(!FepWhamOn){ 
-        fepFile << "#NEW FEP WINDOW: "
-                << "LAMBDA SET TO " << alchLambda << " LAMBDA2 " 
-                << alchLambda2 << std::endl;
-      }
+    if ((alchEquilSteps) && (stepInRun == alchEquilSteps)) {
+      fepFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
+              << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
+              << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
     }
-  }
-  if ((alchEquilSteps) && (stepInRun == alchEquilSteps)) {
-    fepFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
-            << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
-            << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
-  }
-  if ((simParams->N) && 
-      (simParams->alchOutFreq && ((step%simParams->alchOutFreq)==0))) {
-    writeFepEnergyData(step, fepFile);
-    fepFile.flush();
-  }
-  if (alchEnsembleAvg && (step == simParams->N)) {
-    fepSum = fepSum + dG;
-    fepFile << "#Free energy change for lambda window [ " << alchLambda
-	    << " " << alchLambda2 << " ] is " << dG 
-            << " ; net change until now is " << fepSum << std::endl;
-    fepFile.flush();
+    if ((simParams->N) && ((step%simParams->alchOutFreq) == 0)) {
+      writeFepEnergyData(step, fepFile);
+      fepFile.flush();
+    }
+    if (alchEnsembleAvg && (step == simParams->N)) {
+      fepSum = fepSum + dG;
+      fepFile << "#Free energy change for lambda window [ " << alchLambda
+              << " " << alchLambda2 << " ] is " << dG 
+              << " ; net change until now is " << fepSum << std::endl;
+      fepFile.flush();
+    }
   }
  }
 }
 
 void Controller::outputTiEnergy(int step) {
- if (simParams->alchThermIntOn) {
+ if (simParams->alchOn && simParams->alchThermIntOn) {
   const int stepInRun = step - simParams->firstTimestep;
   const int alchEquilSteps = simParams->alchEquilSteps;
   const int alchLambdaFreq = simParams->alchLambdaFreq;
@@ -3167,119 +3173,118 @@ void Controller::outputTiEnergy(int step) {
     net_dEdl_lj_1 = 0;
     net_dEdl_lj_2 = 0;
   }
-  if (stepInRun == 0 || (! ((step - 1) % simParams->alchOutFreq))) {
-    // output of instantaneous dU/dl now replaced with running average
-    // over last alchOutFreq steps (except for step 0)
-    recent_TiNo = 0;
-    recent_dEdl_bond_1 = 0;
-    recent_dEdl_bond_2 = 0;
-    recent_dEdl_elec_1 = 0;
-    recent_dEdl_elec_2 = 0;
-    recent_dEdl_lj_1 = 0;
-    recent_dEdl_lj_2 = 0;
-    recent_alchWork = 0;
-  }
   TiNo++;
-  recent_TiNo++;
   net_dEdl_bond_1 += bondedEnergy_ti_1;
   net_dEdl_bond_2 += bondedEnergy_ti_2;
-  // FB - PME is no longer scaled by global lambda, but by the respective
-  // lambda as dictated by elecLambdaStart. All electrostatics now go together.
-  net_dEdl_elec_1 += (electEnergy_ti_1 + electEnergySlow_ti_1 
+  net_dEdl_elec_1 += (electEnergy_ti_1 + electEnergySlow_ti_1
                       + electEnergyPME_ti_1);
-  net_dEdl_elec_2 += (electEnergy_ti_2 + electEnergySlow_ti_2 
+  net_dEdl_elec_2 += (electEnergy_ti_2 + electEnergySlow_ti_2
                       + electEnergyPME_ti_2);
   net_dEdl_lj_1 += ljEnergy_ti_1;
   net_dEdl_lj_2 += ljEnergy_ti_2;
 
-  recent_dEdl_bond_1 += bondedEnergy_ti_1;
-  recent_dEdl_bond_2 += bondedEnergy_ti_2;
-  recent_dEdl_elec_1 += (electEnergy_ti_1 + electEnergySlow_ti_1 
-                         + electEnergyPME_ti_1); 
-  recent_dEdl_elec_2 += (electEnergy_ti_2 + electEnergySlow_ti_2 
-                         + electEnergyPME_ti_2); 
-  recent_dEdl_lj_1 += ljEnergy_ti_1;
-  recent_dEdl_lj_2 += ljEnergy_ti_2;
-  recent_alchWork += alchWork;
-
-  if (stepInRun == 0) {
-    if (!tiFile.is_open()) {
-      NAMD_backup_file(simParams->alchOutFile);
-      tiFile.open(simParams->alchOutFile);
-      /* BKR - This has been rather drastically updated to better match stdout.
-         This was necessary for several reasons:
-         1) PME global scaling is obsolete (now removed)
-         2) scaling of bonded terms was added
-         3) alchemical work is now accumulated when switching is active
-       */
-      iout << "OPENING TI ENERGY OUTPUT FILE\n" << endi;
-      tiFile << "#TITITLE:    TS";
-      tiFile << FORMAT("BOND1");
-      tiFile << FORMAT("AVGBOND1");
-      tiFile << FORMAT("ELECT1");
-      tiFile << FORMAT("AVGELECT1");
-      tiFile << "     ";
-      tiFile << FORMAT("VDW1");
-      tiFile << FORMAT("AVGVDW1");
-      tiFile << FORMAT("BOND2");
-      tiFile << FORMAT("AVGBOND2");
-      tiFile << FORMAT("ELECT2");
-      tiFile << "     ";
-      tiFile << FORMAT("AVGELECT2");
-      tiFile << FORMAT("VDW2");
-      tiFile << FORMAT("AVGVDW2");
-      if (alchLambdaFreq > 0) {
-        tiFile << FORMAT("ALCHWORK");
-        tiFile << FORMAT("CUMALCHWORK");
-      }
-      tiFile << std::endl;
+  // Don't accumulate block averages (you'll get a divide by zero!) or even 
+  // open the TI output if alchOutFreq is zero.
+  if (simParams->alchOutFreq) {
+    if (stepInRun == 0 || (! ((step - 1) % simParams->alchOutFreq))) {
+      // output of instantaneous dU/dl now replaced with running average
+      // over last alchOutFreq steps (except for step 0)
+      recent_TiNo = 0;
+      recent_dEdl_bond_1 = 0;
+      recent_dEdl_bond_2 = 0;
+      recent_dEdl_elec_1 = 0;
+      recent_dEdl_elec_2 = 0;
+      recent_dEdl_lj_1 = 0;
+      recent_dEdl_lj_2 = 0;
+      recent_alchWork = 0;
     }
+    recent_TiNo++;
+    recent_dEdl_bond_1 += bondedEnergy_ti_1;
+    recent_dEdl_bond_2 += bondedEnergy_ti_2;
+    recent_dEdl_elec_1 += (electEnergy_ti_1 + electEnergySlow_ti_1 
+                           + electEnergyPME_ti_1); 
+    recent_dEdl_elec_2 += (electEnergy_ti_2 + electEnergySlow_ti_2 
+                           + electEnergyPME_ti_2); 
+    recent_dEdl_lj_1 += ljEnergy_ti_1;
+    recent_dEdl_lj_2 += ljEnergy_ti_2;
+    recent_alchWork += alchWork;
 
-    if (alchLambdaFreq > 0) {
-      tiFile << "#ALCHEMICAL SWITCHING ACTIVE " 
-             << simParams->alchLambda << " --> " << simParams->alchLambda2
-             << "\n#LAMBDA SCHEDULE: " 
-             << "dL: " << simParams->getLambdaDelta() 
-             << " Freq: " << alchLambdaFreq
-             << "\n#CONSTANT TEMPERATURE: " << simParams->alchTemp << " K"
+    if (stepInRun == 0) {
+      if (!tiFile.is_open()) {
+        NAMD_backup_file(simParams->alchOutFile);
+        tiFile.open(simParams->alchOutFile);
+        /* BKR - This has been rather drastically updated to better match 
+           stdout. This was necessary for several reasons:
+           1) PME global scaling is obsolete (now removed)
+           2) scaling of bonded terms was added
+           3) alchemical work is now accumulated when switching is active
+         */
+        iout << "OPENING TI ENERGY OUTPUT FILE\n" << endi;
+        tiFile << "#TITITLE:    TS";
+        tiFile << FORMAT("BOND1");
+        tiFile << FORMAT("AVGBOND1");
+        tiFile << FORMAT("ELECT1");
+        tiFile << FORMAT("AVGELECT1");
+        tiFile << "     ";
+        tiFile << FORMAT("VDW1");
+        tiFile << FORMAT("AVGVDW1");
+        tiFile << FORMAT("BOND2");
+        tiFile << FORMAT("AVGBOND2");
+        tiFile << FORMAT("ELECT2");
+        tiFile << "     ";
+        tiFile << FORMAT("AVGELECT2");
+        tiFile << FORMAT("VDW2");
+        tiFile << FORMAT("AVGVDW2");
+        if (alchLambdaFreq > 0) {
+          tiFile << FORMAT("ALCHWORK");
+          tiFile << FORMAT("CUMALCHWORK");
+        }
+        tiFile << std::endl;
+      }
+
+      if (alchLambdaFreq > 0) {
+        tiFile << "#ALCHEMICAL SWITCHING ACTIVE " 
+               << simParams->alchLambda << " --> " << simParams->alchLambda2
+               << "\n#LAMBDA SCHEDULE: " 
+               << "dL: " << simParams->getLambdaDelta() 
+               << " Freq: " << alchLambdaFreq;
+      }
+      else {
+        const BigReal alchLambda = simParams->alchLambda;    
+        const BigReal bond_lambda_1 = simParams->getBondLambda(alchLambda);
+        const BigReal bond_lambda_2 = simParams->getBondLambda(1-alchLambda);
+        const BigReal elec_lambda_1 = simParams->getElecLambda(alchLambda);
+        const BigReal elec_lambda_2 = simParams->getElecLambda(1-alchLambda);
+        const BigReal vdw_lambda_1 = simParams->getVdwLambda(alchLambda);
+        const BigReal vdw_lambda_2 = simParams->getVdwLambda(1-alchLambda);
+        tiFile << "#NEW TI WINDOW: "
+               << "LAMBDA " << alchLambda 
+               << "\n#PARTITION 1 SCALING: BOND " << bond_lambda_1
+               << " VDW " << vdw_lambda_1 << " ELEC " << elec_lambda_1
+               << "\n#PARTITION 2 SCALING: BOND " << bond_lambda_2
+               << " VDW " << vdw_lambda_2 << " ELEC " << elec_lambda_2;
+      }
+      tiFile << "\n#CONSTANT TEMPERATURE: " << simParams->alchTemp << " K"
              << std::endl;
     }
-    else {
-      const BigReal alchLambda = simParams->alchLambda;    
-      const BigReal bond_lambda_1 = simParams->getBondLambda(alchLambda);
-      const BigReal bond_lambda_2 = simParams->getBondLambda(1-alchLambda);
-      const BigReal elec_lambda_1 = simParams->getElecLambda(alchLambda);
-      const BigReal elec_lambda_2 = simParams->getElecLambda(1-alchLambda);
-      const BigReal vdw_lambda_1 = simParams->getVdwLambda(alchLambda);
-      const BigReal vdw_lambda_2 = simParams->getVdwLambda(1-alchLambda);
-      tiFile << "#NEW TI WINDOW: "
-       << "LAMBDA " << alchLambda 
-       << "\n#PARTITION 1 BOND LAMBDA " << bond_lambda_1
-       << "\n#PARTITION 1 VDW LAMBDA " << vdw_lambda_1 
-       << "\n#PARTITION 1 ELEC LAMBDA " << elec_lambda_1
-       << "\n#PARTITION 2 BOND LAMBDA " << bond_lambda_2
-       << "\n#PARTITION 2 VDW LAMBDA " << vdw_lambda_2 
-       << "\n#PARTITION 2 ELEC LAMBDA " << elec_lambda_2
-       << "\n#CONSTANT TEMPERATURE: " << simParams->alchTemp << " K"
-       << std::endl;
-    }
-  }
 
-  if (stepInRun == alchEquilSteps) {
-    tiFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
-           << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
-           << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
-  }
-  if (simParams->alchOutFreq && ((step%simParams->alchOutFreq)==0)) {
-    writeTiEnergyData(step, tiFile);
-    tiFile.flush();
+    if (stepInRun == alchEquilSteps) {
+      tiFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
+             << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
+             << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
+    }
+    if ((step%simParams->alchOutFreq) == 0) {
+      writeTiEnergyData(step, tiFile);
+      tiFile.flush();
+    }
   }
  }
 }
 
-/* Work is accumulated whenever alchLambda changes.  In the current scheme we
-   always increment lambda _first_, then integrate in time.  Therefore the work
-   is wrt the "old" lambda before the increment.
+/* 
+ Work is accumulated whenever alchLambda changes.  In the current scheme we
+ always increment lambda _first_, then integrate in time.  Therefore the work 
+ is wrt the "old" lambda before the increment.
 */
 BigReal Controller::computeAlchWork(const int step) {
   // alchemical scaling factors for groups 1/2 at the previous lambda
@@ -3384,7 +3389,7 @@ void Controller::writeFepEnergyData(int step, ofstream_namd &file) {
     }
   }
 }
-//fepe
+
 void Controller::writeTiEnergyData(int step, ofstream_namd &file) {
   tiFile << TITITLE(step);
   tiFile << FORMAT(recent_dEdl_bond_1 / recent_TiNo);
@@ -3407,6 +3412,7 @@ void Controller::writeTiEnergyData(int step, ofstream_namd &file) {
   }
   tiFile << std::endl;
 }
+//fepe
 
 void Controller::outputExtendedSystem(int step)
 {

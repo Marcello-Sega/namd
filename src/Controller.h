@@ -298,5 +298,21 @@ private:
     int computesPartitioned;
 };
 
+//Modifications for alchemical fep
+static char *FEPTITLE(int X)
+{
+  static char tmp_string[21];
+  sprintf(tmp_string, "FepEnergy: %6d ",X);
+  return tmp_string;
+}
+
+static char *TITITLE(int X)
+{
+  static char tmp_string[21];
+  sprintf(tmp_string, "TI:     %7d",X);
+  return tmp_string;
+}
+//fepe
+
 #endif // CONTROLLER_H
 
