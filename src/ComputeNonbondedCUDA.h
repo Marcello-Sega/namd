@@ -1,3 +1,5 @@
+#ifndef COMPUTENONBONDEDCUDA_H
+#define COMPUTENONBONDEDCUDA_H
 #include "ComputeNonbondedUtil.h"
 #include "ComputeHomeTuples.h"
 
@@ -110,6 +112,9 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
 
   //int gpu_is_mine;
 
+  // GPU device ID that this non-bonded computation uses
+  int deviceID;
+
   PatchMap *patchMap;
   AtomMap *atomMap;
   SubmitReduction *reduction;
@@ -133,9 +138,12 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
   int savePairlists;
   float plcutoff2;
 
+  int atoms_size;
+  CudaAtom* atoms;
+
   private:
   void finishPatch(patch_record&);
 
 };
 
-
+#endif //COMPUTENONBONDEDCUDA_H

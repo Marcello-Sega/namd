@@ -168,6 +168,10 @@ void master_init(int argc, char **argv){
   group.reductionMgr = CProxy_ReductionMgr::ckNew();
   // group.computePmeMgr set in constructor during startup
   group.nodePmeMgr = CProxy_NodePmeMgr::ckNew();
+#ifdef NAMD_CUDA
+  group.computePmeCUDAMgr = CProxy_ComputePmeCUDAMgr::ckNew();
+  group.computeCUDAMgr = CProxy_ComputeCUDAMgr::ckNew();
+#endif
 #ifdef OPENATOM_VERSION
   group.computeMoaMgr = CProxy_ComputeMoaMgr::ckNew();
 #endif // OPENATOM_VERSION

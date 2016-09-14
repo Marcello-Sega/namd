@@ -39,7 +39,7 @@ static void dftmod(double *bsp_mod, double *bsp_arr, int nfft) {
   }
 }
 
-static void compute_b_moduli(double *bm, int K, int order) {
+void compute_b_moduli(double *bm, int K, int order) {
   int i;
   double fr[3];
 

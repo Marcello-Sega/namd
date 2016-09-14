@@ -798,6 +798,9 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   // Zero array sizes and pointers
   init_arrays();
 
+  atoms_size = 0;
+  atoms = NULL;
+
   forces_size = 0;
   forces = NULL;
   
@@ -816,6 +819,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
     if ( master->slavePes[slaveIndex] != CkMyPe() ) {
       NAMD_bug("ComputeNonbondedCUDA slavePes[slaveIndex] != CkMyPe");
     }
+    deviceID = master->deviceID;
     registerPatches();
     return;
   }
@@ -848,14 +852,13 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   cuda_errcheck("in cudaDeviceGetStreamPriorityRange");
   if ( leastPriority != greatestPriority ) {
     if ( CkMyNode() == 0 ) {
-      int dev;
-      cudaGetDevice(&dev);
-      cuda_errcheck("cudaGetDevice");
+      int dev = deviceCUDA->getDeviceID();
       CkPrintf("CUDA device %d stream priority range %d %d\n", dev, leastPriority, greatestPriority);
     }
-    if ( deviceCUDA->getMergeGrids() && params->PMEOn && params->PMEOffload ) {
+    if ( deviceCUDA->getMergeGrids() && params->PMEOn && params->PMEOffload && !params->usePMECUDA) {
       greatestPriority = leastPriority;
     }
+    if (params->usePMECUDA) greatestPriority = leastPriority;
     cudaStreamCreateWithPriority(&stream,cudaStreamDefault,greatestPriority);
     cudaStreamCreateWithPriority(&stream2,cudaStreamDefault,leastPriority);
   } else
@@ -863,9 +866,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   {
     cudaStreamCreate(&stream);
     cuda_errcheck("cudaStreamCreate");
-    int dev;
-    cudaGetDevice(&dev);
-    cuda_errcheck("cudaGetDevice");
+    int dev = deviceCUDA->getDeviceID();
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, dev);
     cuda_errcheck("cudaGetDeviceProperties");
@@ -877,6 +878,9 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
     }
   }
   cuda_errcheck("cudaStreamCreate");
+
+  // Get GPU device ID
+  deviceID = deviceCUDA->getDeviceID();
 
   cuda_init();
   if ( max_grid_size < 65535 ) NAMD_bug("bad CUDA max_grid_size");
@@ -890,7 +894,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   patch_pairs_ptr = new ResizeArray<patch_pair>;
   patch_pair_num_ptr = new ResizeArray<int>;
 
-  if ( params->PMEOn && params->PMEOffload ) deviceCUDA->setGpuIsMine(0);
+  if ( params->PMEOn && params->PMEOffload && !params->usePMECUDA) deviceCUDA->setGpuIsMine(0);
 }
 
 
@@ -1152,9 +1156,6 @@ static __thread atom_param* atom_params;
 static __thread int vdw_types_size;
 static __thread int* vdw_types;
 
-static __thread int atoms_size;
-static __thread atom* atoms;
-
 static __thread int dummy_size;
 static __thread float* dummy_dev;
 
@@ -1218,9 +1219,6 @@ void init_arrays() {
   vdw_types_size = 0;
   vdw_types = NULL;
   
-  atoms_size = 0;
-  atoms = NULL;
-
   dummy_size = 0;
   dummy_dev = NULL;
 
@@ -1433,7 +1431,6 @@ void ComputeNonbondedCUDA::skip() {
 }
 
 int ComputeNonbondedCUDA::noWork() {
-  //fprintf(stderr, "ComputeNonbondedCUDA::noWork() %d\n",CkMyPe());
 
   SimParameters *simParams = Node::Object()->simParameters;
   Flags &flags = master->patchRecords[hostedPatches[0]].p->flags;
@@ -1500,6 +1497,9 @@ int ComputeNonbondedCUDA::noWork() {
 void ComputeNonbondedCUDA::doWork() {
 GBISP("C.N.CUDA[%d]::doWork: seq %d, phase %d, workStarted %d, atomsChanged %d\n", \
 CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
+
+  // Set GPU device ID
+  cudaCheck(cudaSetDevice(deviceID));
 
   ResizeArray<patch_pair> &patch_pairs(*patch_pairs_ptr);
   ResizeArray<int> &patch_pair_num(*patch_pair_num_ptr);
@@ -1698,7 +1698,7 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
     num_remote_atoms = num_atoms - num_local_atoms;
     reallocate_host<atom_param>(&atom_params, &atom_params_size, num_atoms, 1.2f);
     reallocate_host<int>(&vdw_types, &vdw_types_size, num_atoms, 1.2f);
-    reallocate_host<atom>(&atoms, &atoms_size, num_atoms, 1.2f);
+    reallocate_host<CudaAtom>(&atoms, &atoms_size, num_atoms, 1.2f);
     reallocate_host<float4>(&forces, &forces_size, num_atoms, 1.2f, cudaHostAllocMapped);
     reallocate_host<float4>(&slow_forces, &slow_forces_size, num_atoms, 1.2f, cudaHostAllocMapped);
     if (simParams->GBISOn) {
@@ -1736,7 +1736,7 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
 
     cuda_bind_patch_pairs(patch_pairs.begin(), patch_pairs.size(),
       activePatches.size(), num_atoms, bfstart, 
-			exclmask_start);
+      exclmask_start);
 
   }  // atomsChanged || computesChanged
 
@@ -1779,7 +1779,7 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
     {
 #if 1
       const CudaAtom *ac = pr.p->getCudaAtomList();
-      atom *ap = atoms + start;
+      CudaAtom *ap = atoms + start;
       memcpy(ap, ac, sizeof(atom)*n);
 #else
       Vector center =
@@ -1795,12 +1795,6 @@ CkMyPe(), sequence(), gbisPhase, workStarted, atomsChanged);
 #endif
     }
   }
-
-//GBISP("finished active patches\n")
-
-  //CkPrintf("maxMovement = %f  maxTolerance = %f  save = %d  use = %d\n",
-  //  maxAtomMovement, maxPatchTolerance,
-  //  flags.savePairlists, flags.usePairlists);
 
   savePairlists = 0;
   usePairlists = 0;
@@ -1978,6 +1972,9 @@ workStarted, gbisPhase, kernel_launch_state, pe)
   latc.z = lattice.c().z;
   SimParameters *simParams = Node::Object()->simParameters;
 
+  // Set GPU device ID
+  cudaSetDevice(deviceID);
+
   const bool streaming = ! (deviceCUDA->getNoStreaming() || simParams->GBISOn);
 
   double walltime;
@@ -2009,7 +2006,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
 	       }
       }
       atomsChanged = 0;
-      cuda_bind_atoms(atoms);
+      cuda_bind_atoms((const atom *)atoms);
       cuda_bind_forces(forces, slow_forces);
       cuda_bind_virials(virials, force_ready_queue, block_order);
       if ( simParams->GBISOn) {
@@ -2171,7 +2168,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P3>>>\n", CkMyPe())
         }
       } // phases
     } // GBISOn
-    if ( simParams->PMEOn && simParams->PMEOffload ) break;
+    if ( simParams->PMEOn && simParams->PMEOffload  && !simParams->usePMECUDA) break;
 
   default:
 GBISP("C.N.CUDA[%d]::recvYieldDevice: case default\n", CkMyPe())

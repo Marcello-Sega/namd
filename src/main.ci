@@ -18,6 +18,10 @@ mainmodule main {
   extern module LdbCoordinator;
   extern module ComputeMgr;
   extern module ComputePmeMgr;
+//#ifdef NAMD_CUDA
+  extern module ComputePmeCUDAMgr;
+  extern module ComputeCUDAMgr;
+//#endif
   #ifdef OPENATOM_VERSION
   extern module ComputeMoaMgr;
   #endif // OPENATOM_VERSION

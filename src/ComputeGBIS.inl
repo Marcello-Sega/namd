@@ -134,7 +134,7 @@ static inline float MassToScreen(Mass mi) {//, Mass mj) {
   dh  return value
  ******************************************************************************/
 #ifdef GBIS_CUDA
-__device__ void h0
+__device__ __forceinline__ void h0
 #else
 static inline void h0
 #endif
@@ -143,7 +143,7 @@ static inline void h0
   h = 0.f;
 }
 #ifdef GBIS_CUDA
-__device__ void dh0
+__device__ __forceinline__ void dh0
 #else
 static inline void dh0
 #endif
@@ -153,7 +153,7 @@ static inline void dh0
 }
 
 #ifdef GBIS_CUDA
-__device__ void h1
+__device__ __forceinline__ void h1
 #else
 static inline void h1
 #endif
@@ -170,7 +170,7 @@ static inline void h1
   h = 0.125f*ri*(1.f + 2.f*r*rmrsi + rci2*(r2 - 4.f*rc*r - rs2) + 2.f*logr);
 }
 #ifdef GBIS_CUDA
-__device__ void dh1
+__device__ __forceinline__ void dh1
 #else
 static inline void dh1
 #endif
@@ -188,7 +188,7 @@ static inline void dh1
 }
 
 #ifdef GBIS_CUDA
-__device__ void h2
+__device__ __forceinline__ void h2
 #else
 static inline void h2
 #endif
@@ -199,7 +199,7 @@ float rc, float r0, float rs, float & h ) {
     h = rs*ri*ri*k*(TA+k*(TB+k*(TC+k*(TD+k*TE))));
 }
 #ifdef GBIS_CUDA
-__device__ void dh2
+__device__ __forceinline__ void dh2
 #else
 static inline void dh2
 #endif
@@ -211,7 +211,7 @@ float rc, float r0, float rs, float & dh ) {
 }
 
 #ifdef GBIS_CUDA
-__device__ void h3
+__device__ __forceinline__ void h3
 #else
 static inline void h3
 #endif
@@ -221,7 +221,7 @@ float rc, float r0, float rs, float & h ) {
     h = 0.5f * ( rs*r2mrs2i + 0.5f * log((r-rs)/(r+rs))*ri );
 }
 #ifdef GBIS_CUDA
-__device__ void dh3
+__device__ __forceinline__ void dh3
 #else
 static inline void dh3
 #endif
@@ -233,7 +233,7 @@ float rc, float r0, float rs, float & dh ) {
 }
 
 #ifdef GBIS_CUDA
-__device__ void h4
+__device__ __forceinline__ void h4
 #else
 static inline void h4
 #endif
@@ -250,7 +250,7 @@ float rc, float r0, float rs, float & h ) {
     h = 0.25f*( r0i*(2.f- 0.5f*(r0i*ri*(r2 + r02 - rs2))) - rspri + rilogr );
 }
 #ifdef GBIS_CUDA
-__device__ void dh4
+__device__ __forceinline__ void dh4
 #else
 static inline void dh4
 #endif
@@ -269,7 +269,7 @@ float rc, float r0, float rs, float & dh ) {
 }
 
 #ifdef GBIS_CUDA
-__device__ void h5
+__device__ __forceinline__ void h5
 #else
 static inline void h5
 #endif
@@ -284,7 +284,7 @@ float rc, float r0, float rs, float & h ) {
     h = 0.5f*( rsr2mrs2i + 2.f/r0 + logr );
 }
 #ifdef GBIS_CUDA
-__device__ void dh5
+__device__ __forceinline__ void dh5
 #else
 static inline void dh5
 #endif
@@ -300,7 +300,7 @@ float rc, float r0, float rs, float & dh ) {
 }
 
 #ifdef GBIS_CUDA
-__device__ void h6
+__device__ __forceinline__ void h6
 #else
 static inline void h6
 #endif
@@ -309,7 +309,7 @@ float rc, float r0, float rs, float & h ) {
   h = 0;
 }
 #ifdef GBIS_CUDA
-__device__ void dh6
+__device__ __forceinline__ void dh6
 #else
 static inline void dh6
 #endif
@@ -319,7 +319,7 @@ float rc, float r0, float rs, float & dh ) {
 }
 
 #ifdef GBIS_CUDA
-__device__ void CalcH 
+__device__ __forceinline__ void CalcH 
 #else
 static inline void CalcH 
 #endif
@@ -353,7 +353,7 @@ if (r > 4*rs) { //change this to 1/4 r > rs
 }
 }
 #ifdef GBIS_CUDA
-__device__ void CalcDH
+__device__ __forceinline__ void CalcDH
 #else
 static inline void CalcDH
 #endif
@@ -380,7 +380,7 @@ if (r > 4*rs) {
 }
 }
 #ifdef GBIS_CUDA
-__device__  void CalcHPair
+__device__  __forceinline__ void CalcHPair
 #else
 static inline void CalcHPair
 #endif
@@ -402,7 +402,7 @@ static inline void CalcHPair
   CalcH(r,r2,ri,rc,rj0,ris,hji,dji);//hji
 }
 #ifdef GBIS_CUDA
-__device__ void CalcDHPair
+__device__ __forceinline__ void CalcDHPair
 #else
 static inline void CalcDHPair
 #endif
@@ -429,7 +429,7 @@ static inline void CalcDHPair
  * also output intermediate values used in dEda
  */
 #ifdef GBIS_CUDA
-__device__ void Calc_dEdr_Pair
+__device__ __forceinline__ void Calc_dEdr_Pair
 #else
 static inline void Calc_dEdr_Pair
 #endif
@@ -479,7 +479,7 @@ static inline void Calc_dEdr_Pair
  * must calculate dEdr previously to retreive intermediate values
  */
 #ifdef GBIS_CUDA
-__device__ void Calc_dEda_Pair
+__device__ __forceinline__ void Calc_dEda_Pair
 #else
 static inline void Calc_dEda_Pair
 #endif
@@ -512,7 +512,7 @@ static inline void Calc_dEda_Pair
  * for a pair of atoms
  */
 #ifdef GBIS_CUDA
-__device__ void Phase2_Pair
+__device__ __forceinline__ void Phase2_Pair
 #else
 static inline void Phase2_Pair
 #endif

@@ -21,6 +21,10 @@ public:
   CkGroupID computeMgr;
   CkGroupID computePmeMgr;
   CkGroupID nodePmeMgr;
+#ifdef NAMD_CUDA
+  CkGroupID computePmeCUDAMgr;
+  CkGroupID computeCUDAMgr;
+#endif
   //  CkGroupID delegateMgr;
 #ifdef OPENATOM_VERSION
   CkGroupID computeMoaMgr;

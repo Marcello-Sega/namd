@@ -10,7 +10,9 @@
 
 #include "common.h"
 #include "Vector.h"
+#ifndef __CUDACC__
 #include "ResizeArray.h"
+#endif
 
 class Patch;
 class Compute;
@@ -145,6 +147,11 @@ struct CudaAtom {
   float x,y,z,q;
 };
 
+struct CudaForce {
+  float x, y, z;
+};
+
+#ifndef __CUDACC__
 typedef ResizeArray<CudaAtom> CudaAtomList;
 typedef ResizeArray<CompAtom> CompAtomList;
 typedef ResizeArray<CompAtomExt> CompAtomExtList;
@@ -249,6 +256,7 @@ struct proxyTreeNode{
 };
 
 typedef ResizeArray<proxyTreeNode> proxyTreeNodeList;
+#endif // __CUDACC__
 
 #endif /* NAMDTYPES_H */
 

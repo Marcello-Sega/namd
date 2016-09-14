@@ -39,7 +39,7 @@ void cuda_finalize() {
 struct cuda_args_t {
 	char *devicelist;
 	int usedevicelist;
-	int devicesperreplica;
+  int devicesperreplica;
 	int ignoresharing;
 	int mergegrids;
 	int nomergegrids;
@@ -63,6 +63,13 @@ void cuda_getargs(char **argv) {
 }
 // -------------------------------------------------------------------------------------------------
 
+// Node-wide list of device IDs for every rank
+#define MAX_NUM_RANKS 2048
+int deviceIDList[MAX_NUM_RANKS];
+// Node-wide of master PEs for every device ID
+#define MAX_NUM_DEVICES 256
+int masterPeList[MAX_NUM_DEVICES];
+
 // -------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
@@ -70,7 +77,7 @@ void cuda_getargs(char **argv) {
 //
 // Class creator
 //
-DeviceCUDA::DeviceCUDA() {}
+DeviceCUDA::DeviceCUDA() : deviceProps(NULL), devices(NULL) {}
 
 //
 // Initalize device
@@ -79,7 +86,7 @@ void DeviceCUDA::initialize() {
 	// Copy command-line arguments into class
 	this->devicelist = cuda_args.devicelist;
 	this->usedevicelist = cuda_args.usedevicelist;
-	this->devicesperreplica = cuda_args.devicesperreplica;
+  this->devicesperreplica = cuda_args.devicesperreplica;
 	this->ignoresharing = cuda_args.ignoresharing;
 	this->mergegrids = cuda_args.mergegrids;
 	this->nomergegrids = cuda_args.nomergegrids;
@@ -128,14 +135,19 @@ void DeviceCUDA::initialize() {
   }
   // CkPrintf("Pe %d ranks %d in physical node\n",CkMyPe(),myRankInPhysicalNode);
 
-  int deviceCount = 0;
+  deviceCount = 0;
   cudaCheck(cudaGetDeviceCount(&deviceCount));
   if ( deviceCount <= 0 ) {
     cudaDie("No CUDA devices found.");
   }
 
-  int *devices;
-  int ndevices = 0;
+  // Store all device props
+  deviceProps = new cudaDeviceProp[deviceCount];
+  for ( int i=0; i<deviceCount; ++i ) {
+    cudaCheck(cudaGetDeviceProperties(&deviceProps[i], i));
+  }
+
+  ndevices = 0;
   int nexclusive = 0;
   if ( usedevicelist ) {
     devices = new int[strlen(devicelist)];
@@ -197,97 +209,150 @@ void DeviceCUDA::initialize() {
 
  {
 
-  int dev;
-  if ( numPesOnPhysicalNode > 1 ) {
-    int myDeviceRank = myRankInPhysicalNode * ndevices / numPesOnPhysicalNode;
-    dev = devices[myDeviceRank];
-    masterPe = CkMyPe();
-    if ( ignoresharing ) {
+    int dev;
+    if ( numPesOnPhysicalNode > 1 ) {
+      int myDeviceRank = myRankInPhysicalNode * ndevices / numPesOnPhysicalNode;
+      dev = devices[myDeviceRank];
+      masterPe = CkMyPe();
+      if ( ignoresharing ) {
+        pesSharingDevice = new int[1];
+        pesSharingDevice[0] = CkMyPe();
+        numPesSharingDevice = 1;
+      } else {
+        pesSharingDevice = new int[numPesOnPhysicalNode];
+        masterPe = -1;
+        numPesSharingDevice = 0;
+        for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
+          if ( i * ndevices / numPesOnPhysicalNode == myDeviceRank ) {
+            int thisPe = pesOnPhysicalNode[i];
+            pesSharingDevice[numPesSharingDevice++] = thisPe;
+            if ( masterPe < 1 ) masterPe = thisPe;
+            if ( WorkDistrib::pe_sortop_diffuse()(thisPe,masterPe) ) masterPe = thisPe;
+          }
+        }
+        for ( int j = 0; j < ndevices; ++j ) {
+          if ( devices[j] == dev && j != myDeviceRank ) sharedGpu = 1;
+        }
+      }
+      if ( sharedGpu && masterPe == CkMyPe() ) {
+        if ( CmiPhysicalNodeID(masterPe) < 2 )
+        CkPrintf("Pe %d sharing CUDA device %d\n", CkMyPe(), dev);
+      }
+    } else {  // in case phys node code is lying
+      dev = devices[CkMyPe() % ndevices];
+      masterPe = CkMyPe();
       pesSharingDevice = new int[1];
       pesSharingDevice[0] = CkMyPe();
       numPesSharingDevice = 1;
-    } else {
-      pesSharingDevice = new int[numPesOnPhysicalNode];
-      masterPe = -1;
-      numPesSharingDevice = 0;
-      for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
-        if ( i * ndevices / numPesOnPhysicalNode == myDeviceRank ) {
-          int thisPe = pesOnPhysicalNode[i];
-          pesSharingDevice[numPesSharingDevice++] = thisPe;
-          if ( masterPe < 1 ) masterPe = thisPe;
-          if ( WorkDistrib::pe_sortop_diffuse()(thisPe,masterPe) ) masterPe = thisPe;
-        }
-      }
-      for ( int j = 0; j < ndevices; ++j ) {
-        if ( devices[j] == dev && j != myDeviceRank ) sharedGpu = 1;
-      }
     }
-    if ( sharedGpu && masterPe == CkMyPe() ) {
+
+    deviceID = dev;
+
+    // Store device IDs to node-wide list
+    if (CkMyRank() >= MAX_NUM_RANKS)
+      NAMD_die("Maximum number of ranks (2048) per node exceeded");
+    deviceIDList[CkMyRank()] = deviceID;
+
+    if ( masterPe != CkMyPe() ) {
       if ( CmiPhysicalNodeID(masterPe) < 2 )
-      CkPrintf("Pe %d sharing CUDA device %d\n", CkMyPe(), dev);
+      CkPrintf("Pe %d physical rank %d will use CUDA device of pe %d\n",
+               CkMyPe(), myRankInPhysicalNode, masterPe);
+      // for PME only
+      cudaCheck(cudaSetDevice(dev));
+      return;
     }
-  } else {  // in case phys node code is lying
-    dev = devices[CkMyPe() % ndevices];
-    masterPe = CkMyPe();
-    pesSharingDevice = new int[1];
-    pesSharingDevice[0] = CkMyPe();
-    numPesSharingDevice = 1;
-  }
 
-  if ( masterPe != CkMyPe() ) {
+    // Store master PEs for every device ID to node-wide list
+    if (CkMyRank() >= MAX_NUM_DEVICES)
+      NAMD_die("Maximum number of CUDA devices (256) per node exceeded");
+    masterPeList[deviceID] = masterPe;
+    // Set masterPe values to -1 for devices that do not exist.
+    // Only master Pe with deviceID == devices[0] does the writing
+    if (deviceID == devices[0]) {
+      // For device IDs 0...deviceCount-1, check if it is in the devices[0...deviceCount-1]
+      for (int i=0;i < deviceCount;i++) {
+        bool deviceOK = false;
+        for (int j=0;j < deviceCount;j++) {
+          if (devices[j] == i) deviceOK = true;
+        }
+        if (!deviceOK) masterPeList[i] = -1;
+      }
+      // Device IDs deviceCount ... MAX_NUM_DEVICES are not possible, just set them to -1
+      for (int i=deviceCount;i < MAX_NUM_DEVICES;i++) {
+        masterPeList[i] = -1;
+      }
+    }
+
+    // disable token-passing but don't submit local until remote finished
+    // if shared_gpu is true, otherwise submit all work immediately
+    firstPeSharingGpu = CkMyPe();
+    nextPeSharingGpu = CkMyPe();
+
+    gpuIsMine = ( firstPeSharingGpu == CkMyPe() ); 
+
+    if ( dev >= deviceCount ) {
+      char buf[256];
+      sprintf(buf,"Pe %d unable to bind to CUDA device %d on %s because only %d devices are present",
+  		CkMyPe(), dev, host, deviceCount);
+      NAMD_die(buf);
+    }
+
+    cudaDeviceProp deviceProp;
+    cudaCheck(cudaGetDeviceProperties(&deviceProp, dev));
     if ( CmiPhysicalNodeID(masterPe) < 2 )
-    CkPrintf("Pe %d physical rank %d will use CUDA device of pe %d\n",
-             CkMyPe(), myRankInPhysicalNode, masterPe);
-    // for PME only
+    	CkPrintf("Pe %d physical rank %d binding to CUDA device %d on %s: '%s'  Mem: %dMB  Rev: %d.%d\n",
+               CkMyPe(), myRankInPhysicalNode, dev, host,
+               deviceProp.name, deviceProp.totalGlobalMem / (1024*1024),
+               deviceProp.major, deviceProp.minor);
+
     cudaCheck(cudaSetDevice(dev));
-    return;
+
+  }  // just let CUDA pick a device for us
+
+  {
+    cudaCheck(cudaSetDeviceFlags(cudaDeviceMapHost));
+
+    int dev;
+    cudaCheck(cudaGetDevice(&dev));
+    deviceID = dev;
+    cudaDeviceProp deviceProp;
+    cudaCheck(cudaGetDeviceProperties(&deviceProp, dev));
+    if ( deviceProp.computeMode == cudaComputeModeProhibited )
+      cudaDie("device in prohibited mode");
+    if ( deviceProp.major < 2 && deviceProp.minor < 1 )
+      cudaDie("device not of compute capability 1.1 or higher");
+    if ( ! deviceProp.canMapHostMemory )
+      cudaDie("device cannot map host memory");
+  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+    if (deviceProp.major < 3)
+      cudaDie("CUDA texture objects require compute capability 3.0 or higher.\nUse DISABLE_CUDA_TEXTURE_OBJECTS to disable texture objects.");
+  #endif
+    extern int read_CUDA_ARCH();
+    cuda_arch = read_CUDA_ARCH();
   }
-
-  // disable token-passing but don't submit local until remote finished
-  // if shared_gpu is true, otherwise submit all work immediately
-  firstPeSharingGpu = CkMyPe();
-  nextPeSharingGpu = CkMyPe();
-
-  gpuIsMine = ( firstPeSharingGpu == CkMyPe() ); 
-
-  if ( dev >= deviceCount ) {
-    char buf[256];
-    sprintf(buf,"Pe %d unable to bind to CUDA device %d on %s because only %d devices are present",
-		CkMyPe(), dev, host, deviceCount);
-    NAMD_die(buf);
-  }
-
-  cudaDeviceProp deviceProp;
-  cudaCheck(cudaGetDeviceProperties(&deviceProp, dev));
-  if ( CmiPhysicalNodeID(masterPe) < 2 )
-  	CkPrintf("Pe %d physical rank %d binding to CUDA device %d on %s: '%s'  Mem: %dMB  Rev: %d.%d\n",
-             CkMyPe(), myRankInPhysicalNode, dev, host,
-             deviceProp.name, deviceProp.totalGlobalMem / (1024*1024),
-             deviceProp.major, deviceProp.minor);
-
-  cudaCheck(cudaSetDevice(dev));
-
- }  // just let CUDA pick a device for us
-
-  cudaCheck(cudaSetDeviceFlags(cudaDeviceMapHost));
-
-  int dev;
-  cudaCheck(cudaGetDevice(&dev));
-  cudaDeviceProp deviceProp;
-  cudaCheck(cudaGetDeviceProperties(&deviceProp, dev));
-  if ( deviceProp.computeMode == cudaComputeModeProhibited )
-    cudaDie("device in prohibited mode");
-  if ( deviceProp.major < 2 && deviceProp.minor < 1 )
-    cudaDie("device not of compute capability 1.1 or higher");
-  if ( ! deviceProp.canMapHostMemory )
-    cudaDie("device cannot map host memory");
 }
 
 //
 // Class destructor
 //
 DeviceCUDA::~DeviceCUDA() {
+  if (deviceProps != NULL) delete [] deviceProps;
+  if (devices != NULL) delete [] devices;
 	delete [] pesSharingDevice;
+}
+
+//
+// Return device ID for pe. Assumes all nodes are the same
+//
+int DeviceCUDA::getDeviceIDforPe(int pe) {
+  return deviceIDList[CkRankOf(pe) % CkMyNodeSize()];
+}
+
+//
+// Returns master PE for the device ID, or -1 if device not found
+//
+int DeviceCUDA::getMasterPeForDeviceID(int deviceID) {
+  return masterPeList[deviceID % deviceCount];
 }
 
 //
@@ -312,6 +377,18 @@ bool DeviceCUDA::one_device_per_node() {
     }
   }
   return ( numPesOnNodeSharingDevice == CkMyNodeSize() );
+}
+
+int DeviceCUDA::getMaxNumThreads() {
+  int dev;
+  cudaCheck(cudaGetDevice(&dev));
+  return deviceProps[dev].maxThreadsPerBlock;
+}
+
+int DeviceCUDA::getMaxNumBlocks() {
+  int dev;
+  cudaCheck(cudaGetDevice(&dev));
+  return deviceProps[dev].maxGridSize[0];
 }
 
 /*

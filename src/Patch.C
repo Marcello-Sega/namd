@@ -512,7 +512,11 @@ void Patch::gbisP2Ready() {
   for(cid = cid.begin(); cid != cid.end(); cid++) {
     if ( (*cid)->type() == computeNonbondedSelfType ||
          (*cid)->type() == computeNonbondedPairType ||
-         (*cid)->type() == computeNonbondedCUDAType) {
+         (*cid)->type() == computeNonbondedCUDAType
+#ifdef NAMD_CUDA
+         || (*cid)->type() == computeNonbondedCUDA2Type
+#endif
+         ) {
       (*cid)->gbisP2PatchReady(patchID,seq);
     }
   }
@@ -526,7 +530,11 @@ void Patch::gbisP3Ready() {
   for(cid = cid.begin(); cid != cid.end(); cid++) {
     if ( (*cid)->type() == computeNonbondedSelfType ||
          (*cid)->type() == computeNonbondedPairType ||
-         (*cid)->type() == computeNonbondedCUDAType) {
+         (*cid)->type() == computeNonbondedCUDAType
+#ifdef NAMD_CUDA
+         || (*cid)->type() == computeNonbondedCUDA2Type
+#endif
+         ) {
       (*cid)->gbisP3PatchReady(patchID,seq);
     }
   }

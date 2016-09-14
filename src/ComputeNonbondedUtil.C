@@ -1268,7 +1268,9 @@ void ComputeNonbondedUtil::select(void)
   }
 
 #ifdef NAMD_CUDA
-  send_build_cuda_force_table();
+  if (!simParams->useCUDA2) {
+    send_build_cuda_force_table();
+  }
 #endif
 
   #ifdef NAMD_MIC

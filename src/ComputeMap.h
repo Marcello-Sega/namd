@@ -48,6 +48,10 @@ enum ComputeType
   computeDPMEType,
 #endif
   computePmeType,
+#ifdef NAMD_CUDA
+  computePmeCUDAType,
+  computeNonbondedCUDA2Type,
+#endif
   optPmeType,
   computeEwaldType,
   computeFullDirectType,

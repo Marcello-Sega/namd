@@ -47,6 +47,9 @@ class NonbondedMICSlaveMsg;
 class NonbondedMICSkipMsg;
 
 class ComputeNonbondedWorkArrays;
+#ifdef NAMD_CUDA
+class CudaComputeNonbonded;
+#endif
 
 class ComputeMgr : public CBase_ComputeMgr
 {
@@ -112,6 +115,26 @@ public:
   void recvNonbondedCUDASlaveSkip(NonbondedCUDASkipMsg *);
   void sendNonbondedCUDASlaveEnqueue(ComputeNonbondedCUDA *c, int,int,int,int);
   void sendNonbondedCUDASlaveEnqueuePatch(ComputeNonbondedCUDA *c, int,int,int,int, FinishWorkMsg*);
+#ifdef NAMD_CUDA
+  void sendAssignPatchesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c);
+  void recvAssignPatchesOnPe(CudaComputeNonbondedMsg *msg);
+  void sendSkipPatchesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c);
+  void recvSkipPatchesOnPe(CudaComputeNonbondedMsg *msg);
+  void sendFinishPatchesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c);
+  void recvFinishPatchesOnPe(CudaComputeNonbondedMsg *msg);
+  void sendFinishPatchOnPe(int pe, CudaComputeNonbonded* c, int i);
+  void recvFinishPatchOnPe(CudaComputeNonbondedMsg *msg);
+  void sendOpenBoxesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c);
+  void recvOpenBoxesOnPe(CudaComputeNonbondedMsg *msg);
+  void sendFinishReductions(int pe, CudaComputeNonbonded* c);
+  void recvFinishReductions(CudaComputeNonbondedMsg *msg);
+  void sendMessageEnqueueWork(int pe, CudaComputeNonbonded* c);
+  void recvMessageEnqueueWork(CudaComputeNonbondedMsg *msg);
+  void sendLaunchWork(int pe, CudaComputeNonbonded* c);
+  void recvLaunchWork(CudaComputeNonbondedMsg *msg);
+  void sendUnregisterBoxesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c);
+  void recvUnregisterBoxesOnPe(CudaComputeNonbondedMsg *msg);
+#endif
   void sendCreateNonbondedMICSlave(int,int);
   void recvCreateNonbondedMICSlave(NonbondedMICSlaveMsg *);
   void sendNonbondedMICSlaveReady(int,int,int,int);

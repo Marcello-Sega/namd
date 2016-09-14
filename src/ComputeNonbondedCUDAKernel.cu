@@ -723,6 +723,7 @@ int cuda_stream_finished() {
 
 // for make depends
 #include "ComputeNonbondedCUDAKernelBase.h"
+#include "ComputeGBISCUDAKernel.h"
 
 #endif  // NAMD_CUDA
 

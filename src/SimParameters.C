@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2016/09/07 18:09:59 $
- * $Revision: 1.1465 $
+ * $Date: 2016/09/14 15:47:33 $
+ * $Revision: 1.1466 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -81,6 +81,9 @@ extern "C" {
 //#endif
 #include "DeviceCUDA.h"
 #ifdef NAMD_CUDA
+#ifdef WIN32
+#define __thread __declspec(thread)
+#endif
 extern __thread DeviceCUDA *deviceCUDA;
 #endif
 

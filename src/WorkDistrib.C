@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2016/09/07 18:09:59 $
- * $Revision: 1.1288 $
+ * $Date: 2016/09/14 15:47:33 $
+ * $Revision: 1.1289 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -18,7 +18,7 @@
  */
 
 #include <stdio.h>
-
+ 
 #include "InfoStream.h"
 #include "Communicate.h"
 #include "ProcessorPrivate.h"
@@ -47,6 +47,15 @@
 #include "SortAtoms.h"
 #include <algorithm>
 #include "TopoManager.h"
+#include "ComputePmeCUDAMgr.h"
+
+#include "DeviceCUDA.h"
+#ifdef NAMD_CUDA
+#ifdef WIN32
+#define __thread __declspec(thread)
+#endif
+extern __thread DeviceCUDA *deviceCUDA;
+#endif
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
@@ -148,7 +157,10 @@ int* WorkDistrib::peDiffuseOrderingIndex;
 int* WorkDistrib::peCompactOrdering;
 int* WorkDistrib::peCompactOrderingIndex;
 
-void cuda_initialize();
+#ifdef NAMD_CUDA
+extern void cuda_initialize();
+#endif
+
 void mic_initialize();
 
 void WorkDistrib::peOrderingReady() {
@@ -2311,7 +2323,14 @@ void WorkDistrib::mapComputes(void)
 	mapComputeHomePatches(computeEwaldType);
     }
     else {      
-      mapComputePatch(computePmeType);
+#ifdef NAMD_CUDA
+      if (node->simParameters->usePMECUDA) {
+        mapComputePatch(computePmeCUDAType);
+      } else 
+#endif
+      {
+        mapComputePatch(computePmeType);
+      }
       if ( node->simParameters->pressureProfileEwaldOn )
 	mapComputeHomePatches(computeEwaldType);
     }
@@ -2343,7 +2362,11 @@ void WorkDistrib::mapComputes(void)
     mapComputeHomePatches(computeFmmType);
 
 #ifdef NAMD_CUDA
-  mapComputeNode(computeNonbondedCUDAType);
+  if (node->simParameters->useCUDA2) {
+    mapComputeNode(computeNonbondedCUDA2Type);
+  } else {
+    mapComputeNode(computeNonbondedCUDAType);
+  }
   mapComputeHomeTuples(computeExclsType);
   mapComputePatch(computeSelfExclsType);
 #endif
@@ -2492,7 +2515,6 @@ void WorkDistrib::mapComputePatch(ComputeType type)
 
 }
 
-
 //----------------------------------------------------------------------
 void WorkDistrib::mapComputeNode(ComputeType type)
 {
@@ -2513,7 +2535,6 @@ void WorkDistrib::mapComputeNode(ComputeType type)
   }
 
 }
-
 
 //----------------------------------------------------------------------
 void WorkDistrib::mapComputeNonbonded(void)
@@ -2851,6 +2872,7 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     break;
   case computeNonbondedCUDAType:
 #ifdef NAMD_CUDA
+  case computeNonbondedCUDA2Type:
 //     CkPrintf("WorkDistrib[%d]::CUDA seq=%d phase=%d\n", CkMyPe(), seq, gbisPhase);
     //wdProxy[CkMyPe()].enqueueCUDA(msg);
     switch ( gbisPhase ) {
@@ -2877,6 +2899,11 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     // CkPrintf("PME %d %d %x\n", CkMyPe(), seq, compute->priority());
     wdProxy[CkMyPe()].enqueuePme(msg);
     break;
+#ifdef NAMD_CUDA
+  case computePmeCUDAType:
+    wdProxy[CkMyPe()].enqueuePme(msg);
+    break;
+#endif
   case optPmeType:
     // CkPrintf("PME %d %d %x\n", CkMyPe(), seq, compute->priority());
 #ifdef NAMD_CUDA

@@ -52,6 +52,12 @@
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
 #include "ComputePme.h"
+// #ifdef NAMD_CUDA
+#include "ComputePmeCUDA.h"
+#include "ComputeCUDAMgr.h"
+#include "CudaComputeNonbonded.h"
+#include "ComputePmeCUDAMgr.h"
+// #endif
 #include "OptPme.h"
 #include "ComputeEwald.h"
 #include "ComputeEField.h"
@@ -94,6 +100,9 @@
 
 #include "DeviceCUDA.h"
 #ifdef NAMD_CUDA
+#ifdef WIN32
+#define __thread __declspec(thread)
+#endif
 extern __thread DeviceCUDA *deviceCUDA;
 #endif
 
@@ -344,6 +353,18 @@ void ComputeMgr::doneUpdateLocalComputes()
 //  }
 }
 
+#ifdef NAMD_CUDA
+// Helper functions for creating and getting pointers to CUDA computes
+CudaComputeNonbonded* getCudaComputeNonbonded() {
+  return ComputeCUDAMgr::getComputeCUDAMgr()->getCudaComputeNonbonded();
+}
+
+CudaComputeNonbonded* createCudaComputeNonbonded(ComputeID c) {
+  return ComputeCUDAMgr::getComputeCUDAMgr()->createCudaComputeNonbonded(c);
+}
+
+#endif
+
 //
 void
 ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
@@ -361,7 +382,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     {
     case computeNonbondedSelfType:
 #ifdef NAMD_CUDA
-        register_cuda_compute_self(i,map->computeData[i].pids[0].pid);
+        if (simParams->useCUDA2) {
+          getCudaComputeNonbonded()->registerComputeSelf(i, map->computeData[i].pids[0].pid);
+        } else {
+          register_cuda_compute_self(i,map->computeData[i].pids[0].pid);
+        }
 #elif defined(NAMD_MIC)
         if (map->directToDevice(i) == 0) {
           c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
@@ -401,7 +426,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         pid2[1] = map->computeData[i].pids[1].pid;
         trans2[1] = map->computeData[i].pids[1].trans;
 #ifdef NAMD_CUDA
-        register_cuda_compute_pair(i,pid2,trans2);
+        if (simParams->useCUDA2) {
+          getCudaComputeNonbonded()->registerComputePair(i, pid2, trans2);
+        } else {
+          register_cuda_compute_pair(i,pid2,trans2);
+        }
 #elif defined(NAMD_MIC)
         if (map->directToDevice(i) == 0) {
           c = new ComputeNonbondedPair(i,pid2,trans2,
@@ -427,6 +456,13 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
       c = computeNonbondedCUDAObject = new ComputeNonbondedCUDA(i,this); // unknown delete
       map->registerCompute(i,c);
       c->initialize();
+      break;
+    case computeNonbondedCUDA2Type:
+      c = createCudaComputeNonbonded(i);
+      map->registerCompute(i,c);
+      // NOTE: initialize() is called at the end of createComputes(),
+      //       after all computes have been created
+      //c->initialize();
       break;
 #endif
 #ifdef NAMD_MIC
@@ -561,6 +597,15 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         map->registerCompute(i,c);
         c->initialize();
         break;
+#ifdef NAMD_CUDA
+    case computePmeCUDAType:
+        // PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+        // c = new ComputePmeCUDA(i, pids);
+        c = new ComputePmeCUDA(i, map->computeData[i].pids[0].pid);
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
+#endif
     case computeEwaldType:
         c = computeEwaldObject = new ComputeEwald(i,this); // unknown delete
         map->registerCompute(i,c);
@@ -763,6 +808,11 @@ void registerUserEventsForAllComputeObjs()
         case computePmeType:
             sprintf(user_des, "computePMEType_%d", i);
             break;
+#ifdef NAMD_CUDA
+        case computePmeCUDAType:
+            sprintf(user_des, "computePMECUDAType_%d", i);
+            break;
+#endif
         case computeEwaldType:
             sprintf(user_des, "computeEwaldType_%d", i);
             break;
@@ -827,6 +877,9 @@ void registerUserEventsForAllComputeObjs()
 void
 ComputeMgr::createComputes(ComputeMap *map)
 {
+// #ifdef NAMD_CUDA
+//     int ComputePmeCUDACounter = 0;
+// #endif
     Node *node = Node::Object();
     SimParameters *simParams = node->simParameters;
     int myNode = node->myid();
@@ -891,6 +944,12 @@ ComputeMgr::createComputes(ComputeMap *map)
         switch ( map->type(i) )
         {
 #ifdef NAMD_CUDA
+          // case computePmeCUDAType:
+          //   // Only create single ComputePmeCUDA object per Pe
+          //  if ( map->computeData[i].node != myNode ) continue;
+          //  if (ComputePmeCUDACounter > 0) continue;
+          //  ComputePmeCUDACounter++;
+          //  break;
           case computeNonbondedSelfType:
           case computeNonbondedPairType:
             if ( ! deviceIsMine ) continue;
@@ -919,6 +978,9 @@ ComputeMgr::createComputes(ComputeMap *map)
 
 #endif
           case computeNonbondedCUDAType:
+#ifdef NAMD_CUDA
+          case computeNonbondedCUDA2Type:
+#endif
           case computeNonbondedMICType:
             if ( ! deviceIsMine ) continue;
           default:
@@ -946,8 +1008,15 @@ ComputeMgr::createComputes(ComputeMap *map)
     }
 
 #ifdef NAMD_CUDA
-    if ( computeNonbondedCUDAObject ) {
-      computeNonbondedCUDAObject->assignPatches();
+    if (simParams->useCUDA2) {
+      if (deviceIsMine) {
+        getCudaComputeNonbonded()->assignPatches(this);
+        getCudaComputeNonbonded()->initialize();
+      }
+    } else {
+      if ( computeNonbondedCUDAObject ) {
+        computeNonbondedCUDAObject->assignPatches();
+      }      
     }
 #endif
 #ifdef NAMD_MIC
@@ -1281,6 +1350,124 @@ public:
   int index;
   ComputeNonbondedMIC *master;
 };
+
+#ifdef NAMD_CUDA
+class CudaComputeNonbondedMsg : public CMessage_CudaComputeNonbondedMsg {
+public:
+  CudaComputeNonbonded* c;
+  int i;
+};
+
+void ComputeMgr::sendAssignPatchesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c) {
+  for (int i=0;i < pes.size();i++) {
+    CudaComputeNonbondedMsg *msg = new CudaComputeNonbondedMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvAssignPatchesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvAssignPatchesOnPe(CudaComputeNonbondedMsg *msg) {
+  msg->c->assignPatchesOnPe();
+  delete msg;
+}
+
+void ComputeMgr::sendSkipPatchesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c) {
+  for (int i=0;i < pes.size();i++) {
+    CudaComputeNonbondedMsg *msg = new CudaComputeNonbondedMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvSkipPatchesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvSkipPatchesOnPe(CudaComputeNonbondedMsg *msg) {
+  msg->c->skipPatchesOnPe();
+  delete msg;
+}
+
+void ComputeMgr::sendFinishPatchesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c) {
+  for (int i=0;i < pes.size();i++) {
+    CudaComputeNonbondedMsg *msg = new CudaComputeNonbondedMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvFinishPatchesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvFinishPatchesOnPe(CudaComputeNonbondedMsg *msg) {
+  msg->c->finishPatchesOnPe();
+  delete msg;
+}
+
+void ComputeMgr::sendFinishPatchOnPe(int pe, CudaComputeNonbonded* c, int i) {
+  CudaComputeNonbondedMsg *msg = new CudaComputeNonbondedMsg;
+  msg->c = c;
+  msg->i = i;
+  thisProxy[pe].recvFinishPatchOnPe(msg);
+}
+
+void ComputeMgr::recvFinishPatchOnPe(CudaComputeNonbondedMsg *msg) {
+  msg->c->finishPatchOnPe(msg->i);
+  delete msg;
+}
+
+void ComputeMgr::sendOpenBoxesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c) {
+  for (int i=0;i < pes.size();i++) {
+    CudaComputeNonbondedMsg *msg = new CudaComputeNonbondedMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvOpenBoxesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvOpenBoxesOnPe(CudaComputeNonbondedMsg *msg) {
+  msg->c->openBoxesOnPe();
+  delete msg;
+}
+
+void ComputeMgr::sendFinishReductions(int pe, CudaComputeNonbonded* c) {
+  CudaComputeNonbondedMsg *msg = new CudaComputeNonbondedMsg;
+  msg->c = c;
+  thisProxy[pe].recvFinishReductions(msg);
+}
+
+void ComputeMgr::recvFinishReductions(CudaComputeNonbondedMsg *msg) {
+  msg->c->finishReductions();
+  delete msg;
+}
+
+void ComputeMgr::sendMessageEnqueueWork(int pe, CudaComputeNonbonded* c) {
+  CudaComputeNonbondedMsg *msg = new CudaComputeNonbondedMsg;
+  msg->c = c;
+  thisProxy[pe].recvMessageEnqueueWork(msg);
+}
+
+void ComputeMgr::recvMessageEnqueueWork(CudaComputeNonbondedMsg *msg) {
+  msg->c->messageEnqueueWork();
+  delete msg;
+}
+
+void ComputeMgr::sendLaunchWork(int pe, CudaComputeNonbonded* c) {
+  CudaComputeNonbondedMsg *msg = new CudaComputeNonbondedMsg;
+  msg->c = c;
+  thisProxy[pe].recvLaunchWork(msg);
+}
+
+void ComputeMgr::recvLaunchWork(CudaComputeNonbondedMsg *msg) {
+  msg->c->launchWork();
+  delete msg;
+}
+
+void ComputeMgr::sendUnregisterBoxesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c) {
+  for (int i=0;i < pes.size();i++) {
+    CudaComputeNonbondedMsg *msg = new CudaComputeNonbondedMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvUnregisterBoxesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvUnregisterBoxesOnPe(CudaComputeNonbondedMsg *msg) {
+  msg->c->unregisterBoxesOnPe();
+  delete msg;
+}
+#endif // NAMD_CUDA
 
 void ComputeMgr::sendCreateNonbondedMICSlave(int pe, int index) {
   NonbondedMICSlaveMsg *msg = new NonbondedMICSlaveMsg;

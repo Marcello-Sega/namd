@@ -364,6 +364,10 @@ obj/main.o: \
 	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputeCUDAMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -576,6 +580,10 @@ obj/BackEnd.o: \
 	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputeCUDAMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -1154,6 +1162,58 @@ obj/ComputeCrossterms.o: \
 	src/PressureProfile.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeCrossterms.o $(COPTC) src/ComputeCrossterms.C
+obj/ComputeCUDAMgr.o: \
+	obj/.exists \
+	src/ComputeCUDAMgr.C \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/ComputeCUDAMgr.h \
+	src/CudaUtils.h \
+	inc/ComputeCUDAMgr.decl.h \
+	src/CudaComputeNonbonded.h \
+	src/Compute.h \
+	src/Box.h \
+	src/OwnerBox.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/CudaTileListKernel.h \
+	src/CudaComputeNonbondedKernel.h \
+	src/CudaComputeGBISKernel.h \
+	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
+	src/DeviceCUDA.h \
+	inc/ComputeCUDAMgr.def.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeCUDAMgr.o $(COPTC) src/ComputeCUDAMgr.C
 obj/ComputeCylindricalBC.o: \
 	obj/.exists \
 	src/ComputeCylindricalBC.C \
@@ -2255,6 +2315,21 @@ obj/ComputeMgr.o: \
 	src/PmeBase.h \
 	src/MathArray.h \
 	src/Array.h \
+	src/ComputePmeCUDA.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	src/ComputeCUDAMgr.h \
+	src/CudaUtils.h \
+	inc/ComputeCUDAMgr.decl.h \
+	src/CudaComputeNonbonded.h \
+	src/CudaTileListKernel.h \
+	src/CudaComputeNonbondedKernel.h \
+	src/CudaComputeGBISKernel.h \
+	src/ComputePmeCUDAMgr.h \
+	src/PmeSolver.h \
+	src/PmeSolverUtil.h \
+	inc/PmeSolver.decl.h \
 	src/OptPme.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
@@ -3167,6 +3242,121 @@ obj/ComputePme.o: \
 	src/ComputePmeCUDAKernel.h \
 	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePme.o $(COPTC) src/ComputePme.C
+obj/ComputePmeCUDA.o: \
+	obj/.exists \
+	src/ComputePmeCUDA.C \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/SimParameters.h \
+	src/common.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/Tensor.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	src/Priorities.h \
+	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/ComputePmeCUDA.h \
+	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
+	src/PatchTypes.h \
+	src/Compute.h \
+	src/Box.h \
+	src/OwnerBox.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	src/ComputePmeCUDAMgr.h \
+	src/PmeSolver.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/ResizeArrayIter.h \
+	src/PmeSolverUtil.h \
+	inc/PmeSolver.decl.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/Settle.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePmeCUDA.o $(COPTC) src/ComputePmeCUDA.C
+obj/ComputePmeCUDAMgr.o: \
+	obj/.exists \
+	src/ComputePmeCUDAMgr.C \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
+	src/Priorities.h \
+	src/CudaUtils.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	src/CudaPmeSolverUtil.h \
+	src/PmeSolverUtil.h \
+	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
+	src/CudaPmeSolverUtilKernel.h \
+	src/ComputePmeCUDAMgr.h \
+	src/PmeSolver.h \
+	src/ReductionMgr.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	src/CudaPmeSolver.h \
+	inc/CudaPmeSolver.decl.h \
+	src/ComputePmeCUDA.h \
+	src/PatchTypes.h \
+	src/Compute.h \
+	src/Box.h \
+	src/OwnerBox.h \
+	src/DeviceCUDA.h \
+	inc/ComputePmeCUDAMgr.def.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePmeCUDAMgr.o $(COPTC) src/ComputePmeCUDAMgr.C
 obj/OptPme.o: \
 	obj/.exists \
 	src/OptPme.C \
@@ -3600,6 +3790,194 @@ obj/Controller.o: \
 	src/ComputeNonbondedMICKernel.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/Controller.o $(COPTC) src/Controller.C
+obj/CudaComputeNonbonded.o: \
+	obj/.exists \
+	src/CudaComputeNonbonded.C \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/ProxyMgr.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/InfoStream.h \
+	inc/ProxyMgr.decl.h \
+	src/LJTable.h \
+	src/Node.h \
+	inc/Node.decl.h \
+	src/ObjectArena.h \
+	src/ReductionMgr.h \
+	src/CudaComputeNonbonded.h \
+	src/Compute.h \
+	src/CudaUtils.h \
+	src/ComputeNonbondedUtil.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Hydrogen.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/CudaTileListKernel.h \
+	src/CudaComputeNonbondedKernel.h \
+	src/CudaComputeGBISKernel.h \
+	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/Settle.h \
+	src/Priorities.h \
+	src/ComputePmeCUDAMgr.h \
+	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
+	src/PmeSolver.h \
+	src/PmeSolverUtil.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	src/DeviceCUDA.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/CudaComputeNonbonded.o $(COPTC) src/CudaComputeNonbonded.C
+obj/CudaPmeSolver.o: \
+	obj/.exists \
+	src/CudaPmeSolver.C \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/Priorities.h \
+	src/ComputeNonbondedUtil.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/ReductionMgr.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/CudaPmeSolverUtil.h \
+	src/PmeSolverUtil.h \
+	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
+	src/CudaUtils.h \
+	src/CudaPmeSolverUtilKernel.h \
+	src/ComputePmeCUDAMgr.h \
+	src/PmeSolver.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/ResizeArrayIter.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	src/CudaPmeSolver.h \
+	inc/CudaPmeSolver.decl.h \
+	src/DeviceCUDA.h \
+	inc/CudaPmeSolver.def.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/CudaPmeSolver.o $(COPTC) src/CudaPmeSolver.C
+obj/CudaPmeSolverUtil.o: \
+	obj/.exists \
+	src/CudaPmeSolverUtil.C \
+	src/ComputeNonbondedUtil.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/ReductionMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/ComputePmeCUDAMgr.h \
+	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
+	src/PmeSolver.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/ResizeArrayIter.h \
+	src/PmeSolverUtil.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	src/CudaPmeSolver.h \
+	inc/CudaPmeSolver.decl.h \
+	src/CudaPmeSolverUtil.h \
+	src/CudaUtils.h \
+	src/CudaPmeSolverUtilKernel.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/CudaPmeSolverUtil.o $(COPTC) src/CudaPmeSolverUtil.C
 obj/CudaUtils.o: \
 	obj/.exists \
 	src/CudaUtils.C \
@@ -5461,6 +5839,10 @@ obj/Node.o: \
 	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputeCUDAMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -5520,6 +5902,8 @@ obj/Node.o: \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeCUDAMgr.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
 	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	src/Sync.h \
@@ -5733,6 +6117,10 @@ obj/PatchMgr.o: \
 	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputeCUDAMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -5895,6 +6283,34 @@ obj/PmeRealSpace.o: \
 	src/InfoStream.h \
 	src/MStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PmeRealSpace.o $(COPTC) src/PmeRealSpace.C
+obj/PmeSolver.o: \
+	obj/.exists \
+	src/PmeSolver.C \
+	src/Priorities.h \
+	src/PmeSolver.h \
+	src/ReductionMgr.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/PmeSolverUtil.h \
+	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
+	inc/PmeSolver.decl.h \
+	inc/PmeSolver.def.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/PmeSolver.o $(COPTC) src/PmeSolver.C
 obj/ProcessorPrivate.o: \
 	obj/.exists \
 	src/ProcessorPrivate.C \
@@ -5978,6 +6394,10 @@ obj/ProxyPatch.o: \
 	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputeCUDAMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -6511,6 +6931,10 @@ obj/WorkDistrib.o: \
 	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	inc/CudaPmeSolver.decl.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputeCUDAMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -6571,6 +6995,16 @@ obj/WorkDistrib.o: \
 	inc/ProxyMgr.decl.h \
 	src/Priorities.h \
 	src/SortAtoms.h \
+	src/ComputePmeCUDAMgr.h \
+	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
+	src/PmeSolver.h \
+	src/ReductionMgr.h \
+	src/PmeSolverUtil.h \
+	inc/PmeSolver.decl.h \
+	inc/ComputePmeCUDAMgr.decl.h \
+	src/DeviceCUDA.h \
 	src/Debug.h \
 	inc/WorkDistrib.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/WorkDistrib.o $(COPTC) src/WorkDistrib.C
@@ -6780,6 +7214,55 @@ obj/ParallelIOMgr.o: \
 	src/Random.h \
 	inc/ParallelIOMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ParallelIOMgr.o $(COPTC) src/ParallelIOMgr.C
+obj/ComputeNonbondedCUDAKernel.o: \
+	obj/.exists \
+	src/ComputeNonbondedCUDAKernel.cu \
+	src/CudaUtils.h \
+	src/ComputeNonbondedCUDAKernel.h \
+	src/ComputeNonbondedCUDAKernelBase.h \
+	src/ComputeGBISCUDAKernel.h \
+	src/ComputeGBIS.inl
+	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO)obj/ComputeNonbondedCUDAKernel.o $(COPTC) `$(NATIVEPATH) src/`ComputeNonbondedCUDAKernel.cu
+obj/ComputePmeCUDAKernel.o: \
+	obj/.exists \
+	src/ComputePmeCUDAKernel.cu \
+	src/ComputePmeCUDAKernel.h
+	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO)obj/ComputePmeCUDAKernel.o $(COPTC) `$(NATIVEPATH) src/`ComputePmeCUDAKernel.cu
+obj/CudaComputeGBISKernel.o: \
+	obj/.exists \
+	src/CudaComputeGBISKernel.cu \
+	src/CudaUtils.h \
+	src/CudaTileListKernel.h \
+	src/CudaComputeGBISKernel.h \
+	src/ComputeGBIS.inl \
+	src/DeviceCUDA.h
+	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO)obj/CudaComputeGBISKernel.o $(COPTC) `$(NATIVEPATH) src/`CudaComputeGBISKernel.cu
+obj/CudaComputeNonbondedKernel.o: \
+	obj/.exists \
+	src/CudaComputeNonbondedKernel.cu \
+	src/CudaComputeNonbondedKernel.h \
+	src/CudaUtils.h \
+	src/CudaTileListKernel.h \
+	src/DeviceCUDA.h
+	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO)obj/CudaComputeNonbondedKernel.o $(COPTC) `$(NATIVEPATH) src/`CudaComputeNonbondedKernel.cu
+obj/CudaPmeSolverUtilKernel.o: \
+	obj/.exists \
+	src/CudaPmeSolverUtilKernel.cu \
+	src/CudaUtils.h \
+	src/CudaPmeSolverUtilKernel.h
+	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO)obj/CudaPmeSolverUtilKernel.o $(COPTC) `$(NATIVEPATH) src/`CudaPmeSolverUtilKernel.cu
+obj/CudaTileListKernel.o: \
+	obj/.exists \
+	src/CudaTileListKernel.cu \
+	src/CudaUtils.h \
+	src/CudaTileListKernel.h \
+	src/DeviceCUDA.h
+	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO)obj/CudaTileListKernel.o $(COPTC) `$(NATIVEPATH) src/`CudaTileListKernel.cu
+obj/DeviceCUDAkernel.o: \
+	obj/.exists \
+	src/DeviceCUDAkernel.cu \
+	src/CudaUtils.h
+	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO)obj/DeviceCUDAkernel.o $(COPTC) `$(NATIVEPATH) src/`DeviceCUDAkernel.cu
 obj/dcdplugin.o: \
 	obj/.exists \
 	plugins/molfile_plugin/src/dcdplugin.c \

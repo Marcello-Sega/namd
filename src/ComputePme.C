@@ -67,6 +67,9 @@ using namespace std;
 #include <cuda_runtime.h>
 #include <cuda.h>
 void cuda_errcheck(const char *msg);
+#ifdef WIN32
+#define __thread __declspec(thread)
+#endif
 extern __thread DeviceCUDA *deviceCUDA;
 #endif
 
@@ -577,7 +580,12 @@ private:
 #endif
 
 int isPmeProcessor(int p){ 
-  return pencilPMEProcessors[p];
+  SimParameters *simParams = Node::Object()->simParameters;
+  if (simParams->usePMECUDA) {
+    return 0;
+  } else {
+    return pencilPMEProcessors[p];
+  }
 }
 
 class NodePmeMgr : public CBase_NodePmeMgr {
