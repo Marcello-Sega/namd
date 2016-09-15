@@ -367,12 +367,15 @@ int ScriptTcl::Tcl_startup(ClientData clientData,
 int ScriptTcl::Tcl_exit(ClientData clientData,
 	Tcl_Interp *, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
-  script->initcheck();
+  if ( CmiNumPartitions() > 1 ) {
+    if ( ! script->initWasCalled ) CkPrintf("TCL: Running startup before exit due to replicas.\n");
+    script->initcheck();
+  }
   CkPrintf("TCL: Exiting due to exit command.\n");
 #if CMK_HAS_PARTITION
   replica_barrier();
 #endif
-  script->runController(SCRIPT_END);
+  if ( script->runWasCalled ) script->runController(SCRIPT_END);
   BackEnd::exit();
   return TCL_OK;
 }
