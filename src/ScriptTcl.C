@@ -177,7 +177,7 @@ static PyObject* tcl_python_convert(Tcl_Obj *obj) {
     return Py_None;
   int rbool = atoBool(rstring);
   if ( rbool >= 0 )
-    return Py_BuildValue("i", rbool);
+    return PyBool_FromLong(rbool);
   return Py_BuildValue("s", rstring);
 }
 
