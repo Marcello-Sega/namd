@@ -923,8 +923,9 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
     Tcl_AppendResult(interp, "Invalid segid: ", argv[2], NULL);
     return TCL_ERROR;
   } else if (argc == 5 && 
-             (!strcasecmp(argv[1], "coordinates") || 
-              !strcasecmp(argv[1], "mass"))) {
+             (!strcasecmp(argv[1], "coordinates") 
+              || !strcasecmp(argv[1], "velocities") 
+              || !strcasecmp(argv[1], "mass"))) {
     topo_mol *mol = psf->mol;
     int segindex = (mol ? 
         hasharray_index(mol->segment_hash, argv[2]) :
@@ -951,6 +952,15 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
             Tcl_AppendResult(interp, buf, NULL);
 #else
             sprintf(interp->result, "%f %f %f", atoms->x, atoms->y, atoms->z);
+#endif
+            return TCL_OK;
+          } else if (!strcasecmp(argv[1], "velocities")) {
+#if TCL_MINOR_VERSION >= 6
+            char buf[512];
+            sprintf(buf, "%f %f %f", atoms->vx, atoms->vy, atoms->vz);
+            Tcl_AppendResult(interp, buf, NULL);
+#else
+            sprintf(interp->result, "%f %f %f", atoms->vx, atoms->vy, atoms->vz);
 #endif
             return TCL_OK;
           } else if (!strcasecmp(argv[1], "mass")) {
