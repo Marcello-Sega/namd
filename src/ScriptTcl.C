@@ -187,7 +187,7 @@ static PyObject* python_tcl_call(PyObject *self, PyObject *args) {
   Tcl_Interp *interp = static_interp;
   Tcl_Obj *command = python_tcl_convert(args);
   Tcl_IncrRefCount(command);
-  if ( TCL_OK != Tcl_EvalObjEx(interp,command,TCL_EVAL_GLOBAL) ) {
+  if ( TCL_OK != Tcl_EvalObjEx(interp,command,TCL_EVAL_DIRECT) ) {
     PyErr_SetString(PyExc_RuntimeError, Tcl_GetStringResult(interp));
     Tcl_DecrRefCount(command);
     return 0;
@@ -200,7 +200,7 @@ static PyObject* python_tcl_eval(PyObject *self, PyObject *args) {
   Tcl_Interp *interp = static_interp;
   const char *command;
   if ( ! PyArg_ParseTuple(args, "s", &command) ) return 0;
-  if ( TCL_OK != Tcl_EvalEx(interp,command,-1,TCL_EVAL_GLOBAL) ) {
+  if ( TCL_OK != Tcl_EvalEx(interp,command,-1,TCL_EVAL_DIRECT) ) {
     PyErr_SetString(PyExc_RuntimeError, Tcl_GetStringResult(interp));
     return 0;
   }
