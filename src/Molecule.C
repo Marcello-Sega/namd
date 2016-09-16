@@ -9288,17 +9288,16 @@ void Molecule::compute_LJcorrection() {
   BigReal sumOfAs = 0;
   BigReal sumOfBs = 0;
   BigReal count = 0; // needed to avoid overflow
-  BigReal npairs = 0;
+  BigReal npairs;
   for (int i=0; i < LJtypecount; i++) {
-    if (numAtomsByLjType[i] > 1) {
-      for (int j=0; j < LJtypecount; j++) {
-        A = ATable[i*LJtypecount + j];
-        B = BTable[i*LJtypecount + j];
-        npairs = (numAtomsByLjType[i] - int(i==j))*BigReal(numAtomsByLjType[j]);
-        sumOfAs += npairs*A;
-        sumOfBs += npairs*B;
-        count += npairs;
-      }
+    for (int j=0; j < LJtypecount; j++) {
+      A = ATable[i*LJtypecount + j];
+      B = BTable[i*LJtypecount + j];
+      if (!A && !B) continue; // don't count zeroed interactions
+      npairs = (numAtomsByLjType[i] - int(i==j))*BigReal(numAtomsByLjType[j]);
+      sumOfAs += npairs*A;
+      sumOfBs += npairs*B;
+      count += npairs;
     }
   }
   delete [] numAtomsByLjType;
@@ -9329,6 +9328,8 @@ void Molecule::compute_LJcorrection() {
       int alchFlagi = (get_fep_type(i) == 2 ? -1 : get_fep_type(i));
       for (int j=i+1; j < numAtoms; ++j) {
         int alchFlagj = (get_fep_type(j) == 2 ? -1 : get_fep_type(j));
+        int alchFlagSum = alchFlagi + alchFlagj;
+
         // Ignore completely non-alchemical pairs.
         if (alchFlagi == 0 && alchFlagj == 0) continue;
 
@@ -9349,7 +9350,8 @@ void Molecule::compute_LJcorrection() {
           A = 4.0*sigma_ij*epsilon_ij*sigma_ij;
           B = 4.0*sigma_ij*epsilon_ij;
         }
-        int alchFlagSum = alchFlagi + alchFlagj;
+        if (!A && !B) continue; // don't count zeroed interactions
+
         if ( alchFlagSum > 0 ){ // in group 1, remove from group 2
           sumOfAs2 -= 2*A;
           sumOfBs2 -= 2*B;
@@ -9371,12 +9373,7 @@ void Molecule::compute_LJcorrection() {
       }
       // This should save _tons_ of time, since the alchemical atoms are almost
       // always at the top of the pdb file.
-      switch ( alchFlagi ){
-      case -1:
-      case 1:
-        alch_counter++;
-        break;
-      }
+      if ( alchFlagi == 1 || alchFlagi == -1 ) alch_counter++;
       if ( alch_counter == (numFepInitial + numFepFinal) ) break;
     }
     LJAvgA1 = sumOfAs1 / count1;
