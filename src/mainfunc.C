@@ -40,10 +40,12 @@ char *gWorkDir = NULL;
 #endif
 
 int main(int argc, char **argv) {
+#ifdef NAMD_TCL
   if ( argc > 2 && ! strcmp(argv[1],"+tclsh") ) {
     // pass all remaining arguments to script
     return ScriptTcl::tclsh(argc-2,argv+2);
   }
+#endif
   BackEnd::init(argc,argv);
   after_backend_init(argc, argv);
   return 0;
