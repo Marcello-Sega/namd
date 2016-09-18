@@ -68,6 +68,18 @@ to multiple levels of scripts called during the NAMD parallel launch process
 and because the keyword and value are simply merged into a single string
 that is passed to the Tcl interpreter.
 
+If the argument \verb#--tclmain# is present, all following arguments will
+be passed to the Tcl interpreter as a script file and arguments accessible
+via the standard argc and argv variables.
+Note that Charm++ arguments such as \verb#+pemap# are processed during
+Charm++ startup and will not be passed to Tcl.
+
+If the first argument is \verb#+tclsh#,
+Charm++ argument parsing and startup are not performed,
+the Tcl interpreter is initialized without NAMD scripting features,
+and all following arguments are passed to Tcl.
+Statically linked packages such as psfgen are available via ``package require ...''.
+
 \subsubsection{Configuration parameter syntax}
 \label{section:configsyntax}
 Each line

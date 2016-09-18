@@ -2065,6 +2065,46 @@ void ScriptTcl::eval(char *script) {
 
 }
 
+
+#ifdef NAMD_TCL
+int ScriptTcl::tclsh(int argc, char **argv) {
+  Tcl_Interp *interp = Tcl_CreateInterp();
+  psfgen_static_init(interp);
+  tcl_vector_math_init(interp);
+  Tcl_SetVar(interp, "argv0", argv[0], TCL_GLOBAL_ONLY);
+  Tcl_SetVar2Ex(interp, "argc", NULL, Tcl_NewIntObj(argc-1), TCL_GLOBAL_ONLY);
+  Tcl_Obj *argvPtr = Tcl_NewListObj(0, NULL);
+  for ( int i=1; i<argc; ++i ) {
+    Tcl_ListObjAppendElement(NULL, argvPtr, Tcl_NewStringObj(argv[i],-1));
+  }
+  Tcl_SetVar2Ex(interp, "argv", NULL, argvPtr, TCL_GLOBAL_ONLY);
+  int code = Tcl_EvalFile(interp,argv[0]);
+  if (code != TCL_OK) {
+    const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    fprintf(stderr,"%s\n",(errorInfo ? errorInfo : "Unknown Tcl error"));
+    return -1;
+  }
+  return 0;
+}
+
+
+void ScriptTcl::tclmain(int argc, char **argv) {
+  Tcl_SetVar(interp, "argv0", argv[0], TCL_GLOBAL_ONLY);
+  Tcl_SetVar2Ex(interp, "argc", NULL, Tcl_NewIntObj(argc-1), TCL_GLOBAL_ONLY);
+  Tcl_Obj *argvPtr = Tcl_NewListObj(0, NULL);
+  for ( int i=1; i<argc; ++i ) {
+    Tcl_ListObjAppendElement(NULL, argvPtr, Tcl_NewStringObj(argv[i],-1));
+  }
+  Tcl_SetVar2Ex(interp, "argv", NULL, argvPtr, TCL_GLOBAL_ONLY);
+  int code = Tcl_EvalFile(interp,argv[0]);
+  if (code != TCL_OK) {
+    const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    NAMD_die(errorInfo ? errorInfo : "Unknown Tcl error");
+  }
+}
+#endif
+
+
 void ScriptTcl::load(char *scriptFile) {
 
 #ifdef NAMD_TCL

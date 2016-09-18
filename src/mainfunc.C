@@ -40,6 +40,10 @@ char *gWorkDir = NULL;
 #endif
 
 int main(int argc, char **argv) {
+  if ( argc > 2 && ! strcmp(argv[1],"+tclsh") ) {
+    // pass all remaining arguments to script
+    return ScriptTcl::tclsh(argc-2,argv+2);
+  }
   BackEnd::init(argc,argv);
   after_backend_init(argc, argv);
   return 0;
@@ -75,6 +79,15 @@ void after_backend_init(int argc, char **argv){
     if ( i + 1 == argc ) {
       sprintf(buf, "missing argument for command line option %s", argv[i]);
       NAMD_die(buf);
+    }
+    if ( ! strcmp(argv[i],"--tclmain") ) {
+      // pass all remaining arguments to script
+      iout << iINFO << "Command-line argument is";
+      for ( int j=i; j<argc; ++j ) { iout << " " << argv[j]; }
+      iout << "\n" << endi;
+      script->tclmain(argc-i-1,argv+i+1);
+      BackEnd::exit();
+      return;
     }
     sprintf(buf, "%s %s", argv[i]+2, argv[i+1]);
     iout << iINFO << "Command-line argument is --" << buf << "\n" << endi;
