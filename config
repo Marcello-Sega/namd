@@ -17,6 +17,8 @@ syntax:
   echo '  --tcl-prefix <directory containing Tcl lib and include>'
   echo '      (defaults to ./tcl or ~/tcl)'
   echo '  --without-python (default)  --with-python (requires Tcl)'
+  echo '  --python-prefix <directory containing Python lib and include>'
+  echo '      (defaults to /usr)'
   echo '  --with-fftw (default)  --without-fftw'
   echo '  --with-fftw3 (use fftw3 API, your fftw-prefix should match) '
   echo '  --fftw-prefix <directory containing FFTW lib and include>'
@@ -212,6 +214,7 @@ begin:
     shift
   endif
 
+  set PYTHON_PREFIX="/usr"
   set CUDA_GENCODE = ""
 
   while ( $#argv > 0 )
@@ -250,6 +253,14 @@ begin:
       breaksw
       case --without-python:
         set use_python = 0
+      breaksw
+      case --python-prefix:
+        shift
+        if ( ! -d $1 ) then
+          echo "ERROR: No such directory $1"
+          goto syntax
+        endif
+        set PYTHON_PREFIX=$1
       breaksw
 
       case --with-fftw:
@@ -433,13 +444,13 @@ begin:
       echo ''
       exit 1
     endif
-    foreach python_include ( /usr/include/python[23].[0-9] )
+    foreach python_include ( $PYTHON_PREFIX/include/python2.[0-9] )
       set python_lib = $python_include:t
     end
     if ( $?python_lib ) then
       echo "Using $python_lib with include files in $python_include"
     else
-      set python_include = /usr/include/python
+      set python_include = $PYTHON_PREFIX/include/python
       set python_lib = python
       echo "Unable to local Python; please edit Make.config file."
     endif
@@ -609,7 +620,7 @@ begin:
 
   if ( $use_python ) then
     echo "PYTHON = -DNAMD_PYTHON -I$python_include" >> Make.config
-    echo "PYTHONLIB = -l$python_lib" >> Make.config
+    echo "PYTHONLIB = -L$PYTHON_PREFIX/lib64 -l$python_lib -ldl -lutil" >> Make.config
   endif
 
   if ( $use_mkl ) then
