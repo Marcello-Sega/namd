@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2016/09/14 15:47:33 $
- * $Revision: 1.1466 $
+ * $Date: 2016/09/19 17:39:17 $
+ * $Revision: 1.1467 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -233,6 +233,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("drudeBondConst",drudeBondConst)
   SCRIPT_PARSE_FLOAT("drudeBondLen",drudeBondLen)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
+  SCRIPT_PARSE_INT("outputEnergies",outputEnergies)
   SCRIPT_PARSE_STRING("restartname",restartFilename)
   SCRIPT_PARSE_INT("DCDfreq",dcdFrequency)
   if ( ! strncasecmp(param,"DCDfile",MAX_SCRIPT_PARAM_SIZE) ) { 
