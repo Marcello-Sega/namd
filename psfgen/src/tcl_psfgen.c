@@ -925,7 +925,10 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
   } else if (argc == 5 && 
              (!strcasecmp(argv[1], "coordinates") 
               || !strcasecmp(argv[1], "velocities") 
-              || !strcasecmp(argv[1], "mass"))) {
+              || !strcasecmp(argv[1], "mass")
+              || !strcasecmp(argv[1], "atomid")
+             )
+            ) {
     topo_mol *mol = psf->mol;
     int segindex = (mol ? 
         hasharray_index(mol->segment_hash, argv[2]) :
@@ -970,6 +973,15 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
             Tcl_AppendResult(interp, buf, NULL);
 #else
             sprintf(interp->result, "%f", atoms->mass);
+#endif
+            return TCL_OK;
+          } else if (!strcasecmp(argv[1], "atomid")) {
+#if TCL_MINOR_VERSION >= 6
+            char buf[512];
+            sprintf(buf, "%d", atoms->atomid);
+            Tcl_AppendResult(interp, buf, NULL);
+#else
+            sprintf(interp->result, "%d", atoms->atomid);
 #endif
             return TCL_OK;
           }
