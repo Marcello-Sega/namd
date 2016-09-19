@@ -921,13 +921,13 @@ int ScriptTcl::Tcl_isset_param(ClientData clientData,
 int ScriptTcl::Tcl_param(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 2 && argc != 3 && argc != 5) {
-    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    Tcl_SetResult(interp,"wrong # args for NAMD config parameter",TCL_VOLATILE);
     return TCL_ERROR;
   }
 
   char *param = argv[1];
   if ( strlen(param) + 1 > MAX_SCRIPT_PARAM_SIZE ) {
-    Tcl_SetResult(interp,"parameter name too long",TCL_VOLATILE);
+    Tcl_SetResult(interp,"parameter name too long for NAMD config parameter",TCL_VOLATILE);
     return TCL_ERROR;
   }
 
@@ -939,7 +939,7 @@ int ScriptTcl::Tcl_param(ClientData clientData,
       Tcl_SetResult(interp, result,TCL_VOLATILE);
       return TCL_OK;
     } else {
-      Tcl_SetResult(interp,"unknown parameter",TCL_VOLATILE);
+      Tcl_SetResult(interp,"parameter unknown for NAMD config parameter",TCL_VOLATILE);
       return TCL_ERROR;
     }
   }
@@ -948,7 +948,7 @@ int ScriptTcl::Tcl_param(ClientData clientData,
   int arglen = strlen(argv[2]) + 1;
   if ( argc == 5 ) arglen += strlen(argv[3]) + strlen(argv[4]) + 2;
   if ( arglen > MAX_SCRIPT_PARAM_SIZE ) {
-    Tcl_SetResult(interp,"parameter value too long",TCL_VOLATILE);
+    Tcl_SetResult(interp,"parameter value too long for NAMD config parameter",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if ( argc == 3 ) sprintf(value,"%s",argv[2]);
