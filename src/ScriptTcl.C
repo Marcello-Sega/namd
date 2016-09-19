@@ -143,6 +143,12 @@ void ScriptTcl::reinitAtoms(const char *basename) {
 #include <Python.h>
 
 static Tcl_Obj* python_tcl_convert(PyObject *obj) {
+  if ( PyInt_Check(obj) ) {
+    return Tcl_NewLongObj(PyInt_AsLong(obj));
+  }
+  if ( PyFloat_Check(obj) ) {
+    return Tcl_NewDoubleObj(PyFloat_AsDouble(obj));
+  }
   if ( PyString_Check(obj) ) {
     return Tcl_NewStringObj(PyString_AsString(obj), -1);
   }
