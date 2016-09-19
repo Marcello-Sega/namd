@@ -238,7 +238,7 @@ int main(int argc, char **argv) {
         oldcstep = cstep;
        }
       }
-      if ( i_run % runs_per_frame ) continue;
+      if ( (i_run+1) % runs_per_frame ) continue;
       rc = plugin->read_next_timestep(traj_in[i],natoms,&frame);
       if ( rc == MOLFILE_SUCCESS ) {
         plugin->write_timestep(traj_out[rep_id],&frame);
