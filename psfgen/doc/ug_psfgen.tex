@@ -434,11 +434,13 @@ Segments may also contain pure solvent or lipid. Options \OKEY{segids}
 \OKEY{resids} \OKEY{residue} \OKEY{first} \OKEY{last} are used to query 
 information about the specified segment.} 
 {\KEYDEF{segids}{Return a list of segids for the molecule in the current context.}\\
-\KEYDEF{resids}{Return a list of resids for the molecule in the current context.}\\
-\KEYDEF{residue}{Return the residue name of the residue in
-the given segment with the given resid.}\\
+\KEYDEF{resids}{Return a list of resids for the given segment in the current context.}\\
+\KEYDEF{residue}{Return the residue name of the residue in the given segment with the given resid.}\\
 \KEYDEF{atoms}{Return a list of atoms for the given segment with the given resid.}\\
 \KEYDEF{coordinates}{Return x, y, z coordinates for the given atom.}\\
+\KEYDEF{velocities}{Return x, y, z velocities for the given atom.}\\
+\KEYDEF{mass}{Return the mass of the given atom.}\\
+\KEYDEF{atomid}{Return the atomid of the given atom. These are only assigned during/after writing a PDB file. If {\tt writepdb} has not been called, this will just return zero for all atoms.}\\
 \KEYDEF{first}{Returns the name of the patch that was applied 
 to the beginning of the specified segment.}\\
 \KEYDEF{last}{Returns the name of the patch that was applied 

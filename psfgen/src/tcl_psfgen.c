@@ -825,9 +825,9 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
   PSFGEN_TEST_MOL(interp,psf);
 
   /* 
-   * special case query commands: 'segment segids', 'segment <segid> first', 
-   * 'segment <segid> last', 'segment <segid> resids', 
-   * 'segment <segid> residue <resid>'
+   * special case query commands: 'segment segids', 'segment first <segid>', 
+   * 'segment last <segid>', 'segment resids <segid>', 
+   * 'segment residue <segid> <resid>'
    */
   if (argc == 2 && !strcasecmp(argv[1], "segids")) {
     topo_mol *mol = psf->mol;
