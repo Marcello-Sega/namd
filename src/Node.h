@@ -25,6 +25,8 @@ class Random;
 extern "C" int gethostname( char *name, int namelen);
 #endif
 
+class Vector;
+
 #include "ProcessorPrivate.h"
 #include "Node.decl.h"
 
@@ -97,6 +99,8 @@ public:
 
   void reloadGridforceGrid(const char *key);
   void reloadGridforceGrid(int gridnum);
+  void updateGridScale(char* key, Vector scale);
+  void updateGridScale(int gridnum, float sx, float sy, float sz);
 
   void reloadStructure(const char *, const char *);
   void resendMolecule();

@@ -38,6 +38,7 @@ public:
     virtual Tensor get_e (void) const = 0;
     virtual Tensor get_inv(void) const = 0;
     virtual Vector get_scale(void) const = 0;
+    virtual Bool get_checksize(void) const = 0;
     virtual int get_k0(void) const = 0;
     virtual int get_k1(void) const = 0; 
     virtual int get_k2(void) const = 0;
@@ -45,6 +46,7 @@ public:
     
     virtual long int get_all_gridvals(float** all_gridvals) const = 0;
     virtual void set_all_gridvals(float* all_gridvals, long int sz) = 0;
+    virtual void set_scale(Vector s) = 0;
     
     Position wrap_position(const Position &pos, const Lattice &lattice);
     bool fits_lattice(const Lattice &lattice);
@@ -93,6 +95,7 @@ public:
     inline Tensor get_e (void) const { return e; }
     inline Tensor get_inv(void) const { return inv; }
     inline Vector get_scale(void) const { return scale; }
+    inline Bool get_checksize(void) const { return checksize; }
     virtual int get_border(void) const = 0;
     
     inline float get_grid(int i0, int i1, int i2) const {
@@ -104,6 +107,8 @@ public:
     inline void set_grid(int i0, int i1, int i2, float V) {
 	grid[grid_index(i0, i1, i2)] = V;
     }
+    
+    inline void set_scale(Vector s) { scale = s; }
     
     int compute_VdV(Position pos, float &V, Vector &dV) const;
     
@@ -179,6 +184,7 @@ protected:
     float gapinv[3];	// 1.0/gap
 
     Vector scale;
+    Bool checksize;
 };
 
 
@@ -201,6 +207,7 @@ public:
     inline Tensor get_e (void) const { return GridforceFullBaseGrid::get_e(); };
     inline Tensor get_inv(void) const { return GridforceFullBaseGrid::get_inv(); };
     inline Vector get_scale(void) const { return GridforceFullBaseGrid::get_scale(); };
+    inline Bool get_checksize(void) const { return GridforceFullBaseGrid::get_checksize(); };
     inline int get_k0(void) const { return GridforceFullBaseGrid::get_k0(); };
     inline int get_k1(void) const { return GridforceFullBaseGrid::get_k1(); };
     inline int get_k2(void) const { return GridforceFullBaseGrid::get_k2(); };
@@ -208,8 +215,9 @@ public:
     
     inline int compute_VdV(Position pos, float &V, Vector &dV) const { return GridforceFullBaseGrid::compute_VdV(pos, V, dV); };
     
-    inline int get_total_grids(void) const { return totalGrids; }
-    
+    inline int get_total_grids(void) const { return totalGrids; }    
+    inline void set_scale(Vector s) { scale = s; }
+
 protected:
     void pack(MOStream *msg) const;
     void unpack(MIStream *msg);
@@ -289,10 +297,12 @@ public:
     inline Tensor get_e (void) const { return e; }
     inline Tensor get_inv(void) const { return inv; }
     inline Vector get_scale(void) const { return scale; }
+    inline Bool get_checksize(void) const { return checksize; }
     inline int get_k0(void) const { return k[0]; }
     inline int get_k1(void) const { return k[1]; }
     inline int get_k2(void) const { return k[2]; }
     inline int get_total_grids(void) const { return 1; }
+    inline void set_scale(Vector s) { scale = s; }
     
     inline float get_grid(int i0, int i1, int i2, int i3) const {
 	return grid[grid_index(i0, i1, i2, i3)];
@@ -336,6 +346,7 @@ protected:
     Tensor inv;		// Inverse of unit vectors
     
     Vector scale;
+    Bool checksize;
     
     char filename[129];
 };

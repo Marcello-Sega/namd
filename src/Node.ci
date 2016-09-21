@@ -37,6 +37,7 @@ module Node {
     entry void reloadCharges(float charge[n], int n);
 
     entry void reloadGridforceGrid(int gridnum);
+    entry void updateGridScale(int gridnum, float sx, float sy, float sz);
 
     entry void resendMolecule();
     entry void resendMolecule2();

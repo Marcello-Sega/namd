@@ -49,7 +49,29 @@ int MGridforceParamsList::index_for_key(const char* key)
     }
     return result;
 }
-  
+
+MGridforceParams* MGridforceParamsList::at_index(int idx)
+{
+    MGFElem* cur = head;
+    MGFElem* found = NULL;
+    MGridforceParams* result = NULL;
+    
+    int counter = 0;
+    while (found == NULL && cur != NULL) {
+      if (counter == idx) {
+	found = cur;
+      } else {
+        cur = cur->nxt;
+	counter++;
+      }
+    }
+    if (found != NULL) {
+	result = &(found->elem);
+    }
+    return result;
+}
+
+ 
 MGridforceParams* MGridforceParamsList::add(const char* key) 
 {
     // If the key is already in the list, we can't add it
@@ -119,13 +141,14 @@ void MGridforceParamsList::pack_data(MOStream *msg)
       v = elem->gridforceVOffset;
       msg->put(&v);
       
-      short boolvals[5];
+      short boolvals[6];
       boolvals[0] = (elem->gridforceCont[0] ? 1 : 0);
       boolvals[1] = (elem->gridforceCont[1] ? 1 : 0);
       boolvals[2] = (elem->gridforceCont[2] ? 1 : 0);
       boolvals[3] = (elem->gridforceVolts ? 1 : 0);
       boolvals[4] = (elem->gridforceLite ? 1 : 0);
-      msg->put(5,boolvals);
+      boolvals[5] = (elem->gridforceCheckSize ? 1 : 0);
+      msg->put(6,boolvals);
       
       i--;
       elem = elem->next;
@@ -182,13 +205,14 @@ void MGridforceParamsList::unpack_data(MIStream *msg)
       msg->get(&v);
       elem->gridforceVOffset = v;
       
-      short boolvals[5];
-      msg->get(5,boolvals);
+      short boolvals[6];
+      msg->get(6,boolvals);
       elem->gridforceCont[0] = ( boolvals[0] != 0 );
       elem->gridforceCont[1] = ( boolvals[1] != 0 );
       elem->gridforceCont[2] = ( boolvals[2] != 0 );
       elem->gridforceVolts = ( boolvals[3] != 0 );
       elem->gridforceLite = ( boolvals[4] != 0 );
+      elem->gridforceCheckSize = ( boolvals[5] != 0 );
       
       delete [] key;
     }

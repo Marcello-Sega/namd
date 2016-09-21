@@ -125,7 +125,7 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 		// not needed without pressure control, since the check is also performed on startup
       if (!grid->fits_lattice(homePatch->lattice)) {
         char errmsg[512];
-        if (simParams->gridforcechecksize) {
+        if (grid->get_checksize()) {
           sprintf(errmsg, "Warning: Periodic cell basis too small for Gridforce grid %d.  Set gridforcechecksize off in configuration file to ignore.\n", gridnum);
           NAMD_die(errmsg);      
         }

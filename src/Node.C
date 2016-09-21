@@ -69,6 +69,7 @@
 #include "packmsg.h"
 #include "CollectionMgr.decl.h"
 #include "ParallelIOMgr.decl.h"
+#include "Vector.h"
 // BEGIN LA
 #include "Random.h"
 // END LA
@@ -1191,6 +1192,47 @@ void Node::reloadGridforceGrid(const char * key) {
     CProxy_Node(thisgroup).reloadGridforceGrid(gridnum);
     
     DebugM(4, "reloadGridforceGrid(const char*) finished\n" << endi);
+}
+
+void Node::updateGridScale(char* key, Vector scale) {
+    DebugM(4, "updateGridScale(char*, Vector) called on node " << CkMyPe() << "\n" << endi);
+    
+    int gridnum;
+    MGridforceParams* mgridParams;
+    if (key == NULL) {
+	gridnum = simParameters->mgridforcelist.index_for_key(MGRIDFORCEPARAMS_DEFAULTKEY);
+	mgridParams = simParameters->mgridforcelist.find_key(MGRIDFORCEPARAMS_DEFAULTKEY);
+    } else {
+	gridnum = simParameters->mgridforcelist.index_for_key(key);
+	mgridParams = simParameters->mgridforcelist.find_key(key);
+    }
+
+    if (gridnum < 0 || mgridParams == NULL) {
+	NAMD_die("Node::updateGridScale(char*, Vector): Could not find grid.");
+    }
+    
+    GridforceGrid* grid = molecule->get_gridfrc_grid(gridnum);
+    if (grid == NULL) {
+	NAMD_bug("Node::updateGridScale(char*, Vector): grid not found");
+    }
+    CProxy_Node(thisgroup).updateGridScale(gridnum, scale.x, scale.y, scale.z);
+    
+    DebugM(4, "updateGridScale(char*, Vector) finished\n" << endi);
+}
+void Node::updateGridScale(int gridnum, float sx, float sy, float sz) {
+    if (CmiMyRank()) return;
+    DebugM(4, "updateGridScale(char*, int, float, float, float) called on node " << CkMyPe() << "\n" << endi);
+       
+    GridforceGrid *grid = molecule->get_gridfrc_grid(gridnum);
+    if (grid == NULL) {
+	NAMD_bug("Node::updateGridScale(char*, int, float, float, float):grid not found");
+    }
+    
+    Vector scale(sx,sy,sz);
+    simParameters->mgridforcelist.at_index(gridnum)->gridforceScale = scale;
+    grid->set_scale( scale );
+
+    DebugM(4, "updateGridScale(char*, int, float, float, float) finished\n" << endi);
 }
 
 void Node::reloadGridforceGrid(int gridnum) {

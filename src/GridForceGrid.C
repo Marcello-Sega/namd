@@ -179,6 +179,7 @@ void GridforceFullBaseGrid::pack(MOStream *msg) const
     msg->put(3*sizeof(float), (char*)gap);
     msg->put(3*sizeof(float), (char*)gapinv);
     msg->put(sizeof(Vector), (char*)&scale);
+    msg->put(sizeof(Bool), (char*)&checksize);
     
     DebugM(2, "Packing grid, size = " << size << "\n" << endi);
     
@@ -233,6 +234,7 @@ void GridforceFullBaseGrid::unpack(MIStream *msg)
     msg->get(3*sizeof(float), (char*)gap);
     msg->get(3*sizeof(float), (char*)gapinv);
     msg->get(sizeof(Vector), (char*)&scale);
+    msg->get(sizeof(Bool), (char*)&checksize);
     
     if (size) {
 	DebugM(3, "allocating grid, size = " << size << "\n" << endi);
@@ -473,7 +475,8 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
 	factor /= 0.0434;  // convert V -> kcal/mol*e
     }
     scale = mgridParams->gridforceScale;
-    
+    checksize = mgridParams->gridforceCheckSize;
+
     // Allocate storage for potential and read it
     float *grid_nopad = new float[size_nopad];
     
@@ -550,7 +553,7 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
     // Check for grid overlap
     if (!fits_lattice(simParams->lattice)) {
       char errmsg[512];
-      if (simParams->gridforcechecksize) {
+      if (checksize) {
         sprintf(errmsg, "Warning: Periodic cell basis too small for Gridforce grid %d.  Set gridforcechecksize off in configuration file to ignore.\n", mygridnum);
         NAMD_die(errmsg);      
       }
@@ -955,6 +958,7 @@ void GridforceFullSubGrid::initialize(SimParameters *simParams, MGridforceParams
 	factor /= 0.0434;  // convert V -> kcal/mol*e
     }
     scale = mgridParams->gridforceScale;
+    checksize = mgridParams->gridforceCheckSize;
     
     for (int i = 0; i < 3; i++) {
 	k[i] = k_nopad[i];	// subgrids aren't padded
@@ -1409,6 +1413,7 @@ void GridforceLiteGrid::pack(MOStream *msg) const
     msg->put(sizeof(Tensor), (char*)&e);
     msg->put(sizeof(Tensor), (char*)&inv);
     msg->put(sizeof(Vector), (char*)&scale);
+    msg->put(sizeof(Bool), (char*)&checksize);
     
     msg->put(129*sizeof(char), (char*)filename);
     
@@ -1430,6 +1435,7 @@ void GridforceLiteGrid::unpack(MIStream *msg)
     msg->get(sizeof(Tensor), (char*)&e);
     msg->get(sizeof(Tensor), (char*)&inv);
     msg->get(sizeof(Vector), (char*)&scale);
+    msg->get(sizeof(Bool), (char*)&checksize);
     
     msg->get(129*sizeof(char), (char*)filename);
     

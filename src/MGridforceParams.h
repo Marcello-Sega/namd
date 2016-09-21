@@ -30,6 +30,7 @@ public:
     gridforceCont[0] = gridforceCont[1] = gridforceCont[2] = FALSE;
     gridforceVolts = FALSE;
     gridforceLite = FALSE;
+    gridforceCheckSize = TRUE;
   }
   
   char *gridforceKey;
@@ -42,6 +43,7 @@ public:
   Bool gridforceCont[3];
   Bool gridforceVolts;
   Bool gridforceLite;
+  Bool gridforceCheckSize;
   MGridforceParams *next;
 };
 
@@ -72,6 +74,7 @@ public:
   
   MGridforceParams* find_key(const char* key);  
   int index_for_key(const char* key);
+  MGridforceParams* at_index(int idx);
   MGridforceParams* add(const char* key);
   
   MGridforceParams *get_first() {
