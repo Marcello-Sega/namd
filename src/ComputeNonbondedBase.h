@@ -703,15 +703,15 @@ void ComputeNonbondedUtil :: NAME
   // Atom Sort : The grouplist and fixglist arrays are not needed when the
   //   the atom sorting code is in use.
   #if ! (NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR( + 1 ) ) )
-    NBWORKARRAY(plint,grouplist,arraysize);
-    NBWORKARRAY(plint,fixglist,arraysize);
+    NBWORKARRAY(int,grouplist,arraysize);
+    NBWORKARRAY(int,fixglist,arraysize);
   #endif
 
-  NBWORKARRAY(plint,goodglist,arraysize);
+  NBWORKARRAY(int,goodglist,arraysize);
   NBWORKARRAY(plint,pairlistx,arraysize);
   NBWORKARRAY(plint,pairlistm,arraysize);
-  NBWORKARRAY(plint,pairlist,arraysize);
-  NBWORKARRAY(plint,pairlist2,arraysize);
+  NBWORKARRAY(int,pairlist,arraysize);
+  NBWORKARRAY(int,pairlist2,arraysize);
   ALCH(
   NBWORKARRAY(plint,pairlistnA1,arraysize);
   NBWORKARRAY(plint,pairlistxA1,arraysize);
@@ -930,7 +930,7 @@ void ComputeNonbondedUtil :: NAME
     )
 
     // add remaining atoms to pairlist via hydrogen groups
-    register plint *pli = pairlist + pairlistindex;
+    register int *pli = pairlist + pairlistindex;
 
     {
       // Atom Sort : Modify the values of g and gu based on the added information
@@ -958,8 +958,8 @@ void ComputeNonbondedUtil :: NAME
 
       #else
 
-        register plint *gli = goodglist;
-        const plint *glist = ( groupfixed ? fixglist : grouplist );
+        register int *gli = goodglist;
+        const int *glist = ( groupfixed ? fixglist : grouplist );
         SELF( const int gl = ( groupfixed ? fixg_lower : g_lower ); )
         const int gu = ( groupfixed ? fixg_upper : g_upper );
         register int g = PAIR(0) SELF(gl);
@@ -969,6 +969,7 @@ void ComputeNonbondedUtil :: NAME
 
       if ( g < gu ) {
 	int hu = 0;
+#ifndef NAMD_KNL
 #if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 	if ( gu - g  >  6 ) { 
 
@@ -1179,6 +1180,7 @@ void ComputeNonbondedUtil :: NAME
 	  g-=2;
 	}
 #endif
+#endif // NAMD_KNL
 	
 	for (; g < gu; g++) {
 
@@ -1237,7 +1239,7 @@ void ComputeNonbondedUtil :: NAME
 
     const int atomfixed = ( fixedAtomsOn && pExt_i.atomFixed );
 
-    register plint *pli = pairlist2;
+    register int *pli = pairlist2;
 
     plint *pairlistn = pairlists.newlist(j_upper + 5 + 5 ALCH( + 20 ));
     register plint *plin = pairlistn;
@@ -1309,6 +1311,7 @@ void ComputeNonbondedUtil :: NAME
       int k = pairlistoffset;
       int ku = pairlistindex;
       if ( k < ku ) {
+#ifndef NAMD_KNL
 #if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 	if ( ku - k  >  6 ) { 	   
 	  register  int jprev0 = pairlist [k    ];
@@ -1500,6 +1503,7 @@ void ComputeNonbondedUtil :: NAME
 	  k-=2;
 	}       
 #endif
+#endif // NAMD_KNL
 
 	for (; k < ku; k++) {
 	  int j = pairlist[k];

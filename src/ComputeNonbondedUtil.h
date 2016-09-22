@@ -125,9 +125,9 @@ public:
     ResizeArray<BigReal> p_0_sortValues;
   #endif
 
-  ResizeArray<plint> grouplist;
-  ResizeArray<plint> fixglist;
-  ResizeArray<plint> goodglist;
+  ResizeArray<int> grouplist;
+  ResizeArray<int> fixglist;
+  ResizeArray<int> goodglist;
   ResizeArray<plint> pairlistx;
   ResizeArray<plint> pairlistm;
 
@@ -140,8 +140,8 @@ public:
   ResizeArray<plint> pairlistxA2;
   ResizeArray<plint> pairlistmA2;
   
-  ResizeArray<plint> pairlist;
-  ResizeArray<plint> pairlist2;
+  ResizeArray<int> pairlist;
+  ResizeArray<int> pairlist2;
   ResizeArray<Force> f_0;
   ResizeArray<Force> fullf_0;
 };
