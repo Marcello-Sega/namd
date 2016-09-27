@@ -48,8 +48,6 @@ public:
   // Finish up, must be called after "done" is returned by addAtoms.
   // Only the last thread that gets the "done" signal from addAtoms can enter here.
   void finish() {
-    // Lock so that no thread can run addAtoms() between calls to finish() and clear()
-    CmiLock(lock_);
     if (overflowEnd-overflowStart > 0) {
       resize_((void **)&atom, numAtoms, atomCapacity, sizeof(CudaAtom));
       if (useIndex) resize_((void **)&atomIndex, numAtoms, atomIndexCapacity, sizeof(int));
@@ -65,13 +63,7 @@ public:
   void clear() {
     patchPos.clear();
     numAtoms = 0;    
-    // Unlock, OK to run addAtoms() again
-    CmiUnlock(lock_);
   }
-
-  void lock() {CmiLock(lock_);}
-
-  void unlock() {CmiUnlock(lock_);}
 
   // Return pointer to atom data
   CudaAtom* getAtoms() {
@@ -96,13 +88,6 @@ public:
       NAMD_bug("PmeAtomStorage::getAtomIndex, no indexing enabled");
     return atomIndex;
   }
-
-  // // Setup estimate for number of atoms
-  // void setupNumAtomsEstimate(int numAtomsEstimate) {
-  //   CmiLock(lock);
-  //   resize((void **)&atom, numAtomsEstimate, atomCapacity, sizeof(CudaAtom));
-  //   CmiUnlock(lock);
-  // }
 
 protected:
   // Atom array
@@ -135,22 +120,23 @@ private:
 
   // Resize array with 1.5x extra storage
   void resize_(void **array, int sizeRequested, int& arrayCapacity, const int sizeofType) {
-    const int oldSize = arrayCapacity;
-    void* old = NULL;
-    if (*array != NULL && arrayCapacity < sizeRequested) {
-      old = alloc_(sizeofType*sizeRequested);
-      memcpy_(old, *array, oldSize*sizeofType);
+    // If array is not NULL and has enough capacity => we have nothing to do
+    if (*array != NULL && arrayCapacity >= sizeRequested) return;
+
+    // Otherwise, allocate new array
+    int newArrayCapacity = (int)(sizeRequested*1.5);
+    void* newArray = alloc_(sizeofType*newArrayCapacity);
+
+    if (*array != NULL) {
+      // We have old array => copy contents to new array
+      memcpy_(newArray, *array, arrayCapacity*sizeofType);
+      // De-allocate old array
       dealloc_(*array);
-      *array = NULL;
     }
-    if (*array == NULL) {
-      arrayCapacity = (int)(sizeRequested*1.5);
-      *array = alloc_(sizeofType*arrayCapacity);
-      if (old != NULL) {
-        memcpy_(*array, old, oldSize*sizeofType);
-        dealloc_(old);
-      }
-    }
+
+    // Set new capacity and array pointer
+    arrayCapacity = newArrayCapacity;
+    *array = newArray;
   }
 
   virtual void memcpy_(void *dst, const void* src, const int size) {
