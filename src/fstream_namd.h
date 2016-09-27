@@ -19,7 +19,13 @@ public:
     open(_fname, _mode);
   }
 
+  explicit ofstream_namd(const char *_fname, const char *_ext) : fd(0) {
+    open(_fname, _ext);
+  }
+
   void open(const char *_fname, std::ios_base::openmode _mode = std::ios_base::out);
+
+  void open(const char *_fname, const char *_ext);
 
   bool is_open() const { return ! ! fd; }
 

@@ -2,6 +2,12 @@
 #include "fstream_namd.h"
 #include "common.h"
 
+void ofstream_namd::open(const char *_fname, const char *_ext) {
+  if ( fd ) NAMD_bug("ofstream_namd::open() called when file is already open");
+  NAMD_backup_file(_fname, _ext);
+  open(_fname);
+}
+
 void ofstream_namd::open(const char *_fname, std::ios_base::openmode _mode) {
   if ( fd ) NAMD_bug("ofstream_namd::open() called when file is already open");
   fname = _fname;
