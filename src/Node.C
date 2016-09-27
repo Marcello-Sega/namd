@@ -1026,15 +1026,24 @@ void Node::resendMolecule() {
   }
   if ( CmiMyPe() == 0 ) {
     int bufSize = BUFSIZE;
+    MOStream *conv_msg;
+    conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, STATICPARAMSTAG, bufSize);
+    parameters->send_Parameters(conv_msg);
     if(molecule->numAtoms>=1000000) bufSize = 16*BUFSIZE;
-    MOStream *conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
+    conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
     molecule->send_Molecule(conv_msg);
   } else {
+    MIStream *conv_msg;
+    delete parameters;
+    parameters = new Parameters;
+    conv_msg = CkpvAccess(comm)->newInputStream(0, STATICPARAMSTAG);
+    parameters->receive_Parameters(conv_msg);
     delete molecule;
     molecule = new Molecule(simParameters,parameters);
-    MIStream *conv_msg = CkpvAccess(comm)->newInputStream(0, MOLECULETAG);
+    conv_msg = CkpvAccess(comm)->newInputStream(0, MOLECULETAG);
     molecule->receive_Molecule(conv_msg);
   }
+  node_parameters = parameters;
   node_molecule = molecule;
   SimParameters::nonbonded_select();
   computeMgr->sendBuildCudaExclusions();
@@ -1045,6 +1054,7 @@ void Node::resendMolecule() {
 }
 
 void Node::resendMolecule2() {
+  parameters = node_parameters;
   molecule = node_molecule;
   AtomMap::Object()->allocateMap(molecule->numAtoms);
 }
