@@ -1,0 +1,190 @@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TITLE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{Extended Adaptive Biasing Force method}
+
+\noindent
+This feature has been contributed to \NAMD\ by the following authors:
+
+\begin{quote}
+   Haohao Fu and Christophe Chipot                                                               \\[0.4cm]
+   Laboratoire International Associ\'e 
+   Centre National de la Recherche Scientifique et University of Illinois at Urbana--Champaign,   \\
+   Unit\'e Mixte de Recherche No. 7565, Universit\'e de Lorraine,                                \\
+   B.P. 70239, 54506 Vand\oe uvre-lès-Nancy cedex, France
+\end{quote}
+
+\copyright~2016, {\sc Centre National de la Recherche Scientifique}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TEXT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsubsection{Introduction and theoretical background}
+
+In an adaptive biasing force (ABF)
+simulation \cite{Darve2001,Henin2004},
+the gradient of the 
+free energy along the transition
+coordinate of interest, $\xi$,
+is defined as,
+
+\begin{equation}
+\frac{{\rm d}A}{{\rm d}\xi} =
+\left\langle 
+\frac{\partial U({\bf x})}{\partial \xi} - \frac{1}{\beta}
+\frac{\partial \ln |J|}{\partial \xi}
+\right\rangle_\xi
+:= -\langle F_\xi \rangle_\xi
+\end{equation}
+
+\noindent
+where $U({\bf x})$ is the potential energy function, $\beta = 1 / k_{\rm B}T$,
+and $|J|$ is the determinant of the Jacobian for the generalized--to--Cartesian
+coordinate transformation. To perform an ABF simulation, the following
+three requirements should be met,
+
+\begin{enumerate}
+\renewcommand\labelenumi{(\roman{enumi})}
+\renewcommand\theenumi\labelenumi
+\item{}
+Availability of the derivative of the Jacobian. 
+Calculation of the biasing force, 
+$-\langle F_\xi \rangle_\xi \nabla \xi$, requires the
+analytical expression of the derivative of the Jacobian, 
+$\partial \ln |J| / \partial \xi$,
+which involves the second derivative of the coarse variable and
+can sometimes take a mathematically complicated form.21 
+
+\item{}
+Independence of the coarse variables. In a multidimensional
+ABF calculation, each coarse variable should be mutually
+orthogonal. Similarly, when a coarse variable consists of a
+combination of several components, these components should
+also be mutually orthogonal.
+
+\item{}
+Orthogonality of the coarse variables and constraints or
+restraints. If there are geometric restraints or holonomic
+constraints in the assay, they should be fully decoupled from
+the coarse variables. Should holonomic constraints be involved
+in the model reaction coordinate, the incorrect free-energy
+change stems from the contamination of the measured
+thermodynamic force by the constraint forces. When geometric
+restraints are coupled to the coarse variables, ABF is not
+able to discriminate the origin of the forces at play, 
+resulting in the application of an erroneous time-dependent 
+bias.
+\end{enumerate}
+
+These stringent prerequisites can be circumvented
+by turning to an extended Lagrangian formalism in an 
+ABF simulation (See 10.2.4). 
+This approach is referred to as extended ABF, 
+or eABF method. 
+In eABF approach, the gradient of the free energy 
+is given by \cite{Zheng2012,Fu2016},
+              
+\begin{equation}
+\label{eq:eABF}
+\left(\frac{{\rm d}A}{{\rm d}\xi}\right)_{\xi'} =
+\frac{\displaystyle \sum_{\Xi'} N(\xi', \Xi') 
+\left[ 
+\frac{(\xi' - \langle\xi_{\Xi'}\rangle)}{\beta \sigma_{\Xi'}^2} - K_{\xi} (\xi' - \Xi')
+\right]}
+{\displaystyle \sum_{\Xi'} N(\xi', \Xi')}
+\end{equation}
+
+\noindent
+The transition coordinate, $\xi$, is a function of the positions 
+of the real particles of the molecular assembly and is restrained 
+through potential $1/2 \ K_{\xi} (\xi' - \xi_{\Xi'})^2$
+to a one-dimensional fictitious particle, $\Xi$, moving dynamically. 
+$N(\xi', \Xi')$ is the number of samples $\xi'$ collected 
+from the $\Xi'$--restrained ensemble, which is assumed to be Gaussian.
+At the present stage, equation \ref{eq:eABF} is implemented 
+through the scripted Colvars interface (See 10.5.7) for one-- and 
+two--dimensional free-energy calculations. 
+
+%\medskip
+\subsubsection{Implementation in NAMD}
+
+To perform an eABF simulation, one needs to set 
+{\tt scriptedColvarForces on} 
+and source the eabf.tcl file found in the lib/eabf directory.
+Here, an example of a configuration file is supplied
+for an eABF simulation:
+
+\bigskip
+
+\noindent
+\begin{minipage}[t]{6.5cm}
+{\small 
+\addtolength{\baselineskip}{0.1\baselineskip}
+\begin{verbatim}
+source                eabf.tcl
+set eabf_inputname	   0	
+set eabf_outputname	  output.eabf 
+set eabf_temperature  300	
+set eabf_outputfreq	  20000 
+\end{verbatim}
+}
+\end{minipage} 
+\hfill                
+\begin{minipage}[t]{9.5cm}
+Enables eABF;
+\newline
+Prefix for restart files. ``0'' is used for new runs;
+\newline
+Prefix for output files;
+\newline
+Temperature used in the calculation;
+\newline
+Frequency at which eABF data files are updated.
+\end{minipage}                 
+
+\medskip
+
+\paragraph{Multiple--replica eABF.}
+The eABF algorithm can be associated with a multiple--walker strategy \cite{Minoukadeh2010,Comer2014c} (See 10.5.1). To run a multiple--replica 
+eABF simulation, one can simply set {\tt shared on} in the Colvars config file to enable 
+the multiple--walker algorithm. For example,
+
+\begin{verbatim}
+abf {
+colvars			   example
+fullSamples		   2000 
+hideJacobian		   on
+shared			        	on
+sharedfreq		   50000
+}
+\end{verbatim}
+
+\begin{verbatim}
+source eabf.tcl
+set eabf_inputname		0
+set eabf_outputname	    output.eabf.[myReplica]
+set eabf_temperature   	300	
+set eabf_outputfreq		20000
+\end{verbatim}
+
+It should be noted that in contrast with classical MW--ABF simulations, 
+the output files of an MW--eABF simulation only show the results of 
+the corresponding replica. One can merge the results, using
+{\tt ./eabf.tcl -mergemwabf [merged\_filename] [eabf\_output1] [eabf\_output2] ...}, 
+e.g.,
+{\tt ./eabf.tcl -mergemwabf merge.eabf eabf.0 eabf.1 eabf.2 eabf.3}.
+
+If one runs an ABF--based calculation, breaking the reaction pathway
+into several non--overlapping windows, one can use
+{\tt ./eabf.tcl -mergesplitwindow [merge\_gradfilename] [output\_gradfile1] [output\_gradfile2] ...}
+to merge the data accrued in these non--overlapping windows. 
+This option can be utilized in both eABF and classical ABF simulations, e.g.,
+{\tt ./eabf.tcl -mergesplitwindow merge.grad window0.grad window1.grad window2.grad}.
+
