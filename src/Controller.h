@@ -306,6 +306,13 @@ static char *FEPTITLE(int X)
   return tmp_string;
 }
 
+static char *FEPTITLE2(int X)
+{
+  static char tmp_string[21];
+  sprintf(tmp_string, "FEP:    %7d",X);
+  return tmp_string;
+}
+
 static char *TITITLE(int X)
 {
   static char tmp_string[21];

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/09/29 20:31:47 $
- * $Revision: 1.1322 $
+ * $Date: 2016/09/29 22:29:50 $
+ * $Revision: 1.1323 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2912,18 +2912,29 @@ void Controller::printEnergies(int step, int minimize)
 	}
 	// End of port -- JLai
 
-        if (simParameters->alchOn && simParameters->alchThermIntOn) {
-          iout << "\n#TITITLE:    TS";
-          iout << FORMAT("BOND1");
-          iout << FORMAT("ELECT1");
-          iout << FORMAT("VDW1");
-          iout << FORMAT("BOND2");
-          iout << "     ";
-          iout << FORMAT("ELECT2");
-          iout << FORMAT("VDW2");
-          if (simParameters->alchLambdaFreq > 0) {
-            iout << FORMAT("LAMBDA");
-            iout << FORMAT("ALCHWORK");
+        if (simParameters->alchOn) {
+          if (simParameters->alchThermIntOn) {
+            iout << "\n#TITITLE:    TS";
+            iout << FORMAT("BOND1");
+            iout << FORMAT("ELECT1");
+            iout << FORMAT("VDW1");
+            iout << FORMAT("BOND2");
+            iout << "     ";
+            iout << FORMAT("ELECT2");
+            iout << FORMAT("VDW2");
+            if (simParameters->alchLambdaFreq > 0) {
+              iout << FORMAT("LAMBDA");
+              iout << FORMAT("ALCHWORK");
+              iout << FORMAT("CUMALCHWORK");
+            }
+          } else if (simParameters->alchFepOn) {
+            iout << "\n#FEPTITLE:   TS";
+            iout << FORMAT("BOND2");
+            iout << FORMAT("ELECT2");
+            iout << FORMAT("VDW2");
+            if (simParameters->alchLambdaFreq > 0) {
+              iout << FORMAT("LAMBDA");
+            }
           }
         }
 
@@ -2987,21 +2998,34 @@ void Controller::printEnergies(int step, int minimize)
       //iout << FORMAT("not implemented");
     } // End of port -- JLai
 
-    if (simParameters->alchOn && simParameters->alchThermIntOn) {
-      iout << "\n";
-      iout << TITITLE(step);
-      iout << FORMAT(bondedEnergy_ti_1);
-      iout << FORMAT(electEnergy_ti_1 + electEnergySlow_ti_1 + 
-                     electEnergyPME_ti_1);
-      iout << FORMAT(ljEnergy_ti_1);
-      iout << FORMAT(bondedEnergy_ti_2);
-      iout << "     ";
-      iout << FORMAT(electEnergy_ti_2 + electEnergySlow_ti_2 +
-                     electEnergyPME_ti_2);
-      iout << FORMAT(ljEnergy_ti_2);
-      if (simParameters->alchLambdaFreq > 0) {
-        iout << FORMAT(simParameters->getCurrentLambda(step));
-        iout << FORMAT(alchWork);
+    if (simParameters->alchOn) { 
+      if (simParameters->alchThermIntOn) {
+        iout << "\n";
+        iout << TITITLE(step);
+        iout << FORMAT(bondedEnergy_ti_1);
+        iout << FORMAT(electEnergy_ti_1 + electEnergySlow_ti_1 + 
+                       electEnergyPME_ti_1);
+        iout << FORMAT(ljEnergy_ti_1);
+        iout << FORMAT(bondedEnergy_ti_2);
+        iout << "     ";
+        iout << FORMAT(electEnergy_ti_2 + electEnergySlow_ti_2 +
+                       electEnergyPME_ti_2);
+        iout << FORMAT(ljEnergy_ti_2);
+        if (simParameters->alchLambdaFreq > 0) {
+          iout << FORMAT(simParameters->getCurrentLambda(step));
+          iout << FORMAT(alchWork);
+          iout << FORMAT(cumAlchWork);
+        }
+      } else if (simParameters->alchFepOn) {
+        iout << "\n";
+        iout << FEPTITLE2(step);
+        iout << FORMAT(bondEnergy + angleEnergy + dihedralEnergy 
+                       + improperEnergy + bondedEnergyDiff_f);
+        iout << FORMAT(electEnergy_f + electEnergySlow_f);
+        iout << FORMAT(ljEnergy_f);
+        if (simParameters->alchLambdaFreq > 0) {
+          iout << FORMAT(simParameters->getCurrentLambda(step));
+        }
       }
     }
 
