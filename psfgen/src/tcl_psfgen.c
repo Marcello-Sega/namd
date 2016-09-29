@@ -1578,7 +1578,7 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
   FILE *res_file;
   const char *filename;
-  int charmmfmt, nocmap, i;
+  int charmmfmt, nocmap, nopatches, i;
   char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
   PSFGEN_TEST_MOL(interp,psf);
@@ -1588,18 +1588,20 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  if ( argc > 4 ) {
+  if ( argc > 5 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   charmmfmt = 0;
   nocmap = 0;
+  nopatches = 0;
   for ( i = 1; i < argc-1; ++i ) {
     if ( strcmp(argv[i],"charmm") == 0 ) charmmfmt = 1;
     else if ( strcmp(argv[i],"x-plor") == 0 ) charmmfmt = 0;
     else if ( strcmp(argv[i],"cmap") == 0 ) nocmap = 0;
     else if ( strcmp(argv[i],"nocmap") == 0 ) nocmap = 1;
+    else if ( strcmp(argv[i],"nopatches") == 0 ) nopatches = 1;
     else {
       sprintf(msg,"ERROR: Unknown psf file format %s (not charmm or x-plor, cmap or nocmap).\n",argv[i]);
       Tcl_SetResult(interp,msg,TCL_VOLATILE);
@@ -1619,7 +1621,7 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
                 nocmap?" without cross-terms":"",
                 charmmfmt?" in CHARMM format":"");
   newhandle_msg(interp,msg);
-  if ( topo_mol_write_psf(psf->mol,res_file,charmmfmt,nocmap,interp,newhandle_msg) ) {
+  if ( topo_mol_write_psf(psf->mol,res_file,charmmfmt,nocmap,nopatches,interp,newhandle_msg) ) {
     Tcl_AppendResult(interp,"ERROR: failed on writing structure to psf file",NULL);
     fclose(res_file);
     psfgen_kill_mol(interp,psf);
