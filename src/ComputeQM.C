@@ -47,9 +47,6 @@
 #define S_ISDIR(X) ((X) & S_IFDIR)
 #endif
 
-#define not !
-#define and &&
-
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
@@ -278,7 +275,7 @@ struct lssDistSort {
     bool operator==(const lssDistSort& ref) {
         bool returnVal = true;
         
-        if (not (type == ref.type && dist == ref.dist))
+        if (! (type == ref.type && dist == ref.dist))
             return false;
         
         if (idIndx.size() != ref.idIndx.size())
@@ -800,7 +797,7 @@ void ComputeQMMgr::recvPartQM(QMCoordMsg*msg)
         
         noPC = simParams->qmNoPC ;
         meNumMMIndx = molPtr->get_qmMeNumBonds();
-        if (noPC and meNumMMIndx == 0) {
+        if (noPC && meNumMMIndx == 0) {
             pntChrgCoordMsgs = NULL;
         }
         else {
@@ -953,7 +950,7 @@ void ComputeQMMgr::recvPartQM(QMCoordMsg*msg)
             numPlacedQMGrps = 1;
         }
         
-        while ( (numPlacedQMGrps < numQMGrps) and (simsPerNode > 0) ) {
+        while ( (numPlacedQMGrps < numQMGrps) && (simsPerNode > 0) ) {
             
             // If we searched all nodes, break the loop.
             if (nodeIt == numNodes) {
@@ -1117,7 +1114,7 @@ void ComputeQMMgr::recvPartQM(QMCoordMsg*msg)
         // Each force receives the home index of its atom with respect to the 
         // local set of atoms in each node.
         if (force[qmCoord[i].id].homeIndx != -1
-            and force[qmCoord[i].id].homeIndx != qmCoord[i].homeIndx
+            && force[qmCoord[i].id].homeIndx != qmCoord[i].homeIndx
         ) {
             iout << iERROR << "Overloading QM atom " 
             << qmCoord[i].id << "; home index: " 
@@ -1980,7 +1977,7 @@ void ComputeQMMgr::recvPntChrg(QMPntChrgMsg *msg) {
         
         // If we have a frequency for LSS update, check if we shoudl do it in 
         // the current time step.
-        if ( qmLSSFreq > 0 and ((timeStep + 1) % qmLSSFreq == 0 )) {
+        if ( qmLSSFreq > 0 && ((timeStep + 1) % qmLSSFreq == 0 )) {
             lssUpdate(grpIter, grpQMAtmVec, grpPntChrgVec);
         }
         
@@ -2130,7 +2127,7 @@ void ComputeQMMgr::recvPntChrg(QMPntChrgMsg *msg) {
         if (msg->secProcOn)
             strncpy(msg->secProc, simParams->qmSecProc, 256);
         
-        if (simParams->qmPrepProcOn and (timeStep == simParams->firstTimestep)) {
+        if (simParams->qmPrepProcOn && (timeStep == simParams->firstTimestep)) {
             msg->prepProcOn = true;
             strncpy(msg->prepProc, simParams->qmPrepProc, 256);
         } else
@@ -2278,7 +2275,7 @@ void ComputeQMMgr::procQMRes() {
     
     // Writes a DCD file with the charges of all QM atoms at a frequency 
     // defined by the user in qmOutFreq.
-    if ( simParams->qmOutFreq > 0 and 
+    if ( simParams->qmOutFreq > 0 && 
          timeStep % simParams->qmOutFreq == 0 ) {
         
         iout << iINFO << "Writing QM charge output at step " 
@@ -2299,7 +2296,7 @@ void ComputeQMMgr::procQMRes() {
     
     // Writes a DCD file with the charges of all QM atoms at a frequency 
     // defined by the user in qmPosOutFreq.
-    if ( simParams->qmPosOutFreq > 0 and 
+    if ( simParams->qmPosOutFreq > 0 && 
          timeStep % simParams->qmPosOutFreq == 0 ) {
         
         iout << iINFO << "Writing QM position output at step " 
@@ -2600,7 +2597,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
                   CkMyPe(), baseDir.c_str() );
         NAMD_die("QM calculation could not be ran. Check your qmBaseDir!");
     }
-    else if (not (stat(baseDir.c_str(), &info) == 0 && S_ISDIR(info.st_mode)) ) {
+    else if (! (stat(baseDir.c_str(), &info) == 0 && S_ISDIR(info.st_mode)) ) {
         DebugM(4,"Creating directory " << baseDir << std::endl);
         int retVal = mkdir(baseDir.c_str(), S_IRWXU);
     }
@@ -2898,7 +2895,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
         size_t strIndx = 0;
         
         if (chargeFields) {
-            while ((strIndx < (strlen(line)-9)) and (strlen(line)-1 >=9 ) ) {
+            while ((strIndx < (strlen(line)-9)) && (strlen(line)-1 >=9 ) ) {
                 
                 strncpy(result, line+strIndx,9) ;
                 result[9] = '\0';
@@ -2913,7 +2910,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
                 
                 // If we are reading charges from Dummy atoms,
                 // place them on the appropriate QM atom.
-                if ( msg->numQMAtoms <= atmIndx and
+                if ( msg->numQMAtoms <= atmIndx &&
                     atmIndx < msg->numAllAtoms ) {
                     // The dummy atom points to the QM atom to which it is bound.
                     int qmInd = atmP[atmIndx].bountToIndx ;
@@ -2935,7 +2932,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
         }
         
         if (gradFields) {
-            while ((strIndx < (strlen(line)-9)) and (strlen(line)-1 >=9 ) ) {
+            while ((strIndx < (strlen(line)-9)) && (strlen(line)-1 >=9 ) ) {
                 
                 strncpy(result, line+strIndx,9) ;
                 result[9] = '\0';
@@ -2955,7 +2952,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
                     
                     // This implementation was based on the description in 
                     // DOI: 10.1002/jcc.20857  :  Equations 30 to 32
-                    if ( msg->numQMAtoms <= atmIndx and
+                    if ( msg->numQMAtoms <= atmIndx &&
                     atmIndx < msg->numAllAtoms ) {
                         // The dummy atom points to the QM atom to which it is bound.
                         // The QM atom and the MM atom (in a QM-MM bond) point to each other.
@@ -3058,7 +3055,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
 //     iret = remove(outputFileName);
 //     if ( iret ) { NAMD_die(strerror(errno)); }
     
-    if (not (chargesRead and gradsRead) ) {
+    if (! (chargesRead && gradsRead) ) {
         NAMD_die("Error reading QM forces file. Not all data could be read!");
     }
     
@@ -3282,7 +3279,7 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
                   CkMyPe(), baseDir.c_str() );
         NAMD_die("QM calculation could not be ran. Check your qmBaseDir!");
     }
-    else if (not (stat(baseDir.c_str(), &info) == 0 && S_ISDIR(info.st_mode)) ) {
+    else if (! (stat(baseDir.c_str(), &info) == 0 && S_ISDIR(info.st_mode)) ) {
         DebugM(4,"Creating directory " << baseDir << std::endl);
         int retVal = mkdir(baseDir.c_str(), S_IRWXU);
     }
@@ -3573,7 +3570,7 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
             
             // This implementation was based on the description in 
             // DOI: 10.1002/jcc.20857  :  Equations 30 to 32
-            if ( msg->numQMAtoms <= atmIndx and
+            if ( msg->numQMAtoms <= atmIndx &&
             atmIndx < msg->numAllAtoms ) {
                 // The dummy atom points to the QM atom to which it is bound.
                 // The QM atom and the MM atom (in a QM-MM bond) point to each other.
@@ -3724,7 +3721,7 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
                     
                     // If we are reading charges from Dummy atoms,
                     // place the on the appropriate QM atom.
-                     if ( msg->numQMAtoms <= atmIndx and
+                     if ( msg->numQMAtoms <= atmIndx &&
                         atmIndx < msg->numAllAtoms ) {
                         int qmInd = atmP[atmIndx].bountToIndx ;
                         atmP[qmInd].charge += localCharge;
@@ -3794,7 +3791,7 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
                     
                     // If we are reading charges from Dummy atoms,
                     // place the on the appropriate QM atom.
-                     if ( msg->numQMAtoms <= atmIndx and
+                     if ( msg->numQMAtoms <= atmIndx &&
                         atmIndx < msg->numAllAtoms ) {
                         int qmInd = atmP[atmIndx].bountToIndx ;
                         atmP[qmInd].charge += localCharge;
@@ -4049,7 +4046,7 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
                   CkMyPe(), baseDir.c_str() );
         NAMD_die("QM calculation could not be ran. Check your qmBaseDir!");
     }
-    else if (not (stat(baseDir.c_str(), &info) == 0 && S_ISDIR(info.st_mode)) ) {
+    else if (! (stat(baseDir.c_str(), &info) == 0 && S_ISDIR(info.st_mode)) ) {
         DebugM(4,"Creating directory " << baseDir << std::endl);
         int retVal = mkdir(baseDir.c_str(), S_IRWXU);
     }
@@ -4253,7 +4250,7 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
         
         // This implementation was based on the description in 
         // DOI: 10.1002/jcc.20857  :  Equations 30 to 32
-        if ( msg->numQMAtoms <= atmIndx and
+        if ( msg->numQMAtoms <= atmIndx &&
         atmIndx < msg->numAllAtoms ) {
             
             // If we are reading charges from Dummy atoms,
