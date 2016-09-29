@@ -35,6 +35,7 @@ extern "C" {
 
 Bool		ComputeNonbondedUtil::commOnly;
 Bool		ComputeNonbondedUtil::fixedAtomsOn;
+Bool            ComputeNonbondedUtil::qmForcesOn;
 BigReal         ComputeNonbondedUtil::cutoff;
 BigReal         ComputeNonbondedUtil::cutoff2;
 float           ComputeNonbondedUtil::cutoff2_f;
@@ -277,6 +278,8 @@ void ComputeNonbondedUtil::select(void)
   commOnly = simParams->commOnly;
   fixedAtomsOn = ( simParams->fixedAtomsOn && ! simParams->fixedAtomsForces );
 
+  qmForcesOn = simParams->qmForcesOn ;
+  
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
   cutoff2_f = cutoff2;

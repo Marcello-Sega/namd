@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/09/14 20:22:03 $
- * $Revision: 1.1321 $
+ * $Date: 2016/09/29 20:31:47 $
+ * $Revision: 1.1322 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2352,7 +2352,8 @@ void Controller::compareChecksums(int step, int forgiving) {
       }
     }
 
-    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions && ! simParams->goGroPair ) {
+    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions &&
+        ! simParams->goGroPair && ! simParams->qmForcesOn) {
       if ( forgiving || ! simParams->fullElectFrequency ) {
         iout << iWARN << "Low global exclusion count!  ("
           << ((int)checksum) << " vs " << molecule->numCalcExclusions << ")";
@@ -2390,7 +2391,8 @@ void Controller::compareChecksums(int step, int forgiving) {
       }
     }
 
-    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcFullExclusions && ! simParams->goGroPair ) {
+    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcFullExclusions &&
+        ! simParams->goGroPair && ! simParams->qmForcesOn) {
       if ( forgiving || ! simParams->fullElectFrequency ) {
         iout << iWARN << "Low global CUDA exclusion count!  ("
           << ((int)checksum) << " vs " << molecule->numCalcFullExclusions << ")";

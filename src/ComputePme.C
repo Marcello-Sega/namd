@@ -572,6 +572,10 @@ private:
   int strayChargeErrors;
 };
 
+ResizeArray<ComputePme*>& getComputes(ComputePmeMgr *mgr) {
+    return mgr->pmeComputes ;
+}
+
   CmiNodeLock ComputePmeMgr::fftw_plan_lock;
 #ifdef NAMD_CUDA
   CmiNodeLock ComputePmeMgr::cuda_lock;
@@ -2602,6 +2606,7 @@ ComputePme::ComputePme(ComputeID c, PatchID pid) : Compute(c), patchID(pid)
 
   SimParameters *simParams = Node::Object()->simParameters;
 
+  qmForcesOn =  simParams->qmForcesOn;
   offload = simParams->PMEOffload;
 
   alchOn = simParams->alchOn;
@@ -2647,6 +2652,9 @@ ComputePme::ComputePme(ComputeID c, PatchID pid) : Compute(c), patchID(pid)
  }
 
   atomsChanged = 0;
+  
+  qmLoclIndx = 0;
+  qmLocalCharges = 0;
 }
 
 void ComputePme::initialize() {
@@ -2939,6 +2947,10 @@ void ComputePmeMgr::setup_recvgrid_persistent()
 int ComputePme::noWork() {
 
   if ( patch->flags.doFullElectrostatics ) {
+    // In QM/MM simulations, atom charges form QM regions need special treatment.
+    if ( qmForcesOn ) {
+        return 1;
+    }
     if ( ! myMgr->ungridForcesCount && ! myMgr->recipEvirCount ) return 0;  // work to do, enqueue as usual
     myMgr->heldComputes.add(this);
     return 1;  // don't enqueue yet
@@ -2969,6 +2981,64 @@ void ComputePmeMgr::recvRecipEvir(PmeEvirMsg *msg) {
   delete msg;
   // CkPrintf("recvRecipEvir pe %d %d %d\n", CkMyPe(), ungridForcesCount, recipEvirCount);
   if ( ! --recipEvirCount && ! ungridForcesCount ) submitReductions();
+}
+
+void ComputePme::doQMWork() {
+    
+//     iout << CkMyPe() << ") ----> PME doQMWork.\n" << endi ;
+    
+    
+    int numQMAtms = Node::Object()->molecule->get_numQMAtoms();
+    const Real *qmAtmChrg = Node::Object()->molecule->get_qmAtmChrg() ;
+    const int *qmAtmIndx = Node::Object()->molecule->get_qmAtmIndx() ;
+    const Real *qmAtomGroup = Node::Object()->molecule->get_qmAtomGroup() ;
+    
+    const CompAtomExt *xExt = patch->getCompAtomExtInfo();
+    
+    // Determine number of qm atoms in this patch for the current step.
+    numLocalQMAtoms = 0;
+    for (int paIter=0; paIter<patch->getNumAtoms(); paIter++) {
+        if ( qmAtomGroup[xExt[paIter].id] != 0 ) {
+            numLocalQMAtoms++;
+        }
+    }
+    
+    // We prepare a charge vector with QM charges for use in the PME calculation.
+    
+    // Clears data from last step, if there is any.
+    if (qmLoclIndx != 0)
+        delete [] qmLoclIndx;
+    if (qmLocalCharges != 0)
+        delete [] qmLocalCharges;
+    
+    qmLoclIndx = new int[numLocalQMAtoms] ;
+    qmLocalCharges = new Real[numLocalQMAtoms] ;
+    
+    // I am assuming there will be (in general) more QM atoms among all QM groups
+    // than MM atoms in a patch.
+    int procAtms = 0;
+    
+    for (int paIter=0; paIter<patch->getNumAtoms(); paIter++) {
+        
+        for (int i=0; i<numQMAtms; i++) {
+            
+            if (qmAtmIndx[i] == xExt[paIter].id) {
+                
+                qmLoclIndx[procAtms] = paIter ;
+                qmLocalCharges[procAtms] = qmAtmChrg[i];
+                
+                procAtms++;
+                break;
+            }
+            
+        }
+        
+        if (procAtms == numLocalQMAtoms)
+            break;
+    }
+    
+    doWork();
+    return ;
 }
 
 void ComputePme::doWork()
@@ -3034,6 +3104,17 @@ void ComputePme::doWork()
       ++part_ptr;
     }
 
+    // QM loop to overwrite charges of QM atoms.
+    // They are zero for NAMD, but are updated in ComputeQM.
+    if ( qmForcesOn ) {
+        
+        for(int i=0; i<numLocalQMAtoms; ++i)
+        {
+          localData[qmLoclIndx[i]].cg = coulomb_sqrt * qmLocalCharges[i];
+        }
+        
+    }
+    
     if ( patch->flags.doMolly ) { avgPositionBox->close(&x); }
     else { positionBox->close(&x); }
   }

@@ -29,6 +29,7 @@ public:
   void atomUpdate();
   int noWork();
   void doWork();
+  void doQMWork() ;
   void ungridForces();
   void setMgr(ComputePmeMgr *mgr) { myMgr = mgr; }
 
@@ -52,6 +53,8 @@ public:
   int offload;
   BigReal alchElecLambdaStart;
   
+  Bool qmForcesOn;
+  
   PmeRealSpace *myRealSpace[PME_MAX_EVALS];
   int numLocalAtoms;
   PmeParticle *localData;
@@ -65,7 +68,15 @@ public:
 
   int atomsChanged;
 
+  // Local array constructed at each time step with QM charges for 
+  Real *qmLocalCharges ;
+  // Local array with indices of QM atoms
+  int *qmLoclIndx ;
+  int numLocalQMAtoms;
+  
 };
+
+ResizeArray<ComputePme*>& getComputes(ComputePmeMgr *mgr) ;
 
 #endif
 

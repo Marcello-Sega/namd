@@ -85,6 +85,21 @@ private:
 #define EXCHCK_FULL 1
 #define EXCHCK_MOD 2
 
+class ResidueLookupElem
+{
+public:
+  char mySegid[11];
+  ResidueLookupElem *next;      // stored as a linked list
+  int firstResid;               // valid resid is >= firstResid
+  int lastResid;                // valid resid is <= lastResid
+  ResizeArray<int> atomIndex;   // 0-based index for first atom in residue
+
+  ResidueLookupElem(void) { next = 0; firstResid = -1; lastResid = -1; }
+  ~ResidueLookupElem(void) { delete next; }
+  int lookup(const char *segid, int resid, int *begin, int *end) const;
+  ResidueLookupElem* append(const char *segid, int resid, int aid);
+};
+
 // Ported by JLai -- JE
 typedef struct go_val
 {
@@ -106,6 +121,23 @@ typedef struct go_pair
   double B;          // double B for the LJ pair
 } GoPair;
 // End of port - JL
+
+#define QMLSSMODEDIST 1
+#define QMLSSMODECOM 2
+
+#define QMFormatORCA 1
+#define QMFormatMOPAC 2
+#define QMFormatUSR 3
+
+#define QMCHRGNONE 0
+#define QMCHRGMULLIKEN 1
+#define QMCHRGCHELPG 2
+
+#define QMSCHEMECS 1
+#define QMSCHEMERCD 2
+#define QMSCHEMEZ1 3
+#define QMSCHEMEZ2 4
+#define QMSCHEMEZ3 5
 
 //only used for compressing the molecule information
 typedef struct seg_resid
@@ -634,6 +666,168 @@ public:
   // GO ENERGY CALCULATION CODE
   // End of port - JL
 
+  
+private:
+  /////////////////////////
+  // Begin QM
+  /////////////////////////
+    
+  int qmDroppedBonds, qmDroppedAngles, qmDroppedDihedrals;
+  int qmDroppedImpropers, qmDroppedCrossterms;
+    
+  Bool qmReplaceAll;              // Indicates if all forces should be replaced.
+  int qmNumQMAtoms;           // Number of QM atoms, from all groups.
+  
+  // Array of abbreviated element names for all atoms.
+  char **qmElementArray;
+  // Array of elements for dummy atoms.
+  char **qmDummyElement;
+  
+  // Number of QM atoms in each QM group
+  int *qmGrpSizes;
+  
+  // QM group for each atom of the system. 0 means MM atom.
+  Real *qmAtomGroup;
+  // Number of different QM regions
+  int qmNumGrps ;
+  
+  // QM Atom charges.
+  Real *qmAtmChrg ;
+  // global indices of all QM atoms.
+  int *qmAtmIndx ;
+  
+  // Number of QM-MM bonds.
+  int qmNumBonds ;
+  // IDs of each group, that is, the value in the qmColumn, per group.
+  Real *qmGrpID ;
+  // The total charge of each QM group.
+  Real *qmGrpChrg;
+  // The multiplicity of QM groups
+  Real *qmGrpMult;
+  // Number of QM-MM bonds in each group.
+  int *qmGrpNumBonds ;
+  // Sequential list of bonds between a MM atom and a QM atom.
+  // (with the bonded atoms ins this order: MM first, QM second).
+  int **qmMMBond ;
+  // List of bond indexes for each QM group.
+  int **qmGrpBonds ;
+  // List of atom indexes for MM atoms in QM-MM bonds, per group.
+  // This is used to check if a point charge is actually an MM atom
+  // that need to be ignored, and will be substituted by a dummy atom (for example).
+  int **qmMMBondedIndx ;
+  // List of indices for MM atoms which will receive fractions of charges from 
+  // the MM atom of a QM-MM bond. This is used in the Charge Shift scheme.
+  int **qmMMChargeTarget;
+  // Number of target MM atoms per QM-MM bond. Targets will receive the partial
+  // charge of the MM atom in a QM-MM bond. (in Charge shift scheme)
+  int *qmMMNumTargs;
+  // List of distances from thr QM atom where the dummy atom will be placed.
+  BigReal *qmDummyBondVal;
+  // Indicate if point charges will be used in QM calculations.
+  Bool qmNoPC;
+  
+  /////////////////////////
+  // These variables are used in case mechanichal embedding is requested (NoPC = TRUE)
+  // AND there are QM-MM bonds in the system.
+  
+  // Indicates the number of items in the arrays for Mechanical embedding with QM-MM bonds.
+  int qmMeNumBonds;
+  // Indicates the indices of MM atoms which participate in QM-MM bonds.
+  int *qmMeMMindx;
+  // Indicates the QM group to which the QM-MM bonds belongs.
+  Real *qmMeQMGrp;
+  /////////////////////////
+  
+  // Indicates frequency of selection of point charges.
+  int qmPCFreq;
+  // Custom PC array;
+  int *qmCustomPCIdxs;
+  // Number of Indexes associated with each QM Group.
+  int *qmCustPCSizes;
+  // Total number of custom PC charges.
+  int qmTotCustPCs;
+  // Number of solvent molecules that will be selected and updated by NAMD, per group.
+  int *qmLSSSize;
+  // Number of atoms per solvent molecule. We need all molecules to have the same size.
+  int qmLSSResidueSize;
+  // IDs of all atoms belonging to QM solvent molecules, from all groups.
+  int *qmLSSIdxs;
+  // MAss of each atom in LSS solvent molecules.
+  Mass *qmLSSMass;
+  // Atom IDs of QM atoms which will be used to select solvent molecules by distance.
+  int *qmLSSRefIDs;
+  // Mass of each QM atom used as reference for solvent selection.
+  Mass *qmLSSRefMass ;
+  // Number of atom IDs/Mass per group.
+  int *qmLSSRefSize;
+  int qmLSSFreq;
+  int qmLSSTotalNumAtms;
+  // This will map each classical solvent atom with a global index of solvent residues,
+  // so we don't depend on segment names and repeated residue indices.
+  std::map<int,int> qmClassicSolv ;
+  
+  /////////////////////////
+  // end QM
+  /////////////////////////
+  
+public:
+  // QM
+  void set_qm_replaceAll(Bool newReplaceAll) { qmReplaceAll = newReplaceAll; } ;
+  
+  const Real * get_qmAtomGroup() const {return qmAtomGroup; } ;
+  Real get_qmAtomGroup(int indx) const {return qmAtomGroup[indx]; } ;
+  
+  Real *get_qmAtmChrg() {return qmAtmChrg; } ;
+  const int *get_qmAtmIndx() {return qmAtmIndx; } ;
+  
+  int get_numQMAtoms() {return qmNumQMAtoms; } ;
+  const char *const * get_qmElements() {return qmElementArray;} ;
+  int get_qmNumGrps() const {return qmNumGrps; } ;
+  const int * get_qmGrpSizes() {return qmGrpSizes; } ;
+  Real * get_qmGrpID() { return qmGrpID; } ;
+  Real *get_qmGrpChrg() {return qmGrpChrg; } ;
+  Real *get_qmGrpMult() {return qmGrpMult; } ;
+  
+  int get_qmNumBonds() { return qmNumBonds; } ;
+  const BigReal * get_qmDummyBondVal() { return qmDummyBondVal; } ;
+  const int * get_qmGrpNumBonds() { return qmGrpNumBonds; } ;
+  const int *const * get_qmMMBond() { return qmMMBond; } ;
+  const int *const * get_qmGrpBonds() { return qmGrpBonds; } ;
+  const int *const * get_qmMMBondedIndx() { return qmMMBondedIndx; } ;
+  const char *const * get_qmDummyElement() { return qmDummyElement; } ;
+  
+  const int *const * get_qmMMChargeTarget() { return qmMMChargeTarget; } ;
+  const int * get_qmMMNumTargs() { return qmMMNumTargs; } ;
+  
+  int* get_qmLSSSize() { return qmLSSSize;} ;
+  int* get_qmLSSIdxs() { return qmLSSIdxs;} ;
+  Mass *get_qmLSSMass() { return qmLSSMass; } ;
+  int get_qmLSSFreq() { return qmLSSFreq; } ;
+  int get_qmLSSResSize() { return qmLSSResidueSize; } ;
+  int *get_qmLSSRefIDs() { return qmLSSRefIDs ; } ;
+  int *get_qmLSSRefSize() { return qmLSSRefSize ; } ;
+  Mass *get_qmLSSRefMass() {return qmLSSRefMass; } ;
+  std::map<int,int> &get_qmMMSolv() { return qmClassicSolv;} ;
+  
+  Bool get_qmReplaceAll() {return qmReplaceAll; } ;
+  
+  Bool get_noPC() { return qmNoPC; } ;
+  int get_qmMeNumBonds() { return qmMeNumBonds; } ;
+  int *get_qmMeMMindx() { return qmMeMMindx; } ;
+  Real *get_qmMeQMGrp() { return qmMeQMGrp; } ;
+  
+  int get_qmPCFreq() { return qmPCFreq; } ;
+  
+  int get_qmTotCustPCs() { return qmTotCustPCs; } ;
+  int *get_qmCustPCSizes()  { return qmCustPCSizes; } ;
+  int *get_qmCustomPCIdxs() { return qmCustomPCIdxs; } ;
+  
+  void prepare_qm(const char *pdbFileName, Parameters *params, ConfigList *cfgList) ;
+  void delete_qm_bonded() ;
+  // end QM
+  
+  
+  
   Molecule(SimParameters *, Parameters *param);
   Molecule(SimParameters *, Parameters *param, char *filename, ConfigList *cfgList=NULL);  
   Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t *pIOHdl, void *pIOFileHdl, int natoms);

@@ -42,6 +42,9 @@
 #include "Priorities.h"
 #include "SortAtoms.h"
 
+#include "ComputeQM.h"
+#include "ComputeQMMgr.decl.h"
+
 //#define PRINT_COMP
 #define TINY 1.0e-20;
 #define MAXHGS 10
@@ -950,6 +953,64 @@ void HomePatch::receiveResults(ProxyCombinedResultRawMsg* msg)
     delete msg;
 }
 
+void HomePatch::qmSwapAtoms()
+{
+    // This is used for LSS in QM/MM simulations.
+    // Changes atom labels so that we effectively exchange solvent
+    // molecules between classical and quantum modes.
+    
+    SimParameters *simParams = Node::Object()->simParameters;
+    int numQMAtms = Node::Object()->molecule->get_numQMAtoms();
+    const Real * const qmAtomGroup = Node::Object()->molecule->get_qmAtomGroup() ;
+    const int *qmAtmIndx = Node::Object()->molecule->get_qmAtmIndx() ;
+    Real *qmAtmChrg = Node::Object()->molecule->get_qmAtmChrg() ;
+    
+    ComputeQMMgr *mgrP = CProxy_ComputeQMMgr::ckLocalBranch(
+            CkpvAccess(BOCclass_group).computeQMMgr) ;
+    
+    FullAtom *a_i = atom.begin();
+    
+    for (int i=0; i<numAtoms; ++i ) { 
+        
+        LSSSubsDat *subP = lssSubs(mgrP).find( LSSSubsDat(a_i[i].id) ) ;
+        
+        if ( subP != NULL ) {
+            a_i[i].id = subP->newID ;
+            a_i[i].vdwType = subP->newVdWType ;
+            
+            // If we are swappign a classical atom with a QM one, the charge
+            // will need extra handling.
+            if (qmAtomGroup[subP->newID] > 0 && simParams->PMEOn) {
+                // We make sure that the last atom charge calculated for the 
+                // QM atom being transfered here is available for PME
+                // in the next step.
+                
+                // Loops over all QM atoms (in all QM groups) comparing their 
+                // global indices (the sequential atom ID from NAMD).
+                for (int qmIter=0; qmIter<numQMAtms; qmIter++) {
+                    
+                    if (qmAtmIndx[qmIter] == subP->newID) {
+                        qmAtmChrg[qmIter] = subP->newCharge;
+                        break;
+                    }
+                    
+                }
+                
+                // For QM atoms, the charge in the full atom structure is zero.
+                // Electrostatic interactions between QM atoms and their 
+                // environment is handled in ComputeQM.
+                a_i[i].charge = 0;
+            }
+            else {
+                // If we are swappign a QM atom with a Classical one, only the charge
+                // in the full atomstructure needs updating, since it used to be zero.
+                a_i[i].charge = subP->newCharge ;
+            }
+        }
+    }
+    
+    return;
+}
 
 void HomePatch::positionsReady(int doMigration)
 {    
@@ -967,6 +1028,9 @@ void HomePatch::positionsReady(int doMigration)
       doMarginCheck();
     }
   }
+  
+  if (doMigration and simParams->qmLSSOn)
+      qmSwapAtoms();
 
 #if defined(NAMD_CUDA) || defined(NAMD_MIC)
   if ( doMigration ) {

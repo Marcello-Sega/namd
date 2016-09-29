@@ -1244,6 +1244,54 @@ void ComputeNonbondedUtil :: NAME
     plint *pairlistn = pairlists.newlist(j_upper + 5 + 5 ALCH( + 20 ));
     register plint *plin = pairlistn;
 
+    
+    if ( qmForcesOn ) {
+        
+        Real qmGroup_i = mol->get_qmAtomGroup(pExt_i.id);
+        
+        for (int k=pairlistoffset; k<pairlistindex; k++) {
+          j = pairlist[k];
+          
+          Real qmGroup_j = mol->get_qmAtomGroup(pExt_1[j].id);
+          
+          // There can be no non-bonded interaction between an QM-QM pair of the same QM group
+          if (qmGroup_i > 0) {
+              if (qmGroup_i == qmGroup_j) {
+                continue;
+              } else {
+                  *(pli++) = j;
+              }
+          } else {
+              *(pli++) = j;
+          }
+        }
+      
+      int npair2_int = pli - pairlist2;
+      pli = pairlist2;
+      for (int k=0; k<npair2_int; k++) {
+          
+        j = pairlist2[k];
+        
+        BigReal p_j_x = p_1[j].position.x;
+        BigReal r2 = p_i_x - p_j_x;
+        r2 *= r2;
+        BigReal p_j_y = p_1[j].position.y;
+        BigReal t2 = p_i_y - p_j_y;
+        r2 += t2 * t2;
+        BigReal p_j_z = p_1[j].position.z;
+        t2 = p_i_z - p_j_z;
+        r2 += t2 * t2;
+        
+        if ( ( ! (atomfixed && pExt_1[j].atomFixed) ) && (r2 <= plcutoff2) ) {
+          int atom2 = pExt_1[j].id;
+          if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
+          else *(plin++) = j;
+        }
+      }
+    } else
+    
+    
+    
     INT(
     if ( pairInteractionOn ) {
       const int ifep_type = p_i.partition;

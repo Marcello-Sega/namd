@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2016/09/14 15:47:33 $
- * $Revision: 1.1289 $
+ * $Date: 2016/09/29 20:31:47 $
+ * $Revision: 1.1290 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -2344,6 +2344,9 @@ void WorkDistrib::mapComputes(void)
 
   if ( node->simParameters->extForcesOn )
     mapComputeHomePatches(computeExtType);
+
+  if ( node->simParameters->qmForcesOn )
+    mapComputeHomePatches(computeQMType);
 
   if ( node->simParameters->GBISserOn )
     mapComputeHomePatches(computeGBISserType);

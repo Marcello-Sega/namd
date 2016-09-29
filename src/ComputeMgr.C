@@ -42,6 +42,7 @@
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMsgs.h"
 #include "ComputeExt.h"
+#include "ComputeQM.h"
 #include "ComputeGBISser.h"
 #include "ComputeLCPO.h"
 #include "ComputeFmmSerial.h"
@@ -631,6 +632,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         map->registerCompute(i,c);
         c->initialize();
         break;
+    case computeQMType:
+        c = new ComputeQM(i);
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
     case computeGBISserType: //gbis serial
         c = new ComputeGBISser(i);
         map->registerCompute(i,c);
@@ -828,6 +834,9 @@ void registerUserEventsForAllComputeObjs()
         case computeExtType:
             sprintf(user_des, "computeExtType_%d", i);
             break;
+        case computeQMType:
+            sprintf(user_des, "computeQMType_%d", i);
+            break;
         case computeEFieldType:
             sprintf(user_des, "computeEFieldType_%d", i);
             break;
@@ -993,10 +1002,10 @@ ComputeMgr::createComputes(ComputeMap *map)
         DebugM(1,"  node = " << map->computeData[i].node << '\n');
         DebugM(1,"  type = " << map->computeData[i].type << '\n');
         DebugM(1,"  numPids = " << map->computeData[i].numPids << '\n');
-        DebugM(1,"  numPidsAllocated = " << map->computeData[i].numPidsAllocated << '\n');
+//         DebugM(1,"  numPidsAllocated = " << map->computeData[i].numPidsAllocated << '\n');
         for (int j=0; j < map->computeData[i].numPids; j++)
         {
-            //      DebugM(1,"  pid " << map->computeData[i].pids[j] << '\n');
+            DebugM(1,"  pid " << map->computeData[i].pids[j].pid << '\n');
             if (!((j+1) % 6))
                 DebugM(1,'\n');
         }

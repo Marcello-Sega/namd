@@ -30,6 +30,7 @@ public:
   CkGroupID computeMoaMgr;
 #endif // OPENATOM_VERSION
   CkGroupID computeExtMgr;
+  CkGroupID computeQMMgr;
   CkGroupID computeGBISserMgr;
   CkGroupID computeFmmSerialMgr;
   CkGroupID computeMsmSerialMgr;

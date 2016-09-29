@@ -41,6 +41,8 @@ class ExchangeAtomsMsg;
 
 class ProxyNodeAwareSpanningTreeMsg;
 
+class ComputeQMMgr;
+
 class HomePatch : public Patch {
   friend class PatchMgr;
   friend class Sequencer;
@@ -194,6 +196,8 @@ public:
   // methods for QM (ExtForces replacement)
   void replaceForces(ExtForce *f);
 
+  void qmSwapAtoms();
+  
   // load-balancing trigger
   void submitLoadStats(int timestep);
 

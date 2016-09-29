@@ -520,6 +520,27 @@ int NamdState::loadStructure(const char *molFilename, const char *pdbFilename, i
         }
         #endif // OPENATOM_VERSION
 
+        if (simParameters->qmForcesOn){
+            
+#ifdef MEM_OPT_VERSION
+            NAMD_die("QM forces are not supported in memory-optimized builds.");
+#endif
+            
+            molecule->set_qm_replaceAll(simParameters->qmReplaceAll);
+            
+            if (simParameters->qmParamPDBDefined)
+                molecule->prepare_qm(simParameters->qmParamPDB,
+                                          parameters, configList);
+            else if (pdbFilename)
+                molecule->prepare_qm(pdbFilename,
+                                          parameters, configList);
+            else
+                molecule->prepare_qm(configList->find("coordinates")->data,
+                                          parameters, configList);
+            
+        }
+        
+        
         if (simParameters->LJcorrection) {
           molecule->compute_LJcorrection();
         }

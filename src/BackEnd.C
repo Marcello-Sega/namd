@@ -176,6 +176,7 @@ void master_init(int argc, char **argv){
   group.computeMoaMgr = CProxy_ComputeMoaMgr::ckNew();
 #endif // OPENATOM_VERSION
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
+  group.computeQMMgr = CProxy_ComputeQMMgr::ckNew();
   group.computeGBISserMgr = CProxy_ComputeGBISserMgr::ckNew();
   group.computeFmmSerialMgr = CProxy_ComputeFmmSerialMgr::ckNew();
   group.computeMsmSerialMgr = CProxy_ComputeMsmSerialMgr::ckNew();

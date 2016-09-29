@@ -366,6 +366,7 @@ if (patch->flags.doGBIS) {
   if (pressureProfileOn)
     submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
+  
 #ifdef TRACE_COMPUTE_OBJECTS
     traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+cid, traceObjStartTime, CmiWallTimer());
 #endif

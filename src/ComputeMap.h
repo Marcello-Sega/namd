@@ -57,6 +57,7 @@ enum ComputeType
   computeFullDirectType,
   computeGlobalType,
   computeExtType,
+  computeQMType,
   computeGBISserType,
   computeLCPOType,
   computeFmmType,

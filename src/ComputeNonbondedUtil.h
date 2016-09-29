@@ -277,6 +277,7 @@ public:
 
   static Bool commOnly;
   static Bool fixedAtomsOn;
+  static Bool qmForcesOn ;
   static BigReal cutoff;
   static BigReal cutoff2;
   static float cutoff2_f;

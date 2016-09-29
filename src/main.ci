@@ -27,6 +27,7 @@ mainmodule main {
   #endif // OPENATOM_VERSION
   extern module OptPmeMgr;
   extern module ComputeExtMgr;
+  extern module ComputeQMMgr;
   extern module ComputeGBISserMgr;
   extern module ComputeFmmSerialMgr;
   extern module ComputeMsmSerialMgr;

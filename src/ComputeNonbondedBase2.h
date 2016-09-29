@@ -176,6 +176,7 @@ MODIFIED(
 
       BigReal kqq = kq_i * p_j->charge;
 
+      
 #ifdef  A2_QPX
       float * cg = (float *)&p_j->charge;
 #if ( FULL( 1+ ) 0 )

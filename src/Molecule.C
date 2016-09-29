@@ -66,21 +66,6 @@
 
 using namespace std;
 
-class ResidueLookupElem
-{
-public:
-  char mySegid[11];
-  ResidueLookupElem *next;	// stored as a linked list
-  int firstResid;		// valid resid is >= firstResid
-  int lastResid;		// valid resid is <= lastResid
-  ResizeArray<int> atomIndex;	// 0-based index for first atom in residue
-
-  ResidueLookupElem(void) { next = 0; firstResid = -1; lastResid = -1; }
-  ~ResidueLookupElem(void) { delete next; }
-  int lookup(const char *segid, int resid, int *begin, int *end) const;
-  ResidueLookupElem* append(const char *segid, int resid, int aid);
-};
-
 #ifndef MOLECULE2_C  // first object file
 
 #ifdef MEM_OPT_VERSION
@@ -662,6 +647,116 @@ Molecule::~Molecule()
        delete [] fepAtomFlags;
 //fepe
 
+  if (qmAtomGroup != NULL)
+       delete [] qmAtomGroup;
+  
+  if (qmAtmIndx != NULL)
+       delete [] qmAtmIndx;
+  
+  if (qmAtmChrg != NULL)
+       delete [] qmAtmChrg;
+  
+  
+  if (qmGrpNumBonds != NULL)
+       delete [] qmGrpNumBonds;
+  
+  if (qmGrpSizes != NULL)
+       delete [] qmGrpSizes;
+  
+  if (qmDummyBondVal != NULL)
+       delete [] qmDummyBondVal;
+  
+  if (qmMMNumTargs != NULL)
+       delete [] qmMMNumTargs;
+  
+  if (qmGrpID != NULL)
+       delete [] qmGrpID;
+  
+  if (qmGrpChrg != NULL)
+       delete [] qmGrpChrg;
+  
+  if (qmGrpMult != NULL)
+       delete [] qmGrpMult;
+  
+  if (qmMeMMindx != NULL)
+       delete [] qmMeMMindx;
+  
+  if (qmMeQMGrp != NULL)
+       delete [] qmMeQMGrp;
+  
+  if (qmLSSSize != NULL)
+       delete [] qmLSSSize;
+  
+  if (qmLSSIdxs != NULL)
+       delete [] qmLSSIdxs;
+  
+  if (qmLSSMass != NULL)
+       delete [] qmLSSMass;
+  
+  if (qmLSSRefSize != NULL)
+       delete [] qmLSSRefSize;
+  
+  if (qmLSSRefIDs != NULL)
+       delete [] qmLSSRefIDs;
+  
+  if (qmLSSRefMass != NULL)
+       delete [] qmLSSRefMass;
+  
+  if (qmMMBond != NULL) {
+      for(int grpIndx = 0 ; grpIndx < qmNumBonds; grpIndx++) {
+          if (qmMMBond[grpIndx] != NULL)
+              delete [] qmMMBond[grpIndx];
+      }
+      delete [] qmMMBond;
+  }
+  
+  if (qmGrpBonds != NULL) {
+      for(int grpIndx = 0 ; grpIndx < qmNumGrps; grpIndx++) {
+          if (qmGrpBonds[grpIndx] != NULL)
+              delete [] qmGrpBonds[grpIndx];
+      }
+      delete [] qmGrpBonds;
+  }
+  
+  if (qmMMBondedIndx != NULL) {
+      for(int grpIndx = 0 ; grpIndx < qmNumGrps; grpIndx++) {
+          if (qmMMBondedIndx[grpIndx] != NULL)
+              delete [] qmMMBondedIndx[grpIndx];
+      }
+      delete [] qmMMBondedIndx;
+  }
+  
+  if (qmMMChargeTarget != NULL) {
+      for(int grpIndx = 0 ; grpIndx < qmNumBonds; grpIndx++) {
+          if (qmMMChargeTarget[grpIndx] != NULL)
+              delete [] qmMMChargeTarget[grpIndx];
+      }
+      delete [] qmMMChargeTarget;
+  }
+  
+    if (qmElementArray != NULL){
+        for(int atmInd = 0 ; atmInd < numAtoms; atmInd++) {
+            if (qmElementArray[atmInd] != NULL)
+                delete [] qmElementArray[atmInd];
+        }
+        delete [] qmElementArray;
+    }
+    
+    if (qmDummyElement != NULL){
+        for(int atmInd = 0 ; atmInd < numAtoms; atmInd++) {
+            if (qmDummyElement[atmInd] != NULL)
+                delete [] qmDummyElement[atmInd];
+        }
+        delete [] qmDummyElement;
+    }
+
+    if (qmCustPCSizes != NULL){
+        delete [] qmCustPCSizes;
+    }
+    
+    if (qmCustomPCIdxs != NULL){
+        delete [] qmCustomPCIdxs;
+    }
 
   #ifndef MEM_OPT_VERSION
   delete arena;
@@ -2933,6 +3028,43 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
          bondsWithAtom[a2][byAtomSize[a2]++] = i;
        }
 
+        
+       // Updates all bond, angle, dihedral, improper and crossterm
+       // to reflect the QM region (which can't have any of there terms)
+       if (simParams->qmForcesOn) {
+           
+           DebugM(3,"Calculating exclusions for QM simulation.\n");
+           build_exclusions();
+           
+           delete_qm_bonded() ;
+           
+           DebugM(3,"Re-Building bond lists.\n");
+           
+           // We re-calculate the bondsWithAtom list for cluster 
+           // info calculation below.
+           for (i=0; i<numAtoms; i++)
+           {
+             byAtomSize[i] = 0;
+           }
+           for (i=0; i<numRealBonds; i++)
+           {
+             byAtomSize[bonds[i].atom1]++;
+             byAtomSize[bonds[i].atom2]++;
+           }
+           for (i=0; i<numAtoms; i++)
+           {
+             bondsWithAtom[i][byAtomSize[i]] = -1;
+             byAtomSize[i] = 0;
+           }
+           for (i=0; i<numRealBonds; i++)
+           {
+             int a1 = bonds[i].atom1;
+             int a2 = bonds[i].atom2;
+             bondsWithAtom[a1][byAtomSize[a1]++] = i;
+             bondsWithAtom[a2][byAtomSize[a2]++] = i;
+           }
+       }
+        
        //  Build cluster information (contiguous clusters)
        for (i=0; i<numAtoms; i++) {
          cluster[i] = i;
@@ -3237,6 +3369,7 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
        DebugM(3,"Building exclusion data.\n");
     
        //  Build the arrays of exclusions for each atom
+       if (! simParams->qmForcesOn)
        build_exclusions();
 
        //  Remove temporary structures
@@ -5237,6 +5370,24 @@ void Molecule::send_Molecule(MOStream *msg){
   msg->put(numFixedRigidBonds);
   }
   
+  if (simParams->qmForcesOn)
+  {
+    msg->put(numAtoms, qmAtomGroup);
+    msg->put(qmNumQMAtoms);
+    msg->put(qmNumQMAtoms, qmAtmChrg);
+    msg->put(qmNumQMAtoms, qmAtmIndx);
+    msg->put(qmNoPC);
+    msg->put(qmMeNumBonds);
+    msg->put(qmMeNumBonds, qmMeMMindx);
+    msg->put(qmMeNumBonds, qmMeQMGrp);
+    msg->put(qmPCFreq);
+    msg->put(qmNumGrps);
+    msg->put(qmNumGrps, qmGrpID);
+    msg->put(qmNumGrps, qmCustPCSizes);
+    msg->put(qmTotCustPCs);
+    msg->put(qmTotCustPCs, qmCustomPCIdxs);
+  }
+  
   //fepb
   // send fep atom info
   if (simParams->alchOn || simParams->lesOn || simParams->pairInteractionOn) {
@@ -5638,6 +5789,66 @@ void Molecule::receive_Molecule(MIStream *msg){
         msg->get(numFixedRigidBonds);
       }
 
+      if (simParams->qmForcesOn)
+      {
+        if( qmAtomGroup != 0)
+            delete [] qmAtomGroup;
+        qmAtomGroup = new Real[numAtoms];
+        
+        msg->get(numAtoms, qmAtomGroup);
+        
+        msg->get(qmNumQMAtoms);
+        
+        if( qmAtmChrg != 0)
+            delete [] qmAtmChrg;
+        qmAtmChrg = new Real[qmNumQMAtoms];
+        
+        msg->get(qmNumQMAtoms, qmAtmChrg);
+        
+        if( qmAtmIndx != 0)
+            delete [] qmAtmIndx;
+        qmAtmIndx = new int[qmNumQMAtoms];
+        
+        msg->get(qmNumQMAtoms, qmAtmIndx);
+        
+        msg->get(qmNoPC);
+        
+        msg->get(qmMeNumBonds);
+        
+        if( qmMeMMindx != 0)
+            delete [] qmMeMMindx;
+        qmMeMMindx = new int[qmMeNumBonds];
+        
+        msg->get(qmMeNumBonds, qmMeMMindx);
+        
+        if( qmMeQMGrp != 0)
+            delete [] qmMeQMGrp;
+        qmMeQMGrp = new Real[qmMeNumBonds];
+        
+        msg->get(qmMeNumBonds, qmMeQMGrp);
+        
+        msg->get(qmPCFreq);
+        
+        msg->get(qmNumGrps);
+        
+        if( qmGrpID != 0)
+            delete [] qmGrpID;
+        qmGrpID = new Real[qmNumGrps];
+        msg->get(qmNumGrps, qmGrpID);
+        
+        if( qmCustPCSizes != 0)
+            delete [] qmCustPCSizes;
+        qmCustPCSizes = new int[qmNumGrps];
+        msg->get(qmNumGrps, qmCustPCSizes);
+        
+        msg->get(qmTotCustPCs);
+        
+        if( qmCustomPCIdxs != 0)
+            delete [] qmCustomPCIdxs;
+        qmCustomPCIdxs = new int[qmTotCustPCs];
+        msg->get(qmTotCustPCs, qmCustomPCIdxs);
+      }
+    
 //fepb
       //receive fep atom info
       if (simParams->alchOn || simParams->lesOn || simParams->pairInteractionOn) {
@@ -5782,6 +5993,7 @@ void Molecule::receive_Molecule(MIStream *msg){
       build_atom_status();
       build_lists_by_atom();      
 
+      
 #endif
 }
  /*      END OF FUNCTION receive_Molecule    */
