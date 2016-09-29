@@ -78,14 +78,14 @@ std::vector<std::string> split(const std::string &text, std::string delimiter) {
         
         std::string temp = text.substr(start, end - start);
         
-        if (not temp.empty()) tokens.push_back(temp);
+        if (! temp.empty()) tokens.push_back(temp);
         
         start = end + delimiter.length();
     }
     
     // Gets last item
     std::string temp = text.substr(start);
-    if (not temp.empty()) tokens.push_back(temp);
+    if (! temp.empty()) tokens.push_back(temp);
     
     return tokens;
 }
@@ -408,7 +408,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
                         // If we are using COM selection, checks if the atom
                         // is part of the user selected residues
                         for(int i=0; i<lssRefUsrSel[atmGrp].size(); i++) {
-                            if (lssRefUsrSel[atmGrp][i].resid == resID and
+                            if (lssRefUsrSel[atmGrp][i].resid == resID &&
                                 strncmp(lssRefUsrSel[atmGrp][i].segid.c_str(),
                                         segName,5) == 0 ) {
                                 
@@ -449,7 +449,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
                         strncpy(lssCurrClassResSegID, segName,5);
                         lssClassicResIndx = 0;
                     }
-                    else if (lssCurrClassResID != resID or
+                    else if (lssCurrClassResID != resID ||
                             strcmp(lssCurrClassResSegID, segName) != 0 ) {
                         lssCurrClassResID = resID ;
                         strncpy(lssCurrClassResSegID, segName,5);
@@ -518,11 +518,11 @@ void Molecule::prepare_qm(const char *pdbFileName,
             bond curr = bonds[bndIt] ;
             
             // In case either atom has a non-zero
-            if ( qmBondValVec[curr.atom1] != 0 and
+            if ( qmBondValVec[curr.atom1] != 0 &&
                  qmBondValVec[curr.atom2] != 0 ) {
                 
                 // Sanity checks (1 of 2)
-                if (qmAtomGroup[curr.atom1] != 0 and
+                if (qmAtomGroup[curr.atom1] != 0 &&
                     qmAtomGroup[curr.atom2] != 0) {
                     iout << iERROR << "Atoms " << curr.atom1 << " and " << 
                     curr.atom2 << " are assigned as QM atoms.\n" << endi;
@@ -530,7 +530,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
                 }
                 
                 // Sanity checks (2 of 2)
-                if (qmAtomGroup[curr.atom1] == 0 and
+                if (qmAtomGroup[curr.atom1] == 0 &&
                     qmAtomGroup[curr.atom2] == 0) {
                     iout << iERROR << "Atoms " << curr.atom1 << " and " << 
                     curr.atom2 << " are assigned as MM atoms.\n" << endi;
@@ -690,7 +690,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
         << " ; Group size: " << qmGrpSizeVec[grpIndx] << " atoms"
         << " ; Total charge: " << grpChrgVec[grpIndx] << "\n" << endi ;
         
-        if (nonInteger and simParams->PMEOn)
+        if (nonInteger && simParams->PMEOn)
             NAMD_die("QM atoms do not add up to a whole charge, which is needed for PME.") ;
     }
     
@@ -747,7 +747,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
     
     // If mechanichal embedding was requested bu we have QM-MM bonds, we need 
     // to send extra info to ComputeQM to preserve calculation speed.
-    if (qmNumBonds > 0 and qmNoPC) {
+    if (qmNumBonds > 0 && qmNoPC) {
         qmMeNumBonds = qmNumBonds;
         qmMeMMindx = new int[qmMeNumBonds] ;
         qmMeQMGrp = new Real[qmMeNumBonds] ;
@@ -875,7 +875,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
         
         // We need the two atoms that compose the QM-MM bonds and 
         // then the element.
-        if (strVec.size() != 3 and  qmNumBonds > 1) {
+        if (strVec.size() != 3 && qmNumBonds > 1) {
             iout << iERROR << "Format error in QM link atom element selection: " 
             << current->data
             << "\n" << endi;
@@ -883,7 +883,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
         }
         
         // If there is only one QM-MM bond, we can accept the element only.
-        if (strVec.size() != 1 and  strVec.size() != 3 and qmNumBonds == 1) {
+        if (strVec.size() != 1 && strVec.size() != 3 && qmNumBonds == 1) {
             iout << iERROR << "Format error in QM link atom element selection: " 
             << current->data
             << "\n" << endi;
@@ -940,9 +940,9 @@ void Molecule::prepare_qm(const char *pdbFileName,
             
             for (bondIter=0; bondIter<qmNumBonds; bondIter++) {
                 
-                if ( (qmMMBond[bondIter][0] == bondAtom1 and
-                    qmMMBond[bondIter][1] == bondAtom2 ) or 
-                    (qmMMBond[bondIter][0] == bondAtom2 and
+                if ( (qmMMBond[bondIter][0] == bondAtom1 &&
+                    qmMMBond[bondIter][1] == bondAtom2 ) ||
+                    (qmMMBond[bondIter][0] == bondAtom2 &&
                     qmMMBond[bondIter][1] == bondAtom1 ) ) {
                     
                     foundBond = true;
@@ -950,7 +950,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
                 }
             }
             
-            if (not foundBond) {
+            if (! foundBond) {
                 iout << iERROR << "Error parsing link atom element selection: " 
                 << current->data
                 << "\n" << endi;
@@ -1079,7 +1079,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
                         // In case the bonded atom is a QM atom,
                         // skips the index.
                         // We also keep the search from going back to MM1.
-                        if (qmAtomGroup[MM3] > 0 or MM3 == MM1)
+                        if (qmAtomGroup[MM3] > 0 || MM3 == MM1)
                             continue;
                         
                         chrgTrgt.push_back(MM3);
@@ -1333,7 +1333,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
             BigReal beta = customPCPDB->atom(atmInd)->temperaturefactor() ;
             BigReal occ = customPCPDB->atom(atmInd)->occupancy() ;
             
-            if ( beta != 0 and occ != 0)
+            if ( beta != 0 && occ != 0)
                 NAMD_die("An atom cannot be marked as QM and poitn charge simultaneously!");
             
             // If this is not a QM atom and 
@@ -1372,7 +1372,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
     
     delete pdbP;
     
-    if (numParsedPBDs != qmNumGrps and simParams->qmCustomPCSel) {
+    if (numParsedPBDs != qmNumGrps && simParams->qmCustomPCSel) {
         iout << iWARN << "The number of files provided for custom point "
         "charges is not equal to the number of QM groups!\n" << endi;
     }
@@ -1449,13 +1449,13 @@ void Molecule::delete_qm_bonded(void)  {
     for (int i = 0; i < numBonds; i++) {
         int part1 = qmAtomGroup[bonds[i].atom1];
         int part2 = qmAtomGroup[bonds[i].atom2];
-        if (part1 > 0 and part2 > 0 ) {
+        if (part1 > 0 && part2 > 0 ) {
             qmDroppedBonds++;
         } else {
             // Just a simple sanity check.
             // If there are no QM bonds defined by the user but we find a
             // bond between a QM and an MM atom, error out.
-            if ((part1 > 0 or part2 > 0) and qmNumBonds == 0) {
+            if ((part1 > 0 || part2 > 0) && qmNumBonds == 0) {
                 iout << iERROR << " Atoms " << bonds[i].atom1
                 << " and " << bonds[i].atom2 << " form a QM-MM bond!\n" << endi ;
                 NAMD_die("No QM-MM bonds were defined by the user, but one was found.");
@@ -1481,7 +1481,7 @@ void Molecule::delete_qm_bonded(void)  {
     int part1 = qmAtomGroup[angles[i].atom1];
     int part2 = qmAtomGroup[angles[i].atom2];
     int part3 = qmAtomGroup[angles[i].atom3];
-    if (part1 > 0 and part2 > 0 and part3 > 0) {
+    if (part1 > 0 && part2 > 0 && part3 > 0) {
       //CkPrintf("-----ANGLE ATOMS %i %i %i partitions %i %i %i\n",angles[i].atom1, angles[i].atom2, angles[i].atom3, part1, part2, part3);
       qmDroppedAngles++;
     }
@@ -1508,7 +1508,7 @@ void Molecule::delete_qm_bonded(void)  {
     int part2 = qmAtomGroup[dihedrals[i].atom2];
     int part3 = qmAtomGroup[dihedrals[i].atom3];
     int part4 = qmAtomGroup[dihedrals[i].atom4];
-    if (part1 > 0 and part2 > 0 and part3 > 0 and part4 > 0) {
+    if (part1 > 0 && part2 > 0 && part3 > 0 && part4 > 0) {
       //CkPrintf("-----i %i DIHEDRAL ATOMS %i %i %i %i partitions %i %i %i %i\n",i,dihedrals[i].atom1, dihedrals[i].atom2, dihedrals[i].atom3, dihedrals[i].atom4, part1, part2, part3,part4);
       qmDroppedDihedrals++;
     }
@@ -1534,7 +1534,7 @@ void Molecule::delete_qm_bonded(void)  {
     int part2 = qmAtomGroup[impropers[i].atom2];
     int part3 = qmAtomGroup[impropers[i].atom3];
     int part4 = qmAtomGroup[impropers[i].atom4];
-    if (part1 > 0 and part2 > 0 and part3 > 0 and part4 > 0) {
+    if (part1 > 0 && part2 > 0 && part3 > 0 && part4 > 0) {
       //CkPrintf("-----i %i IMPROPER ATOMS %i %i %i %i partitions %i %i %i %i\n",i,impropers[i].atom1, impropers[i].atom2, impropers[i].atom3, impropers[i].atom4, part1, part2, part3,part4);
       qmDroppedImpropers++;
     }
@@ -1564,8 +1564,8 @@ void Molecule::delete_qm_bonded(void)  {
     int part6 = qmAtomGroup[crossterms[i].atom6];
     int part7 = qmAtomGroup[crossterms[i].atom7];
     int part8 = qmAtomGroup[crossterms[i].atom8];
-    if (part1 > 0 and part2 > 0 and part3 > 0 and part4 > 0 and
-        part5 > 0 and part6 > 0 and part7 > 0 and part8 > 0) {
+    if (part1 > 0 && part2 > 0 && part3 > 0 && part4 > 0 &&
+        part5 > 0 && part6 > 0 && part7 > 0 && part8 > 0) {
       //CkPrintf("-----i %i IMPROPER ATOMS %i %i %i %i partitions %i %i %i %i\n",i,impropers[i].atom1, impropers[i].atom2, impropers[i].atom3, impropers[i].atom4, part1, part2, part3,part4);
       qmDroppedCrossterms++;
     }

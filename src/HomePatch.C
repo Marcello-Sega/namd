@@ -1029,7 +1029,7 @@ void HomePatch::positionsReady(int doMigration)
     }
   }
   
-  if (doMigration and simParams->qmLSSOn)
+  if (doMigration && simParams->qmLSSOn)
       qmSwapAtoms();
 
 #if defined(NAMD_CUDA) || defined(NAMD_MIC)

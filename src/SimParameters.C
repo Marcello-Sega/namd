@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2016/09/29 20:31:47 $
- * $Revision: 1.1469 $
+ * $Date: 2016/09/29 21:30:48 $
+ * $Revision: 1.1470 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -4014,8 +4014,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
             qmBondOn = false;
         }
         
-        if ( strcasecmp(qmSoftware,"orca") != 0 and
-             strcasecmp(qmSoftware,"mopac") != 0 and
+        if ( strcasecmp(qmSoftware,"orca") != 0 &&
+             strcasecmp(qmSoftware,"mopac") != 0 &&
              strcasecmp(qmSoftware,"custom") != 0 ) {
             NAMD_die("Available QM software options are \'mopac\', \'orca\', or \'custom\'.");
         }
@@ -4030,8 +4030,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
         
         qmChrgMode = QMCHRGMULLIKEN;
         if (opts.defined("QMChargeMode")) {
-            if ( strcasecmp(qmChrgModeS,"none") != 0 and
-                 strcasecmp(qmChrgModeS,"mulliken") != 0 and
+            if ( strcasecmp(qmChrgModeS,"none") != 0 &&
+                 strcasecmp(qmChrgModeS,"mulliken") != 0 &&
                  strcasecmp(qmChrgModeS,"chelpg") != 0) {
                 NAMD_die("Available charge options are \'none\', \'mulliken\' or \'chelpg\'.");
             }
@@ -4045,14 +4045,14 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
             }
         }
         
-        if (qmFormat == QMFormatMOPAC and qmChrgMode == QMCHRGCHELPG)
+        if (qmFormat == QMFormatMOPAC && qmChrgMode == QMCHRGCHELPG)
             NAMD_die("Available charge options for MOPAC are \'none\' and \'mulliken\'.");
         
-        if (qmFormat == QMFormatUSR and qmChrgMode == QMCHRGCHELPG)
+        if (qmFormat == QMFormatUSR && qmChrgMode == QMCHRGCHELPG)
             NAMD_die("Available charge options for MOPAC are \'none\' and \'mulliken\'.");
         
-        if (qmBondOn and (opts.defined("QMBondValueType"))) {
-            if ( strcasecmp(qmBondValueTypeS,"len") != 0 and
+        if (qmBondOn && (opts.defined("QMBondValueType"))) {
+            if ( strcasecmp(qmBondValueTypeS,"len") != 0 &&
                 strcasecmp(qmBondValueTypeS,"ratio") != 0 ) {
                 NAMD_die("Available QM bond value type options are \'len\' or \'ratio\'.");
             }
@@ -4065,16 +4065,16 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
                     qmBondValType = 2;
             }
         }
-        else if (qmBondOn and not (opts.defined("QMBondValueType")))
+        else if (qmBondOn && ! (opts.defined("QMBondValueType")))
             qmBondValType = 1;
         
-        if ( strcmp(qmColumn,"beta") != 0 and
+        if ( strcmp(qmColumn,"beta") != 0 &&
              strcmp(qmColumn,"occ") != 0 ) {
             NAMD_die("Available column options are \'beta\' and \'occ\'.");
         }
         
         if (qmBondOn) {
-            if ( strcmp(qmBondColumn,"beta") != 0 and
+            if ( strcmp(qmBondColumn,"beta") != 0 &&
                  strcmp(qmBondColumn,"occ") != 0 ) {
                 NAMD_die("Available column options are \'beta\' and \'occ\'.");
             }
@@ -4101,7 +4101,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 //         #define QMPCSCHEMEROUND 2
 //         #define QMPCSCHEMEZERO 3
         qmPCScheme = 1;
-        if (opts.defined("QMPointChargeScheme") and qmPCSwitchOn) {
+        if (opts.defined("QMPointChargeScheme") && qmPCSwitchOn) {
             if ( strcasecmp(qmPCSchemeS,"none") == 0 )
                 qmPCScheme = 1;
             
@@ -4110,7 +4110,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
             if ( strcasecmp(qmPCSchemeS,"zero") == 0 )
                 qmPCScheme = 3;
             
-            if ( qmPCScheme > 1 and not qmPCSwitchOn)
+            if ( qmPCScheme > 1 && ! qmPCSwitchOn)
                 NAMD_die("QM Charge Schemes \'round\' or \'zero\' can only be applied with QMswitching set to \'on\'!");
         }
         
@@ -4131,7 +4131,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
                 NAMD_die("Frequency of QM solvent update must be a multiple of steps per cycle.");
             
             if (opts.defined("QMLSSMode") ) {
-                if ( strcasecmp(qmLSSModeS,"dist") != 0 and
+                if ( strcasecmp(qmLSSModeS,"dist") != 0 &&
                      strcasecmp(qmLSSModeS,"COM") != 0 ) {
                     NAMD_die("Available LSS mode options are \'dist\' and \'COM\'.");
                 }
@@ -4149,7 +4149,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
         if (qmPCSwitchOn) {
             
             if (opts.defined("QMSwitchingType") ) {
-                if ( strcasecmp(qmPCSwitchTypeS,"shift") != 0 and
+                if ( strcasecmp(qmPCSwitchTypeS,"shift") != 0 &&
                      strcasecmp(qmPCSwitchTypeS,"switch") != 0 ) {
                     NAMD_die("Available scaling options are \'shift\' and \'switch\'.");
                 }
@@ -4162,27 +4162,27 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
                 qmPCSwitchType = 1;
         }
         
-        if (qmNoPC and qmPCSelFreq > 1) {
+        if (qmNoPC && qmPCSelFreq > 1) {
             iout << iWARN << "QMPCStride being IGNORED since QMNoPntChrg is set to \'on\'!\n" << endi;
             qmPCSelFreq = 1;
         }
         
-        if (qmNoPC and qmPCSwitchOn)
+        if (qmNoPC && qmPCSwitchOn)
             NAMD_die("QM PC switching can only be applied with QMNoPntChrg set to \'off\'!");
         
-//         if (qmNoPC and qmBondOn)
+//         if (qmNoPC && qmBondOn)
 //             NAMD_die("QM-MM bonds can only be applied with QMNoPntChrg set to \'off\'!");
         
         if (qmPCSelFreq <= 0)
             NAMD_die("QMPCFreq can only be a positive number! For static point charge selection, see QMCutomPC.");
         
-        if (qmCustomPCSel and qmNoPC)
+        if (qmCustomPCSel && qmNoPC)
             NAMD_die("QM Custom PC Selection is incompatible with QMNoPntChrg!");
         
-        if (qmCustomPCSel and qmPCSwitchOn)
+        if (qmCustomPCSel && qmPCSwitchOn)
             NAMD_die("QM Custom PC Selection is incompatible with QMSwitching!");
         
-        if (qmCustomPCSel and qmPCSelFreq > 1)
+        if (qmCustomPCSel && qmPCSelFreq > 1)
             NAMD_die("QM Custom PC Selection is incompatible with QMPCStride!");
     }
 }
@@ -5021,7 +5021,7 @@ if ( openatomOn )
         if (qmCustomPCSel)
             iout << iINFO << "QM CUSTOM POINT CHARGE SELECTION IS ACTIVATED\n";
         
-        if (not qmNoPC and not qmCustomPCSel)
+        if (! qmNoPC && ! qmCustomPCSel)
             iout << iINFO << "QM POINT CHARGES WILL BE SELECTED EVERY " 
             << qmPCSelFreq << " STEPS.\n";
         
