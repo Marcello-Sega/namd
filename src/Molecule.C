@@ -368,6 +368,33 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   occupancy = NULL;
   bfactor = NULL;
 
+  qmElementArray=0;
+  qmDummyElement=0;
+  qmGrpSizes=0;
+  qmAtomGroup=0;
+  qmAtmChrg=0;
+  qmAtmIndx=0;
+  qmGrpID=0;
+  qmGrpChrg=0;
+  qmGrpMult=0;
+  qmGrpNumBonds=0;
+  qmMMBond=0;
+  qmGrpBonds=0;
+  qmMMBondedIndx=0;
+  qmMMChargeTarget=0;
+  qmMMNumTargs=0;
+  qmDummyBondVal=0;
+  qmMeMMindx=0;
+  qmMeQMGrp=0;
+  qmCustomPCIdxs=0;
+  qmCustPCSizes=0;
+  qmLSSSize=0;
+  qmLSSIdxs=0;
+  qmLSSMass=0;
+  qmLSSRefIDs=0;
+  qmLSSRefMass=0;
+  qmLSSRefSize=0;
+
   goInit();
 }
 
