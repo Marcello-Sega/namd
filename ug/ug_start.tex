@@ -207,6 +207,10 @@ Additional features include:
     An optional file basename argument (matching that passed to the \icommand{output} command)
     causes .coor, .vel, and .xsc files to be read,
     assuming the format indicated by the \iparam{binaryoutput} parameter.
+ \item The ``\icommand{move}'' command repositions individual atoms, including fixed atoms.
+    Arguments are a 1-based atom ID, ``to'' or ``by'', and a list of three numbers,
+    e.g., ``move 1 by \{0.4 0.2 -0.1\}''.
+    Atoms may not be moved by more than a single patch between ``run'' commands.
  \item The ``\icommand{exit}'' command writes output files and exits cleanly.
  \item The ``\icommand{abort}'' command concatenates its arguments into
     an error message and exits immediately without writing output files.
