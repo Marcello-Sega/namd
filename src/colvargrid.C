@@ -1,4 +1,4 @@
-/// -*- c++ -*-
+// -*- c++ -*-
 
 #include "colvarmodule.h"
 #include "colvarvalue.h"
@@ -35,13 +35,13 @@ colvar_grid_scalar::colvar_grid_scalar(colvar_grid_scalar const &g)
 }
 
 colvar_grid_scalar::colvar_grid_scalar(std::vector<int> const &nx_i)
-  : colvar_grid<cvm::real>(nx_i, 0.0, 1), samples(NULL)
+  : colvar_grid<cvm::real>(nx_i, 0.0, 1), samples(NULL), grad(NULL)
 {
   grad = new cvm::real[nd];
 }
 
 colvar_grid_scalar::colvar_grid_scalar(std::vector<colvar *> &colvars, bool margin)
-  : colvar_grid<cvm::real>(colvars, 0.0, 1, margin), samples(NULL)
+  : colvar_grid<cvm::real>(colvars, 0.0, 1, margin), samples(NULL), grad(NULL)
 {
   grad = new cvm::real[nd];
 }
@@ -127,7 +127,6 @@ void colvar_grid_gradient::write_1D_integral(std::ostream &os)
 
   integral = 0.0;
   int_vals.push_back( 0.0 );
-  bin = 0.0;
   min = 0.0;
 
   // correction for periodic colvars, so that the PMF is periodic
@@ -138,7 +137,7 @@ void colvar_grid_gradient::write_1D_integral(std::ostream &os)
     corr = 0.0;
   }
 
-  for (std::vector<int> ix = new_index(); index_ok(ix); incr(ix), bin += 1.0 ) {
+  for (std::vector<int> ix = new_index(); index_ok(ix); incr(ix)) {
 
     if (samples) {
       size_t const samples_here = samples->value(ix);

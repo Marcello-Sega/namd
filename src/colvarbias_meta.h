@@ -1,4 +1,4 @@
-/// -*- c++ -*-
+// -*- c++ -*-
 
 #ifndef COLVARBIAS_META_H
 #define COLVARBIAS_META_H
@@ -27,23 +27,13 @@ public:
   /// Communication between different replicas
   Communication comm;
 
-  /// Constructor
-  colvarbias_meta(std::string const &conf, char const *key);
-
-  /// Default constructor
-  colvarbias_meta();
-
-  /// Destructor
+  colvarbias_meta(char const *key);
+  virtual int init(std::string const &conf);
   virtual ~colvarbias_meta();
-
-  virtual cvm::real update();
-
+  virtual int update();
   virtual std::istream & read_restart(std::istream &is);
-
   virtual std::ostream & write_restart(std::ostream &os);
-
   virtual int setup_output();
-
   virtual void write_pmf();
 
   class hill;
@@ -278,7 +268,7 @@ public:
       W(W_in),
       centers(cv.size()),
       widths(cv.size()),
-      it(cvm::it),
+      it(cvm::step_absolute()),
       replica(replica_in)
   {
     for (size_t i = 0; i < cv.size(); i++) {

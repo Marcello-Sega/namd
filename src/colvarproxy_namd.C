@@ -23,11 +23,12 @@
 #include "colvarproxy_namd.h"
 #include "colvarscript.h"
 
+
 colvarproxy_namd::colvarproxy_namd()
 {
   first_timestep = true;
-  system_force_requested = false;
-  requestTotalForce(system_force_requested);
+  total_force_requested = false;
+  requestTotalForce(total_force_requested);
 
   // initialize pointers to NAMD configuration data
   simparams = Node::Object()->simParameters;
@@ -94,74 +95,37 @@ colvarproxy_namd::colvarproxy_namd()
 
   // initiate module: this object will be the communication proxy
   colvars = new colvarmodule(this);
-  cvm::log("Using NAMD interface, version "+
-           cvm::to_str(COLVARPROXY_VERSION)+".\n");
+  log("Using NAMD interface, version "+
+      cvm::to_str(COLVARPROXY_VERSION)+".\n");
 
   if (config) {
     colvars->read_config_file(config->data);
   }
+
+  setup();
+  colvars->setup();
   colvars->setup_input();
   colvars->setup_output();
 
   // save to Node for Tcl script access
   Node::Object()->colvars = colvars;
 
-
 #ifdef NAMD_TCL
   // Construct instance of colvars scripting interface
   script = new colvarscript(this);
 #endif
 
-
   if (simparams->firstTimestep != 0) {
-    cvm::log("Initializing step number as firstTimestep.\n");
+    log("Initializing step number as firstTimestep.\n");
     colvars->it = colvars->it_restart = simparams->firstTimestep;
   }
 
-  if (cvm::debug()) {
-    cvm::log("colvars_atoms = "+cvm::to_str(colvars_atoms)+"\n");
-    cvm::log("colvars_atoms_ncopies = "+cvm::to_str(colvars_atoms_ncopies)+"\n");
-    cvm::log("positions = "+cvm::to_str(positions)+"\n");
-    cvm::log("total_forces = "+cvm::to_str(total_forces)+"\n");
-    cvm::log("applied_forces = "+cvm::to_str(applied_forces)+"\n");
-    cvm::log(cvm::line_marker);
-  }
-
-  // Initialize reduction object to submit restraint energy as MISC
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
   if (cvm::debug())
     iout << "Info: done initializing the colvars proxy object.\n" << endi;
 }
 
-/*
-  void colvarproxy_namd::construct_cvm(char const  *config_filename)
-  // TODO This method might need some refinements for delayed initialization
-  // eg. accept config string instead of filename, as below
-  //void colvarproxy_namd::construct_cvm (std::string const &config)
-  {
-
-  // initiate the colvarmodule, this object will be the communication
-  // proxy
-  colvars = new colvarmodule(config_filename, this);
-  // save to Node for Tcl script access
-  Node::Object()->colvars = colvars;
-
-  if (simparams->firstTimestep != 0) {
-  cvm::log("Initializing step number as firstTimestep.\n");
-  colvars->it = colvars->it_restart = simparams->firstTimestep;
-  }
-
-  if (cvm::debug()) {
-  cvm::log("colvars_atoms = "+cvm::to_str(colvars_atoms)+"\n");
-  cvm::log("colvars_atoms_ncopies = "+cvm::to_str(colvars_atoms_ncopies)+"\n");
-  cvm::log("positions = "+cvm::to_str(positions)+"\n");
-  cvm::log("total_forces = "+cvm::to_str(total_forces)+"\n");
-  cvm::log("applied_forces = "+cvm::to_str(applied_forces)+"\n");
-  cvm::log(cvm::line_marker);
-  }
-  }
-*/
 
 colvarproxy_namd::~colvarproxy_namd()
 {
@@ -176,12 +140,94 @@ colvarproxy_namd::~colvarproxy_namd()
   }
 }
 
-// Reimplemented function from GlobalMaster
+
+int colvarproxy_namd::update_atoms_map(AtomIDList::const_iterator begin,
+                                       AtomIDList::const_iterator end)
+{
+  for (AtomIDList::const_iterator a_i = begin; a_i != end; a_i++) {
+
+    if (cvm::debug()) {
+      cvm::log("Updating atoms_map for atom ID "+cvm::to_str(*a_i)+"\n");
+    }
+
+    if (atoms_map[*a_i] >= 0) continue;
+
+    for (size_t i = 0; i < atoms_ids.size(); i++) {
+      if (atoms_ids[i] == *a_i) {
+        atoms_map[*a_i] = i;
+        break;
+      }
+    }
+
+    if (atoms_map[*a_i] < 0) {
+      // this atom is probably managed by another GlobalMaster:
+      // add it here anyway to avoid having to test for array boundaries at each step
+      int const index = add_atom_slot(*a_i);
+      atoms_map[*a_i] = index;
+      update_atom_properties(index);
+    }
+  }
+
+  if (cvm::debug()) {
+    log("atoms_map = "+cvm::to_str(atoms_map)+".\n");
+  }
+
+  return COLVARS_OK;
+}
+
+
+int colvarproxy_namd::setup()
+{
+  if (colvars->size() == 0) return COLVARS_OK;
+
+  log("Updating NAMD interface:\n");
+
+  log("updating atomic data ("+cvm::to_str(atoms_ids.size())+" atoms).\n");
+
+  size_t i;
+  for (i = 0; i < atoms_ids.size(); i++) {
+    update_atom_properties(i);
+
+    // zero out mutable arrays
+    atoms_positions[i] = cvm::rvector(0.0, 0.0, 0.0);
+    atoms_total_forces[i] = cvm::rvector(0.0, 0.0, 0.0);
+    atoms_new_colvar_forces[i] = cvm::rvector(0.0, 0.0, 0.0);
+  }
+
+  size_t n_group_atoms = 0;
+  for (int ig = 0; ig < modifyRequestedGroups().size(); ig++) {
+    n_group_atoms += modifyRequestedGroups()[ig].size();
+  }
+
+  log("updating group data ("+cvm::to_str(atom_groups_ids.size())+" scalable groups, "+
+      cvm::to_str(n_group_atoms)+" atoms in total).\n");
+
+  // Note: groupMassBegin, groupMassEnd may be used here, but they won't work for charges
+  for (int ig = 0; ig < modifyRequestedGroups().size(); ig++) {
+
+    // update mass and charge
+    update_group_properties(ig);
+
+    atom_groups_coms[ig] = cvm::rvector(0.0, 0.0, 0.0);
+    atom_groups_total_forces[ig] = cvm::rvector(0.0, 0.0, 0.0);
+    atom_groups_new_colvar_forces[ig] = cvm::rvector(0.0, 0.0, 0.0);
+  }
+
+  return COLVARS_OK;
+}
+
+
 void colvarproxy_namd::calculate()
 {
-
   if (first_timestep) {
+
+    this->setup();
+    colvars->setup();
+    colvars->setup_input();
+    colvars->setup_output();
+
     first_timestep = false;
+
   } else {
     // Use the time step number inherited from GlobalMaster
     if ( step - previous_NAMD_step == 1 ) {
@@ -192,110 +238,188 @@ void colvarproxy_namd::calculate()
     // - beginning of a new run statement
     // then the internal counter should not be incremented
   }
+
   previous_NAMD_step = step;
 
   if (cvm::debug()) {
-    cvm::log(cvm::line_marker+
-             "colvarproxy_namd, step no. "+cvm::to_str(colvars->it)+"\n"+
-             "Updating internal data.\n");
+    log(cvm::line_marker+
+        "colvarproxy_namd, step no. "+cvm::to_str(colvars->it)+"\n"+
+        "Updating atomic data arrays.\n");
   }
 
-  // must delete the forces applied at the previous step: they have
-  // already been used and copied to other memory locations
+  // must delete the forces applied at the previous step: we can do
+  // that because they have already been used and copied to other
+  // memory locations
   modifyForcedAtoms().resize(0);
   modifyAppliedForces().resize(0);
 
-  // prepare the local arrays to contain the sorted copies of the NAMD
-  // arrays
-  for (size_t i = 0; i < colvars_atoms.size(); i++) {
-    positions[i] = cvm::rvector(0.0, 0.0, 0.0);
-    total_forces[i] = cvm::rvector(0.0, 0.0, 0.0);
-    applied_forces[i] = cvm::rvector(0.0, 0.0, 0.0);
+  // prepare local arrays
+  for (size_t i = 0; i < atoms_ids.size(); i++) {
+    atoms_positions[i] = cvm::rvector(0.0, 0.0, 0.0);
+    atoms_total_forces[i] = cvm::rvector(0.0, 0.0, 0.0);
+    atoms_new_colvar_forces[i] = cvm::rvector(0.0, 0.0, 0.0);
   }
 
-  // sort the positions array
-  for (size_t i = 0; i < colvars_atoms.size(); i++) {
-    bool found_position = false;
-    AtomIDList::const_iterator a_i = this->getAtomIdBegin();
-    AtomIDList::const_iterator a_e = this->getAtomIdEnd();
-    PositionList::const_iterator p_i = this->getAtomPositionBegin();
+  for (size_t i = 0; i < atom_groups_ids.size(); i++) {
+    atom_groups_total_forces[i] = cvm::rvector(0.0, 0.0, 0.0);
+    atom_groups_new_colvar_forces[i] = cvm::rvector(0.0, 0.0, 0.0);
+  }
+
+  // create the atom map if needed
+  int const n_all_atoms = Node::Object()->molecule->numAtoms;
+  if (atoms_map.size() != n_all_atoms) {
+    atoms_map.resize(n_all_atoms);
+    atoms_map.assign(n_all_atoms, -1);
+    update_atoms_map(getAtomIdBegin(), getAtomIdEnd());
+  }
+
+  // if new atomic positions or forces have been communicated by other GlobalMasters, add them to the atom map
+  if ((atoms_ids.size() < (getAtomIdEnd() - getAtomIdBegin())) ||
+      (atoms_ids.size() < (getForceIdEnd() - getForceIdBegin()))) {
+    update_atoms_map(getAtomIdBegin(), getAtomIdEnd());
+    update_atoms_map(getForceIdBegin(), getForceIdEnd());
+  }
+
+  {
+    if (cvm::debug()) {
+      log("Updating positions arrays.\n");
+    }
+    size_t n_positions = 0;
+    AtomIDList::const_iterator a_i = getAtomIdBegin();
+    AtomIDList::const_iterator a_e = getAtomIdEnd();
+    PositionList::const_iterator p_i = getAtomPositionBegin();
+
     for ( ; a_i != a_e; ++a_i, ++p_i ) {
-      if ( *a_i == colvars_atoms[i] ) {
-        found_position = true;
-        Position const &namd_pos = *p_i;
-        positions[i] = cvm::rvector(namd_pos.x, namd_pos.y, namd_pos.z);
-        break;
-      }
+      atoms_positions[atoms_map[*a_i]] = cvm::rvector((*p_i).x, (*p_i).y, (*p_i).z);
+      n_positions++;
     }
-    if (!found_position)
-      cvm::fatal_error("Error: cannot find the position of atom "+
-                       cvm::to_str(colvars_atoms[i]+1)+"\n");
+
+    // The following had to be relaxed because some atoms may be forced without their position being requested
+    // if (n_positions < atoms_ids.size()) {
+    //   cvm::error("Error: did not receive the positions of all atoms.\n", BUG_ERROR);
+    // }
   }
 
+  if (total_force_requested && cvm::step_relative() > 0) {
 
-  if (system_force_requested && cvm::step_relative() > 0) {
+    // sort the force arrays the previous step
+    // (but only do so if there *is* a previous step!)
 
-    // sort the array of total forces from the previous step (but only
-    // do it if there *is* a previous step!)
-    for (size_t i = 0; i < colvars_atoms.size(); i++) {
-      bool found_total_force = false;
-      //found_total_force = false;
-      AtomIDList::const_iterator a_i = this->getForceIdBegin();
-      AtomIDList::const_iterator a_e = this->getForceIdEnd();
-      PositionList::const_iterator f_i = this->getTotalForce();
-      for ( ; a_i != a_e; ++a_i, ++f_i ) {
-        if ( *a_i == colvars_atoms[i] ) {
-          found_total_force = true;
-          Vector const &namd_force = *f_i;
-          total_forces[i] = cvm::rvector(namd_force.x, namd_force.y, namd_force.z);
-          //           if (cvm::debug())
-          //             cvm::log ("Found the total force of atom "+
-          //                       cvm::to_str (colvars_atoms[i]+1)+", which is "+
-          //                       cvm::to_str (total_forces[i])+".\n");
-          break;
-        }
+    {
+      if (cvm::debug()) {
+        log("Updating total forces arrays.\n");
       }
-      if (!found_total_force)
-        cvm::fatal_error("Error: system forces were requested, but total force on atom "+
-                         cvm::to_str(colvars_atoms[i]+1) + " was not\n"
-                         "found. The most probable cause is combination of energy minimization with a\n"
-                         "biasing method that requires MD (e.g. ABF). Always run minimization\n"
-                         "and ABF separately.");
-    }
+      size_t n_total_forces = 0;
+      AtomIDList::const_iterator a_i = getForceIdBegin();
+      AtomIDList::const_iterator a_e = getForceIdEnd();
+      ForceList::const_iterator f_i = getTotalForce();
 
-    // do the same for applied forces
-    for (size_t i = 0; i < colvars_atoms.size(); i++) {
-      AtomIDList::const_iterator a_i = this->getLastAtomsForcedBegin();
-      AtomIDList::const_iterator a_e = this->getLastAtomsForcedEnd();
-      PositionList::const_iterator f_i = this->getLastForcesBegin();
       for ( ; a_i != a_e; ++a_i, ++f_i ) {
-        if ( *a_i == colvars_atoms[i] ) {
-          Vector const &namd_force = *f_i;
-          if (cvm::debug())
-            cvm::log("Found a force applied to atom "+
-                     cvm::to_str(colvars_atoms[i]+1)+": "+
-                     cvm::to_str(cvm::rvector(namd_force.x, namd_force.y, namd_force.z))+
-                     "; current total is "+
-                     cvm::to_str(applied_forces[i])+".\n");
-          applied_forces[i] += cvm::rvector(namd_force.x, namd_force.y, namd_force.z);
-        }
+        atoms_total_forces[atoms_map[*a_i]] = cvm::rvector((*f_i).x, (*f_i).y, (*f_i).z);
+        n_total_forces++;
+      }
+
+      if (n_total_forces < atoms_ids.size()) {
+        cvm::error("Error: total forces were requested, but total forces "
+                   "were not received for all atoms.\n"
+                   "The most probable cause is combination of energy "
+                   "minimization with a biasing method that requires MD (e.g. ABF).\n"
+                   "Always run minimization and ABF separately.", INPUT_ERROR);
       }
     }
+
+    {
+      if (cvm::debug()) {
+        log("Updating group total forces arrays.\n");
+      }
+      ForceList::const_iterator f_i = getGroupTotalForceBegin();
+      ForceList::const_iterator f_e = getGroupTotalForceEnd();
+      size_t i = 0;
+      if ((f_e - f_i) != ((int) atom_groups_ids.size())) {
+        cvm::error("Error: total forces were requested for scalable groups, "
+                   "but they are not in the same number from the number of groups.\n"
+                   "The most probable cause is combination of energy "
+                   "minimization with a biasing method that requires MD (e.g. ABF).\n"
+                   "Always run minimization and ABF separately.", INPUT_ERROR);
+      }
+      for ( ; f_i != f_e; f_i++, i++) {
+        atom_groups_total_forces[i] = cvm::rvector((*f_i).x, (*f_i).y, (*f_i).z);
+      }
+    }
+  }
+
+  {
+    if (cvm::debug()) {
+      log("Updating group positions arrays.\n");
+    }
+    // update group data (only coms available so far)
+    size_t ig;
+    // note: getGroupMassBegin() could be used here, but masses and charges
+    // have already been calculated from the last call to setup()
+    PositionList::const_iterator gp_i = getGroupPositionBegin();
+    for (ig = 0; gp_i != getGroupPositionEnd(); gp_i++, ig++) {
+      atom_groups_coms[ig] = cvm::rvector(gp_i->x, gp_i->y, gp_i->z);
+    }
+  }
+
+  if (cvm::debug()) {
+    log("atoms_ids = "+cvm::to_str(atoms_ids)+"\n");
+    log("atoms_ncopies = "+cvm::to_str(atoms_ncopies)+"\n");
+    log("atoms_masses = "+cvm::to_str(atoms_masses)+"\n");
+    log("atoms_charges = "+cvm::to_str(atoms_charges)+"\n");
+    log("atoms_positions = "+cvm::to_str(atoms_positions)+"\n");
+    log("atoms_total_forces = "+cvm::to_str(atoms_total_forces)+"\n");
+    log(cvm::line_marker);
+
+    log("atom_groups_ids = "+cvm::to_str(atom_groups_ids)+"\n");
+    log("atom_groups_ncopies = "+cvm::to_str(atom_groups_ncopies)+"\n");
+    log("atom_groups_masses = "+cvm::to_str(atom_groups_masses)+"\n");
+    log("atom_groups_charges = "+cvm::to_str(atom_groups_charges)+"\n");
+    log("atom_groups_coms = "+cvm::to_str(atom_groups_coms)+"\n");
+    log("atom_groups_total_forces = "+cvm::to_str(atom_groups_total_forces)+"\n");
+    log(cvm::line_marker);
   }
 
   // call the collective variable module
   if (colvars->calc() != COLVARS_OK) {
-    fatal_error("");
+    cvm::error("Error in the collective variables module.\n", COLVARS_ERROR);
   }
+
+  if (cvm::debug()) {
+    log(cvm::line_marker);
+    log("atoms_new_colvar_forces = "+cvm::to_str(atoms_new_colvar_forces)+"\n");
+    log(cvm::line_marker);
+    log("atom_groups_new_colvar_forces = "+cvm::to_str(atom_groups_new_colvar_forces)+"\n");
+    log(cvm::line_marker);
+  }
+
+  // communicate all forces to the MD integrator
+  for (size_t i = 0; i < atoms_ids.size(); i++) {
+    cvm::rvector const &f = atoms_new_colvar_forces[i];
+    modifyForcedAtoms().add(atoms_ids[i]);
+    modifyAppliedForces().add(Vector(f.x, f.y, f.z));
+  }
+
+  {
+    // zero out the applied forces on each group
+    modifyGroupForces().resize(modifyRequestedGroups().size());
+    ForceList::iterator gf_i = modifyGroupForces().begin();
+    for (int ig = 0; gf_i != modifyGroupForces().end(); gf_i++, ig++) {
+      cvm::rvector const &f = atom_groups_new_colvar_forces[ig];
+      *gf_i = Vector(f.x, f.y, f.z);
+    }
+  }
+
   // send MISC energy
   reduction->submit();
 
   // NAMD does not destruct GlobalMaster objects, so we must remember
-  // to write all output files at the end of the run
+  // to write all output files at the end of a run
   if (step == simparams->N) {
     colvars->write_output_files();
   }
 }
+
 
 // Callback functions
 
@@ -305,7 +429,7 @@ int colvarproxy_namd::run_force_callback() {
     + cvm::to_str(cvm::step_absolute());
   int err = Tcl_Eval(interp, cmd.c_str());
   if (err != TCL_OK) {
-    cvm::log(std::string("Error while executing calc_colvar_forces:\n"));
+    log(std::string("Error while executing calc_colvar_forces:\n"));
     cvm::error(Tcl_GetStringResult(interp));
     return COLVARS_ERROR;
   }
@@ -328,14 +452,14 @@ int colvarproxy_namd::run_colvar_callback(std::string const &name,
   int err = Tcl_Eval(interp, cmd.c_str());
   const char *result = Tcl_GetStringResult(interp);
   if (err != TCL_OK) {
-    cvm::log(std::string("Error while executing ")
-             + cmd + std::string(":\n"));
+    log(std::string("Error while executing ")
+        + cmd + std::string(":\n"));
     cvm::error(result);
     return COLVARS_ERROR;
   }
   std::istringstream is(result);
   if (value.from_simple_string(is.str()) != COLVARS_OK) {
-    cvm::log("Error parsing colvar value from script:");
+    log("Error parsing colvar value from script:");
     cvm::error(result);
     return COLVARS_ERROR;
   }
@@ -357,8 +481,8 @@ int colvarproxy_namd::run_colvar_gradient_callback(std::string const &name,
   }
   int err = Tcl_Eval(interp, cmd.c_str());
   if (err != TCL_OK) {
-    cvm::log(std::string("Error while executing ")
-             + cmd + std::string(":\n"));
+    log(std::string("Error while executing ")
+        + cmd + std::string(":\n"));
     cvm::error(Tcl_GetStringResult(interp));
     return COLVARS_ERROR;
   }
@@ -368,14 +492,14 @@ int colvarproxy_namd::run_colvar_gradient_callback(std::string const &name,
                          &n, &list);
   if (n != int(gradient.size())) {
     cvm::error("Error parsing list of gradient values from script: found "
-        + cvm::to_str(n) + " values instead of " + cvm::to_str(gradient.size()));
+               + cvm::to_str(n) + " values instead of " + cvm::to_str(gradient.size()));
     return COLVARS_ERROR;
   }
   for (i = 0; i < gradient.size(); i++) {
     std::istringstream is(Tcl_GetString(list[i]));
     if (gradient[i].from_simple_string(is.str()) != COLVARS_OK) {
-      cvm::log("Gradient matrix size: " + cvm::to_str(gradient[i].size()));
-      cvm::log("Gradient string: " + cvm::to_str(Tcl_GetString(list[i])));
+      log("Gradient matrix size: " + cvm::to_str(gradient[i].size()));
+      log("Gradient string: " + cvm::to_str(Tcl_GetString(list[i])));
       cvm::error("Error parsing gradient value from script");
       return COLVARS_ERROR;
     }
@@ -392,10 +516,16 @@ void colvarproxy_namd::add_energy(cvm::real energy)
   reduction->item(REDUCTION_MISC_ENERGY) += energy;
 }
 
-void colvarproxy_namd::request_system_force(bool yesno)
+void colvarproxy_namd::request_total_force(bool yesno)
 {
-  system_force_requested = yesno;
-  requestTotalForce(system_force_requested);
+  if (cvm::debug()) {
+    cvm::log("colvarproxy_namd::request_total_force()\n");
+  }
+  total_force_requested = yesno;
+  requestTotalForce(total_force_requested);
+  if (cvm::debug()) {
+    cvm::log("colvarproxy_namd::request_total_force() end\n");
+  }
 }
 
 void colvarproxy_namd::log(std::string const &message)
@@ -418,9 +548,9 @@ void colvarproxy_namd::fatal_error(std::string const &message)
 {
   log(message);
   if (errno) log(strerror(errno));
-  if (!cvm::debug())
-    log("If this error message is unclear, "
-        "try recompiling with -DCOLVARS_DEBUG.\n");
+  // if (!cvm::debug())
+  //   log("If this error message is unclear, "
+  //       "try recompiling with -DCOLVARS_DEBUG.\n");
   if (errno) {
     NAMD_err("Error in the collective variables module");
   } else {
@@ -431,8 +561,124 @@ void colvarproxy_namd::fatal_error(std::string const &message)
 
 void colvarproxy_namd::exit(std::string const &message)
 {
-  cvm::log(message);
+  log(message);
   BackEnd::exit();
+}
+
+
+
+int colvarproxy_namd::check_atom_id(int atom_number)
+{
+  // NAMD's internal numbering starts from zero
+  int const aid = (atom_number-1);
+
+  if (cvm::debug())
+    log("Adding atom "+cvm::to_str(atom_number)+
+        " for collective variables calculation.\n");
+
+  if ( (aid < 0) || (aid >= Node::Object()->molecule->numAtoms) ) {
+    cvm::error("Error: invalid atom number specified, "+
+               cvm::to_str(atom_number)+"\n", INPUT_ERROR);
+    return INPUT_ERROR;
+  }
+
+  return aid;
+}
+
+
+int colvarproxy_namd::init_atom(int atom_number)
+{
+  // save time by checking first whether this atom has been requested before
+  // (this is more common than a non-valid atom number)
+  int aid = (atom_number-1);
+
+  for (size_t i = 0; i < atoms_ids.size(); i++) {
+    if (atoms_ids[i] == aid) {
+      // this atom id was already recorded
+      atoms_ncopies[i] += 1;
+      return i;
+    }
+  }
+
+  aid = check_atom_id(atom_number);
+
+  if (aid < 0) {
+    return INPUT_ERROR;
+  }
+
+  int const index = add_atom_slot(aid);
+  modifyRequestedAtoms().add(aid);
+  update_atom_properties(index);
+  return index;
+}
+
+
+
+int colvarproxy_namd::check_atom_id(cvm::residue_id const &residue,
+                                    std::string const     &atom_name,
+                                    std::string const     &segment_id)
+{
+  int const aid =
+    (segment_id.size() ?
+     Node::Object()->molecule->get_atom_from_name(segment_id.c_str(),
+                                                  residue,
+                                                  atom_name.c_str()) :
+     Node::Object()->molecule->get_atom_from_name("MAIN",
+                                                  residue,
+                                                  atom_name.c_str()));
+
+  if (aid < 0) {
+    // get_atom_from_name() has returned an error value
+    cvm::error("Error: could not find atom \""+
+               atom_name+"\" in residue "+
+               cvm::to_str(residue)+
+               ( (segment_id != "MAIN") ?
+                 (", segment \""+segment_id+"\"") :
+                 ("") )+
+               "\n", INPUT_ERROR);
+    return INPUT_ERROR;
+  }
+
+  return aid;
+}
+
+
+
+/// For AMBER topologies, the segment id is automatically set to
+/// "MAIN" (the segment id assigned by NAMD's AMBER topology parser),
+/// and is therefore optional when an AMBER topology is used
+int colvarproxy_namd::init_atom(cvm::residue_id const &residue,
+                                std::string const     &atom_name,
+                                std::string const     &segment_id)
+{
+  int const aid = check_atom_id(residue, atom_name, segment_id);
+
+  for (size_t i = 0; i < atoms_ids.size(); i++) {
+    if (atoms_ids[i] == aid) {
+      // this atom id was already recorded
+      atoms_ncopies[i] += 1;
+      return i;
+    }
+  }
+
+  if (cvm::debug())
+    log("Adding atom \""+
+        atom_name+"\" in residue "+
+        cvm::to_str(residue)+
+        " (index "+cvm::to_str(aid)+
+        ") for collective variables calculation.\n");
+
+  int const index = add_atom_slot(aid);
+  modifyRequestedAtoms().add(aid);
+  update_atom_properties(index);
+  return index;
+}
+
+
+void colvarproxy_namd::clear_atom(int index)
+{
+  colvarproxy::clear_atom(index);
+  // TODO remove it from GlobalMaster arrays?
 }
 
 
@@ -492,8 +738,8 @@ int colvarproxy_namd::load_coords(char const *pdb_filename,
                                   double const pdb_field_value)
 {
   if (pdb_field_str.size() == 0 && indices.size() == 0) {
-    cvm::fatal_error("Bug alert: either PDB field should be defined or list of "
-                     "atom IDs should be available when loading atom coordinates!\n");
+    cvm::error("Bug alert: either PDB field should be defined or list of "
+               "atom IDs should be available when loading atom coordinates!\n", BUG_ERROR);
   }
 
   e_pdb_field pdb_field_index;
@@ -548,7 +794,7 @@ int colvarproxy_namd::load_coords(char const *pdb_filename,
 
       } else {
         // Atom ID mode: use predefined atom IDs from the atom group
-        if (ipdb != *current_index) {
+        if (((int) ipdb) != *current_index) {
           // Skip atoms not in the list
           continue;
         } else {
@@ -559,10 +805,10 @@ int colvarproxy_namd::load_coords(char const *pdb_filename,
       if (!pos_allocated) {
         pos.push_back(cvm::atom_pos(0.0, 0.0, 0.0));
       } else if (ipos >= pos.size()) {
-        cvm::fatal_error("Error: the PDB file \""+
-                         std::string(pdb_filename)+
-                         "\" contains coordinates for "
-                         "more atoms than needed.\n");
+        cvm::error("Error: the PDB file \""+
+                   std::string(pdb_filename)+
+                   "\" contains coordinates for "
+                   "more atoms than needed.\n", BUG_ERROR);
       }
 
       pos[ipos] = cvm::atom_pos((pdb->atom(ipdb))->xcoor(),
@@ -574,11 +820,11 @@ int colvarproxy_namd::load_coords(char const *pdb_filename,
     }
 
     if ((ipos < pos.size()) || (current_index != indices.end()))
-      cvm::fatal_error("Error: the number of records in the PDB file \""+
-                       std::string(pdb_filename)+
-                       "\" does not appear to match either the total number of atoms,"+
-                       " or the number of coordinates requested at this point("+
-                       cvm::to_str(pos.size())+").\n");
+      cvm::error("Error: the number of records in the PDB file \""+
+                 std::string(pdb_filename)+
+                 "\" does not appear to match either the total number of atoms,"+
+                 " or the number of coordinates requested at this point("+
+                 cvm::to_str(pos.size())+").\n", BUG_ERROR);
 
   } else {
 
@@ -597,13 +843,13 @@ int colvarproxy_namd::load_coords(char const *pdb_filename,
 
 
 int colvarproxy_namd::load_atoms(char const *pdb_filename,
-                                 std::vector<cvm::atom> &atoms,
+                                 cvm::atom_group &atoms,
                                  std::string const &pdb_field_str,
                                  double const pdb_field_value)
 {
   if (pdb_field_str.size() == 0)
-    cvm::fatal_error("Error: must define which PDB field to use "
-                     "in order to define atoms from a PDB file.\n");
+    cvm::error("Error: must define which PDB field to use "
+               "in order to define atoms from a PDB file.\n", INPUT_ERROR);
 
   PDB *pdb = new PDB(pdb_filename);
   size_t const pdb_natoms = pdb->num_atoms();
@@ -641,7 +887,11 @@ int colvarproxy_namd::load_atoms(char const *pdb_filename,
       continue;
     }
 
-    atoms.push_back(cvm::atom(ipdb+1));
+    if (atoms.is_enabled(colvardeps::f_ag_scalable)) {
+      atoms.add_atom_id(ipdb+1);
+    } else {
+      atoms.add_atom(cvm::atom(ipdb+1));
+    }
   }
 
   delete pdb;
@@ -659,7 +909,7 @@ std::ostream * colvarproxy_namd::output_stream(std::string const &output_name)
     }
   }
   output_stream_names.push_back(output_name);
-  this->backup_file(output_name.c_str());
+  backup_file(output_name.c_str());
   ofstream_namd * os = new ofstream_namd(output_name.c_str());
   if (!os->is_open()) {
     cvm::error("Error: cannot write to file \""+output_name+"\".\n",
@@ -669,13 +919,16 @@ std::ostream * colvarproxy_namd::output_stream(std::string const &output_name)
   return os;
 }
 
+
 int colvarproxy_namd::close_output_stream(std::string const &output_name)
 {
   std::list<std::ostream *>::iterator osi  = output_files.begin();
   std::list<std::string>::iterator    osni = output_stream_names.begin();
   for ( ; osi != output_files.end(); osi++, osni++) {
     if (*osni == output_name) {
-      ((ofstream_namd *) *osi)->close();
+      if (((ofstream_namd *) *osi)->is_open()) {
+        ((ofstream_namd *) *osi)->close();
+      }
       output_files.erase(osi);
       output_stream_names.erase(osni);
       return COLVARS_OK;
@@ -683,6 +936,7 @@ int colvarproxy_namd::close_output_stream(std::string const &output_name)
   }
   return COLVARS_ERROR;
 }
+
 
 int colvarproxy_namd::backup_file(char const *filename)
 {
@@ -695,146 +949,183 @@ int colvarproxy_namd::backup_file(char const *filename)
 }
 
 
-size_t colvarproxy_namd::init_namd_atom(AtomID const &aid)
+int colvarproxy_namd::init_atom_group(std::vector<int> const &atoms_ids)
 {
-  modifyRequestedAtoms().add(aid);
-  for (size_t i = 0; i < colvars_atoms.size(); i++) {
-    if (colvars_atoms[i] == aid) {
-      // this atom id was already recorded
-      colvars_atoms_ncopies[i] += 1;
-      return i;
+  if (cvm::debug())
+    log("Reguesting from NAMD a group of size "+cvm::to_str(atoms_ids.size())+
+        " for collective variables calculation.\n");
+
+  // Note: modifyRequestedGroups is supposed to be in sync with the colvarproxy arrays,
+  // and to stay that way during a simulation
+
+  // compare this new group to those already allocated inside GlobalMaster
+  int ig;
+  for (ig = 0; ig < modifyRequestedGroups().size(); ig++) {
+    AtomIDList const &namd_group = modifyRequestedGroups()[ig];
+    bool b_match = true;
+
+    if (namd_group.size() != ((int) atoms_ids.size())) {
+      b_match = false;
+    } else {
+      int ia;
+      for (ia = 0; ia < namd_group.size(); ia++) {
+        int const aid = atoms_ids[ia];
+        if (namd_group[ia] != aid) {
+          b_match = false;
+          break;
+        }
+      }
+    }
+
+    if (b_match) {
+      if (cvm::debug())
+        log("Group was already added.\n");
+      // this group already exists
+      atom_groups_ncopies[ig] += 1;
+      return ig;
     }
   }
 
-  // allocate a new slot for this atom
-  colvars_atoms_ncopies.push_back(1);
-  colvars_atoms.push_back(aid);
-  positions.push_back(cvm::rvector());
-  total_forces.push_back(cvm::rvector());
-  applied_forces.push_back(cvm::rvector());
-
-  return (colvars_atoms.size()-1);
-}
-
-// atom member functions, NAMD specific implementations
-
-cvm::atom::atom(int const &atom_number)
-{
-  // NAMD internal numbering starts from zero
-  AtomID const aid(atom_number-1);
-
-  if (cvm::debug())
-    cvm::log("Adding atom "+cvm::to_str(aid+1)+
-             " for collective variables calculation.\n");
-
-  if ( (aid < 0) || (aid >= Node::Object()->molecule->numAtoms) ) {
-    cvm::error("Error: invalid atom number specified, "+
-               cvm::to_str(atom_number)+"\n");
-    return;
-  }
-  this->index = ((colvarproxy_namd *) cvm::proxy)->init_namd_atom(aid);
-  if (cvm::debug())
-    cvm::log("The index of this atom in the colvarproxy_namd arrays is "+
-             cvm::to_str(this->index)+".\n");
-  this->id = aid;
-  this->mass = Node::Object()->molecule->atommass(aid);
-  this->reset_data();
-}
-
-
-/// For AMBER topologies, the segment id is automatically set to
-/// "MAIN" (the segment id assigned by NAMD's AMBER topology parser),
-/// and is therefore optional when an AMBER topology is used
-cvm::atom::atom(cvm::residue_id const &residue,
-                std::string const     &atom_name,
-                std::string const     &segment_id)
-{
-  AtomID const aid =
-    (segment_id.size() ?
-     Node::Object()->molecule->get_atom_from_name(segment_id.c_str(),
-                                                  residue,
-                                                  atom_name.c_str()) :
-     Node::Object()->molecule->get_atom_from_name("MAIN",
-                                                  residue,
-                                                  atom_name.c_str()));
-
-
-  if (cvm::debug())
-    cvm::log("Adding atom \""+
-             atom_name+"\" in residue "+
-             cvm::to_str(residue)+
-             " (index "+cvm::to_str(aid)+
-             ") for collective variables calculation.\n");
-
-  if (aid < 0) {
-    // get_atom_from_name() has returned an error value
-    cvm::fatal_error("Error: could not find atom \""+
-                     atom_name+"\" in residue "+
-                     cvm::to_str(residue)+
-                     ( (segment_id != "MAIN") ?
-                       (", segment \""+segment_id+"\"") :
-                       ("") )+
-                     "\n");
+  // add this group (note: the argument of add_atom_group_slot() is redundant for NAMD, and provided only for consistency)
+  size_t const index = add_atom_group_slot(atom_groups_ids.size());
+  modifyRequestedGroups().resize(atom_groups_ids.size());
+  // the following is done in calculate()
+  // modifyGroupForces().resize(atom_groups_ids.size());
+  AtomIDList &namd_group = modifyRequestedGroups()[index];
+  namd_group.resize(atoms_ids.size());
+  int const n_all_atoms = Node::Object()->molecule->numAtoms;
+  for (size_t ia = 0; ia < atoms_ids.size(); ia++) {
+    int const aid = atoms_ids[ia];
+    if (cvm::debug())
+      log("Adding atom "+cvm::to_str(aid+1)+
+          " for collective variables calculation.\n");
+    if ( (aid < 0) || (aid >= n_all_atoms) ) {
+      cvm::error("Error: invalid atom number specified, "+
+                 cvm::to_str(aid+1)+"\n", INPUT_ERROR);
+      return -1;
+    }
+    namd_group[ia] = aid;
   }
 
-  this->index = ((colvarproxy_namd *) cvm::proxy)->init_namd_atom(aid);
-  if (cvm::debug())
-    cvm::log("The index of this atom in the colvarproxy_namd arrays is "+
-             cvm::to_str(this->index)+".\n");
-  this->id = aid;
-  this->mass = Node::Object()->molecule->atommass(aid);
-  this->reset_data();
-}
+  update_group_properties(index);
 
-
-// copy constructor
-cvm::atom::atom(cvm::atom const &a)
-  : index(a.index), id(a.id), mass(a.mass)
-{
-  // init_namd_atom() has already been called by a's constructor, no
-  // need to call it again
-
-  // need to increment the counter anyway
-  colvarproxy_namd *gm = (colvarproxy_namd *) cvm::proxy;
-  gm->colvars_atoms_ncopies[this->index] += 1;
-}
-
-
-cvm::atom::~atom()
-{
-  if (this->index >= 0) {
-    colvarproxy_namd *gm = (colvarproxy_namd *) cvm::proxy;
-    if (gm->colvars_atoms_ncopies[this->index] > 0)
-      gm->colvars_atoms_ncopies[this->index] -= 1;
+  if (cvm::debug()) {
+    log("Group has index "+cvm::to_str(index)+"\n");
+    log("modifyRequestedGroups length = "+cvm::to_str(modifyRequestedGroups().size())+
+        ", modifyGroupForces length = "+cvm::to_str(modifyGroupForces().size())+"\n");
   }
+
+  return index;
 }
 
 
-void cvm::atom::read_position()
+void colvarproxy_namd::clear_atom_group(int index)
 {
-  colvarproxy_namd const * const gm = (colvarproxy_namd *) cvm::proxy;
-  this->pos = gm->positions[this->index];
+  // do nothing, keep the NAMD arrays in sync with the colvarproxy ones
+  colvarproxy::clear_atom_group(index);
 }
 
 
-void cvm::atom::read_velocity()
+int colvarproxy_namd::update_group_properties(int index)
 {
-  cvm::fatal_error("Error: NAMD does not have yet a way to communicate "
-                   "atom velocities to the colvars.\n");
+  AtomIDList const &namd_group = modifyRequestedGroups()[index];
+  if (cvm::debug()) {
+    log("Re-calculating total mass and charge for scalable group no. "+cvm::to_str(index+1)+" ("+
+        cvm::to_str(namd_group.size())+" atoms).\n");
+  }
+
+  cvm::real total_mass = 0.0;
+  cvm::real total_charge = 0.0;
+  for (int i = 0; i < namd_group.size(); i++) {
+    total_mass += Node::Object()->molecule->atommass(namd_group[i]);
+    total_charge += Node::Object()->molecule->atomcharge(namd_group[i]);
+  }
+  atom_groups_masses[index] = total_mass;
+  atom_groups_charges[index] = total_charge;
+
+  if (cvm::debug()) {
+    log("total mass = "+cvm::to_str(total_mass)+
+        ", total charge = "+cvm::to_str(total_charge)+"\n");
+  }
+
+  return COLVARS_OK;
 }
 
+#if CMK_SMP && USE_CKLOOP // SMP only
 
-void cvm::atom::read_system_force()
+void calc_colvars_items_smp(int first, int last, void *result, int paramNum, void *param)
 {
-  colvarproxy_namd const * const gm = (colvarproxy_namd *) cvm::proxy;
-  this->system_force = gm->total_forces[this->index] - gm->applied_forces[this->index];
+  colvarproxy_namd *proxy = (colvarproxy_namd *) param;
+  colvarmodule *cv = proxy->colvars;
+
+  cvm::increase_depth();
+  for (int i = first; i <= last; i++) {
+    if (cvm::debug()) {
+      cvm::log("["+cvm::to_str(proxy->smp_thread_id())+"/"+cvm::to_str(proxy->smp_num_threads())+
+               "]: calc_colvars_items_smp(), first = "+cvm::to_str(first)+
+               ", last = "+cvm::to_str(last)+", cv = "+
+               cv->colvars_smp[i]->name+", cvc = "+cvm::to_str(cv->colvars_smp_items[i])+"\n");
+    }
+    cv->colvars_smp[i]->calc_cvcs(cv->colvars_smp_items[i], 1);
+  }
+  cvm::decrease_depth();
 }
 
 
-void cvm::atom::apply_force(cvm::rvector const &new_force)
+int colvarproxy_namd::smp_colvars_loop()
 {
-  colvarproxy_namd *gm = (colvarproxy_namd *) cvm::proxy;
-  gm->modifyForcedAtoms().add(this->id);
-  gm->modifyAppliedForces().add(Vector(new_force.x, new_force.y, new_force.z));
+  colvarmodule *cv = this->colvars;
+  CkLoop_Parallelize(calc_colvars_items_smp, 1, this, cv->colvars_smp.size(), 0, cv->colvars_smp.size()-1);
+  return cvm::get_error();
 }
 
+
+void calc_cv_biases_smp(int first, int last, void *result, int paramNum, void *param)
+{
+  colvarproxy_namd *proxy = (colvarproxy_namd *) param;
+  colvarmodule *cv = proxy->colvars;
+
+  cvm::increase_depth();
+  for (int i = first; i <= last; i++) {
+    if (cvm::debug()) {
+      cvm::log("["+cvm::to_str(proxy->smp_thread_id())+"/"+cvm::to_str(proxy->smp_num_threads())+
+               "]: calc_cv_biases_smp(), first = "+cvm::to_str(first)+
+               ", last = "+cvm::to_str(last)+", bias = "+
+               cv->biases[i]->name+"\n");
+    }
+    cv->biases[i]->update();
+  }
+  cvm::decrease_depth();
+}
+
+
+int colvarproxy_namd::smp_biases_loop()
+{
+  colvarmodule *cv = this->colvars;
+  CkLoop_Parallelize(calc_cv_biases_smp, 1, this, cv->biases.size(), 0, cv->biases.size()-1);
+  return cvm::get_error();
+}
+
+
+void calc_cv_scripted_forces(int paramNum, void *param)
+{
+  colvarproxy_namd *proxy = (colvarproxy_namd *) param;
+  colvarmodule *cv = proxy->colvars;
+    if (cvm::debug()) {
+      cvm::log("["+cvm::to_str(proxy->smp_thread_id())+"/"+cvm::to_str(proxy->smp_num_threads())+
+               "]: calc_cv_scripted_forces()\n");
+    }
+  cv->calc_scripted_forces();
+}
+
+
+int colvarproxy_namd::smp_biases_script_loop()
+{
+  colvarmodule *cv = this->colvars;
+  CkLoop_Parallelize(calc_cv_biases_smp, 1, this, cv->biases.size(), 0, cv->biases.size()-1,
+                     1, NULL, CKLOOP_NONE,
+                     calc_cv_scripted_forces, 1, this);
+  return cvm::get_error();
+}
+
+#endif  // SMP section
