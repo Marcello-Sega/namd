@@ -2467,8 +2467,8 @@ void ComputePmeMgr::ungridCalc(void) {
 
   if ( this == masterPmeMgr ) {
     double before = CmiWallTimer();
-    cudaMemcpyAsync(v_data_dev, q_data_host, q_data_size, cudaMemcpyHostToDevice, streams[stream]);
-    cudaEventRecord(nodePmeMgr->end_potential_memcpy, streams[stream]);
+    cudaMemcpyAsync(v_data_dev, q_data_host, q_data_size, cudaMemcpyHostToDevice, 0 /*streams[stream]*/);
+    cudaEventRecord(nodePmeMgr->end_potential_memcpy, 0 /*streams[stream]*/);
     traceUserBracketEvent(CUDA_EVENT_ID_PME_COPY,before,CmiWallTimer());
 
     const int myrank = CkMyRank();
