@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/09/29 22:29:50 $
- * $Revision: 1.1323 $
+ * $Date: 2016/10/14 16:12:12 $
+ * $Revision: 1.1324 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2914,7 +2914,7 @@ void Controller::printEnergies(int step, int minimize)
 
         if (simParameters->alchOn) {
           if (simParameters->alchThermIntOn) {
-            iout << "\n#TITITLE:    TS";
+            iout << "\nTITITLE:     TS";
             iout << FORMAT("BOND1");
             iout << FORMAT("ELECT1");
             iout << FORMAT("VDW1");
@@ -2928,7 +2928,7 @@ void Controller::printEnergies(int step, int minimize)
               iout << FORMAT("CUMALCHWORK");
             }
           } else if (simParameters->alchFepOn) {
-            iout << "\n#FEPTITLE:   TS";
+            iout << "\nFEPTITLE:    TS";
             iout << FORMAT("BOND2");
             iout << FORMAT("ELECT2");
             iout << FORMAT("VDW2");
@@ -3294,7 +3294,7 @@ void Controller::outputTiEnergy(int step) {
              << std::endl;
     }
 
-    if (stepInRun == alchEquilSteps) {
+    if ((alchEquilSteps) && (stepInRun == alchEquilSteps)) {
       tiFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
              << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
              << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
