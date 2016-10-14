@@ -4,7 +4,7 @@
 #define COLVARMODULE_H
 
 #ifndef COLVARS_VERSION
-#define COLVARS_VERSION "2016-10-06"
+#define COLVARS_VERSION "2016-10-10"
 #endif
 
 #ifndef COLVARS_DEBUG
@@ -12,6 +12,9 @@
 #endif
 
 /*! \mainpage Main page
+This is the Developer's documentation for the Collective Variables Module.
+
+You can browse the class hierarchy or the list of source files.
  */
 
 /// \file colvarmodule.h
