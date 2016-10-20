@@ -12,7 +12,6 @@ extendedlagrangian   on
 extendedFluctuation  1
 extendedTimeConstant   200
 dihedral {   
-   onesitesystemforce  on
   componentCoeff 0.3333333333
   group1 {
     atomnumbers { 1 }
@@ -30,7 +29,6 @@ dihedral {
 
 
 dihedral {  
-   onesitesystemforce  on
   componentCoeff 0.3333333333
   group1 {
     atomnumbers { 4 }
@@ -48,7 +46,6 @@ dihedral {
 
 
 dihedral {  
-    onesitesystemforce  on
   componentCoeff 0.3333333333
   group1 {
     atomnumbers { 5 }
