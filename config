@@ -562,6 +562,7 @@ begin:
   if ( $CHARM_ARCH =~ *-mx* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-mx
   if ( $CHARM_ARCH =~ *-elan* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Elan
   if ( $CHARM_ARCH =~ *-ibverbs* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ibverbs
+  if ( $CHARM_ARCH =~ *-ofi* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ofi
   if ( $CHARM_ARCH =~ *-smp* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-smp
   if ( $CHARM_ARCH =~ *multicore-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-multicore
   set ARCH_SUFFIX = ${ARCH_SUFFIX}${ARCH_SUFFIX_ARG}
