@@ -94,6 +94,13 @@ float           ComputeNonbondedUtil::k_vdwa_f;
 float           ComputeNonbondedUtil::k_vdwb_f;
 float           ComputeNonbondedUtil::cutoff_3_f;
 float           ComputeNonbondedUtil::cutoff_6_f;
+float           ComputeNonbondedUtil::switchOn_f;
+float           ComputeNonbondedUtil::A6_f;
+float           ComputeNonbondedUtil::B6_f;
+float           ComputeNonbondedUtil::C6_f;
+float           ComputeNonbondedUtil::A12_f;
+float           ComputeNonbondedUtil::B12_f;
+float           ComputeNonbondedUtil::C12_f;
 BigReal         ComputeNonbondedUtil::c0;
 BigReal         ComputeNonbondedUtil::c1;
 BigReal         ComputeNonbondedUtil::c3;
@@ -543,7 +550,25 @@ void ComputeNonbondedUtil::select(void)
       k_vdwb_f = k_vdwb = cutoff3 / ( cutoff3 - switchOn3 );
       cutoff_3_f = cutoff_3 = 1. / cutoff3;
       cutoff_6_f = cutoff_6 = 1. / cutoff6;
+
+    } else if ( simParams->martiniSwitching ) { // switching fxn for Martini RBCG
+
+      BigReal p6 = 6;
+      BigReal A6 = p6 * ((p6+1)*switchOn-(p6+4)*cutoff)/(pow(cutoff,p6+2)*pow(cutoff-switchOn,2));
+      BigReal B6 = -p6 * ((p6+1)*switchOn-(p6+3)*cutoff)/(pow(cutoff,p6+2)*pow(cutoff-switchOn,3));        
+      BigReal C6 = 1.0/pow(cutoff,p6)-A6/3.0*pow(cutoff-switchOn,3)-B6/4.0*pow(cutoff-switchOn,4);
+
+      BigReal p12 = 12;
+      BigReal A12 = p12 * ((p12+1)*switchOn-(p12+4)*cutoff)/(pow(cutoff,p12+2)*pow(cutoff-switchOn,2));
+      BigReal B12 = -p12 * ((p12+1)*switchOn-(p12+3)*cutoff)/(pow(cutoff,p12+2)*pow(cutoff-switchOn,3));
+      BigReal C12 = 1.0/pow(cutoff,p12)-A12/3.0*pow(cutoff-switchOn,3)-B12/4.0*pow(cutoff-switchOn,4);
+
+      A6_f =  A6;  B6_f  = B6;  C6_f =  C6;
+      A12_f = A12; B12_f = B12; C12_f = C12;
+      switchOn_f = switchOn;
+
     }
+
   }
   else
   {

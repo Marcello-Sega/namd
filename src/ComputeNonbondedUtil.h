@@ -336,6 +336,13 @@ public:
   static float   k_vdwb_f;
   static float   cutoff_3_f;
   static float   cutoff_6_f;
+  static float   switchOn_f;
+  static float   A6_f;
+  static float   B6_f;
+  static float   C6_f;
+  static float   A12_f;
+  static float   B12_f;
+  static float   C12_f;
   static BigReal c0;
   static BigReal c1;
   static BigReal c3;

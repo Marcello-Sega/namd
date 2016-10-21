@@ -126,20 +126,41 @@ NOFAST( foo bar )
         )
       }
 #elif VDW_SWITCH_MODE == VDW_SWITCH_MODE_MARTINI
-#if 0
       { int vdw_switch_mode_martini; }  // for preprocessor debugging only
-      float vdw_d = A * table_four_i[0] - B * table_four_i[4];
-      float vdw_c = A * table_four_i[1] - B * table_four_i[5];
-      float vdw_b = A * table_four_i[2] - B * table_four_i[6];
-      float vdw_a = A * table_four_i[3] - B * table_four_i[7];
-      ENERGY(
-        register float vdw_val =
-          ( ( diffa * vdw_d * (1/6.)+ vdw_c * (1/4.)) * diffa + vdw_b *(1/2.)) * diffa + vdw_a;
-        vdwEnergy -= LAM(lambda_pair *) vdw_val;
-      )
-#else
       float vdw_b = 0.f;
-#endif
+      {
+        const float r = r2 * r_1;
+        const float r12 = (r-switchOn_f)*(r-switchOn_f);
+        const float r13 = (r-switchOn_f)*(r-switchOn_f)*(r-switchOn_f);
+
+        ENERGY(
+          const float LJshifttempA = -(1.f/3.f)*A12_f*r13 - (1.f/4.f)*B12_f*r12*r12 - C12_f;
+          const float LJshifttempB = -(1.f/3.f)*A6_f*r13 - (1.f/4.f)*B6_f*r12*r12 - C6_f;
+          const float shiftValA = ( r > switchOn_f ? LJshifttempA : -C12_f);
+          const float shiftValB = ( r > switchOn_f ? LJshifttempB : -C6_f);
+        )
+
+        const float LJdshifttempA = -A12_f*r12 - B12_f*r13;
+        const float LJdshifttempB = -A6_f*r12 - B6_f*r13;
+        const float dshiftValA = ( r > switchOn_f ? LJdshifttempA*0.5f*r_1 : 0 );
+        const float dshiftValB = ( r > switchOn_f ? LJdshifttempB*0.5f*r_1 : 0 );
+
+        const float r_6 = r_2 * r_2 * r_2;
+        const float r_12 = r_6 * r_6;
+
+        ENERGY(
+          const float vdwa_energy = r_12 + shiftValA;
+          const float vdwb_energy = r_6 + shiftValB;
+        )
+
+        const float vdwa_gradient = -6.f * r_2 * r_12 + dshiftValA ;
+        const float vdwb_gradient = -3.f * r_2 * r_6 + dshiftValB;
+
+        vdw_b = -2.f * ( A * vdwa_gradient - B * vdwb_gradient );
+        ENERGY(
+          vdwEnergy += A * vdwa_energy - B * vdwb_energy;
+        )
+      }
 #elif VDW_SWITCH_MODE == VDW_SWITCH_MODE_ENERGY
       { int vdw_switch_mode_energy; }  // for preprocessor debugging only
       float vdw_b = 0.f;
