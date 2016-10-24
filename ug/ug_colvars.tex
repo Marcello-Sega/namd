@@ -305,6 +305,15 @@ The following keywords are available in the global context of the colvars config
 
 \item %
   \keydef
+    {smp}{%
+    global}{%
+    Whether SMP parallelism should be used}{%
+    boolean}{%
+    \texttt{on}}{%
+    If this flag is enabled (default), SMP parallelism over threads will be used to compute variables and biases, provided that this is supported by \MDENGINE{}.}
+
+\item %
+  \keydef
     {analysis}{%
     global}{%
     Turn on run-time statistical analysis}{%
@@ -2524,7 +2533,7 @@ and \texttt{psfSegID}) in addition to the following:
 \cvsubsec{Configuration keywords shared by all components}
 \label{sec:cvc_common}
 
-The following options can be used for any of the above colvar components in order to obtain a polynomial combination\cvscriptonly{ or any user-supplied function provided by the \refkey{scriptedFunction}{colvar|scriptedFunction} command}.
+The following options can be used for any of the above colvar components in order to obtain a polynomial combination\cvscriptonly{ or any user-supplied function provided by \refkey{scriptedFunction}{sec:cvc_superp}}.
 \begin{itemize}
 \item %
   \keydef
