@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2016/09/29 21:30:48 $
- * $Revision: 1.1470 $
+ * $Date: 2016/10/27 20:26:29 $
+ * $Revision: 1.1471 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -857,7 +857,7 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.optional("FMM", "FMMPadding", "FMM padding margin (Angstroms)",
        &FMMPadding, 0);
 
-   opts.optionalB("main", "useCUDA2", "Use ComputeNonbondedCUDA2", &useCUDA2, FALSE);
+   opts.optionalB("main", "useCUDA2", "Use new CUDA code", &useCUDA2, TRUE);
 
    ///////////  Particle Mesh Ewald
 
@@ -909,7 +909,7 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.optionalB("main", "PMEOffload", "Offload PME to accelerator?",
 	&PMEOffload);
 
-   opts.optionalB("PME", "usePMECUDA", "Use the PME CUDA version", &usePMECUDA, FALSE);
+   opts.optionalB("PME", "usePMECUDA", "Use the PME CUDA version", &usePMECUDA, CmiNumPhysicalNodes() < 5);
    opts.optionalB("PME", "useOptPME", "Use the new scalable PME optimization", &useOptPME, FALSE);
    opts.optionalB("PME", "useManyToMany", "Use the many-to-many PME optimization", &useManyToMany, FALSE);
    if (PMEOn && !useOptPME)
@@ -3686,6 +3686,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      } else if ( PMEOffload && ! one_device_per_node ) {
        PMEOffload = 0;
        iout << iWARN << "Disabling PMEOffload because multiple CUDA devices per process are not supported.\n" << endi;
+     }
+     if ( usePMECUDA && ! ( useCUDA2 || one_device_per_node ) ) {
+       usePMECUDA = 0;
+       iout << iWARN << "Disabling usePMECUDA because multiple CUDA devices per process requires useCUDA2.\n" << endi;
      }
 #else
      PMEOffload = 0;
