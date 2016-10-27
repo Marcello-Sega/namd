@@ -259,7 +259,7 @@ void cuda_initialize() {
       cudaGetDeviceProperties(&deviceProp, dev);
       cuda_errcheck("in cudaGetDeviceProperties");
       if ( deviceProp.computeMode != cudaComputeModeProhibited
-           && (deviceProp.major > 1 || deviceProp.minor >= 1)
+           && (deviceProp.major >= 3)
            && deviceProp.canMapHostMemory
            && ( (deviceProp.multiProcessorCount > 2) ||
                 ((ndevices==0)&&(CkNumNodes()==1)) ) // exclude weak cards
@@ -276,7 +276,7 @@ void cuda_initialize() {
   }
 
   if ( ! ndevices ) {
-    cuda_die("All CUDA devices are in prohibited mode, of compute capability 1.0, unable to map host memory, too small, or otherwise unusable.");
+    cuda_die("all devices are in prohibited mode, of compute capability < 3.0, unable to map host memory, too small, or otherwise unusable");
   }
 
   shared_gpu = 0;
@@ -386,8 +386,8 @@ void cuda_initialize() {
     cuda_errcheck("in cudaGetDeviceProperties");
     if ( deviceProp.computeMode == cudaComputeModeProhibited )
       cuda_die("device in prohibited mode");
-    if ( deviceProp.major < 2 && deviceProp.minor < 1 )
-      cuda_die("device not of compute capability 1.1 or higher");
+    if ( deviceProp.major < 3 )
+      cuda_die("device not of compute capability 3.0 or higher");
     if ( ! deviceProp.canMapHostMemory )
       cuda_die("device cannot map host memory");
   }

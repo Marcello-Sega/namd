@@ -168,7 +168,7 @@ void DeviceCUDA::initialize() {
       cudaDeviceProp deviceProp;
       cudaCheck(cudaGetDeviceProperties(&deviceProp, dev));
       if ( deviceProp.computeMode != cudaComputeModeProhibited
-           && (deviceProp.major > 1 || deviceProp.minor >= 1)
+           && (deviceProp.major >= 3)
            && deviceProp.canMapHostMemory
            && ( (deviceProp.multiProcessorCount > 2) ||
                 ((ndevices==0)&&(CkNumNodes()==1)) ) // exclude weak cards
@@ -185,7 +185,7 @@ void DeviceCUDA::initialize() {
   }
 
   if ( ! ndevices ) {
-    cudaDie("All CUDA devices are in prohibited mode, of compute capability 1.0, unable to map host memory, too small, or otherwise unusable.");
+    cudaDie("all devices are in prohibited mode, of compute capability < 3.0, unable to map host memory, too small, or otherwise unusable");
   }
 
   if ( devicesperreplica > 0 ) {
@@ -319,8 +319,8 @@ void DeviceCUDA::initialize() {
     cudaCheck(cudaGetDeviceProperties(&deviceProp, dev));
     if ( deviceProp.computeMode == cudaComputeModeProhibited )
       cudaDie("device in prohibited mode");
-    if ( deviceProp.major < 2 && deviceProp.minor < 1 )
-      cudaDie("device not of compute capability 1.1 or higher");
+    if ( deviceProp.major < 3 )
+      cudaDie("device not of compute capability 3.0 or higher");
     if ( ! deviceProp.canMapHostMemory )
       cudaDie("device cannot map host memory");
   #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
