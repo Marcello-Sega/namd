@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2016/10/27 20:26:29 $
- * $Revision: 1.1471 $
+ * $Date: 2016/10/27 22:05:36 $
+ * $Revision: 1.1472 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3690,6 +3690,21 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      if ( usePMECUDA && ! ( useCUDA2 || one_device_per_node ) ) {
        usePMECUDA = 0;
        iout << iWARN << "Disabling usePMECUDA because multiple CUDA devices per process requires useCUDA2.\n" << endi;
+     }
+     if ( cellBasisVector1.y != 0 ||
+          cellBasisVector1.z != 0 ||
+          cellBasisVector2.x != 0 ||
+          cellBasisVector2.z != 0 ||
+          cellBasisVector3.x != 0 ||
+          cellBasisVector3.y != 0    ) {
+       if ( useCUDA2 ) {
+         useCUDA2 = 0;
+         iout << iWARN << "Disabling useCUDA2 because of non-orthorhombic periodic cell.\n" << endi;
+       }
+       if ( usePMECUDA ) {
+         usePMECUDA = 0;
+         iout << iWARN << "Disabling usePMECUDA because of non-orthorhombic periodic cell.\n" << endi;
+       }
      }
 #else
      PMEOffload = 0;
