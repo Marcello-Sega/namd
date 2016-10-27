@@ -284,7 +284,7 @@ void CudaPmeKSpaceCompute::solve(Lattice &lattice, const bool doEnergy, const bo
     recip[5] == 0.0 && recip[6] == 0.0 && recip[7] == 0.0);
 
   if (!ortho)
-    cudaNAMD_bug("CudaPmeKSpaceCompute::solve, only orthorombic boxes are currently supported");
+    cudaNAMD_bug("CudaPmeKSpaceCompute::solve, only orthorhombic boxes are currently supported");
 
   // ncall++;
   // if (ncall == 1) {
@@ -435,7 +435,7 @@ void CudaPmeKSpaceCompute::getVirial(double *virial) {
       virial[8] = h_energyVirial->virial[5];
     }
   } else {
-    NAMD_bug("CudaPmeKSpaceCompute::getVirial, only orthorombic boxes are currently supported");
+    NAMD_bug("CudaPmeKSpaceCompute::getVirial, only orthorhombic boxes are currently supported");
   }
 }
 
@@ -528,7 +528,7 @@ void CudaPmeRealSpaceCompute::spreadCharge(Lattice &lattice) {
     recip[5] == 0.0 && recip[6] == 0.0 && recip[7] == 0.0);
 
   if (!ortho) {
-    cudaNAMD_bug("CudaPmeRealSpaceCompute::spreadCharge, only orthorombic boxes are currently supported");
+    cudaNAMD_bug("CudaPmeRealSpaceCompute::spreadCharge, only orthorhombic boxes are currently supported");
   }
 
   float recip1 = (float)recip[0];
@@ -625,7 +625,7 @@ void CudaPmeRealSpaceCompute::gatherForce(Lattice &lattice, CudaForce* force) {
     recip[5] == 0.0 && recip[6] == 0.0 && recip[7] == 0.0);
 
   if (!ortho) {
-    cudaNAMD_bug("CudaPmeRealSpaceCompute::gatherForce, only orthorombic boxes are currently supported");
+    cudaNAMD_bug("CudaPmeRealSpaceCompute::gatherForce, only orthorhombic boxes are currently supported");
   }
 
   float recip1 = (float)recip[0];
