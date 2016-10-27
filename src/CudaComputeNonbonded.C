@@ -390,6 +390,7 @@ void CudaComputeNonbonded::assignPatches(ComputeMgr* computeMgrIn) {
   //--------------------------------------------------------
   // Build a list of PEs to avoid
   std::vector<int> pesToAvoid;
+#if 0
   // Avoid other GPUs' master PEs
   for (int i=0;i < deviceCUDA->getDeviceCount();i++) {
     int pe = deviceCUDA->getMasterPeForDeviceID(i);
@@ -405,8 +406,9 @@ void CudaComputeNonbonded::assignPatches(ComputeMgr* computeMgrIn) {
     int pe = pesToAvoid[i];
     peProxyPatchCounter[CkRankOf(pe)] = (1 << 20);    
   }
+#endif
   // Avoid master Pe somewhat
-  peProxyPatchCounter[CkRankOf(masterPe)] = patches.size();
+  peProxyPatchCounter[CkRankOf(masterPe)] = 2; // patches.size();
   //--------------------------------------------------------
   for (int i=0;i < patches.size();i++) {
     PatchID pid = patches[i].patchID;
