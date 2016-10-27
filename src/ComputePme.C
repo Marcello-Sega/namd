@@ -3445,8 +3445,11 @@ void ComputePmeMgr::chargeGridSubmitted(Lattice &lattice, int sequence) {
   // cudaDeviceSynchronize();  //  XXXX TESTING
   // cuda_errcheck("after memcpy grid to host");
 
-  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
-  cm[deviceCUDA->getMasterPe()].recvYieldDevice(-1);
+  SimParameters *simParams = Node::Object()->simParameters;
+  if ( ! simParams->useCUDA2 ) {
+    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+    cm[deviceCUDA->getMasterPe()].recvYieldDevice(-1);
+  }
 
   pmeProxy[master_pe].pollChargeGridReady();
  }
