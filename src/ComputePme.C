@@ -2132,6 +2132,14 @@ void ComputePmeMgr::gridCalc2Moa(void) {
 
 void ComputePmeMgr::gridCalc2R(void) {
 
+  int useCkLoop = 0;
+#if CMK_SMP && USE_CKLOOP
+  if ( Node::Object()->simParameters->useCkLoop >= CKLOOP_CTRL_PME_KSPACE
+       && CkNumPes() >= 2 * numTransNodes ) {
+    useCkLoop = 1;
+  }
+#endif
+
   int zdim = myGrid.dim3;
   // int y_start = localInfo[myTransPe].y_start_after_transpose;
   int ny = localInfo[myTransPe].ny_after_transpose;
@@ -2140,7 +2148,7 @@ void ComputePmeMgr::gridCalc2R(void) {
     // reciprocal space portion of PME
     BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
     recip_evir2[g][0] = myKSpace->compute_energy(kgrid+qgrid_size*g,
-			lattice, ewaldcof, &(recip_evir2[g][1]));
+			lattice, ewaldcof, &(recip_evir2[g][1]), useCkLoop);
     // CkPrintf("Ewald reciprocal energy = %f\n", recip_evir2[g][0]);
 
     // start backward FFT (x dimension)
@@ -5152,7 +5160,8 @@ void PmeZPencil::forward_fft() {
 #ifdef NAMD_FFTW_3
 #if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
-  if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT) {
+  if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT
+     && CkNumPes() >= 2 * initdata.xBlocks * initdata.yBlocks) {
           //for(int i=0; i<numPlans; i++) fftwf_execute(forward_plans[i]);
           //transform the above loop
           CkLoop_Parallelize(PmeXZPencilFFT, 1, (void *)forward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
@@ -5248,7 +5257,8 @@ void PmeZPencil::send_trans() {
 #endif
 #if     CMK_SMP && USE_CKLOOP
 	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
-	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS) {
+	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS
+           && CkNumPes() >= 2 * initdata.xBlocks * initdata.yBlocks) {
 		/**
 		 * Basically, this function call could be converted into 
 		 * a for-loop of: 
@@ -5374,7 +5384,8 @@ void PmeYPencil::forward_fft() {
 #ifdef NAMD_FFTW_3
 #if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
-  if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT) {
+  if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT
+     && CkNumPes() >= 2 * initdata.xBlocks * initdata.zBlocks) {
 	  CkLoop_Parallelize(PmeYPencilForwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
 	  return;
   }
@@ -5467,7 +5478,8 @@ void PmeYPencil::send_trans() {
 #endif
 #if     CMK_SMP && USE_CKLOOP
 	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
-	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS) {
+	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS
+           && CkNumPes() >= 2 * initdata.xBlocks * initdata.zBlocks) {
 		/**
 		 * Basically, this function call could be converted into 
 		 * a for-loop of: 
@@ -5603,7 +5615,8 @@ void PmeXPencil::forward_fft() {
 #ifdef NAMD_FFTW_3
 #if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
-  if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT) {
+  if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT
+     && CkNumPes() >= 2 * initdata.yBlocks * initdata.zBlocks) {
 	  //for(int i=0; i<numPlans; i++) fftwf_execute(forward_plans[i]);
 	  //transform the above loop
 	  CkLoop_Parallelize(PmeXZPencilFFT, 1, (void *)forward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
@@ -5632,10 +5645,18 @@ void PmeXPencil::pme_kspace() {
 
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
 
+  int useCkLoop = 0;
+#if CMK_SMP && USE_CKLOOP
+  if ( Node::Object()->simParameters->useCkLoop >= CKLOOP_CTRL_PME_KSPACE
+       && CkNumPes() >= 2 * initdata.yBlocks * initdata.zBlocks ) {
+    useCkLoop = 1;
+  }
+#endif
+
   int numGrids = 1;
   for ( int g=0; g<numGrids; ++g ) {
     evir[0] = myKSpace->compute_energy(data+0*g,
-		lattice, ewaldcof, &(evir[1]));
+		lattice, ewaldcof, &(evir[1]), useCkLoop);
   }
   
 #if USE_NODE_PAR_RECEIVE
@@ -5652,7 +5673,8 @@ void PmeXPencil::backward_fft() {
 #ifdef NAMD_FFTW_3
 #if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
-  if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT) {
+  if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT
+     && CkNumPes() >= 2 * initdata.yBlocks * initdata.zBlocks) {
           //for(int i=0; i<numPlans; i++) fftwf_execute(backward_plans[i]);
           //transform the above loop
           CkLoop_Parallelize(PmeXZPencilFFT, 1, (void *)backward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
@@ -5799,7 +5821,8 @@ void PmeXPencil::send_untrans() {
 #endif
 #if     CMK_SMP && USE_CKLOOP
   Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
-  if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS) {
+  if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS
+     && CkNumPes() >= 2 * initdata.yBlocks * initdata.zBlocks) {
 	  	int xBlocks = initdata.xBlocks;
 		int evirIdx = 0;
 		for ( int isend=0; isend<xBlocks; ++isend ) {
@@ -5932,7 +5955,8 @@ void PmeYPencil::backward_fft() {
 #ifdef NAMD_FFTW_3
 #if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
-  if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT) {
+  if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT
+     && CkNumPes() >= 2 * initdata.xBlocks * initdata.zBlocks) {
 	  CkLoop_Parallelize(PmeYPencilBackwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
 	  return;
   }
@@ -6084,7 +6108,8 @@ void PmeYPencil::send_untrans() {
 #endif
 #if     CMK_SMP && USE_CKLOOP
   Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
-  if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS) {
+  if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS
+     && CkNumPes() >= 2 * initdata.xBlocks * initdata.zBlocks) {
 	  int yBlocks = initdata.yBlocks;
 	  int evirIdx = 0;
 	  for ( int isend=0; isend<yBlocks; ++isend ) {
@@ -6211,7 +6236,8 @@ void PmeZPencil::backward_fft() {
 #ifdef NAMD_FFTW_3
 #if     CMK_SMP && USE_CKLOOP
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
-  if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT) {
+  if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT
+     && CkNumPes() >= 2 * initdata.xBlocks * initdata.yBlocks) {
 	  //for(int i=0; i<numPlans; i++) fftwf_execute(backward_plans[i]);
 	  //transform the above loop
 	  CkLoop_Parallelize(PmeXZPencilFFT, 1, (void *)backward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
@@ -6299,7 +6325,8 @@ void PmeZPencil::send_all_ungrid() {
 
 #if     CMK_SMP && USE_CKLOOP
 	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
-	if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS) {
+	if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS
+           && CkNumPes() >= 2 * initdata.xBlocks * initdata.yBlocks) {
 		//????What's the best value for numChunks?????
 #if USE_NODE_PAR_RECEIVE        
 		//CkLoop_Parallelize(PmeZPencilSendUngrid, evirIdx, (void *)this, CkMyNodeSize(), 0, grid_msgs.size()-1, 1); //has to sync

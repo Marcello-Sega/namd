@@ -477,6 +477,8 @@ void Node::startup() {
     #if !CMK_SMP || ! USE_CKLOOP
     //the CkLoop library should be only used in SMP mode
     simParameters->useCkLoop = 0;
+    #else
+    if ( CkNumPes() < 2 * CkNumNodes() ) simParameters->useCkLoop = 0;
     #endif
 
 

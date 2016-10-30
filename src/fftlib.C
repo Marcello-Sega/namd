@@ -480,7 +480,7 @@ void OptPmeXPencil::pme_kspace() {
 
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
   evir[0] = myKSpace->compute_energy(data,
-				     lattice, ewaldcof, &(evir[1]));
+				     lattice, ewaldcof, &(evir[1]), 0);
 
   //contribute (7*sizeof(double), evir.begin(), CkReduction::sum_double, initdata.cb_energy);
 }

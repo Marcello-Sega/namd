@@ -315,7 +315,7 @@ double PmeKSpace::compute_energy_orthogonal_helper(float *q_arr, const Lattice &
     return energy;
 }
 
-double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ewald, double *virial) {
+double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ewald, double *virial, int useCkLoop) {
   double energy = 0.0;
   double v0 = 0.;
   double v1 = 0.;
@@ -338,8 +338,7 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
   // if ( 0 ) { // JCP FOR TESTING
     //This branch is the usual call path.
 #if     CMK_SMP && USE_CKLOOP
-    int useCkLoop = Node::Object()->simParameters->useCkLoop;
-    if(useCkLoop>=CKLOOP_CTRL_PME_KSPACE){
+    if ( useCkLoop ) {
         return compute_energy_orthogonal_helper(q_arr, lattice, ewald, virial);
     }
 #endif    
