@@ -2135,7 +2135,7 @@ void ComputePmeMgr::gridCalc2R(void) {
   int useCkLoop = 0;
 #if CMK_SMP && USE_CKLOOP
   if ( Node::Object()->simParameters->useCkLoop >= CKLOOP_CTRL_PME_KSPACE
-       && CkNumPes() >= 2 * numTransNodes ) {
+       && CkNumPes() >= 2 * numTransPes ) {
     useCkLoop = 1;
   }
 #endif
