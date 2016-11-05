@@ -267,6 +267,8 @@ double PmeKSpace::compute_energy_orthogonal_helper(float *q_arr, const Lattice &
 
     double recips[] = {recipx, recipy, recipz};
     int NPARTS=CmiMyNodeSize(); //this controls the granularity of loop parallelism
+    int maxParts = ( K1 * ( k2_end - k2_start ) * ( k3_end - k3_start ) + 127 ) / 128;
+    if ( NPARTS >  maxParts ) NPARTS = maxParts;
     if ( NPARTS >  K1 ) NPARTS = K1; 
     ALLOCA(double, partialEnergy, NPARTS);
     ALLOCA(double, partialVirial, 6*NPARTS);
