@@ -212,7 +212,7 @@ void PmeKSpace::compute_energy_orthogonal_subset(float q_arr[], double *recips, 
     partialVirial[5] = 0.5*v5;
 }
 static inline void compute_energy_orthogonal_ckloop(int first, int last, void *result, int paraNum, void *param){
-    CmiAssert(first==last);
+  for ( int i = first; i <= last; ++i ) {
     void **params = (void **)param;
     PmeKSpace *kspace = (PmeKSpace *)params[0];
     float *q_arr = (float *)params[1];
@@ -221,7 +221,6 @@ static inline void compute_energy_orthogonal_ckloop(int first, int last, void *r
     double *partialVirial = (double *)params[4];
     int *unitDist = (int *)params[5];
     
-    int i = first;
     int unit = unitDist[0];
     int remains = unitDist[1];
     int k1from, k1to;
@@ -235,6 +234,7 @@ static inline void compute_energy_orthogonal_ckloop(int first, int last, void *r
     double *pEnergy = partialEnergy+i;
     double *pVirial = partialVirial+i*6;
     kspace->compute_energy_orthogonal_subset(q_arr, recips, pVirial, pEnergy, k1from, k1to);
+  }
 }
 
 double PmeKSpace::compute_energy_orthogonal_helper(float *q_arr, const Lattice &lattice, double ewald, double *virial) {
@@ -266,7 +266,8 @@ double PmeKSpace::compute_energy_orthogonal_helper(float *q_arr, const Lattice &
     init_exp(exp3, K3, k3_start, k3_end, recipz);
 
     double recips[] = {recipx, recipy, recipz};
-    const int NPARTS=CmiMyNodeSize(); //this controls the granularity of loop parallelism
+    int NPARTS=CmiMyNodeSize(); //this controls the granularity of loop parallelism
+    if ( NPARTS >  K1 ) NPARTS = K1; 
     ALLOCA(double, partialEnergy, NPARTS);
     ALLOCA(double, partialVirial, 6*NPARTS);
     int unitDist[] = {K1/NPARTS, K1%NPARTS};
