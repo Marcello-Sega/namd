@@ -1386,7 +1386,7 @@ int topo_mol_regenerate_resids(topo_mol *mol) {
     for ( patchres = (*patchptr)->patchresids; patchres; patchres = patchres->next ) {
       ++npres;
       /* Test the existence of segid:resid for the patch */
-      if (!topo_mol_validate_patchres(mol,patch->pname,patchres->segid, patchres->resid)) {
+      if (!topo_mol_validate_patchres(mol,(*patchptr)->pname,patchres->segid, patchres->resid)) {
         break;
       }
     }
