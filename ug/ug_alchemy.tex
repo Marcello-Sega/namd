@@ -474,26 +474,25 @@ likely quite negligible, nor is it clear that this should be treated specially.
 \item
    \NAMDCONFWDEF {alchBondLambdaEnd}{Value of $\lambda$ to cancel bonded interactions}
 {positive decimal}
-{1.0}
-{{\bf New as of version 2.12} Bonded terms involving alchmical atoms 
-are now also scaled on a schedule similar to vdW interactions.  {\bf In some
-cases this will produce different behavior from the old defaults.} In order to 
-regain the old behavior (potentially theoretically unsound!), simply set 
-{\tt alchBondLambdaEnd} to 0. See also {\tt alchBondDecouple}.
+{0.0}
+{{\bf New as of version 2.12} Bonded terms involving alchemical atoms may now
+also be scaled on a schedule similar to vdW interactions. Although this is more
+theoretically sound in many situations, this behavior is off by default.
 }
 
 \item
    \NAMDCONFWDEF {alchBondDecouple}{Enable scaling of bonded terms within alchemical groups}
 {{\tt on} or {\tt off}}
 {{\tt off}}
-{If {\tt alchBondDecouple} is {\tt on} (not the default!), then bonded terms
-between alchemical atoms \emph{in the same group} are also scaled.  This means 
-that alchemical atoms are annihilated into ideal gas atoms instead of ideal gas
-molecules.  In this case it is recommended to use the approach of Axelsen and
+{This is essentially a bonded term analogue of the {\tt alchDecouple} keyword.
+Setting {\tt alchBondDecouple on}, causes bonded terms between alchemical 
+atoms \emph{in the same group} to also be scaled.  This means that alchemical
+atoms are annihilated into ideal gas atoms instead of ideal gas molecules.  In 
+this case it is recommended to use the approach of Axelsen and 
 Li~\cite{Axelsen1998} by way of the {\tt extraBonds} keyword.  Using
 {\tt alchBondDecouple} {\tt on} is strictly necessary if it is desired to have
-the endpoint energies of a dual-topology PSF match those of a non-alchemical
-PSF.
+the endpoint (potential) energies of a dual-topology PSF match those of a 
+non-alchemical PSF.
 }
 
 
@@ -732,55 +731,56 @@ $\lambda_{i+1}$ is expressed as:
 
 \subsubsection{Thermodynamic Integration }
 
-
-When running TI free energy calculations, the {\tt elec\_dU/dl} and {\tt
-vdW\_dU/dl} values reported in {\tt tiOutFile} are the derivatives of the
-internal energy with respect to $\lambda$ --- \ie~$\frac{\partial
-U}{\partial\lambda}$ for electrostatics and, van der Waals, respectively. {\tt
-dU/dl} values are averages over the last {\tt tiOutFreq} steps. Cumulative
+When running TI free energy calculations, the {\tt elec\_dU/dl}, 
+{\tt vdW\_dU/dl}, and {\tt bond\_dU/dl} values reported in {\tt alchOutFile} 
+are the derivatives of the internal energy with respect to the scaling factors 
+for each interaction type (\ie~electrostatics, etc.). {\tt dU/dl} values are 
+locally averaged over the last {\tt alchOutFreq} steps. Cumulative
 averages for each component are reported alongside in the {\tt \_avg} columns.
 
+The electrostatic, vdW, and bond values are separated following a partition 
+scheme --- that is, the ``appearing'' and the ``disappearing'' atoms are 
+accounted for separately. ``Partition 1'' contains those atoms whose 
+interactions are switched up as $\lambda$ increases --- \ie~flagged with 
+{\tt 1} in the {\tt alchFile}. ``Partition 2'' represents those atoms whose 
+interactions are switched down as $\lambda$ increases --- \ie~flagged with 
+{\tt -1}. $\Delta A$ values for each component are obtained by integrating from
+$\lambda=0$ to $1$ using the respective {\tt ELEC / VDW / BOND LAMBDA} listed 
+for each partition after the title.
 
-The electrostatics and vdW are separated following a partition scheme --- that
-is, the ``appearing'' and the ``disappearing'' atoms are accounted for
-separately. ``Partition 1'' contains those atoms whose interactions are
-switched up as $\lambda$ increases --- \ie~flagged with {\tt 1} in the {\tt
-alchFile}. ``Partition 2'' represents those atoms whose interactions are
-switched down as $\lambda$ increases --- \ie~flagged with {\tt -1}. $\Delta A$
-values for each component are obtained by integrating from $\lambda=0$ to $1$
-using the respective {\tt ELEC / VDW LAMBDA} listed for each partition after
-the title.
+{\bf New as of version 2.12:} The output in {\tt alchOutFile} has been 
+extensively revised and now more closely matches the NAMD standard output.
+Additional accounting for bonded term scaling is now also included.
 
-
-Analysis is handled by the {\tt NAMD\_ti} script, available from
-\begin{quote}
-http://www.ks.uiuc.edu/Research/namd/utilities/
-\end{quote}
-
-
-Although the output format of {\tt NAMD\_ti.pl } may appear to lend itself easily to interpretation of the
-individual contributions to the free energy total (elec and vdW for each partition), this is rarely
-appropriate as these values are path-dependent. For example, an output such as
+%% Analysis is handled by the {\tt NAMD\_ti} script, available from
+%% \begin{quote}
+%% http://www.ks.uiuc.edu/Research/namd/utilities/
+%% \end{quote}
 
 
-\begin{verbatim}
-          |-----------------------------------------------|
-          |         |    elec   |    vdW    |   Subtotal  |
-          |-----------------------------------------------|
-          | Part. 1 |   -0.5748 |   -6.3452 |    -6.9200  |
-          | Part. 2 |    0.5391 |    4.9387 |     5.4778  |
-          |-----------------------------------------------|
-          | Subtotal|    0.6048 |    0.3293 |   -12.3978  |
-          |-----------------------------------------------|
-          Total deltaG for transition lambda 0 -> 1: -12.3978
-\end{verbatim}
+%% Although the output format of {\tt NAMD\_ti.pl } may appear to lend itself easily to interpretation of the
+%% individual contributions to the free energy total (elec and vdW for each partition), this is rarely
+%% appropriate as these values are path-dependent. For example, an output such as
 
 
-\noindent may encourage interpretations along the lines of "the free energy for
-switching on the van der Waals interactions for the atoms of partition 1 was
--6.35kcal/mol". This is only correct in the very narrow context of the
-simulation setup and parameters used in this case and is not informative in a
-broader sense.
+%%\begin{verbatim}
+%%          |-----------------------------------------------|
+%%          |         |    elec   |    vdW    |   Subtotal  |
+%%          |-----------------------------------------------|
+%%          | Part. 1 |   -0.5748 |   -6.3452 |    -6.9200  |
+%%          | Part. 2 |    0.5391 |    4.9387 |     5.4778  |
+%%          |-----------------------------------------------|
+%%          | Subtotal|    0.6048 |    0.3293 |   -12.3978  |
+%%          |-----------------------------------------------|
+%%          Total deltaG for transition lambda 0 -> 1: -12.3978
+%%\end{verbatim}
+
+
+%%\noindent may encourage interpretations along the lines of "the free energy for
+%%switching on the van der Waals interactions for the atoms of partition 1 was
+%%-6.35kcal/mol". This is only correct in the very narrow context of the
+%%simulation setup and parameters used in this case and is not informative in a
+%%broader sense.
 
 
 %\begin{figure}[ht]
