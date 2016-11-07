@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2016/10/30 22:50:02 $
- * $Revision: 1.1473 $
+ * $Date: 2016/11/07 20:26:15 $
+ * $Revision: 1.1474 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1039,7 +1039,7 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.range("alchVdwLambdaEnd", NOT_NEGATIVE);
 
    opts.optional("alch", "alchBondLambdaEnd", "Lambda at which bonded"
-      "scaling of exnihilated particles begins", &alchBondLambdaEnd, 1.0);
+      "scaling of exnihilated particles begins", &alchBondLambdaEnd, 0.0);
    opts.range("alchBondLambdaEnd", NOT_NEGATIVE);
    
    opts.optionalB("alch", "alchDecouple", "Enable alchemical decoupling?",
