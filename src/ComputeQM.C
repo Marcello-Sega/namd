@@ -999,7 +999,7 @@ void ComputeQMMgr::recvPartQM(QMCoordMsg*msg)
             iout << iWARN << "Could not compute all QM groups in parallel.\n" << endi ;
         }
         
-        iout << iINFO << "Ranks running QM simulations: " << qmPEs[0] ;
+        iout << iINFO << "List of ranks running QM simulations: " << qmPEs[0] ;
         for (int i=1; i < qmPEs.size(); i++) {
             iout << ", " << qmPEs[i] ;
         }
@@ -2598,7 +2598,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
         NAMD_die("QM calculation could not be ran. Check your qmBaseDir!");
     }
     else if (! (stat(baseDir.c_str(), &info) == 0 && S_ISDIR(info.st_mode)) ) {
-        DebugM(4,"Creating directory " << baseDir << std::endl);
+        DebugM(4,"Creating directory " << baseDir.c_str() << std::endl);
         int retVal = mkdir(baseDir.c_str(), S_IRWXU);
     }
     
@@ -2622,6 +2622,9 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
     
     // Builds the command that will be executed
     qmCommand.clear();
+    qmCommand.append("cd ");
+    qmCommand.append(baseDir);
+    qmCommand.append(" ; ");
     qmCommand.append(msg->execPath) ;
     qmCommand.append(" ") ;
     qmCommand.append(inputFileName) ;
@@ -2663,8 +2666,8 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
     if ( iret < 0 ) { NAMD_die(strerror(errno)); }
     
     DebugM(4, "Writing " << msg->numAllAtoms << " QM atom coords in file " 
-    << inputFileName << " and " << msg->numAllPntChrgs 
-    << " point charges in file " << pntChrgFileName << "\n");
+    << inputFileName.c_str() << " and " << msg->numAllPntChrgs 
+    << " point charges in file " << pntChrgFileName.c_str() << "\n");
     
     // write QM and dummy atom coordinates to input file and
     // MM electric field from MM point charges.
@@ -2728,7 +2731,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
     }
     
     // runs QM command
-    DebugM(4,"Running command ->" << qmCommand << "<-" << std::endl);
+    DebugM(4,"Running command ->" << qmCommand.c_str() << "<-" << std::endl);
     iret = system(qmCommand.c_str());
     
     if ( iret == -1 ) { NAMD_die(strerror(errno)); }
@@ -2753,7 +2756,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
 //     if ( iret ) { NAMD_die(strerror(errno)); }
     
     // opens output file
-    DebugM(4,"Reading QM data from file " << outputFileName << std::endl);
+    DebugM(4,"Reading QM data from file " << outputFileName.c_str() << std::endl);
     outputFile = fopen(outputFileName.c_str(),"r");
     if ( ! outputFile ) {
         iout << iERROR << "Could not find QM output file!\n" << endi;
@@ -3280,7 +3283,7 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
         NAMD_die("QM calculation could not be ran. Check your qmBaseDir!");
     }
     else if (! (stat(baseDir.c_str(), &info) == 0 && S_ISDIR(info.st_mode)) ) {
-        DebugM(4,"Creating directory " << baseDir << std::endl);
+        DebugM(4,"Creating directory " << baseDir.c_str() << std::endl);
         int retVal = mkdir(baseDir.c_str(), S_IRWXU);
     }
     
@@ -3304,6 +3307,9 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
     
     // Builds the command that will be executed
     qmCommand.clear();
+    qmCommand.append("cd ");
+    qmCommand.append(baseDir);
+    qmCommand.append(" ; ");
     qmCommand.append(msg->execPath) ;
     qmCommand.append(" ") ;
     qmCommand.append(inputFileName) ;
@@ -3373,7 +3379,9 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
     iret = fprintf(inputFile,"  Units Angs\n  coords\n\n");
     if ( iret < 0 ) { NAMD_die(strerror(errno)); }
     
-    DebugM(4, "Writing " << msg->numAllAtoms << " QM atom coords in file " << inputFileName << " and " << msg->numAllPntChrgs << " point charges in file " << pntChrgFileName << std::endl);
+    DebugM(4, "Writing " << msg->numAllAtoms << " QM atom coords in file " << 
+    inputFileName.c_str() << " and " << msg->numAllPntChrgs << 
+    " point charges in file " << pntChrgFileName.c_str() << "\n");
     
     // write QM and dummy atom coordinates to input file.
     QMAtomData *atmP = msg->data ;
@@ -3428,7 +3436,7 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
     }
     
         // runs QM command
-    DebugM(4,"Running command ->" << qmCommand << "<-" << std::endl);
+    DebugM(4,"Running command ->" << qmCommand.c_str() << "<-" << std::endl);
     iret = system(qmCommand.c_str());
     
     if ( iret == -1 ) { NAMD_die(strerror(errno)); }
@@ -4047,7 +4055,7 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
         NAMD_die("QM calculation could not be ran. Check your qmBaseDir!");
     }
     else if (! (stat(baseDir.c_str(), &info) == 0 && S_ISDIR(info.st_mode)) ) {
-        DebugM(4,"Creating directory " << baseDir << std::endl);
+        DebugM(4,"Creating directory " << baseDir.c_str() << std::endl);
         int retVal = mkdir(baseDir.c_str(), S_IRWXU);
     }
     
@@ -4071,6 +4079,9 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
     
     // Builds the command that will be executed
     qmCommand.clear();
+    qmCommand.append("cd ");
+    qmCommand.append(baseDir);
+    qmCommand.append(" ; ");
     qmCommand.append(msg->execPath) ;
     qmCommand.append(" ") ;
     qmCommand.append(inputFileName) ;
@@ -4090,7 +4101,9 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
     iret = fprintf(inputFile,"%d %d\n",msg->numAllAtoms, numPntChrgs);
     if ( iret < 0 ) { NAMD_die(strerror(errno)); }
     
-    DebugM(4, "Writing " << msg->numAllAtoms << " QM atom coords in file " << inputFileName << " and " << msg->numAllPntChrgs << " point charges." << std::endl);
+    DebugM(4, "Writing " << msg->numAllAtoms << " QM atom coords in file " << 
+        inputFileName.c_str() << " and " << msg->numAllPntChrgs << 
+        " point charges." << std::endl);
     
     // write QM and dummy atom coordinates to input file.
     QMAtomData *atmP = msg->data ;
@@ -4138,7 +4151,7 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
     }
     
         // runs QM command
-    DebugM(4,"Running command ->" << qmCommand << "<-" << std::endl);
+    DebugM(4,"Running command ->" << qmCommand.c_str() << "<-" << std::endl);
     iret = system(qmCommand.c_str());
     
     if ( iret == -1 ) { NAMD_die(strerror(errno)); }
@@ -4533,7 +4546,7 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
 
 void ComputeQMMgr::pntChrgSwitching(QMGrpCalcMsg *msg) {
     
-    // We apply a switching function to the point charges to that there is a 
+    // We apply a switching function to the point charges so that there is a 
     // smooth decay of the electrostatic environment seen by the QM system.
     
     BigReal cutoff2 = msg->cutoff*msg->cutoff;

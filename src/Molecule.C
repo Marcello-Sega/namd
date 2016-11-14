@@ -394,7 +394,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   qmLSSRefIDs=0;
   qmLSSRefMass=0;
   qmLSSRefSize=0;
-
+  qmNumBonds=0;
+  
   goInit();
 }
 
@@ -5404,6 +5405,7 @@ void Molecule::send_Molecule(MOStream *msg){
     msg->put(qmNumQMAtoms, qmAtmChrg);
     msg->put(qmNumQMAtoms, qmAtmIndx);
     msg->put(qmNoPC);
+    msg->put(qmNumBonds);
     msg->put(qmMeNumBonds);
     msg->put(qmMeNumBonds, qmMeMMindx);
     msg->put(qmMeNumBonds, qmMeQMGrp);
@@ -5839,6 +5841,8 @@ void Molecule::receive_Molecule(MIStream *msg){
         msg->get(qmNumQMAtoms, qmAtmIndx);
         
         msg->get(qmNoPC);
+        
+        msg->get(qmNumBonds);
         
         msg->get(qmMeNumBonds);
         

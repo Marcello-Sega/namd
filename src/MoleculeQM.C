@@ -745,7 +745,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
     }
     
     
-    // If mechanichal embedding was requested bu we have QM-MM bonds, we need 
+    // If mechanichal embedding was requested but we have QM-MM bonds, we need 
     // to send extra info to ComputeQM to preserve calculation speed.
     if (qmNumBonds > 0 && qmNoPC) {
         qmMeNumBonds = qmNumBonds;
