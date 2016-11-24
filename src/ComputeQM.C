@@ -176,7 +176,8 @@ struct QMForce {
 class QMGrpResMsg : public CMessage_QMGrpResMsg {
 public:
   int grpIndx;
-  BigReal energy;
+  BigReal energyOrig; // Original QM Energy
+  BigReal energyCorr; // Corrected energy due to PME
   BigReal virial[3][3];
   int numForces;
   QMForce *force;
@@ -2234,11 +2235,17 @@ void ComputeQMMgr::storeQMRes(QMGrpResMsg *resMsg) {
     
     iout << iINFO << "Storing QM results for region " << resMsg->grpIndx  
     << " (ID: "  << grpID[resMsg->grpIndx] 
-    << ") with energy: " << endi;
-    std::cout << std::fixed << std::setprecision(6) << resMsg->energy << endi;
+    << ") with original energy: " << endi;
+    std::cout << std::fixed << std::setprecision(6) << resMsg->energyOrig << endi;
     iout << " Kcal/mol\n" << endi;
     
-    totalEnergy += resMsg->energy ;
+    if (resMsg->energyCorr != resMsg->energyOrig) {
+        iout << iINFO << "PME corrected energy: " << endi;
+        std::cout << std::fixed << std::setprecision(6) << resMsg->energyCorr << endi;
+        iout << " Kcal/mol\n" << endi;
+    }
+    
+    totalEnergy += resMsg->energyCorr ;
     
     for ( int k=0; k<3; ++k )
         for ( int l=0; l<3; ++l )
@@ -2508,7 +2515,8 @@ void ComputeQM::saveResults(QMForceMsg *fmsg) {
         
     }
     
-    DebugM(1,"Placing forces on force boxes.\n");
+    DebugM(1,"Placing forces on force boxes in rank " 
+    << CkMyPe() << std::endl);
     
     // Places the received forces on the force array for each patch.
     int homeIndxIter = 0;
@@ -2532,7 +2540,13 @@ void ComputeQM::saveResults(QMForceMsg *fmsg) {
         
     }
     
+    DebugM(1,"Forces placed on force boxes in rank " 
+    << CkMyPe() << std::endl);
+    
     if (fmsg->PMEOn) {
+        
+        DebugM(1,"PME ON! Accessing PMEmgr in rank " << CkMyPe() << std::endl);
+        
         ComputePmeMgr *mgrP = CProxy_ComputePmeMgr::ckLocalBranch(
             CkpvAccess(BOCclass_group).computePmeMgr) ;
         
@@ -2771,7 +2785,8 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
     QMGrpResMsg *resMsg = new (msg->numQMAtoms + msg->numRealPntChrgs, 0) QMGrpResMsg;
     resMsg->grpIndx = msg->grpIndx;
     resMsg->numForces = msg->numQMAtoms + msg->numRealPntChrgs;
-    resMsg->energy = 0;
+    resMsg->energyOrig = 0;
+    resMsg->energyCorr = 0;
     for ( int k=0; k<3; ++k )
         for ( int l=0; l<3; ++l )
             resMsg->virial[k][l] = 0;
@@ -2827,16 +2842,18 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
             
             // We have to convert the notation from FORTRAN double precision to
             // the natural, normal, reasonable and not terribly out dated format.
-            resMsg->energy = strtod(strEnergy, &endPtr);
+            resMsg->energyOrig = strtod(strEnergy, &endPtr);
             if ( *endPtr == 'D' ) {
                 *endPtr = 'e';
-                resMsg->energy = strtod(strEnergy, &endPtr);
+                resMsg->energyOrig = strtod(strEnergy, &endPtr);
             }
             
             // In MOPAC, the total energy is given in EV, so we convert to Kcal/mol
-            resMsg->energy *= 23.060 ;
+            resMsg->energyOrig *= 23.060 ;
             
-//             DebugM(4,"Reading QM energy from file: " << resMsg->energy << "\n");
+//             DebugM(4,"Reading QM energy from file: " << resMsg->energyOrig << "\n");
+            
+            resMsg->energyCorr = resMsg->energyOrig;
             
             continue;
         }
@@ -3157,11 +3174,11 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
                 resForce[j].force -= -1*fixForce ;
                 
                 // The energy is *subtracted* from the total energy calculated here.
-                resMsg->energy -= energy;
+                resMsg->energyCorr -= energy;
             }
         }
         
-//         DebugM(4,"Corrected energy QM-QM interactions: " << resMsg->energy << "\n");
+//         DebugM(4,"Corrected energy QM-QM interactions: " << resMsg->energyCorr << "\n");
         
         pcIndx = msg->numQMAtoms;
         // We only loop over point charges from real atoms, ignoring the ones 
@@ -3204,7 +3221,7 @@ void ComputeQMMgr::calcMOPAC(QMGrpCalcMsg *msg)
                 fixForce += -1*p_j_charge*(recip_gradient/r)*(pos_i - pos_j) ;
                 
                 // The energy is *subtracted* from the total energy calculated here.
-                resMsg->energy -= energy;
+                resMsg->energyCorr -= energy;
             }
             
             // The force is *subtracted* from the total force acting on
@@ -3476,7 +3493,8 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
     QMGrpResMsg *resMsg = new (msg->numQMAtoms + msg->numRealPntChrgs, 0) QMGrpResMsg;
     resMsg->grpIndx = msg->grpIndx;
     resMsg->numForces = msg->numQMAtoms + msg->numRealPntChrgs;
-    resMsg->energy = 0;
+    resMsg->energyOrig = 0;
+    resMsg->energyCorr = 0;
     for ( int k=0; k<3; ++k )
         for ( int l=0; l<3; ++l )
             resMsg->virial[k][l] = 0;
@@ -3535,16 +3553,18 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
         fgets(line, lineLen, outputFile); 
     }
     
-    iret = fscanf(outputFile,"%lf\n", &resMsg->energy);
+    iret = fscanf(outputFile,"%lf\n", &resMsg->energyOrig);
     if ( iret != 1 ) {
         NAMD_die("Error reading QM forces file.");
     }
-//     iout << "Energy in step (Hartree): " << resMsg->energy << "\n" <<  endi;
+//     iout << "Energy in step (Hartree): " << resMsg->energyOrig << "\n" <<  endi;
     // All energies are given in Eh (Hartree)
     // NAMD needs energies in kcal/mol
     // The conversion factor is 627.509469
-    resMsg->energy *= 627.509469;
-//     iout << "Energy in step (Kcal/mol): " << resMsg->energy << "\n" <<  endi;
+    resMsg->energyOrig *= 627.509469;
+//     iout << "Energy in step (Kcal/mol): " << resMsg->energyOrig << "\n" <<  endi;
+    
+    resMsg->energyCorr = resMsg->energyOrig;
     
     // skip lines before gradient
     for (int i = 0; i < 3; i++) {
@@ -3936,7 +3956,7 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
                 resForce[j].force -= -1*fixForce;
                 
                 // The energy is *subtracted* from the total energy calculated here.
-                resMsg->energy -= energy;
+                resMsg->energyCorr -= energy;
             }
         }
         
@@ -3981,7 +4001,7 @@ void ComputeQMMgr::calcORCA(QMGrpCalcMsg *msg)
                 fixForce += -1*p_j_charge*(recip_gradient/r)*(pos_i - pos_j) ;
                 
                 // The energy is *subtracted* from the total energy calculated here.
-                resMsg->energy -= energy;
+                resMsg->energyCorr -= energy;
                 
             }
             
@@ -4191,7 +4211,8 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
     QMGrpResMsg *resMsg = new (msg->numQMAtoms + msg->numRealPntChrgs, 0) QMGrpResMsg;
     resMsg->grpIndx = msg->grpIndx;
     resMsg->numForces = msg->numQMAtoms + msg->numRealPntChrgs;
-    resMsg->energy = 0;
+    resMsg->energyOrig = 0;
+    resMsg->energyCorr = 0;
     for ( int k=0; k<3; ++k )
         for ( int l=0; l<3; ++l )
             resMsg->virial[k][l] = 0;
@@ -4225,25 +4246,25 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
     // Reads the data form the output file created by the QM software.
     // Gradients over the QM atoms, and Charges for QM atoms will be read.
     
-    iret = fscanf(outputFile,"%lf\n", &resMsg->energy);
+    iret = fscanf(outputFile,"%lf\n", &resMsg->energyOrig);
     if ( iret != 1 ) {
-        NAMD_die("Error reading QM forces file.");
+        NAMD_die("Error reading energy from QM results file.");
     }
+    
+    resMsg->energyCorr = resMsg->energyOrig;
     
     size_t atmIndx;
     double localForce[3];
     double localCharge;
     for (atmIndx = 0; atmIndx < msg->numAllAtoms; atmIndx++) {
         
-        
-        
         iret = fscanf(outputFile,"%lf %lf %lf %lf\n", 
                       localForce+0,
                       localForce+1,
                       localForce+2,
                       &localCharge);
-        if ( iret != 1 ) {
-            NAMD_die("Error reading QM forces file.");
+        if ( iret != 4 ) {
+            NAMD_die("Error reading gradient and charge from QM results file.");
         }
         
         // If we are reading charges and forces on QM atoms, store
@@ -4454,7 +4475,7 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
                 resForce[j].force -= -1*fixForce;
                 
                 // The energy is *subtracted* from the total energy calculated here.
-                resMsg->energy -= energy;
+                resMsg->energyCorr -= energy;
             }
         }
         
@@ -4499,7 +4520,7 @@ void ComputeQMMgr::calcUSR(QMGrpCalcMsg *msg) {
                 fixForce += -1*p_j_charge*(recip_gradient/r)*(pos_i - pos_j) ;
                 
                 // The energy is *subtracted* from the total energy calculated here.
-                resMsg->energy -= energy;
+                resMsg->energyCorr -= energy;
                 
             }
             

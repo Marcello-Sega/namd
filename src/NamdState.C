@@ -526,6 +526,10 @@ int NamdState::loadStructure(const char *molFilename, const char *pdbFilename, i
             NAMD_die("QM forces are not supported in memory-optimized builds.");
 #endif
             
+#ifdef NAMD_CUDA
+           NAMD_die("QM forces are not compatible with CUDA at this time");
+#endif
+            
             molecule->set_qm_replaceAll(simParameters->qmReplaceAll);
             
             if (simParameters->qmParamPDBDefined)

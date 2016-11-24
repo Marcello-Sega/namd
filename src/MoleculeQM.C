@@ -480,10 +480,11 @@ void Molecule::prepare_qm(const char *pdbFileName,
                 NAMD_die("Error processing QM information.");
             }
         }
+        
+        DebugM(3,"We found " << lssClassicResIndx << " classical solvent molecules totalling "
+        << qmClassicSolv.size() << " atoms.\n" );
+        
     }
-    
-    DebugM(3,"We found " << lssClassicResIndx << " classical solvent molecules totalling "
-    << qmClassicSolv.size() << " atoms.\n" );
     
     qmNumQMAtoms = qmAtmIndxVec.size();
     
@@ -839,7 +840,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
                 
                 iout << iINFO << "MM-QM pair: " << qmMMBond[bondCounter][0] << ":"
                 << qmMMBond[bondCounter][1] 
-                << " -> Distance: " << bondVal
+                << " -> Value (distance or ratio): " << bondVal
                 << " (QM Group " << grpIter << " ID " << qmGrpID[grpIter] << ")"
                 << "\n" << endi ;
                 
