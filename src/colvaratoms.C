@@ -171,7 +171,10 @@ int cvm::atom_group::remove_atom(cvm::atom_iter ai)
 
 int cvm::atom_group::init()
 {
-  if (!key.size()) key = "atoms";
+  if (!key.size()) key = "unnamed";
+  description = "atom group " + key;
+  // These will be overwritten by parse(), if initializing from a config string
+
   atoms.clear();
 
   // TODO: check with proxy whether atom forces etc are available
@@ -179,6 +182,7 @@ int cvm::atom_group::init()
 
   index = -1;
 
+  b_dummy = false;
   b_center = false;
   b_rotate = false;
   b_user_defined_fit = false;
@@ -440,6 +444,7 @@ int cvm::atom_group::parse(std::string const &conf)
 
   if (b_print_atom_ids) {
     cvm::log("Internal definition of the atom group:\n");
+    cvm::log(print_atom_ids());
   }
 
   cvm::decrease_depth();
