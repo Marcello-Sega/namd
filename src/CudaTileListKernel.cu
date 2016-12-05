@@ -1161,8 +1161,8 @@ void CudaTileListKernel::sortTileLists(
 
   bool doShiftDown = (begin_bit != 0 || highDepthBitsSetIn);
 
-  if (numTileListsDst == 0)
-    NAMD_die("CudaTileListKernel::sortTileLists, numTileListsDst = 0");
+  // if (numTileListsDst == 0)
+  //   NAMD_die("CudaTileListKernel::sortTileLists, numTileListsDst = 0");
 
   // Check that the array sizes are adequate
   if (numTileListsSrc > tileListsSrc.size || numJtilesSrc > tileJatomStartSrc.size ||
