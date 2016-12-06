@@ -567,7 +567,7 @@ if ( true ) {
 //////////////////////////////////////////////////
 // Force dAi_drk
 //////////////////////////////////////////////////
-          BigReal dAjkdrjk = PI*rj*rjk_1*(rjk_1*rjk_1*(rj*rj-ri*ri) - 1.f);//ef'
+          BigReal dAjkdrjk = PI*rj*rjk_1*(rjk_1*rjk_1*(rj*rj-rk*rk) - 1.f);//ef'
           BigReal dAjkdrjkdxj = -dAjkdrjk*dxjk; // e f h'
           BigReal dAjkdrjkdyj = -dAjkdrjk*dyjk;
           BigReal dAjkdrjkdzj = -dAjkdrjk*dzjk;
