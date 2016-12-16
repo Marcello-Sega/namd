@@ -33,3 +33,9 @@ else
   $(info found module $(module))
 endif
 
+module := $(filter intel/17.0%,$(loaded_modules))
+ifeq (,$(module))
+else
+  $(error found module $(module) for buggy Intel 17.0 compiler)
+endif
+
