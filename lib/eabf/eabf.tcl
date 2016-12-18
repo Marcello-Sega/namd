@@ -1,6 +1,6 @@
 #!/bin/env namd2 +tclsh
 # eabf script by Haohao Fu (fhh2626_at_mail.nankai.edu.cn)
-# nightly version 2016.9.19
+# nightly version 2016.12.5
 
 package require Eabf
 
@@ -187,23 +187,62 @@ proc eabf_calc_RMSD {list1 list2} {
 proc eabf_merge_mwabf {outputfile args} {
 
 	# read the dimension, lowerboundary, etc
-	set parfile [open [lindex $args 0] r]
-	gets $parfile line
-	set splitedline [eabf_splitline $line]
-	close $parfile
+	set flag 0
+	foreach i $args {
+		set parfile [open $i r]
+		gets $parfile line
+		set splitedline [eabf_splitline $line]
+		close $parfile
 
-	set dimension [expr ([llength $splitedline] - 1) / 4]
-	set lowerboundary [lindex $splitedline 1]
+		set dimension [expr ([llength $splitedline] - 1) / 4]
+		
+		set temp_lowerboundary [lindex $splitedline 1]
+		set temp_upperboundary [expr [lindex $splitedline 1] + [lindex $splitedline 2] * [lindex $splitedline 3]]
+
+		if {$flag == 0} {
+			set lowerboundary $temp_lowerboundary
+			set upperboundary $temp_upperboundary
+			if {$dimension == 1} {
+				set flag 1
+			}
+
+		} else {
+			if {$temp_lowerboundary < $lowerboundary} {
+				set lowerboundary $temp_lowerboundary
+			}
+			if {$temp_upperboundary > $upperboundary} {
+				set upperboundary $temp_upperboundary
+			}
+		}
+
+		if {$dimension == 2} {
+
+			set temp_lowerboundary2 [lindex $splitedline 5]
+			set temp_upperboundary2 [expr [lindex $splitedline 5] + [lindex $splitedline 6] * [lindex $splitedline 7]]
+
+			if {$flag == 0} {
+				set lowerboundary2 $temp_lowerboundary2
+				set upperboundary2 $temp_upperboundary2
+				set flag 1
+			} else {
+				if {$temp_lowerboundary2 < $lowerboundary2} {
+					set lowerboundary2 $temp_lowerboundary2
+				}
+				if {$temp_upperboundary2 > $upperboundary2} {
+					set upperboundary2 $temp_upperboundary2
+				}
+			}
+		}
+	}
+	
 	set width [lindex $splitedline 2]
-	set upperboundary [expr [lindex $splitedline 1] + [lindex $splitedline 2] * [lindex $splitedline 3]]
+
 	if {$dimension ==1} {
 		mergefile $dimension $lowerboundary $upperboundary $width $outputfile {*}$args
 	}
 
 	if {$dimension == 2} {
-		set lowerboundary2 [lindex $splitedline 5]
 		set width2 [lindex $splitedline 6]
-		set upperboundary2 [expr [lindex $splitedline 5] + [lindex $splitedline 6] * [lindex $splitedline 7]]
 		mergefile $dimension $lowerboundary $upperboundary $width $lowerboundary2 $upperboundary2 $width2 $outputfile {*}$args
 	}
 	
@@ -297,9 +336,10 @@ proc eabf_set_grid {dimension params grid} {
 }
 
 # read the grad from file and set it into grid
-proc eabf_read_grad_splitwindow {filename dimension params grid} {
+proc eabf_read_grad_splitwindow {filename count_filename dimension params grid count_grid} {
 	
 	upvar $grid gr
+	upvar $count_grid cgr
 	upvar $params pr
 
 	set file_param []
@@ -310,29 +350,40 @@ proc eabf_read_grad_splitwindow {filename dimension params grid} {
 	}
 
 	set parfile [open $filename r]
+	set countfile [open $count_filename r]
 
 	# these lines are useless
-	gets $parfile temp_line
-	gets $parfile temp_line
-	gets $parfile temp_line
+	for {set i 0} {$i < 3} {incr i} {
+		gets $parfile temp_line
+		gets $countfile temp_line
+	}
 	if {$dimension == 2} {
 		gets $parfile temp_line
+		gets $countfile temp_line
 	}
 	
 	for {set i 0} {$i < $grad_num} {incr i} {
 		set empty [gets $parfile temp_line]
+		gets $countfile count_temp_line
 		if {$empty == 0} {
 			set i [expr $i - 1]
 			continue
 		}
 		set line [eabf_splitline $temp_line]
+		set count_line [eabf_splitline $count_temp_line]
 		if {$dimension == 1} {
-			set pos [expr round(([lindex $line 0] - [lindex $pr 1] / 2.0 - [lindex $pr 0]) / [lindex $pr 1])]
-			set gr [lreplace $gr $pos $pos [lindex $line 1]]
+			if {[lindex $count_line 1] != 0} {
+				set pos [expr round(([lindex $line 0] - [lindex $pr 1] / 2.0 - [lindex $pr 0]) / [lindex $pr 1])]
+				set gr [lreplace $gr $pos $pos [expr ([lindex $line 1] * [lindex $count_line 1] + [lindex $gr $pos] * [lindex $cgr $pos]) / ([lindex $count_line 1] + [lindex $cgr $pos])]]
+				set cgr [lreplace $cgr $pos $pos [expr [lindex $count_line 1] + [lindex $cgr $pos]]]
+			}
 		} elseif {$dimension == 2} {
-			set pos [expr round(2.0 * ((([lindex $line 0] - [lindex $pr 1] / 2.0 - [lindex $pr 0]) / [lindex $pr 1] * ([lindex $pr 5] - [lindex $pr 3]) / [lindex $pr 4]) + ([lindex $line 1] - [lindex $pr 4] / 2.0 - [lindex $pr 3]) / [lindex $pr 4]))]
-			set gr [lreplace $gr $pos $pos [lindex $line 2]]
-			set gr [lreplace $gr [expr $pos + 1] [expr $pos + 1] [lindex $line 3]]
+			if {[lindex $count_line 2] != 0} {
+				set pos [expr round(2.0 * ((([lindex $line 0] - [lindex $pr 1] / 2.0 - [lindex $pr 0]) / [lindex $pr 1] * ([lindex $pr 5] - [lindex $pr 3]) / [lindex $pr 4]) + ([lindex $line 1] - [lindex $pr 4] / 2.0 - [lindex $pr 3]) / [lindex $pr 4]))]
+				set gr [lreplace $gr $pos $pos [expr ([lindex $line 2] * [lindex $count_line 2] + [lindex $gr $pos] * [lindex $cgr $pos]) / ([lindex $count_line 2] + [lindex $cgr $pos])]]
+				set gr [lreplace $gr [expr $pos + 1] [expr $pos + 1] [expr ([lindex $line 3] * [lindex $count_line 2] + [lindex $gr [expr $pos + 1]] * [lindex $cgr $pos]) / ([lindex $count_line 2] + [lindex $cgr $pos])]]
+				set cgr [lreplace $cgr $pos $pos [expr [lindex $count_line 2] + [lindex $cgr $pos]]]
+			}
 		}
 	}
 	close $parfile
@@ -344,12 +395,22 @@ proc eabf_merge_split_window {outputname args} {
 	set dimension 0
 	set params []
 	set grid []
+	set counts_grid []
 
-	eabf_grad_range dimension params {*}$args
-	eabf_set_grid $dimension params grid
+	set grad_args []
+	set counts_args []
 
 	foreach i $args {
-		eabf_read_grad_splitwindow $i $dimension params grid
+		lappend grad_args $i.grad
+		lappend counts_args $i.count
+	}
+
+	eabf_grad_range dimension params {*}$grad_args
+	eabf_set_grid $dimension params grid
+	eabf_set_grid $dimension params counts_grid
+
+	foreach i $grad_args j $counts_args {
+		eabf_read_grad_splitwindow $i $j $dimension params grid counts_grid
 	}
 
 	# write output
@@ -363,7 +424,7 @@ proc eabf_merge_split_window {outputname args} {
 
 		for {set i 0} {$i < [llength $grid]} {incr i} {
 			puts $mergefile "[expr [lindex $params 0] + $i * [lindex $params 1] + [lindex $params 1] / 2.0] [lindex $grid $i]"
-			puts $countfile "[expr [lindex $params 0] + $i * [lindex $params 1] + [lindex $params 1] / 2.0] 1000"
+			puts $countfile "[expr [lindex $params 0] + $i * [lindex $params 1] + [lindex $params 1] / 2.0] [lindex $counts_grid $i]"
 		}
 	}
 
@@ -380,9 +441,11 @@ proc eabf_merge_split_window {outputname args} {
 		for {set i [lindex $params 0]} {[expr $i - [lindex $params 2]] < -0.00001} {set i [expr $i + [lindex $params 1]]} {
 			for {set j [lindex $params 3]} {[expr $j - [lindex $params 5]] < -0.00001} {set j [expr $j + [lindex $params 4]]} {
 				puts $mergefile "[expr $i + [lindex $params 1] / 2.0] [expr $j + [lindex $params 4] / 2.0] [lindex $grid $k] [lindex $grid [expr $k + 1]]"
-				puts $countfile "[expr $i + [lindex $params 1] / 2.0] [expr $j + [lindex $params 4] / 2.0] 1000"
+				puts $countfile "[expr $i + [lindex $params 1] / 2.0] [expr $j + [lindex $params 4] / 2.0] [lindex $counts_grid $k]"
 				incr k 2
-			}	
+			}
+			puts $mergefile ""
+			puts $countfile ""
 		}
 	}
 	close $mergefile
