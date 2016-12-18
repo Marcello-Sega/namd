@@ -171,6 +171,7 @@ bool eABF2D::readfile()
 	double temp_lowerboundary, temp_width, temp_lowerboundary2, temp_width2;
 	file >> temp_line >> temp_lowerboundary >> temp_width >> temp_bins >> krestr[0] >> temp_lowerboundary2 >> temp_width2 >> temp_bins2 >> krestr[1] >> temperature;
 
+
 	temp_bins = temp_bins + 20;
 	temp_bins2 = temp_bins2 + 20;
 
@@ -179,6 +180,8 @@ bool eABF2D::readfile()
 	for (int i = 0; i < temp_line; i++)
     {
 		file >> x >> y >> m >> n;
+		//if (x > temp_bins - 10 || x < 10 || y > temp_bins2 - 10 || y < 10)
+		//	continue;
 		file >> temp_countall;
 		;
 		pos0 = convertscale(temp_lowerboundary, x, 1) * bins[0] + convertscale(temp_lowerboundary, y, 1);
@@ -196,6 +199,8 @@ bool eABF2D::readfile()
 		for (int j = 0; j < temp_bins2; j++)
         {
 			file >> x >> y >> temp_sumx1 >> temp_sumx21 >> temp_sumx2 >> temp_sumx22 >> temp_county;
+			//if (x > temp_bins - 10 || x < 10 || y > temp_bins2 - 10 || y < 10)
+			//	continue;
 			;
 			sumx1[convertscale(temp_lowerboundary, x, 1)][convertscale(temp_lowerboundary2, y, 2)] += temp_sumx1;
 			sumx21[convertscale(temp_lowerboundary, x, 1)][convertscale(temp_lowerboundary2, y, 2)] += temp_sumx21;
@@ -292,14 +297,16 @@ bool eABF2D::calpmf() const
 
 	static std::string gridfilename = outputfile + ".grad";
 	static std::string histfilename = outputfile + ".hist.grad";
-	//static std::string countfilename = outputfile + ".count";
+	static std::string countfilename = outputfile + ".count";
 	//static std::string pmffilename = outputfile + ".pmf";
 
 	ofstream_namd ofile(gridfilename.c_str(),".old");
 	ofstream_namd ofile_hist(histfilename.c_str(), std::ios::app);
-	//ofstream_namd ofile_count(countfilename.c_str(),".old");
+	ofstream_namd ofile_count(countfilename.c_str(),".old");
+
 	writehead(ofile);
 	writehead(ofile_hist);
+	writehead(ofile_count);
 	//writecount(ofile_count);
 	//ofstream_namd ofile_pmf(pmffilename.c_str(),".old");
 
@@ -363,6 +370,7 @@ bool eABF2D::calpmf() const
 			{
 				ofile << x1 << " " << x2 << " " << grad1 << " " << grad2 << std::endl;
 				ofile_hist << x1 << " " << x2 << " " << grad1 << " " << grad2 << std::endl;
+				ofile_count << x1 << " " << x2 << " " << norm << std::endl;
 				//pmf += grad * width;
 				//pmf_x = x + 0.5 * width;
 				//ofile_pmf<<pmf_x<<" "<<pmf<<std::endl;
@@ -370,11 +378,14 @@ bool eABF2D::calpmf() const
 			}
 		}
 		if (x1 > lowerboundary[0] && x1 < upperboundary[0])
+		{
 			ofile << std::endl;
+			ofile_count << std::endl;
+		}
 	}
 	ofile.close();
 	ofile_hist.close();
-	//ofile_count.close();
+	ofile_count.close();
 	//ofile_pmf.close();
 	return true;
 }

@@ -141,6 +141,8 @@ bool eABF1D::readfile()
     {
 		file >> x >> y;
 		file >> temp_countall;
+		//if (x > temp_bins - 10 || x < 10)
+		//	continue;
         ;
 		if (countall[convertscale(temp_lowerboundary, x)][convertscale(temp_lowerboundary, y)] == 0)
 			line++;
@@ -152,6 +154,8 @@ bool eABF1D::readfile()
 	for (int i = 0; i < temp_bins; i++)
     {
 		file >> x >> temp_sumx >> temp_sumx2 >> temp_county;
+		//if (x > temp_bins - 10 || x < 10)
+		//	continue;
         ;
 		sumx[convertscale(temp_lowerboundary, x)] += temp_sumx;
 		sumx2[convertscale(temp_lowerboundary, x)] += temp_sumx2;
@@ -207,13 +211,16 @@ bool eABF1D::calpmf() const
 	static std::string gridfilename = outputfile + ".grad";
 	static std::string histfilename = outputfile + ".hist.grad";
 	static std::string pmffilename = outputfile + ".pmf";
+	static std::string countfilename = outputfile + ".count";
 
 	ofstream_namd ofile(gridfilename.c_str(),".old");
 	ofstream_namd ofile_hist(histfilename.c_str(), std::ios::app);
 	ofstream_namd ofile_pmf(pmffilename.c_str(),".old");
+	ofstream_namd ofile_count(countfilename.c_str(),".old");
 
 	writehead(ofile);
 	writehead(ofile_hist);
+	writehead(ofile_count);
 
 	ofile_pmf << lowerboundary[0] << " 0.0" << std::endl;
 
@@ -254,12 +261,14 @@ bool eABF1D::calpmf() const
 			pmf += grad * width[0];
 			pmf_x = x + 0.5 * width[0];
 			ofile_pmf << pmf_x << " " << pmf << std::endl;
+			ofile_count << x << " " << norm << std::endl;
 			// TODO, rescale the pmf file to prevent negetive free energy
 		}
 	}
 	ofile.close();
 	ofile_pmf.close();
 	ofile_hist.close();
+	ofile_count.close();
 	return true;
 }
 
