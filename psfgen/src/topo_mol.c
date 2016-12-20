@@ -2181,12 +2181,23 @@ int topo_mol_set_resname(topo_mol *mol, const topo_mol_ident_t *target,
 
 int topo_mol_set_segid(topo_mol *mol, const topo_mol_ident_t *target,
                                       const char *segid) {
+  int iseg, iseg2;
   topo_mol_segment_t *seg;
   if ( ! mol ) return -1;
   if ( ! target ) return -2;
   seg = topo_mol_get_seg(mol,target);
   if ( ! seg ) return -3;
+  iseg = hasharray_delete(mol->segment_hash, seg->segid);
+  if ( iseg < 0) {
+    topo_mol_log_error(mol, "Unable to delete segment");
+    return -4;
+  }
   strcpy(seg->segid,segid);
+  iseg2 = hasharray_reinsert(mol->segment_hash, seg->segid, iseg);
+  if ( iseg != iseg2 ) {
+    topo_mol_log_error(mol, "Unable to insert segment");
+    return -5;
+  }
   return 0;
 }
 
