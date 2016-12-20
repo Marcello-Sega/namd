@@ -2152,8 +2152,8 @@ void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target) {
   topo_mol_destroy_atom(topo_mol_unlink_atom(&(res->atoms),target->aname));
 }
 
-int topo_mol_rename_atom(topo_mol *mol, const topo_mol_ident_t *target,
-                                        const char *name) {
+int topo_mol_set_name(topo_mol *mol, const topo_mol_ident_t *target,
+                                     const char *name) {
   topo_mol_residue_t *res;
   topo_mol_atom_t *atom;
   if ( ! mol ) return -1;
@@ -2165,6 +2165,28 @@ int topo_mol_rename_atom(topo_mol *mol, const topo_mol_ident_t *target,
   }
   if ( ! atom ) return -3;
   strcpy(atom->name,name);
+  return 0;
+}
+
+int topo_mol_set_resname(topo_mol *mol, const topo_mol_ident_t *target,
+                                        const char *rname) {
+  topo_mol_residue_t *res;
+  if ( ! mol ) return -1;
+  if ( ! target ) return -2;
+  res = topo_mol_get_res(mol,target,0);
+  if ( ! res ) return -3;
+  strcpy(res->name,rname);
+  return 0;
+}
+
+int topo_mol_set_segid(topo_mol *mol, const topo_mol_ident_t *target,
+                                      const char *segid) {
+  topo_mol_segment_t *seg;
+  if ( ! mol ) return -1;
+  if ( ! target ) return -2;
+  seg = topo_mol_get_seg(mol,target);
+  if ( ! seg ) return -3;
+  strcpy(seg->segid,segid);
   return 0;
 }
 
@@ -2237,6 +2259,40 @@ int topo_mol_set_vel(topo_mol *mol, const topo_mol_ident_t *target,
   atom->vx = vx;
   atom->vy = vy;
   atom->vz = vz;
+  return 0;
+}
+
+int topo_mol_set_mass(topo_mol *mol, const topo_mol_ident_t *target,
+                      double mass) {
+  topo_mol_residue_t *res;
+  topo_mol_atom_t *atom;
+  if ( ! mol ) return -1;
+  if ( ! target ) return -2;
+  res = topo_mol_get_res(mol,target,0);
+  if ( ! res ) return -3;
+  for ( atom = res->atoms; atom; atom = atom->next ) {
+    if ( ! strcmp(target->aname,atom->name) ) break;
+  }
+  if ( ! atom ) return -3;
+
+  atom->mass = mass;
+  return 0;
+}
+
+int topo_mol_set_charge(topo_mol *mol, const topo_mol_ident_t *target,
+                        double charge) {
+  topo_mol_residue_t *res;
+  topo_mol_atom_t *atom;
+  if ( ! mol ) return -1;
+  if ( ! target ) return -2;
+  res = topo_mol_get_res(mol,target,0);
+  if ( ! res ) return -3;
+  for ( atom = res->atoms; atom; atom = atom->next ) {
+    if ( ! strcmp(target->aname,atom->name) ) break;
+  }
+  if ( ! atom ) return -3;
+
+  atom->charge = charge;
   return 0;
 }
 

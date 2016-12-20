@@ -537,14 +537,6 @@ single atom will be removed.}
 \ARGDEF{atomname}{Name of target atom (optional).}}
 {After one or more segments have been built.}
 
-\item \COMMAND{\IKEY{renameatom} \ARG{segid} \ARG{resid} \ARG{atomname} \ARG{newname}}
-{Change name of a single atom.}
-{\ARGDEF{segid}{Segment ID of target atom.}\\
-\ARGDEF{resid}{Residue ID of target atom.}\\
-\ARGDEF{atomname}{Name of target atom.}\\
-\ARGDEF{newname}{New atom name to be assigned.}}
-{After one or more segments have been built.}
-
 \item \COMMAND{\IKEY{resetpsf}}
 {Delete all segments in the structure.  The topology definitions and 
 aliases are left intact.  If you want to clear the topology and aliases
@@ -671,28 +663,33 @@ based on bond lengths of 1 \AA\ and angles of 109$^\circ$.}
 {After stucture has been generated and known coordinates read in.}
 
 \item \COMMAND{\IKEY{coord} \ARG{segid} \ARG{resid} \ARG{atomname} \ARG{\{ x y z \}}}
-{Set coordinates for a single atom.}
+{\textbf{WILL BE DEPRECATED AFTER VERSON 1.6} (use {\tt psfset coord} instead) Set coordinates for a single atom.}
 {\ARGDEF{segid}{Segment ID of target atom.}\\
 \ARGDEF{resid}{Residue ID of target atom.}\\
 \ARGDEF{atomname}{Name of target atom.}\\
 \ARGDEF{\{ x y z \}}{Coordinates to be assigned.}}
 {After structure has been generated.}
 
-\item \COMMAND{\IKEY{vel} \ARG{segid} \ARG{resid} \ARG{atomname} \ARG{\{ vx vy vz \}}}
-{Set velocities for a single atom.}
-{\ARGDEF{segid}{Segment ID of target atom.}\\
-\ARGDEF{resid}{Residue ID of target atom.}\\
+\item \COMMAND{\IKEY{psfset} \ARG{attribute} \ARG{segid} \OARG{resid} \OARG{atomname} \ARG{value}}
+{Set an attribute for a given segment, residue, or atom.}
+{\ARGDEF{attribute}{
+Segment attributes: 
+\KEYDEF{segid}{the name of the segment}
+Residue attributes: 
+\KEYDEF{resname}{the name of the residue}
+Atom attributes: 
+\KEYDEF{name}{the name of the atom}, 
+\KEYDEF{mass}{the mass of the atom},
+\KEYDEF{charge}{the charge of the atom},
+\KEYDEF{beta}{the PDB bfactor of the atom},
+\KEYDEF{coord}{the coordinates of the atom as \{x y z\}}, 
+\KEYDEF{vel}{the velocity of the atom as \{vx vy vz\}}
+}\\
+\ARGDEF{segid}{Segment ID of target segment, residue, or atom.}\\
+\ARGDEF{resid}{Residue ID of target residue or atom.}\\
 \ARGDEF{atomname}{Name of target atom.}\\
-\ARGDEF{\{ vx vy vz \}}{Velocities to be assigned.}}
-{After structure has been generated.}
-
-\item \COMMAND{\IKEY{bfactor} \ARG{segid} \ARG{resid} \ARG{atomname} \ARG{b}}
-{Set temperature factor (B-factor) for a single atom.}
-{\ARGDEF{segid}{Segment ID of target atom.}\\
-\ARGDEF{resid}{Residue ID of target atom.}\\
-\ARGDEF{atomname}{Name of target atom.}\\
-\ARGDEF{b}{Temperature factor to be assigned.}}
-{After structure has been generated.}
+\ARGDEF{value}{Value to be assigned.}}
+{After structure has been generated or read from file.}
 
 \item \COMMAND{\IKEY{writepdb} \ARG{file name}}
 {Writes PDB file containing coordinates.  Atom order is identical to
