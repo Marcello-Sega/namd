@@ -157,6 +157,14 @@ pre-built ibverbs NAMD binaries or specify ibverbs when building Charm++.
 The newer verbs network layer should offer equivalent performance to
 the ibverbs layer, plus support for multi-copy algorithms (replicas).
 
+Intel Omni-Path networks are incompatible with the pre-built ibverbs
+NAMD binaries.  Charm++ for verbs can be built with --with-qlogic 
+to support Omni-Path, but the Charm++ MPI network layer performs
+better than the verbs layer.  Hangs have been observed with Intel MPI
+but not with OpenMPI, so OpenMPI is preferred.  See "Compiling NAMD"
+below for MPI build instructions.  NAMD MPI binaries may be launched
+directly with mpiexec rather than via the provided charmrun script.
+
 Writing batch job scripts to run charmrun in a queueing system can be
 challenging.  Since most clusters provide directions for using mpiexec
 to launch MPI jobs, charmrun provides a ++mpiexec option to use mpiexec
@@ -349,6 +357,20 @@ it is very likely that your CPU affinity settings need to be fixed.
 
 All Cray XE/XK/XC network layers support multi-copy algorithms (replicas).
 
+-- Xeon Phi Processors (KNL) --
+
+Special Linux-KNL-icc and CRAY-XC-KNL-intel builds enable vectorizable
+mixed-precision kernels while preserving full alchemical and other
+functionality.  Multi-host runs require multiple smp processes per host
+(as many as 13 for Intel Omni-Path, 6 for Cray Aries) in order to drive
+the network. Careful attention to CPU affinity settings (see below) is
+required, as is 1 or 2 (but not 3 or 4) hyperthreads per PE core (but
+only 1 per communication thread core).
+
+There appears to be a bug in the Intel 17.0 compiler that breaks the
+non-KNL-optimized NAMD kernels (used for alchemical free energy, etc.)
+on KNL.  Therefore the Intel 16.0 compilers are recommended on KNL.
+
 -- SGI Altix UV --
 
 Use Linux-x86_64-multicore and the following script to set CPU affinity:
@@ -405,6 +427,12 @@ fastest configuration of 32 threads or processes on a 128-thread 32-core
 is therefore "+setcpuaffinity +pemap 0-127:4".  For 64 threads we need
 cores 0,1,4,5,8,9,... or 0-127:4.2.  Running 4 processes with +ppn 31
 would be "+setcpuaffinity +pemap 0-127:32.31 +commap 31-127:32"
+
+For Intel processors, including KNL, where hyperthreads on the same core
+are not numbered consecutively, hyperthreads may be mapped to consecutive
+PEs by appending [+span] to a core set, e.g., "+pemap 0-63+64+128+192"
+to use all threads on a 64-core, 256-thread KNL with threads mapped to
+PEs as 0,64,128,192,1,65,129,193,...
 
 For an Altix UV or other machines where the queueing system assigns cores
 to jobs this information must be obtained with numactl --show and passed
