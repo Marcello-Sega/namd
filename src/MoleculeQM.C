@@ -1364,7 +1364,7 @@ void Molecule::prepare_qm(const char *pdbFileName,
         if (currGrpSize != qmGrpSizeVec[ qmGrpIDMap[currQMID] ])
             NAMD_die("Reference PDB and Custom-PC PDB have different QM group sizes!") ;
         
-        qmPCVecMap.insert(std::pair<Real,std::vector<int>>(
+        qmPCVecMap.insert(std::pair<Real,std::vector<int> >(
             currQMID, currPCSel ));
         
         numParsedPBDs++;
