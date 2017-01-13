@@ -286,7 +286,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.6.5");
+  Tcl_PkgProvide(interp, "psfgen", "1.6.6");
 
 #ifdef NAMD_VERSION
   {
@@ -302,7 +302,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
 
 int psfgen_static_init(Tcl_Interp *interp) {
   Tcl_StaticPackage(0,"psfgen",Psfgen_Init,0);
-  return Tcl_Eval(interp,"package ifneeded psfgen 1.6.5 {load {} psfgen}");
+  return Tcl_Eval(interp,"package ifneeded psfgen 1.6.6 {load {} psfgen}");
 }
 
 char *strtoupper(const char *str, int all_caps) {
