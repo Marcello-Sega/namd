@@ -1727,7 +1727,9 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
       oldres = res;
       oldatoms = res->atoms;
     }
-    if ( topo_mol_add_atom(mol,&(res->atoms),oldatoms,atomdef) ) {
+    if ( atomdef->type[0] == '\0' ) {
+      topo_mol_find_atom(&(res->atoms),oldatoms,atomdef->name);
+    } else if ( topo_mol_add_atom(mol,&(res->atoms),oldatoms,atomdef) ) {
       sprintf(errmsg,"add atom failed in patch %s",rname);
       topo_mol_log_error(mol,errmsg);
       return -8;

@@ -214,7 +214,12 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, int all_caps, void *v,
     }
     else if ( ! strncasecmp("ATOM",tok[0],4) ) {
       debug_msg("Recognized atom statement.");
-      if ( ntok < 4 ) {
+      if ( ntok == 2 ) {
+        s1 = parse_atom(tok[1],&i1,&j1);
+        if ( topo_defs_atom(defs,0,0, s1,i1,j1,"",0.0) ) {
+          PRINT_ERROR("Failed to parse atom statement.");
+        }
+      } else if ( ntok != 2 && ntok < 4 ) {
         PRINT_ERROR("Failed to parse atom statement.");
       } else {
         s1 = parse_atom(tok[1],&i1,&j1);
