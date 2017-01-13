@@ -920,6 +920,7 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
              (!strcasecmp(argv[1], "coordinates") 
               || !strcasecmp(argv[1], "velocities") 
               || !strcasecmp(argv[1], "mass")
+              || !strcasecmp(argv[1], "charge")
               || !strcasecmp(argv[1], "atomid")
              )
             ) {
@@ -967,6 +968,15 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
             Tcl_AppendResult(interp, buf, NULL);
 #else
             sprintf(interp->result, "%f", atoms->mass);
+#endif
+            return TCL_OK;
+          } else if (!strcasecmp(argv[1], "charge")) {
+#if TCL_MINOR_VERSION >= 6
+            char buf[512];
+            sprintf(buf, "%f", atoms->charge);
+            Tcl_AppendResult(interp, buf, NULL);
+#else
+            sprintf(interp->result, "%f", atoms->charge);
 #endif
             return TCL_OK;
           } else if (!strcasecmp(argv[1], "atomid")) {
