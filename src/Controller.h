@@ -256,6 +256,22 @@ protected:
     Lattice origLattice;
 
 //for accelMD
+   inline void calc_accelMDG_mean_std
+   (BigReal testV, int step_n, 
+    BigReal *Vmax, BigReal *Vmin, BigReal *Vavg, BigReal *M2, BigReal *sigmaV);
+
+   inline void calc_accelMDG_E_k
+   (int iE, int V_n, BigReal sigma0, BigReal Vmax, BigReal Vmin, BigReal Vavg, BigReal sigmaV, 
+    BigReal* k0, BigReal* k, BigReal* E, int* iEused, char *warn);
+
+   inline void calc_accelMDG_force_factor
+   (BigReal k, BigReal E, BigReal testV, Tensor vir_orig,
+    BigReal *dV, BigReal *factor, Tensor *vir);
+
+   void write_accelMDG_rest_file
+       (int step_n, char type, int V_n, BigReal Vmax, BigReal Vmin, BigReal Vavg, BigReal sigmaV, BigReal M2,
+	BigReal E, BigReal k, bool write_topic, bool lasttime);
+
    void rescaleaccelMD (int step, int minimize = 0);
    BigReal accelMDdVAverage;
 

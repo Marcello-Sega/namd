@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2016/10/14 16:12:12 $
- * $Revision: 1.1324 $
+ * $Date: 2017/02/03 21:39:23 $
+ * $Revision: 1.1325 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1637,6 +1637,130 @@ void Controller::calcPressure(int step, int minimize,
   }
 }
 
+inline void Controller :: calc_accelMDG_mean_std
+(BigReal testV, int n, 
+ BigReal *Vmax, BigReal *Vmin, BigReal *Vavg, BigReal *M2, BigReal *sigmaV){
+   BigReal delta; 
+
+   if(testV > *Vmax){
+      *Vmax = testV;
+   }
+   else if(testV < *Vmin){
+      *Vmin = testV;
+   }
+
+   //mean and std calculated by Online Algorithm
+   delta = testV - *Vavg;
+   *Vavg += delta / (BigReal)n;
+   *M2 += delta * (testV - (*Vavg));
+
+   *sigmaV = sqrt(*M2/n);
+}
+
+inline void Controller :: calc_accelMDG_E_k
+(int iE, int step, BigReal sigma0, BigReal Vmax, BigReal Vmin, BigReal Vavg, BigReal sigmaV, 
+ BigReal* k0, BigReal* k, BigReal* E, int *iEused, char *warn){
+   switch(iE){
+      case 2:
+	 *k0 = (1-sigma0/sigmaV) * (Vmax-Vmin) / (Vavg-Vmin);
+	 // if k0 <=0 OR k0 > 1, switch to iE=1 mode
+	 if(*k0 > 1.)
+	    *warn |= 1;
+	 else if(*k0 <= 0.)
+	    *warn |= 2;
+	 //else stay in iE=2 mode
+	 else{
+	    *E = Vmin + (Vmax-Vmin)/(*k0);
+	    *iEused = 2;
+	    break;
+	 }
+      case 1:
+	 *E = Vmax;
+	 *k0 = (sigma0 / sigmaV) * (Vmax-Vmin) / (Vmax-Vavg);
+	 if(*k0 > 1.)
+	    *k0 = 1.;
+	 *iEused = 1;
+	 break;
+   }
+
+   *k = *k0 / (Vmax - Vmin);
+}
+
+inline void Controller :: calc_accelMDG_force_factor
+(BigReal k, BigReal E, BigReal testV, Tensor vir_orig, 
+ BigReal *dV, BigReal *factor, Tensor *vir){
+   BigReal VE = testV - E;
+   //if V < E, apply boost
+   if(VE < 0){
+      *factor = k * VE;
+      *vir += vir_orig * (*factor);
+      *dV += (*factor) * VE/2.;
+      *factor += 1.;
+   }
+   else{
+      *factor = 1.;
+   }
+}
+
+void Controller :: write_accelMDG_rest_file
+(int step_n, char type, int V_n, BigReal Vmax, BigReal Vmin, BigReal Vavg, BigReal sigmaV, BigReal M2, BigReal E, BigReal k, bool write_topic, bool lasttime){
+   FILE *rest;
+   char timestepstr[20];
+   char *filename;
+   int baselen;
+   char *restart_name;
+   const char *bsuffix;
+
+   if(lasttime || simParams->restartFrequency == 0){
+	   filename = simParams->outputFilename;
+	   bsuffix = ".BAK";
+   }
+   else{
+	   filename = simParams->restartFilename;
+	   bsuffix = ".old";
+   }
+
+   baselen = strlen(filename);
+   restart_name = new char[baselen+26];
+
+   strcpy(restart_name, filename);
+   if ( simParams->restartSave && !lasttime) {
+      sprintf(timestepstr,".%d",step_n);
+      strcat(restart_name, timestepstr);
+      bsuffix = ".BAK";
+   }
+   strcat(restart_name, ".gamd");
+
+   if(write_topic){
+      NAMD_backup_file(restart_name,bsuffix);
+
+      rest = fopen(restart_name, "w");
+      if(rest){
+	 fprintf(rest, "# NAMD accelMDG restart file\n"
+	       "# D/T Vn Vmax Vmin Vavg sigmaV M2 E k\n"
+	       "%c %d %.17lg %.17lg %.17lg %.17lg %.17le %.17lg %.17lg\n",
+	       type, V_n-1, Vmax, Vmin, Vavg, sigmaV, M2, E, k);
+	 fclose(rest);
+	 iout << "GAUSSIAN ACCELERATED MD RESTART DATA WRITTEN TO " << restart_name << "\n" << endi;
+      }
+      else
+	 iout << iWARN << "Cannot write accelMDG restart file\n" << endi;
+   }
+   else{
+      rest = fopen(restart_name, "a");
+      if(rest){
+	 fprintf(rest, "%c %d %.17lg %.17lg %.17lg %.17lg %.17le %.17lg %.17lg\n",
+		          type, V_n-1, Vmax, Vmin, Vavg, sigmaV, M2, E, k);
+	 fclose(rest);
+      }
+      else
+	 iout << iWARN << "Cannot write accelMDG restart file\n" << endi;
+   }
+
+   delete[] restart_name;
+}
+
+
 void Controller::rescaleaccelMD(int step, int minimize)
 {
     if ( !simParams->accelMDOn ) return;
@@ -1663,6 +1787,21 @@ void Controller::rescaleaccelMD(int step, int minimize)
     const BigReal accelMDTalpha = simParams->accelMDTalpha;
     const int accelMDOutFreq = simParams->accelMDOutFreq;
 
+    //GaMD
+    static BigReal VmaxP, VminP, VavgP, M2P=0, sigmaVP;
+    static BigReal VmaxD, VminD, VavgD, M2D=0, sigmaVD;
+    static BigReal k0P, kP, EP;
+    static BigReal k0D, kD, ED;
+    static int V_n = 1, iEusedD, iEusedP;
+    static char warnD, warnP;
+    static int restfreq;
+
+    const int ntcmdprep	= simParams->accelMDGcMDPrepSteps;
+    const int ntcmd 	= simParams->accelMDGcMDSteps;
+    const int ntebprep	= ntcmd + simParams->accelMDGEquiPrepSteps;
+    const int nteb	= ntcmd + simParams->accelMDGEquiSteps;
+
+    BigReal volume;
     BigReal bondEnergy;
     BigReal angleEnergy;
     BigReal dihedralEnergy;
@@ -1672,6 +1811,7 @@ void Controller::rescaleaccelMD(int step, int minimize)
     BigReal miscEnergy;
     BigReal amd_electEnergy;
     BigReal amd_ljEnergy;
+    BigReal amd_ljEnergy_Corr = 0.;
     BigReal amd_electEnergySlow;
     BigReal amd_groLJEnergy;
     BigReal amd_groGaussEnergy;
@@ -1680,13 +1820,15 @@ void Controller::rescaleaccelMD(int step, int minimize)
     BigReal factor_dihe = 1;
     BigReal factor_tot = 1;
     BigReal testV;
-    BigReal dV = 0;
+    BigReal dV = 0.;
     Vector  accelMDfactor;
-    Tensor vir;
+    Tensor vir;	//auto initialized to 0
     Tensor vir_dihe;
     Tensor vir_normal;
     Tensor vir_nbond;
     Tensor vir_slow;
+
+    volume = lattice.volume();
 
     bondEnergy = amd_reduction->item(REDUCTION_BOND_ENERGY);
     angleEnergy = amd_reduction->item(REDUCTION_ANGLE_ENERGY);
@@ -1717,6 +1859,13 @@ void Controller::rescaleaccelMD(int step, int minimize)
       amd_goTotalEnergy = goTotalEnergy;
     }
 
+    if( simParams->LJcorrection && volume ) {
+	// Obtain tail correction (copied from printEnergies())
+        // This value is only printed for sanity check
+        // accelMD currently does not 'boost' tail correction
+	amd_ljEnergy_Corr = molecule->tail_corr_ener / volume;
+    }
+
     if ( !( step % slowFreq ) ) {
       amd_electEnergySlow = amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
     } else {
@@ -1728,48 +1877,278 @@ void Controller::rescaleaccelMD(int step, int minimize)
         crosstermEnergy + boundaryEnergy + miscEnergy +
         amd_goTotalEnergy + amd_groLJEnergy + amd_groGaussEnergy;
 
-    if (simParams->accelMDdihe) {
+    //GaMD
+    if(simParams->accelMDG){
+       //fix step when there is accelMDFirstStep
+       step -= simParams->accelMDFirstStep;
 
-        testV = dihedralEnergy + crosstermEnergy;
-        if ( testV < accelMDE ) {
-           factor_dihe = accelMDalpha/(accelMDalpha + accelMDE - testV);
-           factor_dihe *= factor_dihe;
-           vir = vir_dihe * (factor_dihe - 1.0);
-           dV = (accelMDE - testV)*(accelMDE - testV)/(accelMDalpha + accelMDE - testV);
-           accelMDdVAverage += dV;
-        }  
+       if(step == simParams->firstTimestep) {
+	  iEusedD = iEusedP = simParams->accelMDGiE;
+	  warnD   = warnP   = '\0';
 
-    } else if (simParams->accelMDdual) {
+	  //restart file reading
+	  if(simParams->accelMDGRestart){
+	     FILE *rest = fopen(simParams->accelMDGRestartFile, "r");
+	     char line[256];
+	     int dihe_n=0, tot_n=0;
+	     if(!rest){
+		sprintf(line, "Cannot open accelMDG restart file: %s", simParams->accelMDGRestartFile);
+		NAMD_die(line);
+	     }
 
-        testV = dihedralEnergy + crosstermEnergy;
-        if ( testV < accelMDE ) {
-           factor_dihe = accelMDalpha/(accelMDalpha + accelMDE - testV);
-           factor_dihe *= factor_dihe;
-           vir = vir_dihe * (factor_dihe - 1.0) ;
-           dV = (accelMDE - testV)*(accelMDE - testV)/(accelMDalpha + accelMDE - testV);
-        }
- 
-        testV = potentialEnergy - dihedralEnergy - crosstermEnergy;
-        if ( testV < accelMDTE ) {
-           factor_tot = accelMDTalpha/(accelMDTalpha + accelMDTE - testV);
-           factor_tot *= factor_tot;
-           vir += (vir_normal - vir_dihe + vir_nbond + vir_slow) * (factor_tot - 1.0);
-           dV += (accelMDTE - testV)*(accelMDTE - testV)/(accelMDTalpha + accelMDTE - testV);
-        }
+	     while(fgets(line, 256, rest)){
+		if(line[0] == 'D'){
+		   dihe_n = sscanf(line+1, " %d %la %la %la %la %la %la %la",
+				   &V_n, &VmaxD, &VminD, &VavgD, &sigmaVD, &M2D, &ED, &kD);
+		}
+		else if(line[0] == 'T'){
+		   tot_n  = sscanf(line+1, " %d %la %la %la %la %la %la %la",
+				   &V_n, &VmaxP, &VminP, &VavgP, &sigmaVP, &M2P, &EP, &kP);
+		}
+	     }
+
+	     fclose(rest);
+
+	     V_n++;
+
+	     //check dihe settings
+	     if(simParams->accelMDdihe || simParams->accelMDdual){
+		if(dihe_n !=8)
+		   NAMD_die("Invalid dihedral potential energy format in accelMDG restart file");
+		k0D = kD * (VmaxD - VminD);
+		iout << "GAUSSIAN ACCELERATED MD READ FROM RESTART FILE: DIHED"
+		   << " Vmax " << VmaxD << " Vmin " << VminD 
+		   << " Vavg " << VavgD << " sigmaV " << sigmaVD
+		   << " E " << ED << " k " << kD
+		   << "\n" << endi;
+	     }
+
+	     //check tot settings
+	     if(!simParams->accelMDdihe || simParams->accelMDdual){
+		if(tot_n !=8)
+		   NAMD_die("Invalid total potential energy format in accelMDG restart file");
+		k0P = kP * (VmaxP - VminP);
+		iout << "GAUSSIAN ACCELERATED MD READ FROM RESTART FILE: TOTAL"
+		   << " Vmax " << VmaxP << " Vmin " << VminP 
+		   << " Vavg " << VavgP << " sigmaV " << sigmaVP
+		   << " E " << EP << " k " << kP
+		   << "\n" << endi;
+	    }
+
+	    iEusedD = (ED == VmaxD) ? 1 : 2;
+	    iEusedP = (EP == VmaxP) ? 1 : 2;
+	  }
+	  //local restfreq follows NAMD restartfreq (default: 500)
+	  restfreq = simParams->restartFrequency ? simParams->restartFrequency : 500;
+       }
+
+       //for dihedral potential
+       if(simParams->accelMDdihe || simParams->accelMDdual){
+	  testV = dihedralEnergy + crosstermEnergy;
+
+	  //write restart file every restartfreq steps
+	  if(step > simParams->firstTimestep - simParams->accelMDFirstStep && step % restfreq == 0)
+	     write_accelMDG_rest_file(step, 'D', V_n, VmaxD, VminD, VavgD, sigmaVD, M2D, ED, kD, 
+		   true, false);
+	  //write restart file at the end of the simulation
+	  if( simParams->accelMDLastStep > 0 ){
+	      if( step == simParams->accelMDLastStep )
+		  write_accelMDG_rest_file(step, 'D', V_n, VmaxD, VminD, VavgD, sigmaVD, M2D, ED, kD, 
+			  true, true);
+	  }
+	  else if(step == simParams->N - simParams->accelMDFirstStep)
+	      write_accelMDG_rest_file(step, 'D', V_n, VmaxD, VminD, VavgD, sigmaVD, M2D, ED, kD, 
+		      true, true);
+
+	  //conventional MD
+	  if(step < ntcmd){
+	     //very first step
+	     if(step == 0 && !simParams->accelMDGRestart){
+		//initialize stat
+		VmaxD = VminD = VavgD = testV;
+		M2D = sigmaVD = 0.;
+	     }
+	     //first step after cmdprep
+	     else if(step == ntcmdprep && ntcmdprep != 0){
+		//reset stat
+		VmaxD = VminD = VavgD = testV;
+		M2D = sigmaVD = 0.;
+		iout << "GAUSSIAN ACCELERATED MD: RESET DIHEDRAL POTENTIAL STATISTICS\n" << endi;
+	     }
+	     //normal steps
+	     else
+		calc_accelMDG_mean_std(testV, V_n,
+		      &VmaxD, &VminD, &VavgD, &M2D, &sigmaVD) ;
+
+	     //last cmd step
+	     if(step == ntcmd - 1){
+		calc_accelMDG_E_k(simParams->accelMDGiE, step, simParams->accelMDGSigma0D, 
+		      VmaxD, VminD, VavgD, sigmaVD, &k0D, &kD, &ED, &iEusedD, &warnD);
+	     }
+	  }
+	  //equilibration
+	  else if(step < nteb){
+	     calc_accelMDG_force_factor(kD, ED, testV, vir_dihe,
+		   &dV, &factor_dihe, &vir);
+
+	     //first step after cmd
+	     if(step == ntcmd && simParams->accelMDGresetVaftercmd){
+		//reset stat
+		VmaxD = VminD = VavgD = testV;
+		M2D = sigmaVD = 0.;
+		iout << "GAUSSIAN ACCELERATED MD: RESET DIHEDRAL POTENTIAL STATISTICS\n" << endi;
+	     }
+	     else
+		calc_accelMDG_mean_std(testV, V_n, 
+		      &VmaxD, &VminD, &VavgD, &M2D, &sigmaVD) ;
+
+	     //steps after ebprep
+	     if(step >= ntebprep)
+		calc_accelMDG_E_k(simParams->accelMDGiE, step, simParams->accelMDGSigma0D, 
+		      VmaxD, VminD, VavgD, sigmaVD, &k0D, &kD, &ED, &iEusedD, &warnD);
+	  }
+	  //production
+	  else{
+	     calc_accelMDG_force_factor(kD, ED, testV, vir_dihe,
+		   &dV, &factor_dihe, &vir);
+	  }
+
+       }
+       //for total potential
+       if(!simParams->accelMDdihe || simParams->accelMDdual){
+	  Tensor vir_tot = vir_normal + vir_nbond + vir_slow;
+	  testV = potentialEnergy;
+	  if(simParams->accelMDdual){
+	     testV -= dihedralEnergy + crosstermEnergy;
+	     vir_tot -= vir_dihe;
+	  }
+
+	  //write restart file every restartfreq steps
+	  if(step > simParams->firstTimestep - simParams->accelMDFirstStep && step % restfreq == 0)
+	     write_accelMDG_rest_file(step, 'T', V_n, VmaxP, VminP, VavgP, sigmaVP, M2P, EP, kP, 
+		   !simParams->accelMDdual, false);
+	  //write restart file at the end of simulation
+	  if( simParams->accelMDLastStep > 0 ){
+	      if( step == simParams->accelMDLastStep )
+		  write_accelMDG_rest_file(step, 'T', V_n, VmaxP, VminP, VavgP, sigmaVP, M2P, EP, kP, 
+			  !simParams->accelMDdual, true);
+	  }
+	  else if(step == simParams->N - simParams->accelMDFirstStep)
+	     write_accelMDG_rest_file(step, 'T', V_n, VmaxP, VminP, VavgP, sigmaVP, M2P, EP, kP, 
+		   !simParams->accelMDdual, true);
+
+	  //conventional MD
+	  if(step < ntcmd){
+	     //very first step
+	     if(step == 0 && !simParams->accelMDGRestart){
+		//initialize stat
+		VmaxP = VminP = VavgP = testV;
+		M2P = sigmaVP = 0.;
+	     }
+	     //first step after cmdprep
+	     else if(step == ntcmdprep && ntcmdprep != 0){
+		//reset stat
+		VmaxP = VminP = VavgP = testV;
+		M2P = sigmaVP = 0.;
+		iout << "GAUSSIAN ACCELERATED MD: RESET TOTAL POTENTIAL STATISTICS\n" << endi;
+	     }
+	     //normal steps
+	     else
+		calc_accelMDG_mean_std(testV, V_n,
+		      &VmaxP, &VminP, &VavgP, &M2P, &sigmaVP);
+	     //last cmd step
+	     if(step == ntcmd - 1){
+		calc_accelMDG_E_k(simParams->accelMDGiE, step, simParams->accelMDGSigma0P, 
+		      VmaxP, VminP, VavgP, sigmaVP, &k0P, &kP, &EP, &iEusedP, &warnP);
+	     }
+	  }
+	  //equilibration
+	  else if(step < nteb){
+	     calc_accelMDG_force_factor(kP, EP, testV, vir_tot,
+		   &dV, &factor_tot, &vir);
+
+	     //first step after cmd
+	     if(step == ntcmd && simParams->accelMDGresetVaftercmd){
+		//reset stat
+		VmaxP = VminP = VavgP = testV;
+		M2P = sigmaVP = 0.;
+		iout << "GAUSSIAN ACCELERATED MD: RESET TOTAL POTENTIAL STATISTICS\n" << endi;
+	     }
+	     else
+		calc_accelMDG_mean_std(testV, V_n,
+		      &VmaxP, &VminP, &VavgP, &M2P, &sigmaVP);
+
+	     //steps after ebprep
+	     if(step >= ntebprep)
+		calc_accelMDG_E_k(simParams->accelMDGiE, step, simParams->accelMDGSigma0P, 
+		      VmaxP, VminP, VavgP, sigmaVP, &k0P, &kP, &EP, &iEusedP, &warnP);
+	  }
+	  //production
+	  else{
+	     calc_accelMDG_force_factor(kP, EP, testV, vir_tot,
+		   &dV, &factor_tot, &vir);
+	  }
+
+       }
        accelMDdVAverage += dV;
 
-    } else {
+       //first step after ntcmdprep
+       if((ntcmdprep > 0 && step == ntcmdprep) || 
+	  (simParams->accelMDGresetVaftercmd && step == ntcmd)){
+	  V_n = 1;
+       }
 
-        testV = potentialEnergy;
-        if ( testV < accelMDE ) {
-           factor_tot = accelMDalpha/(accelMDalpha + accelMDE - testV);
-           factor_tot *= factor_tot;
-           vir = (vir_normal + vir_nbond + vir_slow) * (factor_tot - 1.0);
-           dV = (accelMDE - testV)*(accelMDE - testV)/(accelMDalpha + accelMDE - testV);
-           accelMDdVAverage += dV;
-        }
-    } 
- 
+       if(step < nteb)
+    	   V_n++;
+
+       // restore step
+       step += simParams->accelMDFirstStep;
+    }
+    //aMD
+    else{
+	if (simParams->accelMDdihe) {
+
+	    testV = dihedralEnergy + crosstermEnergy;
+	    if ( testV < accelMDE ) {
+		factor_dihe = accelMDalpha/(accelMDalpha + accelMDE - testV);
+		factor_dihe *= factor_dihe;
+		vir = vir_dihe * (factor_dihe - 1.0);
+		dV = (accelMDE - testV)*(accelMDE - testV)/(accelMDalpha + accelMDE - testV);
+		accelMDdVAverage += dV;
+	    }  
+
+	} else if (simParams->accelMDdual) {
+
+	    testV = dihedralEnergy + crosstermEnergy;
+	    if ( testV < accelMDE ) {
+		factor_dihe = accelMDalpha/(accelMDalpha + accelMDE - testV);
+		factor_dihe *= factor_dihe;
+		vir = vir_dihe * (factor_dihe - 1.0) ;
+		dV = (accelMDE - testV)*(accelMDE - testV)/(accelMDalpha + accelMDE - testV);
+	    }
+
+	    testV = potentialEnergy - dihedralEnergy - crosstermEnergy;
+	    if ( testV < accelMDTE ) {
+		factor_tot = accelMDTalpha/(accelMDTalpha + accelMDTE - testV);
+		factor_tot *= factor_tot;
+		vir += (vir_normal - vir_dihe + vir_nbond + vir_slow) * (factor_tot - 1.0);
+		dV += (accelMDTE - testV)*(accelMDTE - testV)/(accelMDTalpha + accelMDTE - testV);
+	    }
+	    accelMDdVAverage += dV;
+
+	} else {
+
+	    testV = potentialEnergy;
+	    if ( testV < accelMDE ) {
+		factor_tot = accelMDalpha/(accelMDalpha + accelMDE - testV);
+		factor_tot *= factor_tot;
+		vir = (vir_normal + vir_nbond + vir_slow) * (factor_tot - 1.0);
+		dV = (accelMDE - testV)*(accelMDE - testV)/(accelMDalpha + accelMDE - testV);
+		accelMDdVAverage += dV;
+	    }
+	} 
+    }
+
     accelMDfactor[0]=factor_dihe;
     accelMDfactor[1]=factor_tot;
     accelMDfactor[2]=1;
@@ -1794,18 +2173,46 @@ void Controller::rescaleaccelMD(int step, int minimize)
              << " IMPRP " << improperEnergy
              << " ELECT " << amd_electEnergy+amd_electEnergySlow
              << " VDW "  << amd_ljEnergy
-             << " POTENTIAL "  << potentialEnergy << "\n"
-             << endi;
+             << " POTENTIAL "  << potentialEnergy;
+	if(amd_ljEnergy_Corr)
+	    iout << " LJcorr " << amd_ljEnergy_Corr;
+	iout << "\n" << endi;
+	if(simParams->accelMDG){
+	    if(simParams->accelMDdihe || simParams->accelMDdual)
+		iout << "GAUSSIAN ACCELERATED MD: DIHED iE " << iEusedD 
+		    << " Vmax " << VmaxD << " Vmin " << VminD 
+		    << " Vavg " << VavgD << " sigmaV " << sigmaVD
+		    << " E " << ED << " k0 " << k0D << " k " << kD
+		    << "\n" << endi;
+	    if(warnD & 1)
+		iout << "GAUSSIAN ACCELERATED MD: DIHED !!! WARNING: k0 > 1, "
+		    << "SWITCHED TO iE = 1 MODE !!!\n" << endi;
+	    if(warnD & 2)
+		iout << "GAUSSIAN ACCELERATED MD: DIHED !!! WARNING: k0 <= 0, "
+		    << "SWITCHED TO iE = 1 MODE !!!\n" << endi;
+	    if(!simParams->accelMDdihe || simParams->accelMDdual)
+		iout << "GAUSSIAN ACCELERATED MD: TOTAL iE " << iEusedP 
+		    << " Vmax " << VmaxP << " Vmin " << VminP 
+		    << " Vavg " << VavgP << " sigmaV " << sigmaVP
+		    << " E " << EP << " k0 " << k0P << " k " << kP
+		    << "\n" << endi;
+	    if(warnP & 1)
+		iout << "GAUSSIAN ACCELERATED MD: TOTAL !!! WARNING: k0 > 1, "
+		    << "SWITCHED TO iE = 1 MODE !!!\n" << endi;
+	    if(warnP & 2)
+		iout << "GAUSSIAN ACCELERATED MD: TOTAL !!! WARNING: k0 <= 0, "
+		    << "SWITCHED TO iE = 1 MODE !!!\n" << endi;
+	    warnD = warnP = '\0';
+	}
 
         accelMDdVAverage = 0;
 
         if (simParams->accelMDDebugOn) {
-           BigReal volume;
            Tensor p_normal;
            Tensor p_nbond;
            Tensor p_slow;
            Tensor p;
-           if ( (volume=lattice.volume()) != 0. )  {
+           if ( volume != 0. )  {
                  p_normal = vir_normal/volume;
                  p_nbond  = vir_nbond/volume;
                  p_slow = vir_slow/volume;

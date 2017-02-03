@@ -141,6 +141,156 @@ The boost potential $dV$ can be used to reconstruct the ensemble average describ
 
 \end{itemize}
 
+
+\subsection{Gaussian Accelerated Molecular Dynamics}
+\label{section:accelmdg}
+Gaussian accelerated molecular dynamics (GaMD) \cite{MIAO2015mc} is a type of accelerated molecular dynamics (aMD) calculation. It is an enhanced sampling method that works by adding a harmonic boost potential to smoothen the system's potential energy surface. 
+By constructing a boost potential that follows Gaussian distribution, accurate reweighting of the GaMD simulations is achieved using cumulant expansion to the second order.  
+
+
+Please include the following two references in your work using the NAMD implementation of GaMD:
+\begin{itemize}
+  \item {Gaussian Accelerated Molecular Dynamics: Unconstrained Enhanced Sampling and Free Energy Calculation, Y.\,Miao, V.\,Feher, and J.\,A. McCammon. {\it J. Chem. Theory Comput.}, 11:3584-3595, 2015.}
+  \item{Gaussian Accelerated Molecular Dynamics in NAMD, Y.T.\,Pang, Y.\,Miao, Y.\,Wang, and J.\,A. McCammon, {\it J. Chem. Theory Comput.}, 13:9-19, 2017.}
+\end{itemize}
+
+\subsubsection{Theoretical background}
+GaMD enhances conformational sampling of biomolecules by adding a harmonic boost potential to smoothen the system's potential energy surface~\cite{MIAO2015mc}, as illustrated below:
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=7cm]{figures/GaMD-scheme.jpg}
+  \caption{Schematic illustration of GaMD. When the threshold energy $E$ is set to the maximum potential ($iE=1$ mode), the system's potential energy surface is smoothened by adding a harmonic boost potential that follows a Gaussian distribution. The coefficient $k_0$, which falls in the range of $0 - 1.0$, determines the magnitude of the applied boost potential.}
+  \label{fig:amd_schematic}
+\end{figure}
+
+Consider a system with $N$ atoms at positions ${\bf r} = \big\{{\bf r}_1,\cdots,{\bf r}_N \}$. 
+When the system's potential energy $V({\bf r})$ is lower than a threshold energy $E$, the following boost potential is added:
+\begin{equation}
+V^*({\bf r})= V({\bf r}) + \Delta V({\bf r}),
+\end{equation}
+where $\Delta V({\bf r})$ is the boost potential, 
+\begin{equation} 
+\Delta V({\bf r})= \left \{
+\begin{array}{l l}
+\frac{1}{2} k \left( E - V({\bf r}) \right)^2,  & \qquad V({\bf r})<E \\
+0,   & \qquad V({\bf r})\geq E. \\  
+\end{array} \right. 
+\end{equation}
+where $k$ is the harmonic force constant.
+
+As explained in reference~\cite{MIAO2015mc}, the two adjustable parameters $E$ and $k$ are automatically determined by the following three criteria. 
+First, $\Delta V$ should not change the relative order of the biased potential values, i.e., for any two arbitrary potential values $V_1 (\bf r)$ and $V_2 (\bf r)$ found on the original energy surface, if $V_1 ({\bf r}) < V_2 ({\bf r})$, 
+then one should have $ V_1^* ({\bf r}) < V_2^* ({\bf r})$.
+Second, the difference between potential energy values on the smoothened energy surface should be smaller than that of the original, 
+i.e., if $V_1 ({\bf r}) < V_2 ({\bf r})$,  then one should have $ V_2^* ({\bf r}) - V_1^* ({\bf r}) < V_2 ({\bf r}) - V_1 ({\bf r})$.
+By combining the above two criteria and plugging in the formula of $V^* ({\bf r})$ and $\Delta V$, one obtains
+\begin{equation}
+V_\text{max} \leq E \leq V_\text{min} + \frac{1}{k}
+\label{eqn:limit}
+\end{equation}
+where $V_\text{min}$ and $V_\text{max}$ are the system's minimum and maximum potential energies. To ensure that Eqn.\,(\ref{eqn:limit}) is valid, $k$ needs 
+to satisfy: $k \leq \frac{1}{ V_\text{max} - V_\text{min} }$. 
+Define $k \equiv k_0 \cdot \frac{1}{V_\text{max} - V_\text{min}}$, then $0 < k_0 \leq 1$.
+Third, the standard deviation of $\Delta V$ needs to be small enough (i.e., narrow distribution) to ensure accurate reweighting using cumulant expansion to the second order: 
+$\sigma_{\Delta V} = k \left( E - V_\text{avg} \right) \sigma_V \leq \sigma_0$, 
+where $V_\text{avg}$ and $\sigma_V$ are the average and standard deviation of the system's potential energies, 
+$\sigma_{\Delta V}$ is the standard deviation of $\Delta V$, while $\sigma_0$ is a user-specified upper limit (e.g., $10 k_B T$) in order to achieve accurate reweighting.
+
+{\bf iE = 1 mode:} When $E$ is set to $E = V_\text{max}$ according to Eqn.\,(\ref{eqn:limit}), 
+$k_0$ is calculated as:
+\begin{equation}
+k_0 = \min(1.0, k'_0) = \min \left( 1.0, \frac{\sigma_0}{\sigma_V} \cdot
+\frac{V_\text{max} - V_\text{min}}{V_\text{max} - V_\text{avg}} \right)
+\label{eqn:mode1}
+\end{equation}
+
+{\bf iE = 2 mode:} Alternatively, when $E$ is set to $E = V_\text{min} + \frac{1}{k}$, 
+$k_0$ is calculated as:
+\begin{equation}
+k_0 = k''_0 \equiv \left( 1 - \frac{\sigma_0}{\sigma_V} \cdot 
+\frac{V_\text{max} - V_\text{min}}{V_\text{avg} - V_\text{min}} \right)
+\label{eqn:mode2}
+\end{equation}
+If $k''_0$ obtained from the above equation is smaller than 0 or greater than 1, then $k_0$ will be calculated using Eqn.\,(\ref{eqn:mode1}).
+
+For more details on GaMD and the corresponding reweighting using cumulant expansion, see reference~\cite{MIAO2015mc}\cite{PANG2017mc}. 
+
+\subsubsection{NAMD parameters}
+
+Same as aMD, three modes are available for applying boost potential in GaMD: 
+(1) boosting the dihedral energy only, 
+(2) boosting the total potential energy, and 
+(3) boosting both the dihedral and total potential energy (i.e., ``dual-boost").
+
+Some parameters from aMD, including: {\tt accelMD}, {\tt accelMDdihe}, {\tt accelMDdual}, {\tt accelMDFirstStep}, {\tt accelMDLastStep} and {\tt accelMDOutFreq} are shared by GaMD (see Section \ref{section:accelmd} for details).
+The following is a list of input parameters unique to a GaMD run:
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{accelMDG}{Is Gaussian accelerated MD on?}
+{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether Gaussian accelerated MD (GaMD) is on. Only available when {\tt accelMD} is on. 
+}
+
+\item
+\NAMDCONFWDEF{accelMDGiE}{Flag to set the threshold energy for adding boost potential}
+{1 or 2}{1}
+{Specifies how the threshold energy $E$ is set in GaMD. A value of 1 indicates that the threshold energy $E$ is set to its lower bound $E = V_\text{max}$. A value of 2 indicates that the threshold energy is set to its upper bound $E = V_\text{min} + (V_\text{max} - V_\text{min}) / k_0.$
+}
+
+\item
+\NAMDCONFWDEF{accelMDGcMDPrepSteps}{No. of preparatory cMD steps}
+{Zero or Positive integer}{200,000}
+{The number of preparatory conventional MD (cMD) steps in GaMD. This value should be smaller than {\tt accelMDGcMDSteps} (see below). Potential energies are not collected for calculating the values of $V_\text{max}$, $V_\text{min}$, $V_\text{avg}$, $\sigma_V$ during the first {\tt accelMDGcMDPrepSteps}. 
+}
+
+\item
+\NAMDCONFWDEF{accelMDGcMDSteps}{No. of total cMD steps}
+{Zero or Positive integer}{1,000,000}
+{The number of total cMD steps in GaMD. With ${\tt accelMDGcMDPrepSteps} < t < {\tt accelMDGcMDSteps}$, $V_\text{max}$, $V_\text{min}$, $V_\text{avg}$, $\sigma_V$ are collected and at $t = {\tt accelMDGcMDSteps}$, $E$ and $k_0$ are computed.
+}
+
+\item
+\NAMDCONFWDEF{accelMDGEquiPrepSteps}{No. of preparatory equilibration steps in GaMD}
+{Zero or Positive integer}{200,000}
+{The number of preparatory equilibration steps in GaMD. This value should be smaller than {\tt accelMDGEquiSteps} (see below). With ${\tt accelMDGcMDSteps} < t < {\tt accelMDGEquiPrepSteps}+{\tt accelMDGcMDSteps}$, GaMD boost potential is applied according to $E$ and $k_0$ obtained at $t={\tt accelMDGcMDSteps}$. 
+}
+
+\item
+\NAMDCONFWDEF{accelMDGEquiSteps}{No. of total equilibration steps in GaMD}
+{Zero or Positive integer}{1,000,000}
+{The number of total equilibration steps in GaMD. With ${\tt accelMDGEquiPrepSteps}+{\tt accelMDGcMDSteps} < t < {\tt accelMDGEquiSteps} +{\tt accelMDGcMDSteps}$, GaMD boost potential is applied, and $E$ and $k_0$ are updated every step.
+}
+
+\item
+\NAMDCONFWDEF{accelMDGSigma0P}{Upper limit of the standard deviation of the total boost potential in GaMD}
+{Positive real number}{6.0 (kcal/mol)}
+{Specifies the upper limit of the standard deviation of the total boost potential. This option is only available when {\tt accelMDdihe} is off or when {\tt accelMDdual} is on.
+}
+
+\item
+\NAMDCONFWDEF{accelMDGSigma0D}{Upper limit of the standard deviation of the dihedral boost potential in GaMD}
+{Positive real number}{6.0 (kcal/mol)}
+{Specifies the upper limit of the standard deviation of the dihedral boost potential. This option is only available when {\tt accelMDdihe} or {\tt accelMDdual} is on.
+}
+
+\item
+\NAMDCONFWDEF{accelMDGRestart}{Flag to restart GaMD simulation}
+{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether the current GaMD simulation is the continuation of a previous run. If this option is turned on, the GaMD restart file specified by {\tt accelMDGRestartFile} (see below) will be read. 
+}
+
+\item
+\NAMDCONF{accelMDGRestartFile}{Name of GaMD restart file}
+{UNIX filename}
+{A GaMD restart file that stores the current number of steps, maximum, minimum, average and standard deviation of the dihedral and/or total potential energies (depending on the {\tt accelMDdihe} and {\tt accelMDdual} parameters). This file is saved automatically every {\tt restartfreq} steps. If {\tt accelMDGRestart} is turned on, this file will be read and the simulation will restart from the point where the file was written.
+}
+
+\end{itemize}
+
+
 \subsection{Adaptive Tempering}
 \label{section:adapttemp}
 Adaptive tempering is akin to a single-copy replica exchange method for dynamically updating the simulation temperature. The temperature $T$ is a new random variable in the range $[Tmin,Tmax]$ that is governed by the equation $dE/dT = E-E(T)-1/T+sqrt(2)T\xi$, where $\xi$ is Gaussian white noise. The effect is that when the potential energy for a given structure is lower than the (so far calculated) average energy, the temperature is lowered. Conversely when the current energy is higher than the average energy, the temperature is raised. The effect is faster conformational sampling to find minimum energy structures. The method is implemented exactly as described by Zhang and Ma in J. Chem. Phys. 132, 244101 (2010) (using Equation 18 of their paper to calculate the average energy at a given temperature from the histogram of energies). 
