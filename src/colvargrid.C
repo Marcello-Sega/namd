@@ -1,5 +1,12 @@
 // -*- c++ -*-
 
+// This file is part of the Collective Variables module (Colvars).
+// The original version of Colvars and its updates are located at:
+// https://github.com/colvars/colvars
+// Please update all Colvars source files before making any changes.
+// If you wish to distribute your changes, please submit them to the
+// Colvars repository at GitHub.
+
 #include "colvarmodule.h"
 #include "colvarvalue.h"
 #include "colvarparse.h"
@@ -76,13 +83,14 @@ cvm::real colvar_grid_scalar::minimum_value() const
 cvm::real colvar_grid_scalar::minimum_pos_value() const
 {
   cvm::real minpos = data[0];
-  for (size_t i = 0; i < nt; i++) {
+  size_t i;
+  for (i = 0; i < nt; i++) {
     if(data[i] > 0) {
       minpos = data[i];
       break;
     }
   }
-  for (size_t i = 0; i < nt; i++) {
+  for (i = 0; i < nt; i++) {
     if (data[i] > 0 && data[i] < minpos) minpos = data[i];
   }
   return minpos;

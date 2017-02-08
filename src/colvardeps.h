@@ -1,5 +1,12 @@
 // -*- c++ -*-
 
+// This file is part of the Collective Variables module (Colvars).
+// The original version of Colvars and its updates are located at:
+// https://github.com/colvars/colvars
+// Please update all Colvars source files before making any changes.
+// If you wish to distribute your changes, please submit them to the
+// Colvars repository at GitHub.
+
 #ifndef COLVARDEPS_H
 #define COLVARDEPS_H
 
@@ -134,11 +141,18 @@ public:
 
   void provide(int feature_id); // set the feature's flag to available in local object
 
+protected:
+
+  void set_available(int feature_id, bool truefalse); // set the feature's available flag, without checking 
+  void set_enabled(int feature_id, bool truefalse); // set the feature's enabled flag, without checking 
+
   /// Parse a keyword and enable a feature accordingly
   bool get_keyval_feature(colvarparse *cvp,
                           std::string const &conf, char const *key,
                           int feature_id, bool const &def_value,
                           colvarparse::Parse_Mode const parse_mode = colvarparse::parse_normal);
+
+public:
 
   int enable(int f, bool dry_run = false, bool toplevel = true);  // enable a feature and recursively solve its dependencies
   // dry_run is set to true to recursively test if a feature is available, without enabling it
@@ -157,6 +171,8 @@ public:
     f_cvb_apply_force, // will apply forces
     f_cvb_get_total_force, // requires total forces
     f_cvb_history_dependent, // depends on simulation history
+    f_cvb_scalar_variables, // requires scalar colvars
+    f_cvb_calc_pmf, // whether this bias will compute a PMF
     f_cvb_ntot
   };
 
@@ -208,12 +224,6 @@ public:
     /// be used by the biases or in analysis (needs lower and upper
     /// boundary)
     f_cv_grid,
-    /// \brief Apply a restraining potential (|x-xb|^2) to the colvar
-    /// when it goes below the lower wall
-    f_cv_lower_wall,
-    /// \brief Apply a restraining potential (|x-xb|^2) to the colvar
-    /// when it goes above the upper wall
-    f_cv_upper_wall,
     /// \brief Compute running average
     f_cv_runave,
     /// \brief Compute time correlation function

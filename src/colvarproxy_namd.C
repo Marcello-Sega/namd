@@ -1,4 +1,11 @@
-/// -*- c++ -*-
+// -*- c++ -*-
+
+// This file is part of the Collective Variables module (Colvars).
+// The original version of Colvars and its updates are located at:
+// https://github.com/colvars/colvars
+// Please update all Colvars source files before making any changes.
+// If you wish to distribute your changes, please submit them to the
+// Colvars repository at GitHub.
 
 #include <errno.h>
 
@@ -181,6 +188,12 @@ int colvarproxy_namd::setup()
   if (colvars->size() == 0) return COLVARS_OK;
 
   log("Updating NAMD interface:\n");
+
+  if (simparams->wrapAll) {
+    cvm::log("Warning: enabling wrapAll can lead to inconsistent results "
+             "for Colvars calculations: please disable wrapAll, "
+             "as is the default option in NAMD.\n");
+  }
 
   log("updating atomic data ("+cvm::to_str(atoms_ids.size())+" atoms).\n");
 
@@ -1060,13 +1073,15 @@ void calc_colvars_items_smp(int first, int last, void *result, int paramNum, voi
 
   cvm::increase_depth();
   for (int i = first; i <= last; i++) {
+    colvar *x = (*(cv->variables_active_smp()))[i];
+    int x_item = (*(cv->variables_active_smp_items()))[i];
     if (cvm::debug()) {
       cvm::log("["+cvm::to_str(proxy->smp_thread_id())+"/"+cvm::to_str(proxy->smp_num_threads())+
                "]: calc_colvars_items_smp(), first = "+cvm::to_str(first)+
                ", last = "+cvm::to_str(last)+", cv = "+
-               cv->colvars_smp[i]->name+", cvc = "+cvm::to_str(cv->colvars_smp_items[i])+"\n");
+               x->name+", cvc = "+cvm::to_str(x_item)+"\n");
     }
-    cv->colvars_smp[i]->calc_cvcs(cv->colvars_smp_items[i], 1);
+    x->calc_cvcs(x_item, 1);
   }
   cvm::decrease_depth();
 }
@@ -1075,7 +1090,9 @@ void calc_colvars_items_smp(int first, int last, void *result, int paramNum, voi
 int colvarproxy_namd::smp_colvars_loop()
 {
   colvarmodule *cv = this->colvars;
-  CkLoop_Parallelize(calc_colvars_items_smp, 1, this, cv->colvars_smp.size(), 0, cv->colvars_smp.size()-1);
+  CkLoop_Parallelize(calc_colvars_items_smp, 1, this,
+                     cv->variables_active_smp()->size(),
+                     0, cv->variables_active_smp()->size()-1);
   return cvm::get_error();
 }
 
@@ -1087,13 +1104,14 @@ void calc_cv_biases_smp(int first, int last, void *result, int paramNum, void *p
 
   cvm::increase_depth();
   for (int i = first; i <= last; i++) {
+    colvarbias *b = (*(cv->biases_active()))[i];
     if (cvm::debug()) {
       cvm::log("["+cvm::to_str(proxy->smp_thread_id())+"/"+cvm::to_str(proxy->smp_num_threads())+
                "]: calc_cv_biases_smp(), first = "+cvm::to_str(first)+
                ", last = "+cvm::to_str(last)+", bias = "+
-               cv->biases[i]->name+"\n");
+               b->name+"\n");
     }
-    cv->biases[i]->update();
+    b->update();
   }
   cvm::decrease_depth();
 }
@@ -1102,7 +1120,8 @@ void calc_cv_biases_smp(int first, int last, void *result, int paramNum, void *p
 int colvarproxy_namd::smp_biases_loop()
 {
   colvarmodule *cv = this->colvars;
-  CkLoop_Parallelize(calc_cv_biases_smp, 1, this, cv->biases.size(), 0, cv->biases.size()-1);
+  CkLoop_Parallelize(calc_cv_biases_smp, 1, this,
+                     cv->biases_active()->size(), 0, cv->biases_active()->size()-1);
   return cvm::get_error();
 }
 
@@ -1111,10 +1130,10 @@ void calc_cv_scripted_forces(int paramNum, void *param)
 {
   colvarproxy_namd *proxy = (colvarproxy_namd *) param;
   colvarmodule *cv = proxy->colvars;
-    if (cvm::debug()) {
-      cvm::log("["+cvm::to_str(proxy->smp_thread_id())+"/"+cvm::to_str(proxy->smp_num_threads())+
-               "]: calc_cv_scripted_forces()\n");
-    }
+  if (cvm::debug()) {
+    cvm::log("["+cvm::to_str(proxy->smp_thread_id())+"/"+cvm::to_str(proxy->smp_num_threads())+
+             "]: calc_cv_scripted_forces()\n");
+  }
   cv->calc_scripted_forces();
 }
 
@@ -1122,7 +1141,8 @@ void calc_cv_scripted_forces(int paramNum, void *param)
 int colvarproxy_namd::smp_biases_script_loop()
 {
   colvarmodule *cv = this->colvars;
-  CkLoop_Parallelize(calc_cv_biases_smp, 1, this, cv->biases.size(), 0, cv->biases.size()-1,
+  CkLoop_Parallelize(calc_cv_biases_smp, 1, this,
+                     cv->biases_active()->size(), 0, cv->biases_active()->size()-1,
                      1, NULL, CKLOOP_NONE,
                      calc_cv_scripted_forces, 1, this);
   return cvm::get_error();

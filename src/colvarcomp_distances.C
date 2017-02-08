@@ -1,5 +1,12 @@
 // -*- c++ -*-
 
+// This file is part of the Collective Variables module (Colvars).
+// The original version of Colvars and its updates are located at:
+// https://github.com/colvars/colvars
+// Please update all Colvars source files before making any changes.
+// If you wish to distribute your changes, please submit them to the
+// Colvars repository at GitHub.
+
 #include <cmath>
 
 #include "colvarmodule.h"
@@ -720,6 +727,7 @@ colvar::gyration::gyration(std::string const &conf)
   } else {
     atoms->b_center = true;
     atoms->ref_pos.assign(1, cvm::atom_pos(0.0, 0.0, 0.0));
+    atoms->fit_gradients.assign(atoms->size(), cvm::rvector(0.0, 0.0, 0.0));
   }
 
   x.type(colvarvalue::type_scalar);

@@ -1,3 +1,13 @@
+// -*- c++ -*-
+
+// This file is part of the Collective Variables module (Colvars).
+// The original version of Colvars and its updates are located at:
+// https://github.com/colvars/colvars
+// Please update all Colvars source files before making any changes.
+// If you wish to distribute your changes, please submit them to the
+// Colvars repository at GitHub.
+
+
 #include "colvardeps.h"
 
 
@@ -29,10 +39,20 @@ void colvardeps::provide(int feature_id) {
 }
 
 
+void colvardeps::set_available(int feature_id, bool truefalse) {
+  feature_states[feature_id]->available = truefalse;
+}
+
+
+void colvardeps::set_enabled(int feature_id, bool truefalse) {
+  feature_states[feature_id]->enabled = truefalse;
+}
+
+
 bool colvardeps::get_keyval_feature(colvarparse *cvp,
-                        std::string const &conf, char const *key,
-                        int feature_id, bool const &def_value,
-                        colvarparse::Parse_Mode const parse_mode)
+                                    std::string const &conf, char const *key,
+                                    int feature_id, bool const &def_value,
+                                    colvarparse::Parse_Mode const parse_mode)
 {
   bool value;
   bool const found = cvp->get_keyval(conf, key, value, def_value, parse_mode);
@@ -42,13 +62,13 @@ bool colvardeps::get_keyval_feature(colvarparse *cvp,
 
 
 int colvardeps::enable(int feature_id,
-                      bool dry_run /* default: false */,
-                      // dry_run: fail silently, do not enable if available
-                      // flag is passed recursively to deps of this feature
-                      bool toplevel /* default: true */)
-  // toplevel: false if this is called as part of a chain of dependency resolution
-  // this is used to diagnose failed dependencies by displaying the full stack
-  // only the toplevel dependency will throw a fatal error
+                       bool dry_run /* default: false */,
+                       // dry_run: fail silently, do not enable if available
+                       // flag is passed recursively to deps of this feature
+                       bool toplevel /* default: true */)
+// toplevel: false if this is called as part of a chain of dependency resolution
+// this is used to diagnose failed dependencies by displaying the full stack
+// only the toplevel dependency will throw a fatal error
 {
   int res;
   size_t i, j;
@@ -158,9 +178,9 @@ int colvardeps::enable(int feature_id,
       if (res != COLVARS_OK) {
         if (!dry_run) {
           cvm::log("...required by \"" + f->description + "\" in " + description);
-        }
-        if (toplevel) {
-          cvm::error("Error: Failed dependency in " + description + ".");
+          if (toplevel) {
+            cvm::error("Error: Failed dependency in " + description + ".");
+          }
         }
         return res;
       }
@@ -219,6 +239,12 @@ void colvardeps::init_cvb_requires() {
 
   f_description(f_cvb_history_dependent, "history-dependent");
 
+  f_description(f_cvb_scalar_variables, "require scalar variables");
+  f_req_children(f_cvb_scalar_variables, f_cv_scalar);
+
+  f_description(f_cvb_calc_pmf, "calculate a PMF");
+  // TODO define requirements?
+
   // Initialize feature_states for each instance
   feature_states.reserve(f_cvb_ntot);
   for (i = 0; i < f_cvb_ntot; i++) {
@@ -229,6 +255,12 @@ void colvardeps::init_cvb_requires() {
 
   // some biases are not history-dependent
   feature_states[f_cvb_history_dependent]->available = false;
+
+  // some biases do not compute a PMF
+  feature_states[f_cvb_calc_pmf]->available = false;
+
+  // by default, biases should work with vector variables, too
+  feature_states[f_cvb_scalar_variables]->available = false;
 }
 
 
@@ -306,14 +338,6 @@ void colvardeps::init_cv_requires() {
     f_req_self(f_cv_grid, f_cv_lower_boundary);
     f_req_self(f_cv_grid, f_cv_upper_boundary);
 
-    f_description(f_cv_lower_wall, "lower wall");
-    f_req_self(f_cv_lower_wall, f_cv_lower_boundary);
-    f_req_self(f_cv_lower_wall, f_cv_gradient);
-
-    f_description(f_cv_upper_wall, "upper wall");
-    f_req_self(f_cv_upper_wall, f_cv_upper_boundary);
-    f_req_self(f_cv_upper_wall, f_cv_gradient);
-
     f_description(f_cv_runave, "running average");
 
     f_description(f_cv_corrfunc, "correlation function");
@@ -321,6 +345,7 @@ void colvardeps::init_cv_requires() {
     // The features below are set programmatically
     f_description(f_cv_scripted, "scripted");
     f_description(f_cv_periodic, "periodic");
+    f_req_self(f_cv_periodic, f_cv_homogeneous);
     f_description(f_cv_scalar, "scalar");
     f_description(f_cv_linear, "linear");
     f_description(f_cv_homogeneous, "homogeneous");
