@@ -24,10 +24,9 @@ All distributions of NAMD include the following files:
 Full documentation for using NAMD is available from the NAMD web site:
 	http://www.ks.uiuc.edu/Research/namd/
 
-VMD, NAMD, and BioCoRE represent a broad effort by the Theoretical and
-Computational Biophysics Group, an NIH Center for Macromolecular
-Modeling and Bioinformatics, to develop and freely distribute effective
-tools (with source code) for molecular dynamics studies in structural
+VMD, NAMD, ARBD, and Lattice Microbes represent a broad effort by the
+NIH Center for Macromolecular Modeling and Bioinformatics to develop
+and freely distribute effective tools (with source code) for structural
 biology.  For more information, see http://www.ks.uiuc.edu/
 
 The NAMD project is funded by the National Institutes of Health
