@@ -42,6 +42,7 @@ syntax:
   echo '      (do NOT use MIC-enabled Charm++, NAMD does not need it)'
   echo '  --cuda-prefix <directory containing CUDA bin, lib, and include>'
   echo '  --cuda-gencode arch=<arch>,code=<code> (may be repeated)'
+  echo '  --cuda-dlink arch=<arch>,code=<code> (for cuFFT, may be repeated)'
   echo ''
   if ( $?PRINT_ARCH_LIST ) then
     set ARCH_PAT = ''
@@ -216,6 +217,7 @@ begin:
 
   set PYTHON_PREFIX="/usr"
   set CUDA_GENCODE = ""
+  set CUDA_DLINK = ""
 
   while ( $#argv > 0 )
     if ( $1 !~ --* ) then
@@ -320,6 +322,14 @@ begin:
           goto syntax
         endif
         set CUDA_GENCODE = ( $CUDA_GENCODE -gencode $1 )
+      breaksw
+      case --cuda-dlink:
+        shift
+        if ( ! $#argv  ) then
+          echo "ERROR: --cuda-dlink requires an argument"
+          goto syntax
+        endif
+        set CUDA_DLINK = ( $CUDA_DLINK -gencode $1 )
       breaksw
 
       case --with-memopt:
@@ -589,7 +599,15 @@ begin:
   else if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Make.config
   endif
   if ( $use_cuda ) echo 'include .rootdir/arch/$(NAMD_ARCH).cuda' >> Make.config
-  if ( $use_cuda && "x$CUDA_GENCODE" != x ) echo "CUDAGENCODE = $CUDA_GENCODE" >> Make.config
+  if ( $use_cuda && "x$CUDA_GENCODE" != x ) then
+    echo "CUDAGENCODE = $CUDA_GENCODE" >> Make.config
+    if ( "x$CUDA_DLINK" != x ) then
+      echo "CUDADLINKOPTS = $CUDA_DLINK" >> Make.config
+    else
+      echo "# runtime error if dlink architectures not available in libcufft_static" >> Make.config
+      echo "CUDADLINKOPTS = $CUDA_GENCODE" >> Make.config
+    endif
+  endif
 
   if ( $use_memopt ) echo 'MEMOPT=-DMEM_OPT_VERSION' >> Make.config
 
