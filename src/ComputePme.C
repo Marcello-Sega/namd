@@ -5256,7 +5256,7 @@ void PmeZPencil::send_trans() {
     if (trans_handle == NULL) setup_persistent();
 #endif
 #if     CMK_SMP && USE_CKLOOP
-	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+	int useCkLoop = Node::Object()->simParameters->useCkLoop;
 	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS
            && CkNumPes() >= 2 * initdata.xBlocks * initdata.yBlocks) {
 		/**
@@ -5477,7 +5477,7 @@ void PmeYPencil::send_trans() {
     if (trans_handle == NULL) setup_persistent();
 #endif
 #if     CMK_SMP && USE_CKLOOP
-	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+	int useCkLoop = Node::Object()->simParameters->useCkLoop;
 	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS
            && CkNumPes() >= 2 * initdata.xBlocks * initdata.zBlocks) {
 		/**
@@ -5820,7 +5820,7 @@ void PmeXPencil::send_untrans() {
   if (untrans_handle == NULL) setup_persistent();
 #endif
 #if     CMK_SMP && USE_CKLOOP
-  Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS
      && CkNumPes() >= 2 * initdata.yBlocks * initdata.zBlocks) {
 	  	int xBlocks = initdata.xBlocks;
@@ -6107,7 +6107,7 @@ void PmeYPencil::send_untrans() {
   if (untrans_handle == NULL) setup_persistent();
 #endif
 #if     CMK_SMP && USE_CKLOOP
-  Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS
      && CkNumPes() >= 2 * initdata.xBlocks * initdata.zBlocks) {
 	  int yBlocks = initdata.yBlocks;
@@ -6324,7 +6324,7 @@ void PmeZPencil::send_all_ungrid() {
 	}
 
 #if     CMK_SMP && USE_CKLOOP
-	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+	int useCkLoop = Node::Object()->simParameters->useCkLoop;
 	if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS
            && CkNumPes() >= 2 * initdata.xBlocks * initdata.yBlocks) {
 		//????What's the best value for numChunks?????
