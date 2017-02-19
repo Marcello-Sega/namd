@@ -365,6 +365,7 @@ public:
   void recvGrid(PmeGridMsg *);
   void gridCalc1(void);
   void sendTransBarrier(void);
+  void sendTransSubset(int first, int last);
   void sendTrans(void);
   void fwdSharedTrans(PmeTransMsg *);
   void recvSharedTrans(PmeSharedTransMsg *);
@@ -380,10 +381,12 @@ public:
   void fwdSharedUntrans(PmeUntransMsg *);
   void recvSharedUntrans(PmeSharedUntransMsg *);
   void sendUntrans(void);
+  void sendUntransSubset(int first, int last);
   void recvUntrans(PmeUntransMsg *);
   void procUntrans(PmeUntransMsg *);
   void gridCalc3(void);
   void sendUngrid(void);
+  void sendUngridSubset(int first, int last);
   void recvUngrid(PmeGridMsg *);
   void recvAck(PmeAckMsg *);
   void copyResults(PmeGridMsg *);
@@ -1940,7 +1943,28 @@ void ComputePmeMgr::sendTransBarrier(void) {
   }
 }
 
+static inline void PmeSlabSendTrans(int first, int last, void *result, int paraNum, void *param) {
+  ComputePmeMgr *mgr = (ComputePmeMgr *)param;
+  mgr->sendTransSubset(first, last);
+}
+
 void ComputePmeMgr::sendTrans(void) {
+
+  untrans_count = numTransPes;
+
+#if     CMK_SMP && USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if ( useCkLoop >= CKLOOP_CTRL_PME_SENDTRANS && CkNumPes() >= 2 * numGridPes) {
+    CkLoop_Parallelize(PmeSlabSendTrans, 1, (void *)this, CkMyNodeSize(), 0, numTransNodes-1, 0); // no sync
+  } else
+#endif
+  {
+    sendTransSubset(0, numTransNodes-1);
+  }
+
+}
+
+void ComputePmeMgr::sendTransSubset(int first, int last) {
   // CkPrintf("sendTrans on Pe(%d)\n",CkMyPe());
 
   // send data for transpose
@@ -1955,7 +1979,7 @@ void ComputePmeMgr::sendTrans(void) {
   CmiNetworkProgressAfter (0);
 #endif
 
-  for (int j=0; j<numTransNodes; j++) {
+  for (int j=first; j<=last; j++) {
     int node = transNodeOrder[j];  // different order on each node
     int pe = transNodeInfo[node].pe_start;
     int npe = transNodeInfo[node].npe;
@@ -1997,9 +2021,6 @@ void ComputePmeMgr::sendTrans(void) {
       else pmeNodeProxy[transNodeInfo[node].real_node].recvTrans(newmsg);
     } else pmeProxy[transPeMap[transNodeInfo[node].pe_start]].recvTrans(newmsg);
   }
- 
-  untrans_count = numTransPes;
-
 }
 
 void ComputePmeMgr::fwdSharedTrans(PmeTransMsg *msg) {
@@ -2166,14 +2187,14 @@ void ComputePmeMgr::gridCalc2R(void) {
   pmeProxyDir[CkMyPe()].sendUntrans();
 }
 
+static inline void PmeSlabSendUntrans(int first, int last, void *result, int paraNum, void *param) {
+  ComputePmeMgr *mgr = (ComputePmeMgr *)param;
+  mgr->sendUntransSubset(first, last);
+}
+
 void ComputePmeMgr::sendUntrans(void) {
 
-  int zdim = myGrid.dim3;
-  int y_start = localInfo[myTransPe].y_start_after_transpose;
-  int ny = localInfo[myTransPe].ny_after_transpose;
-  int slicelen = myGrid.K2 * zdim;
-
-  ComputePmeMgr **mgrObjects = pmeNodeProxy.ckLocalBranch()->mgrObjects;
+  trans_count = numGridPes;
 
   { // send energy and virial
     PmeEvirMsg *newmsg = new (numGrids, PRIORITY_SIZE) PmeEvirMsg;
@@ -2186,12 +2207,33 @@ void ComputePmeMgr::sendUntrans(void) {
     CmiEnableUrgentSend(0);
   }
 
+#if     CMK_SMP && USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if ( useCkLoop >= CKLOOP_CTRL_PME_SENDUNTRANS && CkNumPes() >= 2 * numTransPes) {
+    CkLoop_Parallelize(PmeSlabSendUntrans, 1, (void *)this, CkMyNodeSize(), 0, numGridNodes-1, 0); // no sync
+  } else
+#endif
+  {
+    sendUntransSubset(0, numGridNodes-1);
+  }
+
+}
+
+void ComputePmeMgr::sendUntransSubset(int first, int last) {
+
+  int zdim = myGrid.dim3;
+  int y_start = localInfo[myTransPe].y_start_after_transpose;
+  int ny = localInfo[myTransPe].ny_after_transpose;
+  int slicelen = myGrid.K2 * zdim;
+
+  ComputePmeMgr **mgrObjects = pmeNodeProxy.ckLocalBranch()->mgrObjects;
+
 #if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
 
   // send data for reverse transpose
-  for (int j=0; j<numGridNodes; j++) {
+  for (int j=first; j<=last; j++) {
     int node = gridNodeOrder[j];  // different order on each node
     int pe = gridNodeInfo[node].pe_start;
     int npe = gridNodeInfo[node].npe;
@@ -2235,8 +2277,6 @@ void ComputePmeMgr::sendUntrans(void) {
       else pmeNodeProxy[gridNodeInfo[node].real_node].recvUntrans(newmsg);
     } else pmeProxy[gridPeMap[gridNodeInfo[node].pe_start]].recvUntrans(newmsg);
   }
-
-  trans_count = numGridPes;
 }
 
 void ComputePmeMgr::fwdSharedUntrans(PmeUntransMsg *msg) {
@@ -2334,7 +2374,28 @@ void ComputePmeMgr::gridCalc3(void) {
   pmeProxyDir[CkMyPe()].sendUngrid();
 }
 
+static inline void PmeSlabSendUngrid(int first, int last, void *result, int paraNum, void *param) {
+  ComputePmeMgr *mgr = (ComputePmeMgr *)param;
+  mgr->sendUngridSubset(first, last);
+}
+
 void ComputePmeMgr::sendUngrid(void) {
+
+#if     CMK_SMP && USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if ( useCkLoop >= CKLOOP_CTRL_PME_SENDUNTRANS && CkNumPes() >= 2 * numGridPes) {
+    CkLoop_Parallelize(PmeSlabSendUngrid, 1, (void *)this, CkMyNodeSize(), 0, numSources-1, 1); // sync
+  } else
+#endif
+  {
+    sendUngridSubset(0, numSources-1);
+  }
+
+  grid_count = numSources;
+  memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(float) );
+}
+
+void ComputePmeMgr::sendUngridSubset(int first, int last) {
 
 #ifdef NAMD_CUDA
   const int UNGRID_PRIORITY = ( offload ? PME_OFFLOAD_UNGRID_PRIORITY : PME_UNGRID_PRIORITY );
@@ -2342,7 +2403,7 @@ void ComputePmeMgr::sendUngrid(void) {
   const int UNGRID_PRIORITY = PME_UNGRID_PRIORITY ;
 #endif
 
-  for ( int j=0; j<numSources; ++j ) {
+  for ( int j=first; j<=last; ++j ) {
     // int msglen = qgrid_len;
     PmeGridMsg *newmsg = gridmsg_reuse[j];
     int pe = newmsg->sourceNode;
@@ -2376,8 +2437,6 @@ void ComputePmeMgr::sendUngrid(void) {
     pmeProxyDir[pe].recvUngrid(newmsg);
     CmiEnableUrgentSend(0);
   }
-  grid_count = numSources;
-  memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(float) );
 }
 
 void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {
