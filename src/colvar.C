@@ -295,13 +295,8 @@ int colvar::init_grid_parameters(std::string const &conf)
       lower_wall.type(value());
       get_keyval(conf, "lowerWall", lower_wall, lower_boundary);
       lw_conf = std::string("\n\
-harmonicWalls {\n\
-    name "+this->name+"lw\n\
-    colvars "+this->name+"\n\
-    forceConstant "+cvm::to_str(lower_wall_k*width*width)+"\n\
-    lowerWalls "+cvm::to_str(lower_wall)+"\n\
-}\n");
-      cv->append_new_config(lw_conf);
+    lowerWallConstant "+cvm::to_str(lower_wall_k*width*width)+"\n\
+    lowerWalls "+cvm::to_str(lower_wall)+"\n");
     }
 
     if (get_keyval(conf, "upperBoundary", upper_boundary, upper_boundary)) {
@@ -315,13 +310,8 @@ harmonicWalls {\n\
       upper_wall.type(value());
       get_keyval(conf, "upperWall", upper_wall, upper_boundary);
       uw_conf = std::string("\n\
-harmonicWalls {\n\
-    name "+this->name+"uw\n\
-    colvars "+this->name+"\n\
-    forceConstant "+cvm::to_str(upper_wall_k*width*width)+"\n\
-    upperWalls "+cvm::to_str(upper_wall)+"\n\
-}\n");
-      cv->append_new_config(uw_conf);
+    upperWallConstant "+cvm::to_str(upper_wall_k*width*width)+"\n\
+    upperWalls "+cvm::to_str(upper_wall)+"\n");
     }
 
     if (lw_conf.size() && uw_conf.size()) {
@@ -333,6 +323,16 @@ harmonicWalls {\n\
                    INPUT_ERROR);
         return INPUT_ERROR;
       }
+    }
+
+    if (lw_conf.size() || uw_conf.size()) {
+      cvm::log("Generating a new harmonicWalls bias for compatibility purposes.\n");
+      std::string const walls_conf("\n\
+harmonicWalls {\n\
+    name "+this->name+"w\n\
+    colvars "+this->name+"\n"+lw_conf+uw_conf+
+                             "}\n");
+      cv->append_new_config(walls_conf);
     }
   }
 
@@ -956,7 +956,6 @@ int colvar::collect_cvc_values()
               cvm::to_str(x, cvm::cv_width, cvm::cv_prec)+".\n");
 
   if (after_restart) {
-    after_restart = false;
     if (cvm::proxy->simulation_running()) {
       cvm::real const jump2 = dist2(x, x_restart) / (width*width);
       if (jump2 > 0.25) {
@@ -1186,8 +1185,7 @@ int colvar::calc_colvar_properties()
 
     // initialize the restraint center in the first step to the value
     // just calculated from the cvcs
-    // TODO: put it in the restart information
-    if (cvm::step_relative() == 0) {
+    if (cvm::step_relative() == 0 && !after_restart) {
       xr = x;
       vr.reset(); // (already 0; added for clarity)
     }
@@ -1212,6 +1210,8 @@ int colvar::calc_colvar_properties()
     ft_reported = ft;
   }
 
+  // At the end of the first update after a restart, we can reset the flag
+  after_restart = false;
   return COLVARS_OK;
 }
 
@@ -1243,11 +1243,11 @@ cvm::real colvar::update_forces_energy()
   if (is_enabled(f_cv_extended_Lagrangian)) {
 
     if (cvm::debug()) {
-      cvm::log("Updating extended-Lagrangian degrees of freedom.\n");
+      cvm::log("Updating extended-Lagrangian degree of freedom.\n");
     }
 
     cvm::real dt = cvm::dt();
-    colvarvalue f_ext(fr.type());
+    colvarvalue f_ext(fr.type()); // force acting on the extended variable
     f_ext.reset();
 
     // the total force is applied to the fictitious mass, while the
