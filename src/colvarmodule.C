@@ -210,6 +210,7 @@ int colvarmodule::parse_config(std::string &conf)
     catch_input_errors(parse_global_params(extra_conf));
     catch_input_errors(parse_colvars(extra_conf));
     catch_input_errors(parse_biases(extra_conf));
+    parse->check_keywords(extra_conf, "colvarmodule");
     extra_conf.clear();
     if (get_error() != COLVARS_OK) return get_error();
   }
@@ -672,8 +673,8 @@ int colvarmodule::calc_colvars()
   variables_active()->resize(0);
   variables_active()->reserve(variables()->size());
   for (cvi = variables()->begin(); cvi != variables()->end(); cvi++) {
-    (*cvi)->feature_states[colvardeps::f_cv_active]->enabled =
-      (step_absolute() % (*cvi)->get_time_step_factor() == 0);
+    (*cvi)->set_enabled(colvardeps::f_cv_active,
+      step_absolute() % (*cvi)->get_time_step_factor() == 0);
     variables_active()->push_back(*cvi);
   }
 
@@ -741,6 +742,9 @@ int colvarmodule::calc_biases()
   std::vector<colvarbias *>::iterator bi;
   int error_code = COLVARS_OK;
 
+  // Total bias energy is reset before calling scripted biases
+  total_bias_energy = 0.0;
+
   // update the list of active biases
   biases_active()->resize(0);
   biases_active()->reserve(biases.size());
@@ -777,14 +781,10 @@ int colvarmodule::calc_biases()
     cvm::decrease_depth();
   }
 
-  cvm::real total_bias_energy = 0.0;
   for (bi = biases_active()->begin(); bi != biases_active()->end(); bi++) {
     total_bias_energy += (*bi)->get_energy();
   }
 
-  if (cvm::debug())
-    cvm::log("Adding total bias energy: " + cvm::to_str(total_bias_energy) + "\n");
-  proxy->add_energy(total_bias_energy);
   return (cvm::get_error() ? COLVARS_ERROR : COLVARS_OK);
 }
 
@@ -811,6 +811,11 @@ int colvarmodule::update_colvar_forces()
   if (use_scripted_forces && scripting_after_biases) {
     error_code |= calc_scripted_forces();
   }
+
+  // Now we have collected energies from both built-in and scripted biases
+  if (cvm::debug())
+    cvm::log("Adding total bias energy: " + cvm::to_str(total_bias_energy) + "\n");
+  proxy->add_energy(total_bias_energy);
 
   cvm::real total_colvar_energy = 0.0;
   // sum up the forces for each colvar, including wall forces
