@@ -1212,13 +1212,14 @@ int tcl_psfset(ClientData data, Tcl_Interp *interp,
                                         int argc, CONST84 char *argv[]) {
   topo_mol_ident_t target;
   psfgen_data *psf = *(psfgen_data **)data;
-  PSFGEN_TEST_MOL(interp, psf);
   char *segid, *resid, *aname;
   int rc;
   /* We will horribly abuse notation here and use these for any vector quantity
      and just use x for scalar quantities.
   */
   double x, y, z;
+
+  PSFGEN_TEST_MOL(interp, psf);
 
   /*
     psfset <attribute keyword> <segid> <resid> [<atomname>] <new value>
