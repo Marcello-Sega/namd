@@ -56,6 +56,7 @@ GlobalMasterIMD::GlobalMasterIMD() {
   int port = simparams->IMDport;
   IMDwait = simparams->IMDwait;
   IMDignore = simparams->IMDignore;
+  IMDignoreForces = simparams->IMDignoreForces;
   coordtmp = NULL;
   coordtmpsize = 0;
 
@@ -106,7 +107,7 @@ static int my_imd_connect(void *s) {
 
 void GlobalMasterIMD::calculate() {
   /* clear out the requested forces first! */
-  if (!IMDignore) {
+  if (!IMDignore && !IMDignoreForces) {
     modifyAppliedForces().resize(0);
     modifyForcedAtoms().resize(0);
     modifyGroupForces().resize(0);
@@ -154,7 +155,7 @@ void GlobalMasterIMD::calculate() {
 
   DebugM(2,"Setting " << num << " forces.\n");
   
-  if (!IMDignore) {
+  if (!IMDignore && !IMDignoreForces) {
     modifyForcedAtoms().resize(num);
     modifyAppliedForces().resize(num);
   
@@ -199,10 +200,13 @@ void GlobalMasterIMD::get_vmd_forces() {
               "Error reading IMD forces, killing connection\n" << endi;
             goto vmdDestroySocket;
           } 
-          if (IMDignore) {
+          if (IMDignore || IMDignoreForces)  {
             if ( ! warned ) {
               warned = 1;
-              iout << iWARN << "Ignoring IMD forces due to IMDignore\n" << endi;
+              char option[16];
+              if (IMDignore) strcpy(option, "IMDignore");
+              else strcpy(option, "IMDignoreForces");  
+              iout << iWARN << "Ignoring IMD forces due to " << option << "\n" << endi;
             }
           } else {
             for (int i=0; i<length; i++) {
@@ -260,6 +264,8 @@ void GlobalMasterIMD::get_vmd_forces() {
           vmdDestroySocket:
           vmdsock_destroy(clientsock);
           clients.del(i_client);
+          // Enable the MD to continue after detach
+          if (IMDwait) IMDwait = 0;
           goto vmdEnd;
         case IMD_KILL:
           if (IMDignore) {

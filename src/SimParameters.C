@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2017/02/03 21:39:23 $
- * $Revision: 1.1476 $
+ * $Date: 2017/03/20 19:52:17 $
+ * $Revision: 1.1477 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2156,9 +2156,10 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("IMDfreq",POSITIVE);
    opts.optionalB("IMDon","IMDwait","Pause until IMD connection?",&IMDwait,
      FALSE);
-   opts.optionalB("IMDon","IMDignore","Ignore forces, etc.?",&IMDignore,
+   opts.optionalB("IMDon","IMDignore","Ignore any user input?",&IMDignore,
      FALSE);
-
+   opts.optionalB("IMDon","IMDignoreForces","Ignore forces ONLY?",&IMDignoreForces,
+     FALSE);
    // Maximum Partition options
    opts.optional("ldBalancer", "maxSelfPart", 
      "maximum number of self partitions in one patch", &maxSelfPart, 20);
@@ -5194,7 +5195,7 @@ if ( openatomOn )
    // Global forces configuration
 
    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
-                      (IMDon && ! IMDignore) || SMDOn || TMDOn || 
+                      (IMDon && ! (IMDignore || IMDignoreForces)) || SMDOn || TMDOn || 
                       colvarsOn || symmetryOn || qmForcesOn );
 
 
@@ -5288,6 +5289,11 @@ if ( openatomOn )
      if (IMDignore) {
         iout << iINFO << "INTERACTIVE MD WILL NOT INFLUENCE SIMULATION\n";
      } else {
+       if (IMDignoreForces) 
+         {
+            iout << iINFO << "INTERACTIVE FORCES ARE DISABLED\n";
+            iout << iINFO << "PAUSE, RESUME, DETACH AND FINISH INTERACTIVE MD ARE ENABLED\n";
+         }
        if (IMDwait) iout << iINFO << "WILL AWAIT INTERACTIVE MD CONNECTION\n";
      }
      iout << endi;

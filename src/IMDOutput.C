@@ -18,7 +18,7 @@ IMDOutput::~IMDOutput() {
 
 void IMDOutput::use_imd(GlobalMasterIMD *g) {
   imd = g;
-  ignore = g->IMDignore;
+  ignore = g->IMDignore || g->IMDignoreForces;
 }
 
 void IMDOutput::gather_energies(IMDEnergies *energies) { 

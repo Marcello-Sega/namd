@@ -904,7 +904,7 @@ ComputeMgr::createComputes(ComputeMap *map)
         // masterServerObject->addClient(new GlobalMasterTest());
         if (simParams->tclForcesOn)
             masterServerObject->addClient(new GlobalMasterTcl());
-        if (simParams->IMDon && ! simParams->IMDignore)
+        if (simParams->IMDon && ! (simParams->IMDignore || simParams->IMDignoreForces) )
             masterServerObject->addClient(new GlobalMasterIMD());
 
         if (simParams->SMDOn)
@@ -931,7 +931,7 @@ ComputeMgr::createComputes(ComputeMap *map)
 
     }
 
-    if ( !myNode && simParams->IMDon && simParams->IMDignore ) {
+    if ( !myNode && simParams->IMDon && (simParams->IMDignore || simParams->IMDignoreForces) ) {
       // GlobalMasterIMD constructor saves pointer to node->IMDOutput object
       new GlobalMasterIMD();
     }

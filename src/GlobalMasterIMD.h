@@ -34,8 +34,11 @@ class GlobalMasterIMD : public GlobalMaster {
   // flag for whether to proceed with simulation when there are no connections
   int IMDwait;
 
-  // flag for whether to ignore forces
+  // flag for whether to ignore all user input
   int IMDignore;
+
+  // flag for whether to ignore only forces
+  int IMDignoreForces;
 
   // My server socket handle
   void *sock;
