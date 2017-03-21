@@ -295,7 +295,7 @@ int colvarmodule::parse_colvars(std::string const &conf)
 
   std::string colvar_conf = "";
   size_t pos = 0;
-  while (parse->key_lookup(conf, "colvar", colvar_conf, pos)) {
+  while (parse->key_lookup(conf, "colvar", &colvar_conf, &pos)) {
 
     if (colvar_conf.size()) {
       cvm::log(cvm::line_marker);
@@ -350,7 +350,7 @@ int colvarmodule::parse_biases_type(std::string const &conf,
 {
   std::string bias_conf = "";
   size_t conf_saved_pos = 0;
-  while (parse->key_lookup(conf, keyword, bias_conf, conf_saved_pos)) {
+  while (parse->key_lookup(conf, keyword, &bias_conf, &conf_saved_pos)) {
     if (bias_conf.size()) {
       cvm::log(cvm::line_marker);
       cvm::increase_depth();
@@ -673,6 +673,8 @@ int colvarmodule::calc_colvars()
   variables_active()->resize(0);
   variables_active()->reserve(variables()->size());
   for (cvi = variables()->begin(); cvi != variables()->end(); cvi++) {
+    // This is a dynamic feature - the next call should be to enable()
+    // or disable() when dynamic dependency resolution is fully implemented
     (*cvi)->set_enabled(colvardeps::f_cv_active,
       step_absolute() % (*cvi)->get_time_step_factor() == 0);
     variables_active()->push_back(*cvi);

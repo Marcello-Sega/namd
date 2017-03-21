@@ -43,9 +43,6 @@ int colvarbias_meta::init(std::string const &conf)
 {
   colvarbias::init(conf);
 
-  provide(f_cvb_history_dependent);
-
-  provide(f_cvb_calc_pmf);
   enable(f_cvb_calc_pmf);
 
   get_keyval(conf, "hillWeight", hill_weight, 0.0);
@@ -166,7 +163,6 @@ int colvarbias_meta::init(std::string const &conf)
     cvm::log("Done initializing the metadynamics bias \""+this->name+"\""+
              ((comm != single_replica) ? ", replica \""+replica_id+"\"" : "")+".\n");
 
-  save_delimiters = false;
   return COLVARS_OK;
 }
 
@@ -1424,7 +1420,7 @@ std::istream & colvarbias_meta::read_hill(std::istream &is)
     // it is safer to read colvarvalue objects one at a time;
     // TODO: change this it later
     std::string centers_input;
-    key_lookup(data, "centers", centers_input);
+    key_lookup(data, "centers", &centers_input);
     std::istringstream centers_is(centers_input);
     for (size_t i = 0; i < num_variables(); i++) {
       centers_is >> h_centers[i];

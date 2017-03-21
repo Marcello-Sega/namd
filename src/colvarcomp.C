@@ -48,8 +48,6 @@ colvar::cvc::cvc(std::string const &conf)
   get_keyval(conf, "period", period, 0.0);
   get_keyval(conf, "wrapAround", wrap_center, 0.0);
 
-  // All cvcs implement this
-  provide(f_cvc_debug_gradient);
   get_keyval_feature((colvarparse *)this, conf, "debugGradients",
                      f_cvc_debug_gradient, false, parse_silent);
 
@@ -81,8 +79,8 @@ int colvar::cvc::init_total_force_params(std::string const &conf)
     agi++;
     for ( ; agi != atom_groups.end(); agi++) {
       if ((*agi)->b_dummy) {
-        set_available(f_cvc_inv_gradient, false);
-        set_available(f_cvc_Jacobian, false);
+        provide(f_cvc_inv_gradient, false);
+        provide(f_cvc_Jacobian, false);
       }
     }
   }
@@ -96,14 +94,14 @@ cvm::atom_group *colvar::cvc::parse_group(std::string const &conf,
                                           bool optional)
 {
   cvm::atom_group *group = NULL;
+  std::string group_conf;
 
-  if (key_lookup(conf, group_key)) {
+  if (key_lookup(conf, group_key, &group_conf)) {
     group = new cvm::atom_group;
     group->key = group_key;
 
     if (b_try_scalable) {
-      // TODO rewrite this logic in terms of dependencies
-      if (is_available(f_cvc_scalable_com) && is_available(f_cvc_com_based)) {
+      if (is_available(f_cvc_scalable_com) && is_enabled(f_cvc_com_based)) {
         enable(f_cvc_scalable_com);
         enable(f_cvc_scalable);
         // The CVC makes the feature available;
@@ -114,18 +112,31 @@ cvm::atom_group *colvar::cvc::parse_group(std::string const &conf,
       // TODO check for other types of parallelism here
     }
 
-    if (group->parse(conf) == COLVARS_OK) {
-      atom_groups.push_back(group);
-    } else {
-      cvm::error("Error parsing definition for atom group \""+
-                         std::string(group_key)+"\".\n");
+    if (group_conf.size() == 0) {
+      cvm::error("Error: atom group \""+group->key+
+                 "\" is set, but has no definition.\n",
+                 INPUT_ERROR);
+      return group;
     }
+
+    cvm::increase_depth();
+    if (group->parse(group_conf) == COLVARS_OK) {
+      atom_groups.push_back(group);
+    }
+    group->check_keywords(group_conf, group_key);
+    if (cvm::get_error()) {
+      cvm::error("Error parsing definition for atom group \""+
+                 std::string(group_key)+"\"\n.", INPUT_ERROR);
+    }
+    cvm::decrease_depth();
+
   } else {
     if (! optional) {
       cvm::error("Error: definition for atom group \""+
-                      std::string(group_key)+"\" not found.\n");
+                 std::string(group_key)+"\" not found.\n");
     }
   }
+
   return group;
 }
 

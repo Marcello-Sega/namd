@@ -30,12 +30,7 @@ int colvarbias_abf::init(std::string const &conf)
 {
   colvarbias::init(conf);
 
-  provide(f_cvb_scalar_variables);
   enable(f_cvb_scalar_variables);
-
-  provide(f_cvb_history_dependent);
-
-  provide(f_cvb_calc_pmf);
   enable(f_cvb_calc_pmf);
 
   // TODO relax this in case of VMD plugin
@@ -80,7 +75,12 @@ int colvarbias_abf::init(std::string const &conf)
       cvm::error("Error: shared ABF requires more than one replica.");
     else
       cvm::log("shared ABF will be applied among "+ cvm::to_str(cvm::replica_num()) + " replicas.\n");
-
+    if (cvm::proxy->smp_enabled() == COLVARS_OK) {
+      cvm::error("Error: shared ABF is currently not available with SMP parallelism; "
+                 "please set \"SMP off\" at the top of the Colvars configuration file.\n",
+                 COLVARS_NOT_IMPLEMENTED);
+      return COLVARS_NOT_IMPLEMENTED;
+    }
     // If shared_freq is not set, we default to output_freq
     get_keyval(conf, "sharedFreq", shared_freq, output_freq);
   }

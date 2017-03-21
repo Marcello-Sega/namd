@@ -10,6 +10,8 @@
 #ifndef COLVARPROXY_NAMD_H
 #define COLVARPROXY_NAMD_H
 
+#include "colvarproxy_namd_version.h"
+
 #include "Vector.h"
 #include "ResizeArray.h"
 #include "NamdTypes.h"
@@ -21,10 +23,6 @@
 #include "colvarmodule.h"
 #include "colvarproxy.h"
 #include "colvarvalue.h"
-
-#ifndef COLVARPROXY_VERSION
-#define COLVARPROXY_VERSION "2017-01-09"
-#endif
 
 // For replica exchange
 #include "converse.h"
@@ -221,6 +219,16 @@ public:
     return msg_len;
   }
 
+  int replica_comm_send()
+  {
+    return COLVARS_OK;
+  }
+
+  int replica_comm_async_send()
+  {
+    return COLVARS_OK;
+  }
+
   inline size_t restart_frequency()
   {
     return restart_frequency_s;
@@ -277,6 +285,8 @@ public:
   std::ostream * output_stream(std::string const &output_name);
   int close_output_stream(std::string const &output_name);
   int backup_file(char const *filename);
+
+  char *script_obj_to_str(unsigned char *obj);
 };
 
 

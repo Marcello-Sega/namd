@@ -70,8 +70,6 @@ int colvar::init(std::string const &conf)
   if (get_keyval(conf, "scriptedFunction", scripted_function,
     "", colvarparse::parse_silent)) {
 
-    // Make feature available only on user request
-    provide(f_cv_scripted);
     enable(f_cv_scripted);
     cvm::log("This colvar uses scripted function \"" + scripted_function + "\".");
 
@@ -284,7 +282,6 @@ int colvar::init_grid_parameters(std::string const &conf)
   if (is_enabled(f_cv_scalar)) {
 
     if (get_keyval(conf, "lowerBoundary", lower_boundary, lower_boundary)) {
-      provide(f_cv_lower_boundary);
       enable(f_cv_lower_boundary);
     }
     std::string lw_conf, uw_conf;
@@ -300,7 +297,6 @@ int colvar::init_grid_parameters(std::string const &conf)
     }
 
     if (get_keyval(conf, "upperBoundary", upper_boundary, upper_boundary)) {
-      provide(f_cv_upper_boundary);
       enable(f_cv_upper_boundary);
     }
 
@@ -376,22 +372,13 @@ harmonicWalls {\n\
 
 int colvar::init_extended_Lagrangian(std::string const &conf)
 {
-  bool b_extended_Lagrangian;
-  get_keyval(conf, "extendedLagrangian", b_extended_Lagrangian, false);
+  get_keyval_feature(this, conf, "extendedLagrangian", f_cv_extended_Lagrangian, false);
 
-  if (b_extended_Lagrangian) {
+  if (is_enabled(f_cv_extended_Lagrangian)) {
     cvm::real temp, tolerance, period;
 
     cvm::log("Enabling the extended Lagrangian term for colvar \""+
              this->name+"\".\n");
-
-    // Make feature available only on user request
-    provide(f_cv_extended_Lagrangian);
-    enable(f_cv_extended_Lagrangian);
-    provide(f_cv_Langevin);
-
-    // The extended mass will apply forces
-    enable(f_cv_gradient);
 
     xr.type(value());
     vr.type(value());
@@ -414,7 +401,7 @@ int colvar::init_extended_Lagrangian(std::string const &conf)
       return INPUT_ERROR;
     }
     ext_force_k = cvm::boltzmann() * temp / (tolerance * tolerance);
-    cvm::log("Computed extended system force constant: " + cvm::to_str(ext_force_k) + " kcal/mol/U^2");
+    cvm::log("Computed extended system force constant: " + cvm::to_str(ext_force_k) + " [E]/U^2");
 
     get_keyval(conf, "extendedTimeConstant", period, 200.0);
     if (period <= 0.0) {
@@ -422,7 +409,7 @@ int colvar::init_extended_Lagrangian(std::string const &conf)
     }
     ext_mass = (cvm::boltzmann() * temp * period * period)
       / (4.0 * PI * PI * tolerance * tolerance);
-    cvm::log("Computed fictitious mass: " + cvm::to_str(ext_mass) + " kcal/mol/(U/fs)^2   (U: colvar unit)");
+    cvm::log("Computed fictitious mass: " + cvm::to_str(ext_mass) + " [E]/(U/fs)^2   (U: colvar unit)");
 
     {
       bool b_output_energy;
@@ -439,7 +426,7 @@ int colvar::init_extended_Lagrangian(std::string const &conf)
     }
     if (ext_gamma != 0.0) {
       enable(f_cv_Langevin);
-      ext_gamma *= 1.0e-3; // convert from ps-1 to fs-1
+      ext_gamma *= 1.0e-3; // correct as long as input is required in ps-1 and cvm::dt() is in fs
       ext_sigma = std::sqrt(2.0 * cvm::boltzmann() * temp * ext_gamma * ext_mass / cvm::dt());
     }
   }
@@ -496,8 +483,8 @@ template<typename def_class_name> int colvar::init_components_type(std::string c
   size_t pos = 0;
   while ( this->key_lookup(conf,
                            def_config_key,
-                           def_conf,
-                           pos) ) {
+                           &def_conf,
+                           &pos) ) {
     if (!def_conf.size()) continue;
     cvm::log("Initializing "
              "a new \""+std::string(def_config_key)+"\" component"+

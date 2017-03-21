@@ -24,10 +24,7 @@ int colvarbias_histogram::init(std::string const &conf)
 {
   colvarbias::init(conf);
 
-  provide(f_cvb_scalar_variables);
   enable(f_cvb_scalar_variables);
-
-  provide(f_cvb_history_dependent);
   enable(f_cvb_history_dependent);
 
   size_t i;
@@ -89,8 +86,9 @@ int colvarbias_histogram::init(std::string const &conf)
 
   {
     std::string grid_conf;
-    if (key_lookup(conf, "histogramGrid", grid_conf)) {
+    if (key_lookup(conf, "histogramGrid", &grid_conf)) {
       grid->parse_params(grid_conf);
+      grid->check_keywords(grid_conf, "histogramGrid");
     }
   }
 
