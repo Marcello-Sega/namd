@@ -703,12 +703,12 @@ void Node::startup() {
 #endif
 
 #ifdef CHARM_HAS_MSA
-    else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
+    if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
       CProxy_ComputeMsmMsaMgr msm(CkpvAccess(BOCclass_group).computeMsmMsaMgr);
       msm[CkMyPe()].initialize(new CkQdMsg);
     }
 #else
-    else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
+    if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
       CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
       MsmInitMsg *msg = new MsmInitMsg;
       Lattice lattice = simParameters->lattice;  // system lattice vectors
