@@ -60,6 +60,7 @@
 // #ifdef NAMD_CUDA
 #include "ComputeCUDAMgr.decl.h"
 #include "ComputePmeCUDAMgr.decl.h"
+#include "ComputePmeCUDAMgr.h"
 // #endif
 #include "ComputeGridForceMgr.decl.h"
 #include "OptPmeMgr.decl.h"
@@ -685,7 +686,7 @@ void Node::startup() {
         if ( simParameters->usePMECUDA ) {
           if(CkMyRank()==0) {
             CProxy_ComputePmeCUDAMgr pme(CkpvAccess(BOCclass_group).computePmeCUDAMgr);
-            pme[CkMyNode()].initialize(new CkQdMsg);
+            pme.ckLocalBranch()->initialize(new CkQdMsg);  // must run on pe 0 to call ckNew
           }
         } else 
 #endif

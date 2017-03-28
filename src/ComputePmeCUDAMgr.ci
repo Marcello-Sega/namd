@@ -52,7 +52,7 @@ module ComputePmeCUDAMgr {
 	nodegroup ComputePmeCUDAMgr {
 #ifdef NAMD_CUDA
     entry ComputePmeCUDAMgr(void);
-    entry void initialize(CkQdMsg *);
+    // entry void initialize(CkQdMsg *); // must run on pe 0 to call ckNew
     entry void initialize_pencils(CkQdMsg *);
     entry void activate_pencils(CkQdMsg *);
     entry void recvPencils(CProxy_CudaPmePencilXYZ xyz);
