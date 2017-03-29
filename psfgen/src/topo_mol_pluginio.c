@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <ctype.h>
 #include "topo_mol_pluginio.h"
@@ -787,29 +788,31 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
                           const char *filename, struct image_spec *images,
                           void *v, void (*print_msg)(void *, const char *)) {
   char buf[256];
-  int iseg,nseg,ires,nres,atomid,resid;
-  int ia,ib,ic,ii;
+  int iseg,nseg,ires,nres,resid;
+  int ia,ib,ic;
+  int64_t ii,atomid;
   int has_guessed_atoms = 0;
   double x,y,z,o,b;
   topo_mol_segment_t *seg=NULL;
   topo_mol_residue_t *res=NULL;
   topo_mol_atom_t *atom=NULL;
   topo_mol_bond_t *bond=NULL;
-  int nbonds;
+  int64_t nbonds;
   topo_mol_angle_t *angl=NULL;
-  int nangls;
+  int64_t nangls;
   topo_mol_dihedral_t *dihe=NULL;
-  int ndihes;
+  int64_t ndihes;
   topo_mol_improper_t *impr=NULL;
-  int nimprs;
+  int64_t nimprs;
   topo_mol_cmap_t *cmap=NULL;
-  int ncmaps;
+  int64_t ncmaps;
   topo_mol_exclusion_t *excl=NULL;
-  int nexcls;
+  int64_t nexcls;
 
   molfile_plugin_t *plg; /* plugin handle */
   void *wv;              /* opaque plugin write handle */
-  int nmolatoms, nimages, natoms, optflags;
+  int64_t nmolatoms, nimages, natoms;
+  int optflags;
   molfile_atom_t *atomarray=NULL;
   molfile_timestep_t ts;
   float *atomcoords=NULL;
@@ -1163,10 +1166,10 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
   /* build angle/dihedral/improper/cterm lists here */
   if ((nangls > 0 || ndihes > 0 || nimprs > 0 || ncmaps > 0) &&
       plg->write_angles != NULL) {
-    int anglcnt=0;
-    int dihecnt=0;
-    int imprcnt=0;
-    int cmapcnt=0;
+    int64_t anglcnt=0;
+    int64_t dihecnt=0;
+    int64_t imprcnt=0;
+    int64_t cmapcnt=0;
 
     int *angles = (int *) malloc(nangls * (3*sizeof(int)));
     int *dihedrals = (int *) malloc(ndihes * (4*sizeof(int)));
