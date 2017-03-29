@@ -494,10 +494,10 @@ public:
     return s_NumFixedGroups;  // value is "turned on" SimParameters
   }
 
-  int num_group_deg_freedom() const {
+  int64_t num_group_deg_freedom() const {
     // local variables prefixed by s_
-    int s_NumGroupDegFreedom = 3 * numHydrogenGroups;
-    int s_NumFixedAtoms = num_fixed_atoms();
+    int64_t s_NumGroupDegFreedom = 3 * (int64_t) numHydrogenGroups;
+    int64_t s_NumFixedAtoms = num_fixed_atoms();
     int s_NumFixedGroups = num_fixed_groups();
     if (s_NumFixedGroups) s_NumGroupDegFreedom -= 3 * s_NumFixedGroups;
     if ( ! (s_NumFixedAtoms || numConstraints
@@ -507,10 +507,10 @@ public:
     return s_NumGroupDegFreedom;
   }
 
-  int num_deg_freedom(int isInitialReport = 0) const {
+  int64_t num_deg_freedom(int isInitialReport = 0) const {
     // local variables prefixed by s_
-    int s_NumDegFreedom = 3 * numAtoms;
-    int s_NumFixedAtoms = num_fixed_atoms();
+    int64_t s_NumDegFreedom = 3 * (int64_t) numAtoms;
+    int64_t s_NumFixedAtoms = num_fixed_atoms();
     if (s_NumFixedAtoms) s_NumDegFreedom -= 3 * s_NumFixedAtoms;
     if (numLonepairs) s_NumDegFreedom -= 3 * numLonepairs;
     if ( ! (s_NumFixedAtoms || numConstraints

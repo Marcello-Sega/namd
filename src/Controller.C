@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2017/02/03 21:39:23 $
- * $Revision: 1.1325 $
+ * $Date: 2017/03/29 21:29:03 $
+ * $Revision: 1.1326 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1368,7 +1368,7 @@ void Controller::receivePressure(int step, int minimize)
 
 #if 1
     numDegFreedom = molecule->num_deg_freedom();
-    int numGroupDegFreedom = molecule->num_group_deg_freedom();
+    int64_t numGroupDegFreedom = molecule->num_group_deg_freedom();
     int numFixedGroups = molecule->num_fixed_groups();
     int numFixedAtoms = molecule->num_fixed_atoms();
 #endif

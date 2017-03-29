@@ -711,8 +711,8 @@ int NamdState::loadStructure(const char *molFilename, const char *pdbFilename, i
 #if 0
 	{
 	  // Copied from Controller::printEnergies()
-	  int numAtoms = molecule->numAtoms;
-	  int numDegFreedom = 3 * numAtoms;
+	  int64 numAtoms = molecule->numAtoms;
+	  int64 numDegFreedom = 3 * numAtoms;
     int numLonepairs = molecule->numLonepairs;
 	  int numFixedAtoms = molecule->numFixedAtoms;
 	  if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
