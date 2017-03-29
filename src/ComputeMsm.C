@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include "MsmMap.h"
 
+// MSM (multilevel summation method)
+
 // use multicast reduction of grids from sections of MsmGridCutoff
 #define MSM_REDUCE_GRID
 //#undef MSM_REDUCE_GRID
