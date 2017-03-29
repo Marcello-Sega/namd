@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2009 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2016 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -10,7 +10,7 @@
  *
  *      $RCSfile: fastio.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.8 $       $Date: 2013/09/30 22:02:44 $
+ *      $Revision: 1.9 $       $Date: 2017/03/29 21:38:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -539,16 +539,26 @@ static fio_size_t fio_fwrite(void *ptr, fio_size_t size,
    * For large structures, e.g. 240M-atoms or larger, we have to use a loop
    * to continue writing the memory buffer until completion.
    */ 
+  int writecalls=0;
   for (i=0; i<nitems; i++) {
     fio_size_t szleft = size;
     fio_size_t rc = 0;
     for (szleft=size; szleft > 0; szleft -= rc) {
-      rc = write(fd, ((char*) ptr)+(size-szleft), szleft);
-//      if (rc != szleft) {
-//        printf("fio_fwrite(): rc %ld  sz: %ld\n", rc, szleft);
-//      }
+      fio_size_t writesz = szleft;
+
+#if 0
+      /* On some kernel versions write calls beyond 2GB may not do */
+      /* a partial write and may just return an error immediately. */
+      /* Clamp maximum write size to 1GB per write call.           */
+      if (writesz > (1024L * 1024L * 1024L))
+        writesz = (1024L * 1024L * 1024L);
+#endif
+
+      writecalls++;
+      rc = write(fd, ((char*) ptr)+(size-szleft), writesz);
       if (rc < 0) {
-        printf("fio_fwrite(): rc %ld  sz: %ld\n", rc, size);
+        printf("fio_fwrite(): rc %ld  sz: %ld  szleft: %ld  calls: %d\n", 
+               rc, size, szleft, writecalls);
         perror("  perror fio_fwrite(): ");
         return cnt;
       }
