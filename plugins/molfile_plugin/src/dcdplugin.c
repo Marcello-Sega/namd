@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr                                                                       
- *cr            (C) Copyright 1995-2009 The Board of Trustees of the           
+ *cr            (C) Copyright 1995-2016 The Board of Trustees of the           
  *cr                        University of Illinois                       
  *cr                         All Rights Reserved                        
  *cr                                                                   
@@ -11,7 +11,7 @@
  *
  *      $RCSfile: dcdplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.7 $       $Date: 2016/04/25 01:57:31 $
+ *      $Revision: 1.8 $       $Date: 2017/03/29 21:38:53 $
  *
  ***************************************************************************
  * DESCRIPTION:
