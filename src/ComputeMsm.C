@@ -26,6 +26,7 @@
 #include "MsmMap.h"
 
 // MSM (multilevel summation method)
+// has O(N) algorithmic complexity
 
 // use multicast reduction of grids from sections of MsmGridCutoff
 #define MSM_REDUCE_GRID
