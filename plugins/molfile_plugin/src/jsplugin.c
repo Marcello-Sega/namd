@@ -11,7 +11,7 @@
  *
  *      $RCSfile: jsplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.6 $       $Date: 2017/03/29 21:38:15 $
+ *      $Revision: 1.7 $       $Date: 2017/03/30 19:53:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -215,7 +215,7 @@ typedef struct {
 /* than JSBLOCKIO_THRESH atoms, or when directed by the user and */
 /* not otherwise prohibited...                                   */
 static void js_blockio_check_and_set(jshandle *js) {
-  if ((getenv("VMDJSNOBLOCKIO") == NULL) && 
+  if ( 0 && (getenv("VMDJSNOBLOCKIO") == NULL) && 
       ((js->natoms > JSBLOCKIO_THRESH) || getenv("VMDJSBLOCKIO"))) {
     js->optflags |= JSOPT_TS_BLOCKIO;
     js->directio_block_size = MOLFILE_DIRECTIO_MIN_BLOCK_SIZE; 
