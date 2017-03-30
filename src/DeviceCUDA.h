@@ -54,8 +54,6 @@ private:
 	int *pesSharingDevice;
 	// True when what???
 	int gpuIsMine;
-	// Value of __CUDA_ARCH__
-	int cuda_arch;
 
 	// Device ID for this Pe
 	int deviceID;
@@ -90,8 +88,6 @@ public:
 
 	int getGpuIsMine() {return gpuIsMine;}
 	void setGpuIsMine(const int val) {gpuIsMine = val;}
-
-	int get_cuda_arch() {return cuda_arch;}
 
 	int getDeviceID() {return deviceID;}
 	int getDeviceIDbyRank(int rank) {return devices[rank];}

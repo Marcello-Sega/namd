@@ -364,6 +364,15 @@ CudaComputeNonbonded* createCudaComputeNonbonded(ComputeID c) {
   return ComputeCUDAMgr::getComputeCUDAMgr()->createCudaComputeNonbonded(c);
 }
 
+#ifdef BONDED_CUDA
+ComputeBondedCUDA* getComputeBondedCUDA() {
+  return ComputeCUDAMgr::getComputeCUDAMgr()->getComputeBondedCUDA();
+}
+
+ComputeBondedCUDA* createComputeBondedCUDA(ComputeID c, ComputeMgr* computeMgr) {
+  return ComputeCUDAMgr::getComputeCUDAMgr()->createComputeBondedCUDA(c, computeMgr);
+}
+#endif
 #endif
 
 //
@@ -473,35 +482,88 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
       c->initialize();
       break;
 #endif
-    case computeExclsType:
-      PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
-      c = new ComputeExcls(i,pids); // unknown delete
+#ifdef NAMD_CUDA
+#ifdef BONDED_CUDA
+    case computeBondedCUDAType:
+      c = createComputeBondedCUDA(i, this);
       map->registerCompute(i,c);
-      c->initialize();
+      break;
+#endif
+#endif
+    case computeExclsType:
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 16)
+        {
+          PatchMap::Object()->basePatchIDList(map->computeData[i].node, pids);
+          getComputeBondedCUDA()->registerCompute(map->computeData[i].node, map->type(i), pids);
+        } else
+#endif
+        {
+        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+        c = new ComputeExcls(i,pids); // unknown delete
+        map->registerCompute(i,c);
+        c->initialize();
+      }
       break;
     case computeBondsType:
-        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
-        c = new ComputeBonds(i,pids); // unknown delete
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 1)
+        {
+          PatchMap::Object()->basePatchIDList(map->computeData[i].node, pids);
+          getComputeBondedCUDA()->registerCompute(map->computeData[i].node, map->type(i), pids);
+        } else
+#endif
+        {
+          PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+          c = new ComputeBonds(i,pids); // unknown delete
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
     case computeAnglesType:
-        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
-        c = new ComputeAngles(i,pids); // unknown delete
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 2)
+        {
+          PatchMap::Object()->basePatchIDList(map->computeData[i].node, pids);
+          getComputeBondedCUDA()->registerCompute(map->computeData[i].node, map->type(i), pids);
+        } else
+#endif
+        {
+          PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+          c = new ComputeAngles(i,pids); // unknown delete
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
     case computeDihedralsType:
-        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
-        c = new ComputeDihedrals(i,pids); // unknown delete
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 4)
+        {
+          PatchMap::Object()->basePatchIDList(map->computeData[i].node, pids);
+          getComputeBondedCUDA()->registerCompute(map->computeData[i].node, map->type(i), pids);
+        } else
+#endif
+        {
+          PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+          c = new ComputeDihedrals(i,pids); // unknown delete
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
     case computeImpropersType:
-        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
-        c = new ComputeImpropers(i,pids); // unknown delete
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 8)
+        {
+          PatchMap::Object()->basePatchIDList(map->computeData[i].node, pids);
+          getComputeBondedCUDA()->registerCompute(map->computeData[i].node, map->type(i), pids);
+        } else
+#endif
+        {
+          PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+          c = new ComputeImpropers(i,pids); // unknown delete
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
     case computeTholeType:
         PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
@@ -516,10 +578,19 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         c->initialize();
         break;
     case computeCrosstermsType:
-        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
-        c = new ComputeCrossterms(i,pids); // unknown delete
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 32)
+        {
+          PatchMap::Object()->basePatchIDList(map->computeData[i].node, pids);
+          getComputeBondedCUDA()->registerCompute(map->computeData[i].node, map->type(i), pids);
+        } else
+#endif
+        {
+          PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+          c = new ComputeCrossterms(i,pids); // unknown delete
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
 	// JLai
     case computeGromacsPairType:
@@ -535,29 +606,69 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	      break;
 	// End of JLai
     case computeSelfExclsType:
-        c = new ComputeSelfExcls(i,map->computeData[i].pids[0].pid);
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 16)
+        {
+          getComputeBondedCUDA()->registerSelfCompute(map->computeData[i].node, map->type(i), map->computeData[i].pids[0].pid);
+        } else
+#endif
+        {
+          c = new ComputeSelfExcls(i,map->computeData[i].pids[0].pid);
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
     case computeSelfBondsType:
-        c = new ComputeSelfBonds(i,map->computeData[i].pids[0].pid);
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 1)
+        {
+          getComputeBondedCUDA()->registerSelfCompute(map->computeData[i].node, map->type(i), map->computeData[i].pids[0].pid);
+        } else
+#endif
+        {
+          c = new ComputeSelfBonds(i,map->computeData[i].pids[0].pid);
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
     case computeSelfAnglesType:
-        c = new ComputeSelfAngles(i,map->computeData[i].pids[0].pid);
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 2)
+        {
+          getComputeBondedCUDA()->registerSelfCompute(map->computeData[i].node, map->type(i), map->computeData[i].pids[0].pid);
+        } else
+#endif
+        {
+          c = new ComputeSelfAngles(i,map->computeData[i].pids[0].pid);
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
     case computeSelfDihedralsType:
-        c = new ComputeSelfDihedrals(i,map->computeData[i].pids[0].pid);
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 4)
+        {
+          getComputeBondedCUDA()->registerSelfCompute(map->computeData[i].node, map->type(i), map->computeData[i].pids[0].pid);
+        } else
+#endif
+        {
+          c = new ComputeSelfDihedrals(i,map->computeData[i].pids[0].pid);
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
     case computeSelfImpropersType:
-        c = new ComputeSelfImpropers(i,map->computeData[i].pids[0].pid);
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 8)
+        {
+          getComputeBondedCUDA()->registerSelfCompute(map->computeData[i].node, map->type(i), map->computeData[i].pids[0].pid);
+        } else
+#endif
+        {
+          c = new ComputeSelfImpropers(i,map->computeData[i].pids[0].pid);
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
     case computeSelfTholeType:
         c = new ComputeSelfThole(i,map->computeData[i].pids[0].pid);
@@ -570,9 +681,17 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         c->initialize();
         break;
     case computeSelfCrosstermsType:
-        c = new ComputeSelfCrossterms(i,map->computeData[i].pids[0].pid);
-        map->registerCompute(i,c);
-        c->initialize();
+#if defined(BONDED_CUDA) && defined(NAMD_CUDA)
+        if (simParams->bondedCUDA & 32)
+        {
+          getComputeBondedCUDA()->registerSelfCompute(map->computeData[i].node, map->type(i), map->computeData[i].pids[0].pid);
+        } else
+#endif
+        {
+          c = new ComputeSelfCrossterms(i,map->computeData[i].pids[0].pid);
+          map->registerCompute(i,c);
+          c->initialize();
+        }
         break;
 #ifdef DPMTA
     case computeDPMTAType:
@@ -753,6 +872,13 @@ void registerUserEventsForAllComputeObjs()
             dz = abs(z1-z2);
             sprintf(user_des, "computeNonBondedPairType_%d(%d,%d,%d)", i, dx,dy,dz);
             break;
+#ifdef NAMD_CUDA
+#ifdef BONDED_CUDA
+        case computeBondedCUDAType:
+            sprintf(user_des, "computeBondedCUDAType_%d", i);
+            break;
+#endif
+#endif
         case computeExclsType:
             sprintf(user_des, "computeExclsType_%d", i);
             break;
@@ -938,6 +1064,17 @@ ComputeMgr::createComputes(ComputeMap *map)
 
 #ifdef NAMD_CUDA
     bool deviceIsMine = ( deviceCUDA->getMasterPe() == CkMyPe() );
+#ifdef BONDED_CUDA
+    // Place bonded forces on Pe different from non-bonded forces
+    int bondedMasterPe = deviceCUDA->getMasterPe();
+    // for (int i=0;i < deviceCUDA->getNumPesSharingDevice();i++) {
+    //   int pe = deviceCUDA->getPesSharingDevice(i);
+    //   if (pe != deviceCUDA->getMasterPe()) {
+    //     bondedMasterPe = pe;
+    //   }
+    // }
+    bool deviceIsMineBonded = (CkMyPe() == bondedMasterPe);
+#endif
 #endif
 
     #ifdef NAMD_MIC
@@ -949,6 +1086,7 @@ ComputeMgr::createComputes(ComputeMap *map)
         if ( ! ( i % 100 ) )
         {
         }
+
 #if defined(NAMD_CUDA) || defined(NAMD_MIC)
         switch ( map->type(i) )
         {
@@ -960,10 +1098,82 @@ ComputeMgr::createComputes(ComputeMap *map)
           //  ComputePmeCUDACounter++;
           //  break;
           case computeNonbondedSelfType:
+            if ( ! deviceIsMine ) continue;
+            if ( ! deviceCUDA->device_shared_with_pe(map->computeData[i].node) ) continue;
+          break;
+
           case computeNonbondedPairType:
             if ( ! deviceIsMine ) continue;
             if ( ! deviceCUDA->device_shared_with_pe(map->computeData[i].node) ) continue;
           break;
+
+#ifdef BONDED_CUDA
+          case computeSelfBondsType:
+          case computeBondsType:
+            if (simParams->bondedCUDA & 1) {
+              if ( ! deviceIsMineBonded ) continue;
+              if ( ! deviceCUDA->device_shared_with_pe(map->computeData[i].node) ) continue;
+            } else {
+              if ( map->computeData[i].node != myNode ) continue;
+            }
+          break;
+
+          case computeSelfAnglesType:
+          case computeAnglesType:
+            if (simParams->bondedCUDA & 2) {
+              if ( ! deviceIsMineBonded ) continue;
+              if ( ! deviceCUDA->device_shared_with_pe(map->computeData[i].node) ) continue;
+            } else {
+              if ( map->computeData[i].node != myNode ) continue;
+            }
+          break;
+
+          case computeSelfDihedralsType:
+          case computeDihedralsType:
+            if (simParams->bondedCUDA & 4) {
+              if ( ! deviceIsMineBonded ) continue;
+              if ( ! deviceCUDA->device_shared_with_pe(map->computeData[i].node) ) continue;
+            } else {
+              if ( map->computeData[i].node != myNode ) continue;
+            }
+          break;
+
+          case computeSelfImpropersType:
+          case computeImpropersType:
+            if (simParams->bondedCUDA & 8) {
+              if ( ! deviceIsMineBonded ) continue;
+              if ( ! deviceCUDA->device_shared_with_pe(map->computeData[i].node) ) continue;
+            } else {
+              if ( map->computeData[i].node != myNode ) continue;
+            }
+          break;
+
+          case computeSelfExclsType:
+          case computeExclsType:
+            if (simParams->bondedCUDA & 16) {
+              if ( ! deviceIsMineBonded ) continue;
+              if ( ! deviceCUDA->device_shared_with_pe(map->computeData[i].node) ) continue;
+            } else {
+              if ( map->computeData[i].node != myNode ) continue;
+            }
+          break;
+
+          case computeSelfCrosstermsType:
+          case computeCrosstermsType:
+            if (simParams->bondedCUDA & 32) {
+              if ( ! deviceIsMineBonded ) continue;
+              if ( ! deviceCUDA->device_shared_with_pe(map->computeData[i].node) ) continue;
+            } else {
+              if ( map->computeData[i].node != myNode ) continue;
+            }
+          break;
+
+          case computeBondedCUDAType:
+            if ( ! deviceIsMineBonded ) continue;
+            if ( map->computeData[i].node != myNode ) continue;
+          break;
+#endif
+
 #endif
 #ifdef NAMD_MIC
 
@@ -989,6 +1199,9 @@ ComputeMgr::createComputes(ComputeMap *map)
           case computeNonbondedCUDAType:
 #ifdef NAMD_CUDA
           case computeNonbondedCUDA2Type:
+// #ifdef BONDED_CUDA
+//           case computeBondedCUDAType:
+// #endif
 #endif
           case computeNonbondedMICType:
             if ( ! deviceIsMine ) continue;
@@ -1027,6 +1240,13 @@ ComputeMgr::createComputes(ComputeMap *map)
         computeNonbondedCUDAObject->assignPatches();
       }      
     }
+#ifdef BONDED_CUDA
+    if (simParams->bondedCUDA) {
+      if (deviceIsMineBonded) {
+        getComputeBondedCUDA()->initialize();
+      }
+    }
+#endif
 #endif
 #ifdef NAMD_MIC
     if ( computeNonbondedMICObject ) {
@@ -1476,6 +1696,115 @@ void ComputeMgr::recvUnregisterBoxesOnPe(CudaComputeNonbondedMsg *msg) {
   msg->c->unregisterBoxesOnPe();
   delete msg;
 }
+
+#ifdef BONDED_CUDA
+
+class ComputeBondedCUDAMsg : public CMessage_ComputeBondedCUDAMsg {
+public:
+  ComputeBondedCUDA* c;
+  int i;
+};
+
+void ComputeMgr::sendAssignPatchesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c) {
+  for (int i=0;i < pes.size();i++) {
+    ComputeBondedCUDAMsg *msg = new ComputeBondedCUDAMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvAssignPatchesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvAssignPatchesOnPe(ComputeBondedCUDAMsg *msg) {
+  msg->c->assignPatchesOnPe();
+  delete msg;
+}
+
+void ComputeMgr::sendMessageEnqueueWork(int pe, ComputeBondedCUDA* c) {
+  ComputeBondedCUDAMsg *msg = new ComputeBondedCUDAMsg;
+  msg->c = c;
+  thisProxy[pe].recvMessageEnqueueWork(msg);
+}
+
+void ComputeMgr::recvMessageEnqueueWork(ComputeBondedCUDAMsg *msg) {
+  msg->c->messageEnqueueWork();
+  delete msg;
+}
+
+void ComputeMgr::sendOpenBoxesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c) {
+  for (int i=0;i < pes.size();i++) {
+    ComputeBondedCUDAMsg *msg = new ComputeBondedCUDAMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvOpenBoxesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvOpenBoxesOnPe(ComputeBondedCUDAMsg *msg) {
+  msg->c->openBoxesOnPe();
+  delete msg;
+}
+
+void ComputeMgr::sendLoadTuplesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c) {
+  for (int i=0;i < pes.size();i++) {
+    ComputeBondedCUDAMsg *msg = new ComputeBondedCUDAMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvLoadTuplesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvLoadTuplesOnPe(ComputeBondedCUDAMsg *msg) {
+  msg->c->loadTuplesOnPe();
+  delete msg;
+}
+
+void ComputeMgr::sendLaunchWork(int pe, ComputeBondedCUDA* c) {
+  ComputeBondedCUDAMsg *msg = new ComputeBondedCUDAMsg;
+  msg->c = c;
+  thisProxy[pe].recvLaunchWork(msg);
+}
+
+void ComputeMgr::recvLaunchWork(ComputeBondedCUDAMsg *msg) {
+  msg->c->launchWork();
+  delete msg;
+}
+
+void ComputeMgr::sendFinishPatchesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c) {
+  for (int i=0;i < pes.size();i++) {
+    ComputeBondedCUDAMsg *msg = new ComputeBondedCUDAMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvFinishPatchesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvFinishPatchesOnPe(ComputeBondedCUDAMsg *msg) {
+  msg->c->finishPatchesOnPe();
+  delete msg;
+}
+
+void ComputeMgr::sendFinishReductions(int pe, ComputeBondedCUDA* c) {
+  ComputeBondedCUDAMsg *msg = new ComputeBondedCUDAMsg;
+  msg->c = c;
+  thisProxy[pe].recvFinishReductions(msg);
+}
+
+void ComputeMgr::recvFinishReductions(ComputeBondedCUDAMsg *msg) {
+  msg->c->finishReductions();
+  delete msg;
+}
+
+void ComputeMgr::sendUnregisterBoxesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c) {
+  for (int i=0;i < pes.size();i++) {
+    ComputeBondedCUDAMsg *msg = new ComputeBondedCUDAMsg;
+    msg->c = c;
+    thisProxy[pes[i]].recvUnregisterBoxesOnPe(msg);
+  }
+}
+
+void ComputeMgr::recvUnregisterBoxesOnPe(ComputeBondedCUDAMsg *msg) {
+  msg->c->unregisterBoxesOnPe();
+  delete msg;
+}
+
+#endif // BONDED_CUDA
+
 #endif // NAMD_CUDA
 
 void ComputeMgr::sendCreateNonbondedMICSlave(int pe, int index) {

@@ -37,19 +37,19 @@ public:
   void update_dHdrPrefix(const int atomStorageSize, float* dHdrPrefixH, cudaStream_t stream);
 
 	void GBISphase1(CudaTileListKernel& tlKernel, const int atomStorageSize,
-		const float latticeX, const float latticeY, const float latticeZ, const float a_cut, float* h_psiSum,
+		const float3 lata, const float3 latb, const float3 latc, const float a_cut, float* h_psiSum,
   	cudaStream_t stream);
 
   void GBISphase2(CudaTileListKernel& tlKernel, const int atomStorageSize,
     const bool doEnergy, const bool doSlow,
-    const float latticeX, const float latticeY, const float latticeZ,
+    const float3 lata, const float3 latb, const float3 latc,
     const float r_cut, const float scaling, const float kappa, const float smoothDist,
     const float epsilon_p, const float epsilon_s,
     float4* d_forces,
     float* h_dEdaSum, cudaStream_t stream);
 
   void GBISphase3(CudaTileListKernel& tlKernel, const int atomStorageSize,
-    const float latticeX, const float latticeY, const float latticeZ, const float a_cut,
+    const float3 lata, const float3 latb, const float3 latc, const float a_cut,
     float4* d_forces,
     cudaStream_t stream);
 

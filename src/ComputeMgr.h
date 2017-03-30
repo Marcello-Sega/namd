@@ -49,6 +49,9 @@ class NonbondedMICSkipMsg;
 class ComputeNonbondedWorkArrays;
 #ifdef NAMD_CUDA
 class CudaComputeNonbonded;
+#ifdef BONDED_CUDA
+class ComputeBondedCUDA;
+#endif
 #endif
 
 class ComputeMgr : public CBase_ComputeMgr
@@ -134,6 +137,24 @@ public:
   void recvLaunchWork(CudaComputeNonbondedMsg *msg);
   void sendUnregisterBoxesOnPe(std::vector<int>& pes, CudaComputeNonbonded* c);
   void recvUnregisterBoxesOnPe(CudaComputeNonbondedMsg *msg);
+#ifdef BONDED_CUDA
+  void sendAssignPatchesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c);
+  void recvAssignPatchesOnPe(ComputeBondedCUDAMsg *msg);
+  void sendMessageEnqueueWork(int pe, ComputeBondedCUDA* c);
+  void recvMessageEnqueueWork(ComputeBondedCUDAMsg *msg);
+  void sendOpenBoxesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c);
+  void recvOpenBoxesOnPe(ComputeBondedCUDAMsg *msg);
+  void sendLoadTuplesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c);
+  void recvLoadTuplesOnPe(ComputeBondedCUDAMsg *msg);
+  void sendLaunchWork(int pe, ComputeBondedCUDA* c);
+  void recvLaunchWork(ComputeBondedCUDAMsg *msg);
+  void sendFinishPatchesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c);
+  void recvFinishPatchesOnPe(ComputeBondedCUDAMsg *msg);
+  void sendFinishReductions(int pe, ComputeBondedCUDA* c);
+  void recvFinishReductions(ComputeBondedCUDAMsg *msg);
+  void sendUnregisterBoxesOnPe(std::vector<int>& pes, ComputeBondedCUDA* c);
+  void recvUnregisterBoxesOnPe(ComputeBondedCUDAMsg *msg);
+#endif
 #endif
   void sendCreateNonbondedMICSlave(int,int);
   void recvCreateNonbondedMICSlave(NonbondedMICSlaveMsg *);

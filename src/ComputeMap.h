@@ -51,6 +51,9 @@ enum ComputeType
 #ifdef NAMD_CUDA
   computePmeCUDAType,
   computeNonbondedCUDA2Type,
+#ifdef BONDED_CUDA
+  computeBondedCUDAType,
+#endif
 #endif
   optPmeType,
   computeEwaldType,

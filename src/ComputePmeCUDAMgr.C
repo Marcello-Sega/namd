@@ -1065,7 +1065,6 @@ void ComputePmeCUDADevice::initialize(PmeGrid& pmeGrid_in, int pencilIndexY_in, 
   createStream(stream);
   streamCreated = true;
   pmeRealSpaceCompute = new CudaPmeRealSpaceCompute(pmeGrid, pencilIndexY, pencilIndexZ,
-    deviceCUDA->get_cuda_arch(),
     deviceID, stream);
 
 }

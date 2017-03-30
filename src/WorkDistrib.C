@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2016/09/29 20:31:47 $
- * $Revision: 1.1290 $
+ * $Date: 2017/03/30 20:06:17 $
+ * $Revision: 1.1291 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -2363,6 +2363,14 @@ void WorkDistrib::mapComputes(void)
 
   if ( node->simParameters->FMMOn )
     mapComputeHomePatches(computeFmmType);
+
+#ifdef NAMD_CUDA
+#ifdef BONDED_CUDA
+  if (node->simParameters->bondedCUDA) {
+    mapComputeNode(computeBondedCUDAType);
+  }
+#endif
+#endif
 
 #ifdef NAMD_CUDA
   if (node->simParameters->useCUDA2) {

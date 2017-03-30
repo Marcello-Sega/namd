@@ -8,10 +8,6 @@
 
 #define WARPSIZE 32
 
-// Texture objects require Kepler (3.0) hardware and cuda compiler 5.0
-// If your setup does not support texture objects (such as Mac OS X),
-// set compiler flag DISABLE_CUDA_TEXTURE_OBJECTS
-
 /*
 // Define float3 + float3 operation
 __host__ __device__ inline float3 operator+(const float3 a, const float3 b) {

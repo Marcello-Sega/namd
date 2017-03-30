@@ -6,6 +6,7 @@
 #include "PatchTypes.h"
 #include "CudaUtils.h"
 #include "ComputeNonbondedUtil.h"
+#include "CudaNonbondedTables.h"
 #include "CudaTileListKernel.h"
 #include "CudaComputeNonbondedKernel.h"
 #include "CudaComputeGBISKernel.h"
@@ -165,10 +166,10 @@ private:
 
   // Node lock
   CmiNodeLock lock;
-  // List of patch indices on each rank
-  std::vector< std::vector<int> > rankPatches;
   // List of local PEs that have patches
   std::vector<int> pes;
+  // List of patch indices on each rank
+  std::vector< std::vector<int> > rankPatches;
   // Master Pe = Pe where this Compute and reduction lives
   int masterPe;
 
@@ -230,8 +231,6 @@ private:
   void forceDoneSetCallback();
   void updateComputes();
   void buildExclusions();
-  void buildVdwCoefTable();
-  void buildForceAndEnergyTables(int tableSize);
   void skipPatch(int i);
   void openBox(int i);
   void reallocateArrays();
@@ -253,7 +252,7 @@ private:
   // void writeXYZ(const char* filename);
 
 public:
-	CudaComputeNonbonded(ComputeID c, int deviceID, bool doStreaming);
+	CudaComputeNonbonded(ComputeID c, int deviceID, CudaNonbondedTables& cudaNonbondedTables, bool doStreaming);
 	~CudaComputeNonbonded();
 	void registerComputeSelf(ComputeID cid, PatchID pid);
 	void registerComputePair(ComputeID cid, PatchID* pid, int* trans);
@@ -274,7 +273,6 @@ public:
   virtual void patchReady(PatchID, int doneMigration, int seq);
   virtual void gbisP2PatchReady(PatchID, int seq);
   virtual void gbisP3PatchReady(PatchID, int seq);
-	void buildTables();
 };
 
 #endif // NAMD_CUDA

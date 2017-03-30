@@ -24,6 +24,9 @@ module ComputeMgr {
   message NonbondedMICSkipMsg;
 #ifdef NAMD_CUDA
   message CudaComputeNonbondedMsg;
+#ifdef BONDED_CUDA
+  message ComputeBondedCUDAMsg;
+#endif
 #endif
 
   group ComputeMgr
@@ -69,6 +72,16 @@ module ComputeMgr {
     entry void recvMessageEnqueueWork(CudaComputeNonbondedMsg *msg);
     entry void recvLaunchWork(CudaComputeNonbondedMsg *msg);
     entry [sync] void recvUnregisterBoxesOnPe(CudaComputeNonbondedMsg *msg);
+#ifdef BONDED_CUDA
+    entry void recvAssignPatchesOnPe(ComputeBondedCUDAMsg *msg);
+    entry void recvMessageEnqueueWork(ComputeBondedCUDAMsg *msg);
+    entry void recvOpenBoxesOnPe(ComputeBondedCUDAMsg *msg);
+    entry void recvLoadTuplesOnPe(ComputeBondedCUDAMsg *msg);
+    entry void recvLaunchWork(ComputeBondedCUDAMsg *msg);
+    entry void recvFinishPatchesOnPe(ComputeBondedCUDAMsg *msg);
+    entry void recvFinishReductions(ComputeBondedCUDAMsg *msg);
+    entry [sync] void recvUnregisterBoxesOnPe(ComputeBondedCUDAMsg *msg);
+#endif
 #endif
     entry void recvCreateNonbondedMICSlave(NonbondedMICSlaveMsg *);
     entry void recvNonbondedMICSlaveReady(int, int, int);

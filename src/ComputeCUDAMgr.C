@@ -36,7 +36,11 @@ ComputeCUDAMgr::ComputeCUDAMgr(CkMigrateMessage *) {
 //
 ComputeCUDAMgr::~ComputeCUDAMgr() {
   for (int i=0;i < numDevices;i++) {
+    if (cudaNonbondedTablesList[i] != NULL) delete cudaNonbondedTablesList[i];
     if (cudaComputeNonbondedList[i] != NULL) delete cudaComputeNonbondedList[i];
+#ifdef BONDED_CUDA
+    if (computeBondedCUDAList[i] != NULL) delete computeBondedCUDAList[i];
+#endif
   }
 }
 
@@ -50,7 +54,17 @@ void ComputeCUDAMgr::initialize(CkQdMsg *msg) {
 	numDevices = deviceCUDA->getDeviceCount();
 
   // Create pointers to devices
+  cudaNonbondedTablesList.resize(numDevices, NULL);
   cudaComputeNonbondedList.resize(numDevices, NULL);
+#ifdef BONDED_CUDA
+  computeBondedCUDAList.resize(numDevices, NULL);
+#endif
+
+  // Create CUDA non-bonded tables for all devices that are used for computation
+  for (int i=0;i < deviceCUDA->getNumDevice();i++) {
+    int deviceID = deviceCUDA->getDeviceIDbyRank(i);
+    cudaNonbondedTablesList[deviceID] = new CudaNonbondedTables(deviceID);
+  }
 }
 
 ComputeCUDAMgr* ComputeCUDAMgr::getComputeCUDAMgr() {
@@ -69,9 +83,10 @@ CudaComputeNonbonded* ComputeCUDAMgr::createCudaComputeNonbonded(ComputeID c) {
   int deviceID = deviceCUDA->getDeviceID();
   if (cudaComputeNonbondedList.at(deviceID) != NULL)
     NAMD_bug("ComputeCUDAMgr::createCudaComputeNonbonded called twice");
+  if (cudaNonbondedTablesList.at(deviceID) == NULL)
+    NAMD_bug("ComputeCUDAMgr::createCudaComputeNonbonded, non-bonded CUDA tables not created");
   bool doStreaming = !deviceCUDA->getNoStreaming() && !Node::Object()->simParameters->GBISOn;
-  cudaComputeNonbondedList[deviceID] = new CudaComputeNonbonded(c, deviceID, doStreaming);
-  cudaComputeNonbondedList[deviceID]->buildTables();
+  cudaComputeNonbondedList[deviceID] = new CudaComputeNonbonded(c, deviceID, *cudaNonbondedTablesList[deviceID], doStreaming);
   return cudaComputeNonbondedList[deviceID];
 }
 
@@ -86,6 +101,34 @@ CudaComputeNonbonded* ComputeCUDAMgr::getCudaComputeNonbonded() {
     NAMD_bug("ComputeCUDAMgr::getCudaComputeNonbonded(), device not created yet");
   return p;
 }
+
+#ifdef BONDED_CUDA
+//
+// Creates ComputeBondedCUDA object
+//
+ComputeBondedCUDA* ComputeCUDAMgr::createComputeBondedCUDA(ComputeID c, ComputeMgr* computeMgr) {
+  int deviceID = deviceCUDA->getDeviceID();
+  if (computeBondedCUDAList.at(deviceID) != NULL)
+    NAMD_bug("ComputeCUDAMgr::createComputeBondedCUDA called twice");
+  if (cudaNonbondedTablesList.at(deviceID) == NULL)
+    NAMD_bug("ComputeCUDAMgr::createCudaComputeNonbonded, non-bonded CUDA tables not created");
+  computeBondedCUDAList[deviceID] = new ComputeBondedCUDA(c, computeMgr, deviceID, *cudaNonbondedTablesList[deviceID]);
+  return computeBondedCUDAList[deviceID];
+}
+
+//
+// Returns ComputeBondedCUDA for this Pe
+//
+ComputeBondedCUDA* ComputeCUDAMgr::getComputeBondedCUDA() {
+  // Get device ID for this Pe
+  int deviceID = deviceCUDA->getDeviceID();
+  ComputeBondedCUDA* p = computeBondedCUDAList[deviceID];
+  if (p == NULL)
+    NAMD_bug("ComputeCUDAMgr::getComputeBondedCUDA(), device not created yet");
+  return p;
+}
+#endif // BONDED_CUDA
+
 #endif // NAMD_CUDA
 
 #include "ComputeCUDAMgr.def.h"

@@ -149,6 +149,24 @@ void ComputePmeCUDA::doWork() {
 
 void ComputePmeCUDA::sendAtoms() {
 
+  Lattice& lattice = patches[0].patch->lattice;
+  Vector origin = lattice.origin();
+  Vector recip1 = lattice.a_r();
+  Vector recip2 = lattice.b_r();
+  Vector recip3 = lattice.c_r();
+  double ox = origin.x;
+  double oy = origin.y;
+  double oz = origin.z;
+  double r1x = recip1.x;
+  double r1y = recip1.y;
+  double r1z = recip1.z;
+  double r2x = recip2.x;
+  double r2y = recip2.y;
+  double r2z = recip2.z;
+  double r3x = recip3.x;
+  double r3y = recip3.y;
+  double r3z = recip3.z;
+
   for (int i=0;i < getNumPatches();i++) {
     if (patches[i].pmeForceMsg != NULL)
       NAMD_bug("ComputePmeCUDA::sendAtoms, pmeForceMsg is not empty");
@@ -183,10 +201,10 @@ void ComputePmeCUDA::sendAtoms() {
       computePmeCUDAMgrProxy[patches[i].homePencilNode].recvSelfEnergy(msg);
     }
 
-    const Vector ucenter = patches[i].patch->lattice.unscale(patchMap->center(patches[i].patchID));
-    const BigReal recip11 = patches[i].patch->lattice.a_r().x;
-    const BigReal recip22 = patches[i].patch->lattice.b_r().y;
-    const BigReal recip33 = patches[i].patch->lattice.c_r().z;
+    // const Vector ucenter = patches[i].patch->lattice.unscale(patchMap->center(patches[i].patchID));
+    // const BigReal recip11 = patches[i].patch->lattice.a_r().x;
+    // const BigReal recip22 = patches[i].patch->lattice.b_r().y;
+    // const BigReal recip33 = patches[i].patch->lattice.c_r().z;
 
     PmeAtomMsg *msg = new (numAtoms, PRIORITY_SIZE) PmeAtomMsg;
     SET_PRIORITY(msg, sequence(), PME_PRIORITY)
@@ -203,22 +221,30 @@ void ComputePmeCUDA::sendAtoms() {
     msg->doEnergy = doEnergy;
     msg->doVirial = doVirial;
     CudaAtom *atoms = msg->atoms;
-    BigReal miny = 1.0e20;
-    BigReal minz = 1.0e20;
+    // BigReal miny = 1.0e20;
+    // BigReal minz = 1.0e20;
     for (int j=0;j < numAtoms;j++) {
     	CudaAtom atom;
       BigReal q = x[j].charge;
-      // Convert atoms positions to range [0,1)
-      double wx = x[j].position.x*recip11;
-      double wy = x[j].position.y*recip22;
-      double wz = x[j].position.z*recip33;
+      // Convert atom positions to range [0,1)
+      double px = x[j].position.x - ox;
+      double py = x[j].position.y - oy;
+      double pz = x[j].position.z - oz;
+      double wx = px*r1x + py*r1y + pz*r1z;
+      double wy = px*r2x + py*r2y + pz*r2z;
+      double wz = px*r3x + py*r3y + pz*r3z;
+      // double wx = x[j].position.x*recip11;
+      // double wy = x[j].position.y*recip22;
+      // double wz = x[j].position.z*recip33;
       wx = (wx - (floor(wx + 0.5) - 0.5));
       wy = (wy - (floor(wy + 0.5) - 0.5));
       wz = (wz - (floor(wz + 0.5) - 0.5));
-      if (wx >= 1.0) wx -= 1.0;
-      if (wy >= 1.0) wy -= 1.0;
-      if (wz >= 1.0) wz -= 1.0;
-      // Store as 32 bit fixed point
+      // wx = (wx - floor(wx));
+      // wy = (wy - floor(wy));
+      // wz = (wz - floor(wz));
+      // if (wx >= 1.0) wx -= 1.0;
+      // if (wy >= 1.0) wy -= 1.0;
+      // if (wz >= 1.0) wz -= 1.0;
       atom.x = (float)wx;
       atom.y = (float)wy;
       atom.z = (float)wz;
@@ -227,14 +253,14 @@ void ComputePmeCUDA::sendAtoms() {
       if (atom.z >= 1.0f) atom.z -= 1.0f;
     	atom.q = (float)(q*coulomb_sqrt);
   		atoms[j] = atom;
-      miny = std::min(x[j].position.y, miny);
-      minz = std::min(x[j].position.z, minz);
+      // miny = std::min(x[j].position.y, miny);
+      // minz = std::min(x[j].position.z, minz);
     }
     // Calculate corner with minimum y and z for this patch
-    double wy = miny*recip22;
-    double wz = minz*recip33;
-    msg->miny = (int)((double)pmeGrid.K2*(wy - (floor(wy + 0.5) - 0.5)));
-    msg->minz = (int)((double)pmeGrid.K3*(wz - (floor(wz + 0.5) - 0.5)));
+    // double wy = miny*recip22;
+    // double wz = minz*recip33;
+    // msg->miny = (int)((double)pmeGrid.K2*(wy - (floor(wy + 0.5) - 0.5)));
+    // msg->minz = (int)((double)pmeGrid.K3*(wz - (floor(wz + 0.5) - 0.5)));
 
     // For local (within shared memory node), get pointer to memory location and do direct memcpy
     // For global (on different shread memory nodes), 
@@ -272,6 +298,21 @@ double ComputePmeCUDA::calcSelfEnergy(int numAtoms, CompAtom *x) {
 
 void ComputePmeCUDA::recvForces() {
 
+  Lattice& lattice = patches[0].patch->lattice;
+  Vector origin = lattice.origin();
+  Vector recip1 = lattice.a_r();
+  Vector recip2 = lattice.b_r();
+  Vector recip3 = lattice.c_r();
+  double r1x = recip1.x;
+  double r1y = recip1.y;
+  double r1z = recip1.z;
+  double r2x = recip2.x;
+  double r2y = recip2.y;
+  double r2z = recip2.z;
+  double r3x = recip3.x;
+  double r3y = recip3.y;
+  double r3z = recip3.z;
+
   SimParameters *simParams = Node::Object()->simParameters;
 
   for (int i=0;i < getNumPatches();i++) {
@@ -285,9 +326,12 @@ void ComputePmeCUDA::recvForces() {
     Force *f = r->f[Results::slow];
     if (!patches[i].pmeForceMsg->numStrayAtoms && !simParams->commOnly) {
       for(int j=0;j < numAtoms;j++) {
-        f[j].x += force[j].x;
-        f[j].y += force[j].y;
-        f[j].z += force[j].z;
+        double f1 = force[j].x;
+        double f2 = force[j].y;
+        double f3 = force[j].z;
+        f[j].x += f1*r1x + f2*r2x + f3*r3x;
+        f[j].y += f1*r1y + f2*r2y + f3*r3y;
+        f[j].z += f1*r1z + f2*r2z + f3*r3z;
       }
     }
 

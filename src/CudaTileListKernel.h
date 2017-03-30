@@ -309,7 +309,7 @@ public:
 
   void buildTileLists(const int numTileListsPrev,
     const int numPatchesIn, const int atomStorageSizeIn, const int maxTileListLenIn,
-    const float latticeX, const float latticeY, const float latticeZ,
+    const float3 lata, const float3 latb, const float3 latc,
     const CudaPatchRecord* h_cudaPatches, const float4* h_xyzq, const float plcutoff2In, cudaStream_t stream);
 
   void reSortTileLists(const bool doGBIS, cudaStream_t stream);

@@ -59,6 +59,7 @@ BigReal*	ComputeNonbondedUtil::full_table;
 BigReal*	ComputeNonbondedUtil::vdwa_table;
 BigReal*	ComputeNonbondedUtil::vdwb_table;
 BigReal*	ComputeNonbondedUtil::r2_table;
+int ComputeNonbondedUtil::table_length;
 #if defined(NAMD_MIC)
   BigReal*      ComputeNonbondedUtil::mic_table_base_ptr;
   int           ComputeNonbondedUtil::mic_table_n;
@@ -641,6 +642,7 @@ void ComputeNonbondedUtil::select(void)
 
   int i;
   int n = (r2_delta_exp + cutoff2_exp) * 64 + 1;
+  table_length = n;
   #if defined(NAMD_MIC)
     int n_16 = (n + 15) & (~15);
   #endif

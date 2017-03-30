@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2015/01/16 21:36:18 $
- * $Revision: 1.124 $
+ * $Date: 2017/03/30 20:06:17 $
+ * $Revision: 1.125 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -115,8 +115,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats)
 #endif
 
   double averageLoad = 0.;
-  double avgCompute;
-  {
+  double avgCompute = 0.;
+  if ( nMoveableComputes ) {
    int i;
    double total = 0.;
    double maxCompute = 0.;

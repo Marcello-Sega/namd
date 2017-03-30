@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2013/08/29 02:20:57 $
- * $Revision: 1.39 $
+ * $Date: 2017/03/30 20:06:17 $
+ * $Revision: 1.40 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -251,7 +251,7 @@ void NamdHybridLB::splitComputes(SplitComputesMsg *msg) {
     }
     
     averageLoad /= numPesAvailable;
-    avgCompute /= nMoveableComputes;
+    if ( nMoveableComputes ) avgCompute /= nMoveableComputes; else avgCompute = 0.;
 
     CkPrintf("LDB: Largest compute %d load %f is %.1f%% of average load %f\n",
             maxComputeId, maxCompute, 100. * maxCompute / averageLoad, averageLoad);

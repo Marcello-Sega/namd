@@ -432,6 +432,7 @@ void ProxyMgr::createProxies(void)
     patchFlag[i] = ( patchMap->node(i) == myNode ) ? Home : Unknown;
   }
 
+#ifndef NAMD_CUDA
   // Add all upstream neighbors.
   PatchID neighbors[PatchMap::MaxOneAway];
   PatchIDList basepids;
@@ -449,6 +450,7 @@ void ProxyMgr::createProxies(void)
       }
     }
   }
+#endif
 
   ComputeMap *computeMap = ComputeMap::Object();
 

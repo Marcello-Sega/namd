@@ -32,9 +32,7 @@ void CudaPmePencilXYZ::initializeDevice(InitDeviceMsg *msg) {
   // Setup fftCompute and pmeKSpaceCompute
   fftCompute = new CudaFFTCompute(deviceID, stream);
   pmeKSpaceCompute = new CudaPmeKSpaceCompute(pmeGrid, Perm_cX_Y_Z, 0, 0, 
-    ComputeNonbondedUtil::ewaldcof,
-    deviceCUDA->get_cuda_arch(),
-    deviceID, stream);
+    ComputeNonbondedUtil::ewaldcof, deviceID, stream);
 }
 
 void CudaPmePencilXYZ::backwardDone() {
@@ -752,9 +750,7 @@ void CudaPmePencilZ::initializeDevice(InitDeviceMsg2 *msg) {
   fftCompute = new CudaFFTCompute(deviceID, stream);
   pmeTranspose = new CudaPmeTranspose(pmeGrid, Perm_Z_cX_Y, thisIndex.x, thisIndex.y, deviceID, stream);
   pmeKSpaceCompute = new CudaPmeKSpaceCompute(pmeGrid, Perm_Z_cX_Y, thisIndex.x, thisIndex.y,
-    ComputeNonbondedUtil::ewaldcof,
-    deviceCUDA->get_cuda_arch(),
-    deviceID, stream);
+    ComputeNonbondedUtil::ewaldcof, deviceID, stream);
 
   // Create event. NOTE: Events are tied to devices, hence the cudaSetDevice() here
   cudaCheck(cudaSetDevice(deviceID));

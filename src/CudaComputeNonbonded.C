@@ -33,8 +33,9 @@ extern "C" void CcdCallBacksReset(void *ignored, double curWallTime);  // fix Ch
 //
 // Class constructor
 //
-CudaComputeNonbonded::CudaComputeNonbonded(ComputeID c, int deviceID, bool doStreaming) : Compute(c),
-deviceID(deviceID), doStreaming(doStreaming), nonbondedKernel(deviceID, doStreaming),
+CudaComputeNonbonded::CudaComputeNonbonded(ComputeID c, int deviceID,
+  CudaNonbondedTables& cudaNonbondedTables, bool doStreaming) : 
+Compute(c), deviceID(deviceID), doStreaming(doStreaming), nonbondedKernel(deviceID, cudaNonbondedTables, doStreaming),
 tileListKernel(deviceID, doStreaming), GBISKernel(deviceID) {
 
   cudaCheck(cudaSetDevice(deviceID));
@@ -287,7 +288,13 @@ void CudaComputeNonbonded::assignPatch(int i) {
     patches[i].dHdrPrefixBox = patches[i].patch->registerDHdrPrefixPickup(this);
   }
   // Store Pe where this patch was registered
+#if 1
+  if (patches[i].pe != CkMyPe()) {
+    NAMD_bug("CudaComputeNonbonded::assignPatch, patch assigned to incorrect Pe");
+  }
+#else
   patches[i].pe = CkMyPe();
+#endif
   //
   patches[i].isSamePhysicalNode = ( CmiPhysicalNodeID(patchMap->node(pid)) == CmiPhysicalNodeID(CkMyPe()) );
   patches[i].isSameNode = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
@@ -369,14 +376,156 @@ void CudaComputeNonbonded::assignPatches(ComputeMgr* computeMgrIn) {
   std::sort(patches.begin(), patches.end());
   std::vector<PatchRecord>::iterator last = std::unique(patches.begin(), patches.end());
   patches.erase(last, patches.end());
-  //
-  std::map<PatchID, int> pidMap;
-  // Set number of patches and register boxes
+  // Set number of patches
   setNumPatches(patches.size());
   masterPe = CkMyPe();
   computeMgr = computeMgrIn;
   // Start patch counter
   patchesCounter = getNumPatches();
+  // Patch ID map
+  std::map<PatchID, int> pidMap;
+#if 1
+  //-------------------------------------------------------
+  // Copied in from ComputeNonbondedCUDA::assignPatches()
+  //-------------------------------------------------------
+
+  std::vector<int> pesOnNodeSharingDevice(CkMyNodeSize());
+  int numPesOnNodeSharingDevice = 0;
+  int masterIndex = -1;
+  for ( int i=0; i<deviceCUDA->getNumPesSharingDevice(); ++i ) {
+    int pe = deviceCUDA->getPesSharingDevice(i);
+    if ( pe == CkMyPe() ) masterIndex = numPesOnNodeSharingDevice;
+    if ( CkNodeOf(pe) == CkMyNode() ) {
+      pesOnNodeSharingDevice[numPesOnNodeSharingDevice++] = pe;
+    }
+  }
+
+  std::vector<int> count(patches.size(), 0);
+  std::vector<int> pcount(numPesOnNodeSharingDevice, 0);
+  std::vector<int> rankpcount(CkMyNodeSize(), 0);
+  std::vector<char> table(patches.size()*numPesOnNodeSharingDevice, 0);
+
+  PatchMap* patchMap = PatchMap::Object();
+
+  int unassignedpatches = patches.size();
+
+  for (int i=0;i < patches.size(); ++i) {
+    patches[i].pe = -1;
+  }
+
+  // assign if home pe and build table of natural proxies
+  for (int i=0;i < patches.size(); ++i) {
+    int pid = patches[i].patchID;
+    // homePe = PE where the patch currently resides
+    int homePe = patchMap->node(pid);
+    for ( int j=0; j < numPesOnNodeSharingDevice; ++j ) {
+      int pe = pesOnNodeSharingDevice[j];
+      // If homePe is sharing this device, assign this patch to homePe
+      if ( pe == homePe ) {
+        patches[i].pe = pe;
+        --unassignedpatches;
+        pcount[j] += 1;
+      }
+      if ( PatchMap::ObjectOnPe(pe)->patch(pid) ) {
+        table[i*numPesOnNodeSharingDevice + j] = 1;
+      }
+    }
+    // Assign this patch to homePe, if it resides on the same node
+    if ( patches[i].pe == -1 && CkNodeOf(homePe) == CkMyNode() ) {
+      patches[i].pe = homePe;
+      --unassignedpatches;
+      rankpcount[CkRankOf(homePe)] += 1;
+    }
+  }
+  // assign if only one pe has a required proxy
+  for (int i=0; i < patches.size(); ++i) {
+    int pid = patches[i].patchID;
+    if ( patches[i].pe != -1 ) continue;
+    int c = 0;
+    int lastj;
+    for (int j=0; j < numPesOnNodeSharingDevice; ++j) {
+      if ( table[i*numPesOnNodeSharingDevice + j] ) {
+        ++c;
+        lastj = j;
+      }
+    }
+    count[i] = c;
+    if ( c == 1 ) {
+      patches[i].pe = pesOnNodeSharingDevice[lastj];
+      --unassignedpatches;
+      pcount[lastj] += 1;
+    }
+  }
+  int assignj = 0;
+  while ( unassignedpatches ) {
+    int i;
+    for (i=0;i < patches.size(); ++i) {
+      if ( ! table[i*numPesOnNodeSharingDevice + assignj] ) continue;
+      int pid = patches[i].patchID;
+      // patch_record &pr = patchRecords[pid];
+      if ( patches[i].pe != -1 ) continue;
+      patches[i].pe = pesOnNodeSharingDevice[assignj];
+      --unassignedpatches;
+      pcount[assignj] += 1;
+      if ( ++assignj == numPesOnNodeSharingDevice ) assignj = 0;
+      break;
+    }
+    if (i < patches.size() ) continue;  // start search again
+    for ( i=0;i < patches.size(); ++i ) {
+      int pid = patches[i].patchID;
+      // patch_record &pr = patchRecords[pid];
+      if ( patches[i].pe != -1 ) continue;
+      if ( count[i] ) continue;
+      patches[i].pe = pesOnNodeSharingDevice[assignj];
+      --unassignedpatches;
+      pcount[assignj] += 1;
+      if ( ++assignj == numPesOnNodeSharingDevice ) assignj = 0;
+      break;
+    }
+    if ( i < patches.size() ) continue;  // start search again
+    if ( ++assignj == numPesOnNodeSharingDevice ) assignj = 0;
+  }
+
+  // For each rank, list of patches
+  rankPatches.resize(CkMyNodeSize());
+  for (int i=0; i < patches.size(); ++i) {
+    rankPatches[CkRankOf(patches[i].pe)].push_back(i);
+    pidMap[patches[i].patchID] = i;
+  }
+
+  // for ( int i=0; i < patches.size(); ++i ) {
+  //   CkPrintf("Pe %d patch %d hostPe %d\n", CkMyPe(), patches[i].patchID, patches[i].pe);
+  // }
+
+/*
+  slavePes = new int[CkMyNodeSize()];
+  slaves = new ComputeNonbondedCUDA*[CkMyNodeSize()];
+  numSlaves = 0;
+  for ( int j=0; j<numPesOnNodeSharingDevice; ++j ) {
+    int pe = pesOnNodeSharingDevice[j];
+    int rank = pe - CkNodeFirst(CkMyNode());
+    // CkPrintf("host %d sharing %d pe %d rank %d pcount %d rankpcount %d\n",
+    //          CkMyPe(),j,pe,rank,pcount[j],rankpcount[rank]);
+    if ( pe == CkMyPe() ) continue;
+    if ( ! pcount[j] && ! rankpcount[rank] ) continue;
+    rankpcount[rank] = 0;  // skip in rank loop below
+    slavePes[numSlaves] = pe;
+    computeMgr->sendCreateNonbondedCUDASlave(pe,numSlaves);
+    ++numSlaves;
+  }
+  for ( int j=0; j<CkMyNodeSize(); ++j ) {
+    int pe = CkNodeFirst(CkMyNode()) + j;
+    // CkPrintf("host %d rank %d pe %d rankpcount %d\n",
+    //          CkMyPe(),j,pe,rankpcount[j]);
+    if ( ! rankpcount[j] ) continue;
+    if ( pe == CkMyPe() ) continue;
+    slavePes[numSlaves] = pe;
+    computeMgr->sendCreateNonbondedCUDASlave(pe,numSlaves);
+    ++numSlaves;
+  }
+*/
+
+#else
   // For each rank, list of patches
   rankPatches.resize(CkMyNodeSize());
   // For each rank, list of home patch IDs
@@ -452,17 +601,18 @@ void CudaComputeNonbonded::assignPatches(ComputeMgr* computeMgrIn) {
     rankPatches[CkRankOf(pe)].push_back(i);
     pidMap[pid] = i;
   }
+
+  delete [] rankHomePatchIDs;
+#endif
   // Setup computes using pidMap
   for (int i=0;i < computes.size();i++) {
     computes[i].patchInd[0] = pidMap[computes[i].pid[0]];
     computes[i].patchInd[1] = pidMap[computes[i].pid[1]];
   }
-
   for (int i=0;i < CkMyNodeSize();i++) {
     if (rankPatches[i].size() > 0) pes.push_back(CkNodeFirst(CkMyNode()) + i);
   }
   computeMgr->sendAssignPatchesOnPe(pes, this);
-  delete [] rankHomePatchIDs;
 }
 
 void CudaComputeNonbonded::initialize() {
@@ -947,8 +1097,12 @@ void CudaComputeNonbonded::doGBISphase1() {
   SimParameters *simParams = Node::Object()->simParameters;
   Lattice lattice = patches[0].patch->flags.lattice;
 
+  float3 lata = make_float3(lattice.a().x, lattice.a().y, lattice.a().z);
+  float3 latb = make_float3(lattice.b().x, lattice.b().y, lattice.b().z);
+  float3 latc = make_float3(lattice.c().x, lattice.c().y, lattice.c().z);
+
   GBISKernel.GBISphase1(tileListKernel, atomStorageSize,
-    lattice.a().x, lattice.b().y, lattice.c().z,
+    lata, latb, latc,
     simParams->alpha_cutoff-simParams->fsMax, psiSumH, stream);
 }
 
@@ -961,11 +1115,15 @@ void CudaComputeNonbonded::doGBISphase2() {
   SimParameters *simParams = Node::Object()->simParameters;
   Lattice lattice = patches[0].patch->flags.lattice;
 
+  float3 lata = make_float3(lattice.a().x, lattice.a().y, lattice.a().z);
+  float3 latb = make_float3(lattice.b().x, lattice.b().y, lattice.b().z);
+  float3 latc = make_float3(lattice.c().x, lattice.c().y, lattice.c().z);
+
   GBISKernel.updateBornRad(atomStorageSize, bornRadH, stream);
 
   GBISKernel.GBISphase2(tileListKernel, atomStorageSize,
     doEnergy, doSlow,
-    lattice.a().x, lattice.b().y, lattice.c().z,
+    lata, latb, latc,
     simParams->cutoff, simParams->nonbondedScaling, simParams->kappa,
     (simParams->switchingActive ? simParams->switchingDist : -1.0),
     simParams->dielectric, simParams->solvent_dielectric,
@@ -980,11 +1138,15 @@ void CudaComputeNonbonded::doGBISphase3() {
   SimParameters *simParams = Node::Object()->simParameters;
   Lattice lattice = patches[0].patch->flags.lattice;
 
+  float3 lata = make_float3(lattice.a().x, lattice.a().y, lattice.a().z);
+  float3 latb = make_float3(lattice.b().x, lattice.b().y, lattice.b().z);
+  float3 latc = make_float3(lattice.c().x, lattice.c().y, lattice.c().z);
+
   if (doSlow) {
     GBISKernel.update_dHdrPrefix(atomStorageSize, dHdrPrefixH, stream);
 
     GBISKernel.GBISphase3(tileListKernel, atomStorageSize,
-      lattice.a().x, lattice.b().y, lattice.c().z,
+      lata, latb, latc,
       simParams->alpha_cutoff-simParams->fsMax, d_forcesSlow, stream);
   }
 }
@@ -996,12 +1158,15 @@ void CudaComputeNonbonded::doForce() {
   cudaCheck(cudaSetDevice(deviceID));
 
   Lattice lattice = patches[0].patch->flags.lattice;
+  float3 lata = make_float3(lattice.a().x, lattice.a().y, lattice.a().z);
+  float3 latb = make_float3(lattice.b().x, lattice.b().y, lattice.b().z);
+  float3 latc = make_float3(lattice.c().x, lattice.c().y, lattice.c().z);
 
   if (atomsChanged) {
     int numTileLists = calcNumTileLists();
     // Build initial tile lists and sort
     tileListKernel.buildTileLists(numTileLists, patches.size(), atomStorageSize,
-      maxTileListLen,lattice.a().x, lattice.b().y, lattice.c().z,
+      maxTileListLen, lata, latb, latc,
       cudaPatches, (const float4*)atoms, plcutoff2, stream);
     // Prepare tile list for atom-based refinement
     tileListKernel.prepareTileList(stream);
@@ -1016,8 +1181,7 @@ void CudaComputeNonbonded::doForce() {
 
   // Calculate forces (and refine tile list if atomsChanged=true)
   nonbondedKernel.nonbondedForce(tileListKernel, atomStorageSize, atomsChanged,
-    doEnergy, doVirial, doSlow,
-    lattice.a().x, lattice.b().y, lattice.c().z,
+    doEnergy, doVirial, doSlow, lata, latb, latc,
     (const float4*)atoms, cutoff2, d_forces, d_forcesSlow, h_forces, h_forcesSlow,
     stream);
 
@@ -1586,171 +1750,6 @@ void CudaComputeNonbonded::buildExclusions() {
 	nonbondedKernel.bindExclusions(numExclusions, exclusion_bits);
 
   delete [] exclusion_bits;
-}
-
-void CudaComputeNonbonded::buildTables() {
-  buildForceAndEnergyTables(4096);
-  buildVdwCoefTable();
-}
-
-//
-// Builds the VdW Lennard-Jones coefficient table. Swiped from ComputeNonbondedCUDA.C
-// NOTE: should only be called once
-//
-void CudaComputeNonbonded::buildVdwCoefTable() {
-  cudaCheck(cudaSetDevice(deviceID));
-
-  const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
-  const int dim = ljTable->get_table_dim();
-
-  // round dim up to odd multiple of 16
-  int tsize = (((dim+16+31)/32)*32)-16;
-  if ( tsize < dim ) NAMD_bug("CudaComputeNonbonded::buildVdwCoefTable bad tsize");
-
-  float2 *h_vdwCoefTable = new float2[tsize*tsize];
-  float2 *row = h_vdwCoefTable;
-  for ( int i=0; i<dim; ++i, row += tsize ) {
-    for ( int j=0; j<dim; ++j ) {
-      const LJTable::TableEntry *e = ljTable->table_val(i,j);
-      row[j].x = e->A * scaling;
-      row[j].y = e->B * scaling;
-    }
-  }
-
-	nonbondedKernel.bindVdwCoefTable(h_vdwCoefTable, tsize);
-
-  delete [] h_vdwCoefTable;
-
-  if ( ! CmiPhysicalNodeID(CkMyPe()) ) {
-    CkPrintf("Info: Updated CUDA LJ table with %d x %d elements.\n", dim, dim);
-  }
-}
-
-//
-// Builds force and energy tables. Swiped from ComputeNonbondedCUDA.C
-//
-void CudaComputeNonbonded::buildForceAndEnergyTables(int tableSize) {
-  cudaCheck(cudaSetDevice(deviceID));
-
-  float4* t = new float4[tableSize];
-  float4* et = new float4[tableSize];  // energy table
-
-  const BigReal r2_delta = ComputeNonbondedUtil:: r2_delta;
-  const int r2_delta_exp = ComputeNonbondedUtil:: r2_delta_exp;
-  // const int r2_delta_expc = 64 * (r2_delta_exp - 127);
-  const int r2_delta_expc = 64 * (r2_delta_exp - 1023);
-
-  double* r2list = new double[tableSize];  // double to match cpu code
-  for ( int i=1; i<tableSize; ++i ) {
-    double r = ((double) tableSize) / ( (double) i + 0.5 );
-    r2list[i] = r*r + r2_delta;
-  }
-
-  union { double f; int32 i[2]; } byte_order_test;
-  byte_order_test.f = 1.0;  // should occupy high-order bits only
-  int32 *r2iilist = (int32*)r2list + ( byte_order_test.i[0] ? 0 : 1 );
-
-  for ( int i=1; i<tableSize; ++i ) {
-    double r = ((double) tableSize) / ( (double) i + 0.5 );
-    int table_i = (r2iilist[2*i] >> 14) + r2_delta_expc;  // table_i >= 0
-
-    if ( r > cutoff ) {
-      t[i].x = 0.;
-      t[i].y = 0.;
-      t[i].z = 0.;
-      t[i].w = 0.;
-      et[i].x = 0.;
-      et[i].y = 0.;
-      et[i].z = 0.;
-      et[i].w = 0.;
-      continue;
-    }
-
-    BigReal diffa = r2list[i] - r2_table[table_i];
-
-    // coulomb 1/r or fast force
-    // t[i].x = 1. / (r2 * r);  // -1/r * d/dr r^-1
-    {
-      BigReal table_a = fast_table[4*table_i];
-      BigReal table_b = fast_table[4*table_i+1];
-      BigReal table_c = fast_table[4*table_i+2];
-      BigReal table_d = fast_table[4*table_i+3];
-      BigReal grad =
-		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
-      t[i].x = 2. * grad;
-      BigReal ener = table_a + diffa *
-		( ( table_d * diffa + table_c ) * diffa + table_b);
-      et[i].x = ener;
-    }
-
-
-    // pme correction for slow force
-    // t[i].w = 0.;
-    {
-      BigReal table_a = scor_table[4*table_i];
-      BigReal table_b = scor_table[4*table_i+1];
-      BigReal table_c = scor_table[4*table_i+2];
-      BigReal table_d = scor_table[4*table_i+3];
-      BigReal grad =
-		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
-      t[i].w = 2. * grad;
-      BigReal ener = table_a + diffa *
-		( ( table_d * diffa + table_c ) * diffa + table_b);
-      et[i].w = ener;
-    }
-
-
-    // vdw 1/r^6
-    // t[i].y = 6. / (r8);  // -1/r * d/dr r^-6
-    {
-      BigReal table_a = vdwb_table[4*table_i];
-      BigReal table_b = vdwb_table[4*table_i+1];
-      BigReal table_c = vdwb_table[4*table_i+2];
-      BigReal table_d = vdwb_table[4*table_i+3];
-      BigReal grad =
-		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
-      t[i].y = 2. * -1. * grad;
-      BigReal ener = table_a + diffa *
-		( ( table_d * diffa + table_c ) * diffa + table_b);
-      et[i].y = -1. * ener;
-    }
-
-
-    // vdw 1/r^12
-    // t[i].z = 12e / (r8 * r4 * r2);  // -1/r * d/dr r^-12
-    {
-      BigReal table_a = vdwa_table[4*table_i];
-      BigReal table_b = vdwa_table[4*table_i+1];
-      BigReal table_c = vdwa_table[4*table_i+2];
-      BigReal table_d = vdwa_table[4*table_i+3];
-      BigReal grad =
-		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
-      t[i].z = 2. * grad;
-      BigReal ener = table_a + diffa *
-		( ( table_d * diffa + table_c ) * diffa + table_b);
-      et[i].z = ener;
-    }
-
-  }
-
-  t[0].x = 0.f;
-  t[0].y = 0.f;
-  t[0].z = 0.f;
-  t[0].w = 0.f;
-  et[0].x = et[1].x;
-  et[0].y = et[1].y;
-  et[0].z = et[1].z;
-  et[0].w = et[1].w;
-
-  nonbondedKernel.bindForceAndEnergyTable(tableSize, t, et);
-
-  if ( ! CmiPhysicalNodeID(CkMyPe()) ) {
-    CkPrintf("Info: Updated CUDA force table with %d elements.\n", tableSize);
-  }
-
-  delete [] t;
-  delete [] et;
-  delete [] r2list;
 }
 
 #endif // NAMD_CUDA

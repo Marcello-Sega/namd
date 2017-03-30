@@ -388,7 +388,7 @@ buildTileListsBBKernel(const int numTileLists,
   TileList* __restrict__ tileLists,
   const CudaPatchRecord* __restrict__ patches,
   const int* __restrict__ tileListPos,
-  const float latticeX, const float latticeY, const float latticeZ, 
+  const float3 lata, const float3 latb, const float3 latc,
   const float cutoff2, const int maxTileListLen,
   const BoundingBox* __restrict__ boundingBoxes,
   int* __restrict__ tileJatomStart,
@@ -425,9 +425,10 @@ buildTileListsBBKernel(const int numTileLists,
       icompute  = tileLists[itileList].icompute;
       // Get i-column
       i = itileList - tileListPos[icompute];
-      float shx = offsetXYZ.x*latticeX;
-      float shy = offsetXYZ.y*latticeY;
-      float shz = offsetXYZ.z*latticeZ;
+
+      float shx = offsetXYZ.x*lata.x + offsetXYZ.y*latb.x + offsetXYZ.z*latc.x;
+      float shy = offsetXYZ.x*lata.y + offsetXYZ.y*latb.y + offsetXYZ.z*latc.y;
+      float shz = offsetXYZ.x*lata.z + offsetXYZ.y*latb.z + offsetXYZ.z*latc.z;
 
       // Load patches
       patch1 = patches[patchInd.x];
@@ -975,7 +976,7 @@ void CudaTileListKernel::markJtileOverlap(const int width, const int numTileList
 
 void CudaTileListKernel::buildTileLists(const int numTileListsPrev,
   const int numPatchesIn, const int atomStorageSizeIn, const int maxTileListLenIn,
-  const float latticeX, const float latticeY, const float latticeZ,
+  const float3 lata, const float3 latb, const float3 latc,
   const CudaPatchRecord* h_cudaPatches, const float4* h_xyzq, const float plcutoff2In,
   cudaStream_t stream) {
 
@@ -1068,7 +1069,7 @@ void CudaTileListKernel::buildTileLists(const int numTileListsPrev,
 
       buildTileListsBBKernel <<< nblock, nthread, shmem_size, stream >>>
       (numTileListsPrev, tileLists1, cudaPatches, tilePos,
-        latticeX, latticeY, latticeZ,  plcutoff2, maxTileListLen,
+        lata, latb, latc, plcutoff2, maxTileListLen,
         boundingBoxes, tileJatomStart1, tileJatomStart1Size,
         tileListDepth1, tileListOrder1, patchPairs1,
         d_tileListStat);

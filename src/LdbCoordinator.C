@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2016/03/02 21:33:06 $
- * $Revision: 1.127 $
+ * $Date: 2017/03/30 20:06:17 $
+ * $Revision: 1.128 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -285,24 +285,39 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	      || (computeMap->type(i) == computeNonbondedSelfType)
 	      || (computeMap->type(i) == computeNonbondedPairType)
 #endif
+#if defined(NAMD_CUDA) && defined(BONDED_CUDA)
+        || (computeMap->type(i) == computeSelfBondsType && !(simParams->bondedCUDA & 1))
+        || (computeMap->type(i) == computeBondsType && !(simParams->bondedCUDA & 1))
+        || (computeMap->type(i) == computeSelfAnglesType && !(simParams->bondedCUDA & 2))
+        || (computeMap->type(i) == computeAnglesType && !(simParams->bondedCUDA & 2))
+        || (computeMap->type(i) == computeSelfDihedralsType && !(simParams->bondedCUDA & 4))
+        || (computeMap->type(i) == computeDihedralsType && !(simParams->bondedCUDA & 4))
+        || (computeMap->type(i) == computeSelfImpropersType && !(simParams->bondedCUDA & 8))
+        || (computeMap->type(i) == computeImpropersType && !(simParams->bondedCUDA & 8))
+        || (computeMap->type(i) == computeSelfExclsType && !(simParams->bondedCUDA & 16))
+        || (computeMap->type(i) == computeExclsType && !(simParams->bondedCUDA & 16))
+        || (computeMap->type(i) == computeSelfCrosstermsType && !(simParams->bondedCUDA & 32))
+        || (computeMap->type(i) == computeCrosstermsType && !(simParams->bondedCUDA & 32))
+#else
+        || (computeMap->type(i) == computeSelfBondsType)
+        || (computeMap->type(i) == computeBondsType)
+        || (computeMap->type(i) == computeSelfAnglesType)
+        || (computeMap->type(i) == computeAnglesType)
+        || (computeMap->type(i) == computeSelfDihedralsType)
+        || (computeMap->type(i) == computeDihedralsType)
+        || (computeMap->type(i) == computeSelfImpropersType)
+        || (computeMap->type(i) == computeImpropersType)
+        || (computeMap->type(i) == computeSelfExclsType)
+        || (computeMap->type(i) == computeExclsType)
+        || (computeMap->type(i) == computeSelfCrosstermsType)
+        || (computeMap->type(i) == computeCrosstermsType)
+#endif
 	      || (computeMap->type(i) == computeLCPOType)
-	      || (computeMap->type(i) == computeSelfExclsType)
-	      || (computeMap->type(i) == computeSelfBondsType)
-	      || (computeMap->type(i) == computeSelfAnglesType)
-	      || (computeMap->type(i) == computeSelfDihedralsType)
-	      || (computeMap->type(i) == computeSelfImpropersType)
 	      || (computeMap->type(i) == computeSelfTholeType)
 	      || (computeMap->type(i) == computeSelfAnisoType)
-	      || (computeMap->type(i) == computeSelfCrosstermsType)
 
-                 || (computeMap->type(i) == computeBondsType)
-                 || (computeMap->type(i) == computeExclsType)
-                 || (computeMap->type(i) == computeAnglesType)
-                 || (computeMap->type(i) == computeDihedralsType)
-                 || (computeMap->type(i) == computeImpropersType)
                  || (computeMap->type(i) == computeTholeType)
                  || (computeMap->type(i) == computeAnisoType)
-                 || (computeMap->type(i) == computeCrosstermsType)
 	      // JLai
 	         || (computeMap->type(i) == computeGromacsPairType)
 	         || (computeMap->type(i) == computeSelfGromacsPairType)
@@ -362,15 +377,24 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	          || (computeMap->type(i) == computeNonbondedSelfType)
 	          || (computeMap->type(i) == computeNonbondedPairType)
                #endif
+#if defined(NAMD_CUDA) && defined(BONDED_CUDA)
+            || (computeMap->type(i) == computeSelfBondsType && !(simParams->bondedCUDA & 1))
+            || (computeMap->type(i) == computeSelfAnglesType && !(simParams->bondedCUDA & 2))
+            || (computeMap->type(i) == computeSelfDihedralsType && !(simParams->bondedCUDA & 4))
+            || (computeMap->type(i) == computeSelfImpropersType && !(simParams->bondedCUDA & 8))
+            || (computeMap->type(i) == computeSelfExclsType && !(simParams->bondedCUDA & 16))
+            || (computeMap->type(i) == computeSelfCrosstermsType && !(simParams->bondedCUDA & 32))
+#else
+            || (computeMap->type(i) == computeSelfBondsType)
+            || (computeMap->type(i) == computeSelfAnglesType)
+            || (computeMap->type(i) == computeSelfDihedralsType)
+            || (computeMap->type(i) == computeSelfImpropersType)
+            || (computeMap->type(i) == computeSelfExclsType)
+            || (computeMap->type(i) == computeSelfCrosstermsType)
+#endif
 	          || (computeMap->type(i) == computeLCPOType)
-	          || (computeMap->type(i) == computeSelfExclsType)
-	          || (computeMap->type(i) == computeSelfBondsType)
-	          || (computeMap->type(i) == computeSelfAnglesType)
-	          || (computeMap->type(i) == computeSelfDihedralsType)
-	          || (computeMap->type(i) == computeSelfImpropersType)
 	          || (computeMap->type(i) == computeSelfTholeType)
 	          || (computeMap->type(i) == computeSelfAnisoType)
-	          || (computeMap->type(i) == computeSelfCrosstermsType)
 	       // JLai
 	          || (computeMap->type(i) == computeSelfGromacsPairType)
 	       // End of JLai
@@ -397,14 +421,24 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
           c->ldObjHandle = theLbdb->RegisterObj(myHandle,elemID,0,1);
           }
-          else if ( (computeMap->type(i) == computeBondsType)
-                 || (computeMap->type(i) == computeExclsType)
+          else if ( 
+#if defined(NAMD_CUDA) && defined(BONDED_CUDA)
+                    (computeMap->type(i) == computeBondsType && !(simParams->bondedCUDA & 1))
+                 || (computeMap->type(i) == computeAnglesType && !(simParams->bondedCUDA & 2))
+                 || (computeMap->type(i) == computeDihedralsType && !(simParams->bondedCUDA & 4))
+                 || (computeMap->type(i) == computeImpropersType && !(simParams->bondedCUDA & 8))
+                 || (computeMap->type(i) == computeExclsType && !(simParams->bondedCUDA & 16))
+                 || (computeMap->type(i) == computeCrosstermsType && !(simParams->bondedCUDA & 32))
+#else
+                    (computeMap->type(i) == computeBondsType)
                  || (computeMap->type(i) == computeAnglesType)
                  || (computeMap->type(i) == computeDihedralsType)
                  || (computeMap->type(i) == computeImpropersType)
+                 || (computeMap->type(i) == computeExclsType)
+                 || (computeMap->type(i) == computeCrosstermsType)
+#endif
                  || (computeMap->type(i) == computeTholeType)
                  || (computeMap->type(i) == computeAnisoType)
-                 || (computeMap->type(i) == computeCrosstermsType)
 		 // JLai
 		 || (computeMap->type(i) == computeGromacsPairType)
                  // End of JLai

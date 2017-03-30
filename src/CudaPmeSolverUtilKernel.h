@@ -3,44 +3,34 @@
 
 #ifdef NAMD_CUDA
 
-// void spread_charge_ortho(const int4* patch, const int npatch,
-//   const float4 *xyzq, const int ncoord,
-//   const float recip11, const float recip22, const float recip33,
-//   const int nfftx, const int nffty, const int nfftz,
-//   const int xsize, const int ysize,
-//   float* data, const int order, cudaStream_t stream);
-
-void spread_charge_ortho(const float4 *atoms, const int numAtoms,
-  const float recip11, const float recip22, const float recip33,
+void spread_charge(const float4 *atoms, const int numAtoms,
   const int nfftx, const int nffty, const int nfftz,
   const int xsize, const int ysize, const int zsize,
   const int xdim, const int y00, const int z00, 
   const bool periodicY, const bool periodicZ,
   float* data, const int order, cudaStream_t stream);
 
-void scalar_sum_ortho(const bool orderXYZ, const int nfft1, const int nfft2, const int nfft3,
+void scalar_sum(const bool orderXYZ, const int nfft1, const int nfft2, const int nfft3,
   const int size1, const int size2, const int size3, const double kappa,
-  const float recip11, const float recip22, const float recip33,
+  const float recip1x, const float recip1y, const float recip1z,
+  const float recip2x, const float recip2y, const float recip2z,
+  const float recip3x, const float recip3y, const float recip3z,
+  const double volume,
   const float* prefac1, const float* prefac2, const float* prefac3,
   const int k2_00, const int k3_00,
   const bool doEnergyVirial, double* energy, double* virial, float2* data,
-  const int cuda_arch, cudaStream_t stream);
+  // const int cuda_arch,
+  cudaStream_t stream);
 
-void gather_force_ortho(const float4 *atoms, const int numAtoms,
-  const float recip11, const float recip22, const float recip33,
+void gather_force(const float4 *atoms, const int numAtoms,
+  // const float recip11, const float recip22, const float recip33,
   const int nfftx, const int nffty, const int nfftz,
   const int xsize, const int ysize, const int zsize,
   const int xdim, const int y00, const int z00, 
   const bool periodicY, const bool periodicZ,
   const float* data, const int order, float3* force,
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
   const cudaTextureObject_t gridTexObj,
-#endif
   cudaStream_t stream);
-
-#ifdef DISABLE_CUDA_TEXTURE_OBJECTS
-void bindGridTexture(float* data, int data_len);
-#endif
 
 // void calc_sum_charge_squared(const float4 *atoms, const int numAtoms, double* sum_charge_squared,
 //   cudaStream_t stream);

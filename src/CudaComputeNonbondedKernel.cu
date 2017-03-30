@@ -12,13 +12,6 @@ extern __thread DeviceCUDA *deviceCUDA;
 
 void NAMD_die(const char *);
 
-texture<float2, 1, cudaReadModeElementType> vdwCoefTableTexture;
-
-#ifdef DISABLE_CUDA_TEXTURE_OBJECTS
-texture<float4, 1, cudaReadModeElementType> force_table;
-texture<float4, 1, cudaReadModeElementType> energy_table;
-#endif
-
 #define MAX_CONST_EXCLUSIONS 2048  // cache size is 8k
 __constant__ unsigned int constExclusions[MAX_CONST_EXCLUSIONS];
 
@@ -29,9 +22,8 @@ __device__ __forceinline__
 void calcForceEnergy(const float r2, const float qi, const float qj,
   const float dx, const float dy, const float dz,
   const int vdwtypei, const int vdwtypej, const float2* __restrict__ vdwCoefTable,
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+  cudaTextureObject_t vdwCoefTableTex, 
   cudaTextureObject_t forceTableTex, cudaTextureObject_t energyTableTex,
-#endif
   float3& iforce, float3& iforceSlow, float3& jforce, float3& jforceSlow,
   float& energyVdw, float& energyElec, float& energySlow) {
 
@@ -39,18 +31,13 @@ void calcForceEnergy(const float r2, const float qi, const float qj,
 #if __CUDA_ARCH__ >= 350
   float2 ljab = __ldg(&vdwCoefTable[vdwIndex]);
 #else
-  float2 ljab = tex1Dfetch(vdwCoefTableTexture, vdwIndex);
+  float2 ljab = tex1D<float2>(vdwCoefTableTex, vdwIndex);
 #endif
 
   float rinv = rsqrtf(r2);
   float4 ei;
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
   float4 fi = tex1D<float4>(forceTableTex, rinv);
   if (doEnergy) ei = tex1D<float4>(energyTableTex, rinv);
-#else
-  float4 fi = tex1D(force_table, rinv);
-  if (doEnergy) ei = tex1D(energy_table, rinv);
-#endif
 
   float fSlow = qi * qj;
   float f = ljab.x * fi.z + ljab.y * fi.y + fSlow * fi.x;
@@ -175,11 +162,10 @@ nonbondedForceKernel(const int start, const int numTileLists,
   const TileList* __restrict__ tileLists, TileExcl* __restrict__ tileExcls,
   const int* __restrict__ tileJatomStart,
   const int vdwCoefTableWidth, const float2* __restrict__ vdwCoefTable, const int* __restrict__ vdwTypes,
-  const float latticeX, const float latticeY, const float latticeZ,
+  const float3 lata, const float3 latb, const float3 latc,
   const float4* __restrict__ xyzq, const float cutoff2,
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+  cudaTextureObject_t vdwCoefTableTex,
   cudaTextureObject_t forceTableTex, cudaTextureObject_t energyTableTex,
-#endif
   // ----------
   // doPairlist
   const int atomStorageSize, const float plcutoff2, const PatchPairRecord* __restrict__ patchPairs,
@@ -229,9 +215,9 @@ nonbondedForceKernel(const int start, const int numTileLists,
       patchInd     = tmp.patchInd;
       patchNumList = tmp.patchNumList;
 
-      float shx = tmp.offsetXYZ.x*latticeX;
-      float shy = tmp.offsetXYZ.y*latticeY;
-      float shz = tmp.offsetXYZ.z*latticeZ;
+      float shx = tmp.offsetXYZ.x*lata.x + tmp.offsetXYZ.y*latb.x + tmp.offsetXYZ.z*latc.x;
+      float shy = tmp.offsetXYZ.x*lata.y + tmp.offsetXYZ.y*latb.y + tmp.offsetXYZ.z*latc.y;
+      float shz = tmp.offsetXYZ.x*lata.z + tmp.offsetXYZ.y*latb.z + tmp.offsetXYZ.z*latc.z;
 
       int iatomSize, iatomFreeSize, jatomSize, jatomFreeSize;
       if (doPairlist) {
@@ -454,9 +440,7 @@ nonbondedForceKernel(const int start, const int numTileLists,
                   calcForceEnergy<doEnergy, doSlow>(r2, xyzq_i.w, xyzq_j.w, dx, dy, dz,
                     vdwtypei, vdwtypej,
                     vdwCoefTable,
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-                    forceTableTex, energyTableTex,
-#endif
+                    vdwCoefTableTex, forceTableTex, energyTableTex,
                     iforce, iforceSlow, jforce, jforceSlow, energyVdw, energyElec, energySlow);
                 }
               }
@@ -466,33 +450,6 @@ nonbondedForceKernel(const int start, const int numTileLists,
           } // t
         } else {
           // Just compute forces
-/*          
-          if (self) {
-            shuffleNext<doPairlist>(xyzq_j.w, vdwtypej, jatomIndex);
-            excl >>= 1;
-          }
-          for (;t < WARPSIZE;t++) {
-            int j = (t + wid) & (WARPSIZE-1);
-
-            float dx = __shfl(xyzq_j.x,j) - xyzq_i.x;
-            float dy = __shfl(xyzq_j.y,j) - xyzq_i.y;
-            float dz = __shfl(xyzq_j.z,j) - xyzq_i.z;
-
-            float r2 = dx*dx + dy*dy + dz*dz;
-
-            if ((excl & 1) && r2 < cutoff2) {
-              calcForceEnergy<doEnergy, doSlow>(r2, xyzq_i.w, xyzq_j.w, dx, dy, dz,
-                vdwtypei, vdwtypej, vdwCoefTable,
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-                forceTableTex, energyTableTex,
-#endif
-                iforce, iforceSlow, jforce, jforceSlow, energyVdw, energyElec, energySlow);
-            } // ((excl & 1) && r2 < cutoff2)
-            excl >>= 1;
-            shuffleNext<doPairlist>(xyzq_j.w, vdwtypej, jatomIndex);
-            shuffleNext<doSlow>(jforce, jforceSlow);
-          } // t
-*/
           if (self) {
             excl >>= 1;
             xyzq_j.x = __shfl(xyzq_j.x, (threadIdx.x+1) & (WARPSIZE-1));
@@ -512,9 +469,7 @@ nonbondedForceKernel(const int start, const int numTileLists,
                 calcForceEnergy<doEnergy, doSlow>(r2, xyzq_i.w, xyzq_j.w, dx, dy, dz,
                   vdwtypei, vdwtypej,
                   vdwCoefTable,
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-                  forceTableTex, energyTableTex,
-#endif
+                  vdwCoefTableTex, forceTableTex, energyTableTex,
                   iforce, iforceSlow, jforce, jforceSlow, energyVdw, energyElec, energySlow);
               } // (r2 < cutoff2)
             } // (excl & 1)
@@ -972,7 +927,9 @@ __global__ void reduceGBISEnergyKernel(const int numTileLists,
 // ##############################################################################################
 // ##############################################################################################
 
-CudaComputeNonbondedKernel::CudaComputeNonbondedKernel(int deviceID, bool doStreaming) : deviceID(deviceID), doStreaming(doStreaming) {
+CudaComputeNonbondedKernel::CudaComputeNonbondedKernel(int deviceID, CudaNonbondedTables& cudaNonbondedTables,
+  bool doStreaming) : deviceID(deviceID), cudaNonbondedTables(cudaNonbondedTables), doStreaming(doStreaming) {
+  
   cudaCheck(cudaSetDevice(deviceID));
 
   overflowExclusions = NULL;
@@ -986,21 +943,6 @@ CudaComputeNonbondedKernel::CudaComputeNonbondedKernel(int deviceID, bool doStre
 
   vdwTypes = NULL;
   vdwTypesSize = 0;
-
-  vdwCoefTable = NULL;
-  vdwCoefTableWidth = 0;
-  vdwCoefTableSize = 0;
-
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-  forceTableTexActive = false;
-  energyTableTexActive = false;
-#endif
-
-  vdwCoefTableTextureBound = false;
-#ifdef DISABLE_CUDA_TEXTURE_OBJECTS
-  force_table_bound = false;
-  energy_table_bound = false;
-#endif
 
   patchNumCount = NULL;
   patchNumCountSize = 0;
@@ -1016,15 +958,6 @@ CudaComputeNonbondedKernel::~CudaComputeNonbondedKernel() {
   if (exclIndexMaxDiff != NULL) deallocate_device<int2>(&exclIndexMaxDiff);
   if (atomIndex != NULL) deallocate_device<int>(&atomIndex);
   if (vdwTypes != NULL) deallocate_device<int>(&vdwTypes);
-  if (vdwCoefTable != NULL) deallocate_device<float2>(&vdwCoefTable);
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-  if (forceTableTexActive) cudaCheck(cudaDestroyTextureObject(forceTableTex));
-  if (energyTableTexActive) cudaCheck(cudaDestroyTextureObject(energyTableTex));
-#else
-  if (force_table_bound) cudaCheck(cudaUnbindTexture(force_table));
-  if (energy_table_bound) cudaCheck(cudaUnbindTexture(energy_table));
-#endif
-  if (vdwCoefTableTextureBound) cudaCheck(cudaUnbindTexture(vdwCoefTableTexture));
   if (patchNumCount != NULL) deallocate_device<unsigned int>(&patchNumCount);
   if (patchReadyQueue != NULL) deallocate_host<int>(&patchReadyQueue);
 }
@@ -1051,7 +984,7 @@ int* CudaComputeNonbondedKernel::getPatchReadyQueue() {
 void CudaComputeNonbondedKernel::nonbondedForce(CudaTileListKernel& tlKernel,
   const int atomStorageSize, const bool doPairlist,
   const bool doEnergy, const bool doVirial, const bool doSlow,
-  const float latticeX, const float latticeY, const float latticeZ,
+  const float3 lata, const float3 latb, const float3 latc,
   const float4* h_xyzq, const float cutoff2, 
   float4* d_forces, float4* d_forcesSlow,
   float4* h_forces, float4* h_forcesSlow,
@@ -1106,30 +1039,18 @@ void CudaComputeNonbondedKernel::nonbondedForce(CudaTileListKernel& tlKernel,
     int nleft = tlKernel.getNumTileLists() - start;
     int nblock = min(deviceCUDA->getMaxNumBlocks(), (nleft-1)/nwarp+1);
 
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
 #define CALL(DOENERGY, DOVIRIAL, DOSLOW, DOPAIRLIST, DOSTREAMING) \
     nonbondedForceKernel<DOENERGY, DOVIRIAL, DOSLOW, DOPAIRLIST, DOSTREAMING> \
   <<< nblock, nthread, shMemSize, stream >>>  \
   (start, tlKernel.getNumTileLists(), tlKernel.getTileLists(), tlKernel.getTileExcls(), tlKernel.getTileJatomStart(), \
-    vdwCoefTableWidth, vdwCoefTable, vdwTypes, latticeX, latticeY, latticeZ, tlKernel.get_xyzq(), cutoff2, \
-    forceTableTex, energyTableTex, \
+    cudaNonbondedTables.getVdwCoefTableWidth(), cudaNonbondedTables.getVdwCoefTable(), \
+    vdwTypes, lata, latb, latc, tlKernel.get_xyzq(), cutoff2, \
+    cudaNonbondedTables.getVdwCoefTableTex(), cudaNonbondedTables.getForceTableTex(), cudaNonbondedTables.getEnergyTableTex(), \
     atomStorageSize, tlKernel.get_plcutoff2(), tlKernel.getPatchPairs(), atomIndex, exclIndexMaxDiff, overflowExclusions, \
     tlKernel.getTileListDepth(), tlKernel.getTileListOrder(), tlKernel.getJtiles(), tlKernel.getTileListStatDevPtr(), \
     tlKernel.getBoundingBoxes(), d_forces, d_forcesSlow, \
     numPatches, patchNumCountPtr, tlKernel.getCudaPatches(), m_forces, m_forcesSlow, m_patchReadyQueue, \
     outputOrderPtr, tlKernel.getTileListVirialEnergy()); called=true
-#else  // DISABLE_CUDA_TEXTURE_OBJECTS
-#define CALL(DOENERGY, DOVIRIAL, DOSLOW, DOPAIRLIST, DOSTREAMING) \
-  nonbondedForceKernel<DOENERGY, DOVIRIAL, DOSLOW, DOPAIRLIST, DOSTREAMING> \
-  <<< nblock, nthread, shMemSize, stream >>>  \
-  (start, tlKernel.getNumTileLists(), tlKernel.getTileLists(), tlKernel.getTileExcls(), tlKernel.getTileJatomStart(), \
-    vdwCoefTableWidth, vdwCoefTable, vdwTypes, latticeX, latticeY, latticeZ, tlKernel.get_xyzq(), cutoff2, \
-    atomStorageSize, tlKernel.get_plcutoff2(), tlKernel.getPatchPairs(), atomIndex, exclIndexMaxDiff, overflowExclusions, \
-    tlKernel.getTileListDepth(), tlKernel.getTileListOrder(), tlKernel.getJtiles(), tlKernel.getTileListStatDevPtr(), \
-    tlKernel.getBoundingBoxes(), d_forces, d_forcesSlow, \
-    numPatches, patchNumCountPtr, tlKernel.getCudaPatches(), m_forces, m_forcesSlow, m_patchReadyQueue, \
-    outputOrderPtr, tlKernel.getTileListVirialEnergy()); called=true
-#endif // DISABLE_CUDA_TEXTURE_OBJECTS
 
     bool called = false;
 
@@ -1230,106 +1151,4 @@ void CudaComputeNonbondedKernel::bindExclusions(int numExclusions, unsigned int*
 
   reallocate_device<unsigned int>(&overflowExclusions, &overflowExclusionsSize, numExclusions);
   copy_HtoD_sync<unsigned int>(exclusion_bits, overflowExclusions, numExclusions);
-}
-
-void CudaComputeNonbondedKernel::bindVdwCoefTable(float2* h_vdwCoefTable, int vdwCoefTableWidthIn) {
-  vdwCoefTableWidth = vdwCoefTableWidthIn;
-
-  int vdwCoefTableArea = vdwCoefTableWidth*vdwCoefTableWidth;
-
-  reallocate_device<float2>(&vdwCoefTable, &vdwCoefTableSize, vdwCoefTableArea);
-  copy_HtoD_sync<float2>(h_vdwCoefTable, vdwCoefTable, vdwCoefTableArea);
-
-  if (vdwCoefTableTextureBound) {
-    cudaCheck(cudaUnbindTexture(vdwCoefTableTexture));
-    vdwCoefTableTextureBound = false;
-  }
-
-  vdwCoefTableTexture.normalized = false;
-  vdwCoefTableTexture.addressMode[0] = cudaAddressModeClamp;
-  vdwCoefTableTexture.filterMode = cudaFilterModePoint;
-  cudaCheck(cudaBindTexture((size_t*)0, vdwCoefTableTexture, vdwCoefTable, vdwCoefTableArea*sizeof(float2)));
-  vdwCoefTableTextureBound = true;
-}
-
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-void CudaComputeNonbondedKernel::bindTextureObject(int tableSize, float4* h_table, cudaArray_t& array, cudaTextureObject_t& tableTex) {
-  cudaChannelFormatDesc desc;
-  desc.x = sizeof(float)*8;
-  desc.y = sizeof(float)*8;
-  desc.z = sizeof(float)*8;
-  desc.w = sizeof(float)*8;
-  desc.f = cudaChannelFormatKindFloat;
-  cudaCheck(cudaMallocArray(&array, &desc, tableSize, 1));
-  cudaCheck(cudaMemcpyToArray(array, 0, 0, h_table, tableSize*sizeof(float4), cudaMemcpyHostToDevice));
-
-  cudaResourceDesc resDesc;
-  memset(&resDesc, 0, sizeof(resDesc));
-  resDesc.resType = cudaResourceTypeArray;
-  resDesc.res.array.array = array;
-
-  cudaTextureDesc texDesc;
-  memset(&texDesc, 0, sizeof(texDesc));
-  texDesc.addressMode[0] = cudaAddressModeClamp;
-  texDesc.filterMode = cudaFilterModeLinear;
-  texDesc.normalizedCoords = 1;
-
-  cudaCheck(cudaCreateTextureObject(&tableTex, &resDesc, &texDesc, NULL));
-}
-#endif
-
-void CudaComputeNonbondedKernel::bindForceAndEnergyTable(int tableSize,
-  float4* h_forceTable,
-  float4* h_energyTable) {
-
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-
-  if (forceTableTexActive) {
-    cudaCheck(cudaFreeArray(forceArray));
-    cudaCheck(cudaDestroyTextureObject(forceTableTex));
-  }
-
-  if (energyTableTexActive) {
-    cudaCheck(cudaFreeArray(energyArray));
-    cudaCheck(cudaDestroyTextureObject(energyTableTex));
-  }
-  forceTableTex = 0;
-  energyTableTex = 0;
-
-  bindTextureObject(tableSize, h_forceTable, forceArray, forceTableTex);
-  bindTextureObject(tableSize, h_energyTable, energyArray, energyTableTex);
-  forceTableTexActive = true;
-  energyTableTexActive = true;
-
-#else // DISABLE_CUDA_TEXTURE_OBJECTS
-
-  if (force_table_bound) {
-   cudaCheck(cudaFreeArray(forceArray));
-  }
-  cudaCheck(cudaMallocArray(&forceArray, &force_table.channelDesc, tableSize, 1));
-
-  if (energy_table_bound) {
-   cudaCheck(cudaFreeArray(energyArray));
-  }
-  cudaCheck(cudaMallocArray(&energyArray, &energy_table.channelDesc, tableSize, 1));
-
-  cudaCheck(cudaMemcpyToArray(forceArray, 0, 0, h_forceTable, tableSize*sizeof(float4), cudaMemcpyHostToDevice));
-  cudaCheck(cudaMemcpyToArray(energyArray, 0, 0, h_energyTable, tableSize*sizeof(float4), cudaMemcpyHostToDevice));
-
-  force_table.normalized = true;
-  force_table.addressMode[0] = cudaAddressModeClamp;
-  force_table.addressMode[1] = cudaAddressModeClamp;
-  force_table.filterMode = cudaFilterModeLinear;
-
-  energy_table.normalized = true;
-  energy_table.addressMode[0] = cudaAddressModeClamp;
-  energy_table.addressMode[1] = cudaAddressModeClamp;
-  energy_table.filterMode = cudaFilterModeLinear;
-
-  cudaCheck(cudaBindTextureToArray(force_table, forceArray));
-  cudaCheck(cudaBindTextureToArray(energy_table, energyArray));
-
-  force_table_bound = true;
-  energy_table_bound = true;
-#endif // DISABLE_CUDA_TEXTURE_OBJECTS
 }

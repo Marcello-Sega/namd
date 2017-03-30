@@ -42,6 +42,11 @@ public:
   LocalID localID(AtomID id);
 
   friend class AtomMapper;
+#ifdef NAMD_CUDA
+#ifdef BONDED_CUDA
+  friend class ComputeBondedCUDA;
+#endif
+#endif
 
 protected:
   AtomMap(void);
@@ -76,6 +81,11 @@ inline LocalID AtomMap::localID(AtomID id)
 class AtomMapper {
 public:
   AtomMapper(PatchID _pid) : pid(_pid), mapped(0), map(AtomMap::Object()) {}
+#ifdef NAMD_CUDA
+#ifdef BONDED_CUDA
+  AtomMapper(PatchID _pid, AtomMap *_map) : pid(_pid), mapped(0), map(_map) {}
+#endif
+#endif
   ~AtomMapper() {
     if ( mapped ) NAMD_bug("deleted AtomMapper with atoms still mapped");
   }

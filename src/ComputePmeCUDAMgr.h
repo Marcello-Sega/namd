@@ -212,7 +212,7 @@ public:
   ComputePmeCUDA* compute;
   int pe;
   bool doEnergy, doVirial;
-  int miny, minz;
+  // int miny, minz;
 };
 
 class PmeForceMsg : public CMessage_PmeForceMsg {

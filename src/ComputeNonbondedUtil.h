@@ -300,6 +300,7 @@ public:
   static BigReal *vdwa_table;
   static BigReal *vdwb_table;
   static BigReal *r2_table;
+  static int table_length;
   #if defined(NAMD_MIC)
     static BigReal *mic_table_base_ptr; // DMK - NOTE : Duplicate but, use so that nothing breaks if the ordering of sub-arrays changes
     static int mic_table_n;

@@ -199,9 +199,9 @@ void CudaFFTCompute::setStream() {
 //###########################################################################
 
 CudaPmeKSpaceCompute::CudaPmeKSpaceCompute(PmeGrid pmeGrid, const int permutation,
-  const int jblock, const int kblock, double kappa, int cuda_arch, int deviceID, cudaStream_t stream) : 
+  const int jblock, const int kblock, double kappa, int deviceID, cudaStream_t stream) : 
   PmeKSpaceCompute(pmeGrid, permutation, jblock, kblock, kappa),
-  cuda_arch(cuda_arch), deviceID(deviceID), stream(stream) {
+  deviceID(deviceID), stream(stream) {
 
   cudaCheck(cudaSetDevice(deviceID));
 
@@ -245,14 +245,14 @@ void CudaPmeKSpaceCompute::solve(Lattice &lattice, const bool doEnergy, const bo
 
   int nfft1, nfft2, nfft3;
   float *prefac1, *prefac2, *prefac3;
-  float recip1, recip2, recip3;
 
-  Vector recip1v = lattice.a_r();
-  Vector recip2v = lattice.b_r();
-  Vector recip3v = lattice.c_r();
-  double recip[9] = {recip1v.x, recip1v.y, recip1v.z,
-    recip2v.x, recip2v.y, recip2v.z,
-    recip3v.x, recip3v.y, recip3v.z};
+  BigReal volume = lattice.volume();
+  Vector a_r = lattice.a_r();
+  Vector b_r = lattice.b_r();
+  Vector c_r = lattice.c_r();
+  float recip1x, recip1y, recip1z;
+  float recip2x, recip2y, recip2z;
+  float recip3x, recip3y, recip3z;
 
   if (permutation == Perm_Z_cX_Y) {
     // Z, X, Y
@@ -262,9 +262,15 @@ void CudaPmeKSpaceCompute::solve(Lattice &lattice, const bool doEnergy, const bo
     prefac1 = d_bm3;
     prefac2 = d_bm1;
     prefac3 = d_bm2;
-    recip1 = (float)recip[8];
-    recip2 = (float)recip[0];
-    recip3 = (float)recip[4];
+    recip1x = c_r.z;
+    recip1y = c_r.x;
+    recip1z = c_r.y;
+    recip2x = a_r.z;
+    recip2y = a_r.x;
+    recip2z = a_r.y;
+    recip3x = b_r.z;
+    recip3y = b_r.x;
+    recip3z = b_r.y;
   } else if (permutation == Perm_cX_Y_Z) {
     // X, Y, Z
     nfft1 = pmeGrid.K1;
@@ -273,18 +279,18 @@ void CudaPmeKSpaceCompute::solve(Lattice &lattice, const bool doEnergy, const bo
     prefac1 = d_bm1;
     prefac2 = d_bm2;
     prefac3 = d_bm3;
-    recip1 = (float)recip[0];
-    recip2 = (float)recip[4];
-    recip3 = (float)recip[8];
+    recip1x = a_r.x;
+    recip1y = a_r.y;
+    recip1z = a_r.z;
+    recip2x = b_r.x;
+    recip2y = b_r.y;
+    recip2z = b_r.z;
+    recip3x = c_r.x;
+    recip3y = c_r.y;
+    recip3z = c_r.z;
   } else {
     NAMD_bug("CudaPmeKSpaceCompute::solve, invalid permutation");
   }
-
-  ortho = (recip[1] == 0.0 && recip[2] == 0.0 && recip[3] == 0.0 &&
-    recip[5] == 0.0 && recip[6] == 0.0 && recip[7] == 0.0);
-
-  if (!ortho)
-    cudaNAMD_bug("CudaPmeKSpaceCompute::solve, only orthorhombic boxes are currently supported");
 
   // ncall++;
   // if (ncall == 1) {
@@ -319,9 +325,11 @@ void CudaPmeKSpaceCompute::solve(Lattice &lattice, const bool doEnergy, const bo
   // Clear energy and virial array if needed
   if (doEnergyVirial) clear_device_array<EnergyVirial>(d_energyVirial, 1, stream);
 
-  scalar_sum_ortho(permutation == Perm_cX_Y_Z, nfft1, nfft2, nfft3, size1, size2, size3, kappa,
-    recip1, recip2, recip3, prefac1, prefac2, prefac3, j0, k0, doEnergyVirial,
-    &d_energyVirial->energy, d_energyVirial->virial, (float2*)data, cuda_arch, stream);
+  scalar_sum(permutation == Perm_cX_Y_Z, nfft1, nfft2, nfft3, size1, size2, size3, kappa,
+    recip1x, recip1y, recip1z, recip2x, recip2y, recip2z, recip3x, recip3y, recip3z,
+    volume, prefac1, prefac2, prefac3, j0, k0, doEnergyVirial,
+    &d_energyVirial->energy, d_energyVirial->virial, (float2*)data, 
+    stream);
 
   // Copy energy and virial to host if needed
   if (doEnergyVirial) {
@@ -330,20 +338,6 @@ void CudaPmeKSpaceCompute::solve(Lattice &lattice, const bool doEnergy, const bo
     // cudaCheck(cudaStreamSynchronize(stream));
   }
 
-  // if (ncall == 1) {
-  //   float2* h_data = new float2[size1*size2*size3];
-  //   float2* d_data = (float2*)data;
-  //   copy_DtoH<float2>(d_data, h_data, size1*size2*size3, stream);
-  //   cudaCheck(cudaStreamSynchronize(stream));
-  //   FILE *handle = fopen("datafs.txt", "w");
-  //   for (int i=0;i < size1*size2*size3;i++) {
-  //     fprintf(handle, "%f %f\n", h_data[i].x, h_data[i].y);
-  //   }
-  //   fclose(handle);
-  //   delete [] h_data;
-  // }
-
-  //fprintf(stderr, "CudaPmeKSpaceCompute::solve()\n");
 }
 
 // void CudaPmeKSpaceCompute::waitEnergyAndVirial() {
@@ -406,36 +400,32 @@ double CudaPmeKSpaceCompute::getEnergy() {
 }
 
 void CudaPmeKSpaceCompute::getVirial(double *virial) {
-  if (ortho) {
-    if (permutation == Perm_Z_cX_Y) {
-      // h_energyVirial->virial is storing ZZ, ZX, ZY, XX, XY, YY
-      virial[0] = h_energyVirial->virial[3];
-      virial[1] = h_energyVirial->virial[4];
-      virial[2] = h_energyVirial->virial[1];
+  if (permutation == Perm_Z_cX_Y) {
+    // h_energyVirial->virial is storing ZZ, ZX, ZY, XX, XY, YY
+    virial[0] = h_energyVirial->virial[3];
+    virial[1] = h_energyVirial->virial[4];
+    virial[2] = h_energyVirial->virial[1];
 
-      virial[3] = h_energyVirial->virial[4];
-      virial[4] = h_energyVirial->virial[5];
-      virial[5] = h_energyVirial->virial[2];
+    virial[3] = h_energyVirial->virial[4];
+    virial[4] = h_energyVirial->virial[5];
+    virial[5] = h_energyVirial->virial[2];
 
-      virial[6] = h_energyVirial->virial[1];
-      virial[7] = h_energyVirial->virial[7];
-      virial[8] = h_energyVirial->virial[0];
-    } else if (permutation == Perm_cX_Y_Z) {
-      // h_energyVirial->virial is storing XX, XY, XZ, YY, YZ, ZZ
-      virial[0] = h_energyVirial->virial[0];
-      virial[1] = h_energyVirial->virial[1];
-      virial[2] = h_energyVirial->virial[2];
+    virial[6] = h_energyVirial->virial[1];
+    virial[7] = h_energyVirial->virial[7];
+    virial[8] = h_energyVirial->virial[0];
+  } else if (permutation == Perm_cX_Y_Z) {
+    // h_energyVirial->virial is storing XX, XY, XZ, YY, YZ, ZZ
+    virial[0] = h_energyVirial->virial[0];
+    virial[1] = h_energyVirial->virial[1];
+    virial[2] = h_energyVirial->virial[2];
 
-      virial[3] = h_energyVirial->virial[1];
-      virial[4] = h_energyVirial->virial[3];
-      virial[5] = h_energyVirial->virial[4];
+    virial[3] = h_energyVirial->virial[1];
+    virial[4] = h_energyVirial->virial[3];
+    virial[5] = h_energyVirial->virial[4];
 
-      virial[6] = h_energyVirial->virial[2];
-      virial[7] = h_energyVirial->virial[4];
-      virial[8] = h_energyVirial->virial[5];
-    }
-  } else {
-    NAMD_bug("CudaPmeKSpaceCompute::getVirial, only orthorhombic boxes are currently supported");
+    virial[6] = h_energyVirial->virial[2];
+    virial[7] = h_energyVirial->virial[4];
+    virial[8] = h_energyVirial->virial[5];
   }
 }
 
@@ -448,8 +438,8 @@ void CudaPmeKSpaceCompute::getVirial(double *virial) {
 // Class constructor
 //
 CudaPmeRealSpaceCompute::CudaPmeRealSpaceCompute(PmeGrid pmeGrid,
-  const int jblock, const int kblock, int cuda_arch, int deviceID, cudaStream_t stream) : 
-  PmeRealSpaceCompute(pmeGrid, jblock, kblock), cuda_arch(cuda_arch), deviceID(deviceID), stream(stream) {
+  const int jblock, const int kblock, int deviceID, cudaStream_t stream) : 
+  PmeRealSpaceCompute(pmeGrid, jblock, kblock), deviceID(deviceID), stream(stream) {
   if (dataSize < xsize*ysize*zsize)
     NAMD_bug("CudaPmeRealSpaceCompute::CudaPmeRealSpaceCompute, insufficient dataSize");
   cudaCheck(cudaSetDevice(deviceID));
@@ -514,29 +504,12 @@ void CudaPmeRealSpaceCompute::copyAtoms(const int numAtoms, const CudaAtom* atom
 //
 void CudaPmeRealSpaceCompute::spreadCharge(Lattice &lattice) {
   cudaCheck(cudaSetDevice(deviceID));
-  Vector recip1v = lattice.a_r();
-  Vector recip2v = lattice.b_r();
-  Vector recip3v = lattice.c_r();
-  double recip[9] = {recip1v.x, recip1v.y, recip1v.z,
-    recip2v.x, recip2v.y, recip2v.z,
-    recip3v.x, recip3v.y, recip3v.z};
 
   // Clear grid
   clear_device_array<float>(data, xsize*ysize*zsize, stream);
 
-  bool ortho = (recip[1] == 0.0 && recip[2] == 0.0 && recip[3] == 0.0 &&
-    recip[5] == 0.0 && recip[6] == 0.0 && recip[7] == 0.0);
-
-  if (!ortho) {
-    cudaNAMD_bug("CudaPmeRealSpaceCompute::spreadCharge, only orthorhombic boxes are currently supported");
-  }
-
-  float recip1 = (float)recip[0];
-  float recip2 = (float)recip[4];
-  float recip3 = (float)recip[8];
-
-  spread_charge_ortho((const float4*)d_atoms, numAtoms,
-    recip1, recip2, recip3, pmeGrid.K1, pmeGrid.K2, pmeGrid.K3, xsize, ysize, zsize,
+  spread_charge((const float4*)d_atoms, numAtoms,
+    pmeGrid.K1, pmeGrid.K2, pmeGrid.K3, xsize, ysize, zsize,
     xsize, y0, z0, (pmeGrid.yBlocks == 1), (pmeGrid.zBlocks == 1),
     data, pmeGrid.order, stream);
 
@@ -587,10 +560,9 @@ void CudaPmeRealSpaceCompute::waitGatherForceDone() {
 }
 
 void CudaPmeRealSpaceCompute::setupGridTexture(float* data, int data_len) {
-  if (cuda_arch >= 350 || (tex_data == data && tex_data_len == data_len)) return;
+  if (tex_data == data && tex_data_len == data_len) return;
   tex_data = data;
   tex_data_len = data_len;
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
   // Use texture objects
   cudaResourceDesc resDesc;
   memset(&resDesc, 0, sizeof(resDesc));
@@ -603,9 +575,6 @@ void CudaPmeRealSpaceCompute::setupGridTexture(float* data, int data_len) {
   memset(&texDesc, 0, sizeof(texDesc));
   texDesc.readMode = cudaReadModeElementType;
   cudaCheck(cudaCreateTextureObject(&gridTexObj, &resDesc, &texDesc, NULL));
-#else
-  bindGridTexture(data, data_len);
-#endif
 }
 
 void CudaPmeRealSpaceCompute::gatherForce(Lattice &lattice, CudaForce* force) {
@@ -614,31 +583,11 @@ void CudaPmeRealSpaceCompute::gatherForce(Lattice &lattice, CudaForce* force) {
   // Re-allocate force array if needed
   reallocate_device<CudaForce>(&d_force, &d_forceCapacity, numAtoms, 1.5f);
 
-  Vector recip1v = lattice.a_r();
-  Vector recip2v = lattice.b_r();
-  Vector recip3v = lattice.c_r();
-  double recip[9] = {recip1v.x, recip1v.y, recip1v.z,
-    recip2v.x, recip2v.y, recip2v.z,
-    recip3v.x, recip3v.y, recip3v.z};
-
-  bool ortho = (recip[1] == 0.0 && recip[2] == 0.0 && recip[3] == 0.0 &&
-    recip[5] == 0.0 && recip[6] == 0.0 && recip[7] == 0.0);
-
-  if (!ortho) {
-    cudaNAMD_bug("CudaPmeRealSpaceCompute::gatherForce, only orthorhombic boxes are currently supported");
-  }
-
-  float recip1 = (float)recip[0];
-  float recip2 = (float)recip[4];
-  float recip3 = (float)recip[8];
-
-  gather_force_ortho((const float4*)d_atoms, numAtoms,
-    recip1, recip2, recip3, pmeGrid.K1, pmeGrid.K2, pmeGrid.K3,
+  gather_force((const float4*)d_atoms, numAtoms,
+    pmeGrid.K1, pmeGrid.K2, pmeGrid.K3,
     xsize, ysize, zsize, xsize, y0, z0, (pmeGrid.yBlocks == 1), (pmeGrid.zBlocks == 1),
     data, pmeGrid.order, (float3*)d_force, 
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
     gridTexObj,
-#endif
     stream);
 
   copy_DtoH<CudaForce>(d_force, force, numAtoms, stream);

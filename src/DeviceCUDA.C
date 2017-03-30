@@ -323,12 +323,6 @@ void DeviceCUDA::initialize() {
       cudaDie("device not of compute capability 3.0 or higher");
     if ( ! deviceProp.canMapHostMemory )
       cudaDie("device cannot map host memory");
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-    if (deviceProp.major < 3)
-      cudaDie("CUDA texture objects require compute capability 3.0 or higher.\nUse DISABLE_CUDA_TEXTURE_OBJECTS to disable texture objects.");
-  #endif
-    extern int read_CUDA_ARCH();
-    cuda_arch = read_CUDA_ARCH();
   }
 }
 

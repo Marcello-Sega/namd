@@ -42,18 +42,28 @@ struct RecipVirial_t {
   double virial[6];
 };
 
+
+__forceinline__ __device__ double expfunc(const double x) {
+  return exp(x);
+}
+
+__forceinline__ __device__ float expfunc(const float x) {
+  return __expf(x);
+}
+
 //
 // Performs scalar sum on data(nfft1, nfft2, nfft3)
 // T = float or double
 // T2 = float2 or double2
 //
-template <typename T, typename T2, bool calc_energy_virial, bool orderXYZ>
-__global__ void scalar_sum_ortho_kernel(const int nfft1, const int nfft2, const int nfft3,
+template <typename T, typename T2, bool calc_energy_virial, bool orderXYZ, bool doOrtho>
+__global__ void scalar_sum_kernel(const int nfft1, const int nfft2, const int nfft3,
           const int size1, const int size2, const int size3,
-          const int nf1, const int nf2, const int nf3,
-          const T recip11, const T recip22, const T recip33,
+          const T recip1x, const T recip1y, const T recip1z,
+          const T recip2x, const T recip2y, const T recip2z,
+          const T recip3x, const T recip3y, const T recip3z,
           const T* prefac1, const T* prefac2, const T* prefac3,
-          const T fac, const T piv_inv,
+          const T pi_ewald, const T piv_inv,
           const int k2_00, const int k3_00,
           T2* data,
           double* __restrict__ energy_recip,
@@ -142,90 +152,55 @@ __global__ void scalar_sum_ortho_kernel(const int nfft1, const int nfft2, const 
   double virial4 = 0.0;
   double virial5 = 0.0;
 
+  // If nfft1 is odd, set nfft1_half to impossible value so that
+  // the second condition in "if ( (k1 == 0) || (k1 == nfft1_half) )" 
+  // is never satisfied
+  const int nfft1_half = ((nfft1 & 1) == 0) ? nfft1/2 : -1;
+  const int nfft2_half = nfft2/2;
+  const int nfft3_half = nfft3/2;
+
   while (k3 < lim3) {
 
     T2 q = data[pos];
 
-    int m1 = k1;
-    int m2 = k2;
-    int m3 = k3;
-    if (k1 >= nf1) m1 -= nfft1;
-    if (k2 >= nf2) m2 -= nfft2;
-    if (k3 >= nf3) m3 -= nfft3;
+    int k2s = (k2 <= nfft2_half) ? k2 : k2 - nfft2;
+    int k3s = (k3 <= nfft3_half) ? k3 : k3 - nfft3;
 
-    T mhat1 = recip11*m1;
-    T mhat2 = recip22*m2;
-    T mhat3 = recip33*m3;
-
-    T msq = mhat1*mhat1 + mhat2*mhat2 + mhat3*mhat3;
-    T msq_inv = (T)1.0/msq;
-
-    // NOTE: check if it's faster to pre-calculate exp()
-    T eterm = exp(-fac*msq)*piv_inv*sh_prefac1[k1]*sh_prefac2[k2]*sh_prefac3[k3]*msq_inv;
-
-    if (calc_energy_virial) {
-      T tmp1  = eterm*(q.x*q.x + q.y*q.y);
-      T vterm  = ((T)2)*(fac + msq_inv);
-      T tmp2   = tmp1*vterm;
-
-      energy += (double)tmp1;
-      virial0 += (double)(tmp1*(vterm*mhat1*mhat1 - ((T)1)));
-      virial1 += (double)(tmp2*mhat1*mhat2);
-      virial2 += (double)(tmp2*mhat1*mhat3);
-      virial3 += (double)(tmp1*(vterm*mhat2*mhat2 - ((T)1)));
-      virial4 += (double)(tmp2*mhat2*mhat3);
-      virial5 += (double)(tmp1*(vterm*mhat3*mhat3 - ((T)1)));
-
-      // The following is put into a separate if {} -block to avoid divergence within warp and
-      // save registers
-      if ((orderXYZ && k1 >= 1 && k1 < nfft1) ||
-        (!orderXYZ && k2 >= 1 && k2 < nfft2)) {
-
-        int k1s, k2s, k3s;
-        if (orderXYZ) {
-          k1s = nfft1 - (k1+1) + 1;
-          k2s = ((nfft2-(k2+1)+1) % nfft2);
-          k3s = ((nfft3-(k3+1)+1) % nfft3);
-        } else {
-          k1s = ((nfft1-(k1+1)+1) % nfft1);
-          k2s = nfft2 - (k2+1) + 1;
-          k3s = ((nfft3-(k3+1)+1) % nfft3);          
-        }
-
-        int m1s = k1s;
-        int m2s = k2s;
-        int m3s = k3s;
-
-        if (k1s >= nf1) m1s -= nfft1;
-        if (k2s >= nf2) m2s -= nfft2;
-        if (k3s >= nf3) m3s -= nfft3;
-
-        T mhat1s = recip11*m1s;
-        T mhat2s = recip22*m2s;
-        T mhat3s = recip33*m3s;
-
-        T msqs = mhat1s*mhat1s + mhat2s*mhat2s + mhat3s*mhat3s;
-        T msqs_inv = ((T)1)/msqs;
-
-        T eterms = exp(-fac*msqs)*piv_inv*sh_prefac1[k1s]*sh_prefac2[k2s]*sh_prefac3[k3s]*msqs_inv;
-
-        T tmp1s  = eterms*(q.x*q.x + q.y*q.y);
-        T vterms  = ((T)2)*(fac + msqs_inv);
-        T tmp2s   = tmp1s*vterms;
-
-        energy += (double)tmp1s;
-        virial0 += (double)(tmp1s*(vterms*mhat1s*mhat1s - ((T)1)));
-        virial1 += (double)(tmp2s*mhat1s*mhat2s);
-        virial2 += (double)(tmp2s*mhat1s*mhat3s);
-        virial3 += (double)(tmp1s*(vterms*mhat2s*mhat2s - ((T)1)));
-        virial4 += (double)(tmp2s*mhat2s*mhat3s);
-        virial5 += (double)(tmp1s*(vterms*mhat3s*mhat3s - ((T)1)));
-      }
-
+    T m1, m2, m3;
+    if (doOrtho) {
+      m1 = recip1x*k1;
+      m2 = recip2y*k2s;
+      m3 = recip3z*k3s;
+    } else {
+      m1 = recip1x*k1 + recip2x*k2s + recip3x*k3s;
+      m2 = recip1y*k1 + recip2y*k2s + recip3y*k3s;
+      m3 = recip1z*k1 + recip2z*k2s + recip3z*k3s;
     }
 
-    q.x *= eterm;
-    q.y *= eterm;
+    T msq = m1*m1 + m2*m2 + m3*m3;
+    T msq_inv = ((T)1)/msq;
+
+    T theta3 = sh_prefac1[k1]*sh_prefac2[k2]*sh_prefac3[k3];
+    T q2 = ((T)2)*(q.x*q.x + q.y*q.y)*theta3;
+    if ( (k1 == 0) || (k1 == nfft1_half) ) q2 *= ((T)0.5);
+    T xp3 = expfunc(-pi_ewald*msq)*piv_inv;
+    T C = xp3*msq_inv;
+    T theta = theta3*C;
+
+    if (calc_energy_virial) {
+      T fac = q2*C;
+      T vir = ((T)2)*(pi_ewald + msq_inv);
+      energy += fac;
+      virial0 += (double)(fac*(vir*m1*m1 - ((T)1)));
+      virial1 += (double)(fac*vir*m1*m2);
+      virial2 += (double)(fac*vir*m1*m3);
+      virial3 += (double)(fac*(vir*m2*m2 - ((T)1)));
+      virial4 += (double)(fac*vir*m2*m3);
+      virial5 += (double)(fac*(vir*m3*m3 - ((T)1)));
+    }
+
+    q.x *= theta;
+    q.y *= theta;
     data[pos] = q;
     
     // Increment position
@@ -247,41 +222,6 @@ __global__ void scalar_sum_ortho_kernel(const int nfft1, const int nfft2, const 
 
   // Reduce energy and virial
   if (calc_energy_virial) {
-#if __CUDA_ARCH__ < 300
-    // Requires blockDim.x*sizeof(RecipVirial_t) amount of shared memory
-    volatile RecipVirial_t* sh_ev = (RecipVirial_t *)sh_prefac;
-    // NOTE: this __syncthreads() is needed because we're using a single shared memory buffer
-    __syncthreads();
-    sh_ev[threadIdx.x].energy  = energy;
-    sh_ev[threadIdx.x].virial[0] = virial0;
-    sh_ev[threadIdx.x].virial[1] = virial1;
-    sh_ev[threadIdx.x].virial[2] = virial2;
-    sh_ev[threadIdx.x].virial[3] = virial3;
-    sh_ev[threadIdx.x].virial[4] = virial4;
-    sh_ev[threadIdx.x].virial[5] = virial5;
-    __syncthreads();
-#endif
-#if __CUDA_ARCH__ < 300
-    for (int d=1;d < blockDim.x;d *= 2) {
-      int t = threadIdx.x + d;
-      double energy_val = (t < blockDim.x) ? sh_ev[t].energy : 0.0;
-      double virial0_val = (t < blockDim.x) ? sh_ev[t].virial[0] : 0.0;
-      double virial1_val = (t < blockDim.x) ? sh_ev[t].virial[1] : 0.0;
-      double virial2_val = (t < blockDim.x) ? sh_ev[t].virial[2] : 0.0;
-      double virial3_val = (t < blockDim.x) ? sh_ev[t].virial[3] : 0.0;
-      double virial4_val = (t < blockDim.x) ? sh_ev[t].virial[4] : 0.0;
-      double virial5_val = (t < blockDim.x) ? sh_ev[t].virial[5] : 0.0;
-      __syncthreads();
-      sh_ev[threadIdx.x].energy += energy_val;
-      sh_ev[threadIdx.x].virial[0] += virial0_val;
-      sh_ev[threadIdx.x].virial[1] += virial1_val;
-      sh_ev[threadIdx.x].virial[2] += virial2_val;
-      sh_ev[threadIdx.x].virial[3] += virial3_val;
-      sh_ev[threadIdx.x].virial[4] += virial4_val;
-      sh_ev[threadIdx.x].virial[5] += virial5_val;
-      __syncthreads();
-    }
-#else
     const int tid = threadIdx.x & (warpSize-1);
     const int base = (threadIdx.x/warpSize);
     volatile RecipVirial_t* sh_ev = (RecipVirial_t *)sh_prefac;
@@ -340,19 +280,8 @@ __global__ void scalar_sum_ortho_kernel(const int nfft1, const int nfft2, const 
             __shfl(__double2loint(virial5), tid+d));
       }
     }
-    
-#endif
 
     if (threadIdx.x == 0) {
-#if __CUDA_ARCH__ < 300
-      energy = sh_ev[0].energy;
-      virial0 = sh_ev[0].virial[0];
-      virial1 = sh_ev[0].virial[1];
-      virial2 = sh_ev[0].virial[2];
-      virial3 = sh_ev[0].virial[3];
-      virial4 = sh_ev[0].virial[4];
-      virial5 = sh_ev[0].virial[5];
-#endif
       atomicAdd(energy_recip, energy*0.5);
       virial0 *= -0.5;
       virial1 *= -0.5;
@@ -371,10 +300,6 @@ __global__ void scalar_sum_ortho_kernel(const int nfft1, const int nfft2, const 
   }
 
 }
-
-#ifdef DISABLE_CUDA_TEXTURE_OBJECTS
-texture<float, 1, cudaReadModeElementType> gridTexRef;
-#endif
 
 template <typename T>
 __forceinline__ __device__ void write_grid(const float val, const int ind,
@@ -482,8 +407,7 @@ __forceinline__ __device__ void calc_theta_dtheta(T wx, T wy, T wz, T3 *theta, T
 //
 template <typename AT, int order, bool periodicY, bool periodicZ>
 __global__ void
-spread_charge_ortho_kernel(const float4 *xyzq, const int ncoord,
-          const float recip11, const float recip22, const float recip33,
+spread_charge_kernel(const float4 *xyzq, const int ncoord,
           const int nfftx, const int nffty, const int nfftz,
           const int xsize, const int ysize, const int zsize,
           const int xdim, const int y00, const int z00,
@@ -511,14 +435,6 @@ spread_charge_ortho_kernel(const float4 *xyzq, const int ncoord,
     float y = xyzqi.y;
     float z = xyzqi.z;
     float q = xyzqi.w;
-
-    // float w;
-    // w = x*recip11 + 2.0f;
-    // float frx = (float)(nfftx*(w - (floorf(w + 0.5f) - 0.5f)));
-    // w = y*recip22 + 2.0f;
-    // float fry = (float)(nffty*(w - (floorf(w + 0.5f) - 0.5f)));
-    // w = z*recip33 + 2.0f;
-    // float frz = (float)(nfftz*(w - (floorf(w + 0.5f) - 0.5f)));
 
     float frx = ((float)nfftx)*x;
     float fry = ((float)nffty)*y;
@@ -591,145 +507,9 @@ spread_charge_ortho_kernel(const float4 *xyzq, const int ncoord,
 
     if (tid < order*order*order)
       write_grid<AT>(sh_thetax[i*order+x0]*sh_thetay[i*order+y0]*sh_thetaz[i*order+z0], ind, data);
-
-    // if (tid < order*order*order)
-    //   write_grid<AT>(1.0f, ind, data);
-
-    // if (tid == 0)
-    //   write_grid<AT>(1.0f, ind, data);
   }
 
 }
-
-/*
-#define PATCHSPLIT 1
-
-//
-// Spreads the charge on the grid. Calculates theta and dtheta on the fly
-// blockDim.x                   = Number of atoms each block loads
-// blockDim.y*blockDim.x/order3 = Number of atoms we spread at once
-//
-template <typename AT, int order>
-__global__ void
-spread_charge_ortho_kernel(const int4 *patch, const int npatch,
-  const float4 *xyzq, const int ncoord,
-  const float recip11, const float recip22, const float recip33,
-  const int nfftx, const int nffty, const int nfftz,
-  const int xsize, const int ysize,
-  AT* data) {
-
-  // Shared memory use:
-  // order = 4: 1920 bytes
-  // order = 6: 2688 bytes
-  // order = 8: 3456 bytes
-  __shared__ int sh_ix[32];
-  __shared__ int sh_iy[32];
-  __shared__ int sh_iz[32];
-  __shared__ float sh_thetax[order*32];
-  __shared__ float sh_thetay[order*32];
-  __shared__ float sh_thetaz[order*32];
-
-  // blockIdx.x = patch index
-  int ipatch = blockIdx.x / PATCHSPLIT;
-  int fpatch = blockIdx.x % PATCHSPLIT;
-  if (ipatch >= npatch) return;
-
-  int4 patchval = patch[ipatch];
-  int pos = (ipatch == 0) ? 0 : patch[ipatch-1].w;
-  const int ox = patchval.x;
-  const int oy = patchval.y;
-  const int oz = patchval.z;
-  int pos_end = patchval.w;
-  int n = pos_end - pos;
-  pos += n*fpatch/PATCHSPLIT;
-  pos_end = pos + n*(fpatch+1)/PATCHSPLIT;
-
-  // This block takes care of atoms in the range [pos, pos_end-1]
-  for (;pos < pos_end;pos += blockDim.x) {
-
-    __syncthreads();
-
-    if (pos + threadIdx.x < pos_end && threadIdx.y == 0) {
-
-      float4 xyzqi = xyzq[pos + threadIdx.x];
-      float x = xyzqi.x;
-      float y = xyzqi.y;
-      float z = xyzqi.z;
-      float q = xyzqi.w;
-
-      float w;
-
-      w = x*recip11 + 2.0f;
-      float frx = (float)(nfftx*(w - (floorf(w + 0.5f) - 0.5f)));
-      w = y*recip22 + 2.0f;
-      float fry = (float)(nffty*(w - (floorf(w + 0.5f) - 0.5f)));
-      w = z*recip33 + 2.0f;
-      float frz = (float)(nfftz*(w - (floorf(w + 0.5f) - 0.5f)));
-
-      int frxi = (int)frx;
-      int fryi = (int)fry;
-      int frzi = (int)frz;
-
-      sh_ix[threadIdx.x] = frxi + ox;
-      sh_iy[threadIdx.x] = fryi + oy;
-      sh_iz[threadIdx.x] = frzi + oz;
-
-      float wx = frx - (float)frxi;
-      float wy = fry - (float)fryi;
-      float wz = frz - (float)frzi;
-
-      float theta[order];
-
-      calc_one_theta<float, order>(wx, theta);
-  #pragma unroll
-      for (int i=0;i < order;i++) sh_thetax[threadIdx.x*order + i] = q*theta[i];
-
-      calc_one_theta<float, order>(wy, theta);
-  #pragma unroll
-      for (int i=0;i < order;i++) sh_thetay[threadIdx.x*order + i] = theta[i];
-
-      calc_one_theta<float, order>(wz, theta);
-  #pragma unroll
-      for (int i=0;i < order;i++) sh_thetaz[threadIdx.x*order + i] = theta[i];
-
-    }
-
-    __syncthreads();
-
-    // Grid point location, values of (ix0, iy0, iz0) are in range 0..order-1
-    // NOTE: Only tid=0...order*order*order-1 do any computation
-    const int order3 = ((order*order*order-1)/warpSize + 1)*warpSize;
-    const int tid = (threadIdx.x + threadIdx.y*blockDim.x) % order3;   // 0...order3-1
-    const int x0 = tid % order;
-    const int y0 = (tid / order) % order;
-    const int z0 = tid / (order*order);
-
-    // Loop over atoms
-    // iadd = number of atoms to compute per iteration
-    int iadd = blockDim.x*blockDim.y/order3;
-    int i = (threadIdx.x + threadIdx.y*blockDim.x)/order3;
-    int iend = min(blockDim.x, pos_end-pos);
-    for (;i < iend;i += iadd) {
-      int x = sh_ix[i] + x0;
-      int y = sh_iy[i] + y0;
-      int z = sh_iz[i] + z0;
-        
-      if (x >= nfftx) x -= nfftx;
-      if (y >= nffty) y -= nffty;
-      if (z >= nfftz) z -= nfftz;
-        
-      // Get position on the grid
-      int ind = x + xsize*(y + ysize*(z));
-        
-      // Here we unroll the 6x6x6 loop with 216 threads.
-      // NOTE: We use 7*32=224 threads to do this
-      // Calculate interpolated charge value and store it to global memory
-      if (tid < order*order*order)
-        write_grid<AT>(sh_thetax[i*order+x0]*sh_thetay[i*order+y0]*sh_thetaz[i*order+z0], ind, data);
-    }
-  }
-}
-*/
 
 //-----------------------------------------------------------------------------------------
 // Generic version can not be used
@@ -786,15 +566,13 @@ struct gather_t {
 // blockDim.x*blockDim.y = Total number of threads per block
 //
 template <typename CT, typename FT, int order, bool periodicY, bool periodicZ>
-__global__ void gather_force_ortho(const float4 *xyzq, const int ncoord,
+__global__ void gather_force(const float4 *xyzq, const int ncoord,
               const int nfftx, const int nffty, const int nfftz,
               const int xsize, const int ysize, const int zsize,
               const int xdim, const int y00, const int z00,
-              const float recip1, const float recip2, const float recip3,
+              // const float recip1, const float recip2, const float recip3,
               const float* data,      // NOTE: data is used for loads when __CUDA_ARCH__ >= 350
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
               const cudaTextureObject_t gridTexObj,
-#endif
               const int stride,
               FT *force) {
 
@@ -802,10 +580,6 @@ __global__ void gather_force_ortho(const float4 *xyzq, const int ncoord,
 
   // Shared memory
   __shared__ gather_t<CT, order> shmem[32];
-#if __CUDA_ARCH__ < 300
-  __shared__ float3 shred_buf[32*2];
-  volatile float3 *shred = &shred_buf[(tid/8)*8];
-#endif
 
   const int pos = blockIdx.x*blockDim.x + threadIdx.x;
   const int pos_end = min((blockIdx.x+1)*blockDim.x, ncoord);
@@ -818,14 +592,6 @@ __global__ void gather_force_ortho(const float4 *xyzq, const int ncoord,
     float y = xyzqi.y;
     float z = xyzqi.z;
     float q = xyzqi.w;
-
-    // float w;
-    // w = x*recip1 + 2.0f;
-    // float frx = (float)(nfftx*(w - (floorf(w + 0.5f) - 0.5f)));
-    // w = y*recip2 + 2.0f;
-    // float fry = (float)(nffty*(w - (floorf(w + 0.5f) - 0.5f)));
-    // w = z*recip3 + 2.0f;
-    // float frz = (float)(nfftz*(w - (floorf(w + 0.5f) - 0.5f)));
 
     float frx = ((float)nfftx)*x;
     float fry = ((float)nffty)*y;
@@ -933,11 +699,7 @@ __global__ void gather_force_ortho(const float4 *xyzq, const int ncoord,
 #if __CUDA_ARCH__ >= 350
       float q0 = __ldg(&data[ind]);
 #else
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
       float q0 = tex1Dfetch<float>(gridTexObj, ind);
-#else
-      float q0 = tex1Dfetch(gridTexRef, ind);
-#endif
 #endif
       float thx0 = shmem[base].thetax[tx];
       float thy0 = shmem[base].thetay[ty];
@@ -953,7 +715,6 @@ __global__ void gather_force_ortho(const float4 *xyzq, const int ncoord,
     //-------------------------
 
     // Reduce
-#if __CUDA_ARCH__ >= 300
     const int i = threadIdx.x & 7;
 
     f1 += __shfl(f1, i+4, 8);
@@ -974,31 +735,6 @@ __global__ void gather_force_ortho(const float4 *xyzq, const int ncoord,
       shmem[base].f3 = f3;
     }
 
-#else
-    const int i = threadIdx.x & 7;
-    shred[i].x = f1;
-    shred[i].y = f2;
-    shred[i].z = f3;
-
-    if (i < 4) {
-      shred[i].x += shred[i+4].x;
-      shred[i].y += shred[i+4].y;
-      shred[i].z += shred[i+4].z;
-    }
-
-    if (i < 2) {
-      shred[i].x += shred[i+2].x;
-      shred[i].y += shred[i+2].y;
-      shred[i].z += shred[i+2].z;
-    }
-
-    if (i == 0) {
-      shmem[base].f1 = shred[0].x + shred[1].x;
-      shmem[base].f2 = shred[0].y + shred[1].y;
-      shmem[base].f3 = shred[0].z + shred[1].z;
-    }
-#endif
-
     base += 8;
   }
 
@@ -1009,282 +745,16 @@ __global__ void gather_force_ortho(const float4 *xyzq, const int ncoord,
     float f2 = shmem[threadIdx.x].f2;
     float f3 = shmem[threadIdx.x].f3;
     float q = -shmem[threadIdx.x].charge; //*ccelec_float;
-    float fx = q*recip1*f1*nfftx;
-    float fy = q*recip2*f2*nffty;
-    float fz = q*recip3*f3*nfftz;
+    // float fx = q*recip1*f1*nfftx;
+    // float fy = q*recip2*f2*nffty;
+    // float fz = q*recip3*f3*nfftz;
+    float fx = q*f1*nfftx;
+    float fy = q*f2*nffty;
+    float fz = q*f3*nfftz;
     gather_force_store<FT>(fx, fy, fz, stride, pos, force);
   }
 
 }
-
-/*
-//
-// Gathers forces from the grid
-// blockDim.x            = Number of atoms each block loads
-// blockDim.x*blockDim.y = Total number of threads per block
-//
-template <typename CT, typename FT, int order>
-__global__ void gather_force_ortho(const int4* patch, const int npatch,
-  const float4 *xyzq, const int ncoord,
-  const int nfftx, const int nffty, const int nfftz,
-  const int xsize, const int ysize,
-  const float recip1, const float recip2, const float recip3,
-  const float* data,      // NOTE: data is used for loads when __CUDA_ARCH__ >= 350
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-  const cudaTextureObject_t gridTexObj,
-#endif
-  const int stride,
-  FT *force) {
-
-  const int tid = threadIdx.x + threadIdx.y*blockDim.x; // 0...63
-
-  // Shared memory
-  __shared__ gather_t<CT, order> shmem[32];
-#if __CUDA_ARCH__ < 300
-  __shared__ float3 shred_buf[32*2];
-  volatile float3 *shred = &shred_buf[(tid/8)*8];
-#endif
-
-  // blockIdx.x = patch index
-  if (blockIdx.x >= npatch) return;
-
-  int4 patchval = patch[blockIdx.x];
-  int pos = (blockIdx.x == 0) ? 0 : patch[blockIdx.x-1].w;
-  const int ox = patchval.x;
-  const int oy = patchval.y;
-  const int oz = patchval.z;
-  const int pos_end = patchval.w;
-
-  // This block takes care of atoms in the range [pos, pos_end-1]
-  for (;pos < pos_end;pos += blockDim.x) {
-
-    __syncthreads();
-
-    if (pos + threadIdx.x < pos_end && threadIdx.y == 0) {
-
-      float4 xyzqi = xyzq[pos];
-      float x = xyzqi.x;
-      float y = xyzqi.y;
-      float z = xyzqi.z;
-      float q = xyzqi.w;
-
-      float w;
-
-      w = x*recip1 + 2.0f;
-      float frx = (float)(nfftx*(w - (floorf(w + 0.5f) - 0.5f)));
-
-      w = y*recip2 + 2.0f;
-      float fry = (float)(nffty*(w - (floorf(w + 0.5f) - 0.5f)));
-
-      w = z*recip3 + 2.0f;
-      float frz = (float)(nfftz*(w - (floorf(w + 0.5f) - 0.5f)));
-
-      int frxi = (int)frx;
-      int fryi = (int)fry;
-      int frzi = (int)frz;
-
-      shmem[threadIdx.x].ix = frxi + ox;
-      shmem[threadIdx.x].iy = fryi + oy;
-      shmem[threadIdx.x].iz = frzi + oz;
-      shmem[threadIdx.x].charge = q;
-
-      float wx = frx - (float)frxi;
-      float wy = fry - (float)fryi;
-      float wz = frz - (float)frzi;
-
-      float3 theta_tmp[order];
-      float3 dtheta_tmp[order];
-      calc_theta_dtheta<float, float3, order>(wx, wy, wz, theta_tmp, dtheta_tmp);
-      
-#pragma unroll
-      for (int i=0;i < order;i++) shmem[threadIdx.x].thetax[i] = theta_tmp[i].x;
-
-#pragma unroll
-      for (int i=0;i < order;i++) shmem[threadIdx.x].thetay[i] = theta_tmp[i].y;
-
-#pragma unroll
-      for (int i=0;i < order;i++) shmem[threadIdx.x].thetaz[i] = theta_tmp[i].z;
-
-#pragma unroll
-      for (int i=0;i < order;i++) shmem[threadIdx.x].dthetax[i] = dtheta_tmp[i].x;
-
-#pragma unroll
-      for (int i=0;i < order;i++) shmem[threadIdx.x].dthetay[i] = dtheta_tmp[i].y;
-
-#pragma unroll
-      for (int i=0;i < order;i++) shmem[threadIdx.x].dthetaz[i] = dtheta_tmp[i].z;
-
-    }
-    __syncthreads();
-
-    // We divide the order x order x order cube into 8 sub-cubes.
-    // These sub-cubes are taken care by a single thread
-    // The size of the sub-cubes is:
-    // order=4 : 2x2x2
-    // order=6 : 3x3x3
-    // order=8 : 4x4x4
-    const int nsc = (order == 4) ? 2 : ((order == 6) ? 3 : 4);
-    // Calculate the starting index on the sub-cube for this thread
-    // tid = 0...63
-    const int t = (tid % 8);         // sub-cube index (0...7)
-    // t = (tx0 + ty0*2 + tz0*4)/nsc
-    // (tx0, ty0, tz0) gives the starting index of the 3x3x3 sub-cube
-    const int tz0 = (t / 4)*nsc;
-    const int ty0 = ((t / 2) % 2)*nsc;
-    const int tx0 = (t % 2)*nsc;
-
-    //
-    // Calculate forces for 32 atoms. We have 32*2 = 64 threads
-    // Loop is iterated 4 times:
-    //                         (iterations)
-    // Threads 0...7   = atoms 0, 8,  16, 24
-    // Threads 8...15  = atoms 1, 9,  17, 25
-    // Threads 16...31 = atoms 2, 10, 18, 26
-    //                ...
-    // Threads 56...63 = atoms 7, 15, 23, 31
-    //
-
-    int base = tid/8;
-    //const int base_end = pos_end - blockIdx.x*blockDim.x;
-    const int base_end = min(blockDim.x, pos_end-pos);
-    while (base < base_end) {
-
-      float f1 = 0.0f;
-      float f2 = 0.0f;
-      float f3 = 0.0f;
-      int ix0 = shmem[base].ix;
-      int iy0 = shmem[base].iy;
-      int iz0 = shmem[base].iz;
-
-      // Each thread calculates a nsc x nsc x nsc sub-cube
-#pragma unroll
-      for (int i=0;i < nsc*nsc*nsc;i++) {
-        int tz = tz0 + (i/(nsc*nsc));
-        int ty = ty0 + ((i/nsc) % nsc);
-        int tx = tx0 + (i % nsc);
-
-        int ix = ix0 + tx;
-        int iy = iy0 + ty;
-        int iz = iz0 + tz;
-        if (ix >= nfftx) ix -= nfftx;
-        if (iy >= nffty) iy -= nffty;
-        if (iz >= nfftz) iz -= nfftz;
-#if __CUDA_ARCH__ >= 350
-        float q0 = __ldg(&data[ix + (iy + iz*ysize)*xsize]);
-#else
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
-        float q0 = tex1Dfetch<float>(gridTexObj, ix + (iy + iz*ysize)*xsize);
-#else
-        float q0 = tex1Dfetch(gridTexRef, ix + (iy + iz*ysize)*xsize);
-#endif
-#endif
-        float thx0 = shmem[base].thetax[tx];
-        float thy0 = shmem[base].thetay[ty];
-        float thz0 = shmem[base].thetaz[tz];
-        float dthx0 = shmem[base].dthetax[tx];
-        float dthy0 = shmem[base].dthetay[ty];
-        float dthz0 = shmem[base].dthetaz[tz];
-        f1 += dthx0 * thy0 * thz0 * q0;
-        f2 += thx0 * dthy0 * thz0 * q0;
-        f3 += thx0 * thy0 * dthz0 * q0;
-      }
-
-      //-------------------------
-
-      // Reduce
-#if __CUDA_ARCH__ >= 300
-      const int i = threadIdx.x & 7;
-
-      f1 += __shfl(f1, i+4, 8);
-      f2 += __shfl(f2, i+4, 8);
-      f3 += __shfl(f3, i+4, 8);
-
-      f1 += __shfl(f1, i+2, 8);
-      f2 += __shfl(f2, i+2, 8);
-      f3 += __shfl(f3, i+2, 8);
-
-      f1 += __shfl(f1, i+1, 8);
-      f2 += __shfl(f2, i+1, 8);
-      f3 += __shfl(f3, i+1, 8);
-
-      if (i == 0) {
-        shmem[base].f1 = f1;
-        shmem[base].f2 = f2;
-        shmem[base].f3 = f3;
-      }
-
-#else
-      const int i = threadIdx.x & 7;
-      shred[i].x = f1;
-      shred[i].y = f2;
-      shred[i].z = f3;
-
-      if (i < 4) {
-        shred[i].x += shred[i+4].x;
-        shred[i].y += shred[i+4].y;
-        shred[i].z += shred[i+4].z;
-      }
-
-      if (i < 2) {
-        shred[i].x += shred[i+2].x;
-        shred[i].y += shred[i+2].y;
-        shred[i].z += shred[i+2].z;
-      }
-
-      if (i == 0) {
-        shmem[base].f1 = shred[0].x + shred[1].x;
-        shmem[base].f2 = shred[0].y + shred[1].y;
-        shmem[base].f3 = shred[0].z + shred[1].z;
-      }
-#endif
-
-      base += 8;
-    }
-
-    // Write forces
-    __syncthreads();
-    if (pos < pos_end && threadIdx.y == 0) {
-      float f1 = shmem[threadIdx.x].f1;
-      float f2 = shmem[threadIdx.x].f2;
-      float f3 = shmem[threadIdx.x].f3;
-      float q = -shmem[threadIdx.x].charge;//*ccelec_float;
-      float fx = q*recip1*f1*nfftx;
-      float fy = q*recip2*f2*nffty;
-      float fz = q*recip3*f3*nfftz;
-      gather_force_store<FT>(fx, fy, fz, stride, pos, force);
-    }
-  }
-}
-*/
-
-/*
-//
-// Calculates sum of squared charge. Used in calculation of self energy
-//
-__global__ void calc_sum_charge_squared_kernel(const int ncoord, const float4* xyzq,
-          double* __restrict__ sum_charge_squared) {
-  // Shared memory
-  // Required space: blockDim.x*sizeof(double)
-  extern __shared__ double sh_q2[];
-
-  int i = threadIdx.x + blockIdx.x*blockDim.x;
-  float q = 0.0f;
-  if (i < ncoord) q = xyzq[i].w;
-  sh_q2[threadIdx.x] = q*q;
-  __syncthreads();
-  for(int d=1;d < blockDim.x;d *= 2) {
-    int t = threadIdx.x + d;
-    double q2_val = (t < blockDim.x) ? sh_q2[t] : 0.0;
-    __syncthreads();
-    sh_q2[threadIdx.x] += q2_val;
-    __syncthreads();
-  }
-  if (threadIdx.x == 0) {
-    atomicAdd(sum_charge_squared, sh_q2[0]);
-  }
-
-}
-*/
 
 const int TILEDIM = 32;
 const int TILEROWS = 8;
@@ -1563,8 +1033,7 @@ __global__ void batchTranspose_xyz_zxy_kernel(
 //#######################################################################################
 //#######################################################################################
 
-void spread_charge_ortho(const float4 *atoms, const int numAtoms,
-  const float recip11, const float recip22, const float recip33,
+void spread_charge(const float4 *atoms, const int numAtoms,
   const int nfftx, const int nffty, const int nfftz,
   const int xsize, const int ysize, const int zsize,
   const int xdim, const int y00, const int z00, 
@@ -1582,20 +1051,20 @@ void spread_charge_ortho(const float4 *atoms, const int numAtoms,
     nblock.y = 1;
     nblock.z = 1;
     if (periodicY && periodicZ)
-      spread_charge_ortho_kernel<float, 4, true, true> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 4, true, true> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     else if (periodicY)
-      spread_charge_ortho_kernel<float, 4, true, false> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 4, true, false> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     else if (periodicZ)
-      spread_charge_ortho_kernel<float, 4, false, true> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 4, false, true> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     else
-      spread_charge_ortho_kernel<float, 4, false, false> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 4, false, false> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     break;
 
@@ -1607,20 +1076,20 @@ void spread_charge_ortho(const float4 *atoms, const int numAtoms,
     nblock.y = 1;
     nblock.z = 1;
     if (periodicY && periodicZ)
-      spread_charge_ortho_kernel<float, 6, true, true> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 6, true, true> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     else if (periodicY)
-      spread_charge_ortho_kernel<float, 6, true, false> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 6, true, false> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     else if (periodicZ)
-      spread_charge_ortho_kernel<float, 6, false, true> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 6, false, true> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     else
-      spread_charge_ortho_kernel<float, 6, false, false> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 6, false, false> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     break;
 
@@ -1632,109 +1101,88 @@ void spread_charge_ortho(const float4 *atoms, const int numAtoms,
     nblock.y = 1;
     nblock.z = 1;
     if (periodicY && periodicZ)
-      spread_charge_ortho_kernel<float, 8, true, true> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 8, true, true> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     else if (periodicY)
-      spread_charge_ortho_kernel<float, 8, true, false> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 8, true, false> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     else if (periodicZ)
-      spread_charge_ortho_kernel<float, 8, false, true> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 8, false, true> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     else
-      spread_charge_ortho_kernel<float, 8, false, false> <<< nblock, nthread, 0, stream >>>
-        (atoms, numAtoms, recip11, recip22, recip33,
+      spread_charge_kernel<float, 8, false, false> <<< nblock, nthread, 0, stream >>>
+        (atoms, numAtoms,
          nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00, data);
     break;
 
   default:
     char str[128];
-    sprintf(str, "spread_charge_ortho, order %d not implemented",order);
+    sprintf(str, "spread_charge, order %d not implemented",order);
     cudaNAMD_bug(str);
   }
   cudaCheck(cudaGetLastError());
 
 }
 
-void scalar_sum_ortho(const bool orderXYZ, const int nfft1, const int nfft2, const int nfft3,
+void scalar_sum(const bool orderXYZ, const int nfft1, const int nfft2, const int nfft3,
   const int size1, const int size2, const int size3, const double kappa,
-  const float recip11, const float recip22, const float recip33,
+  const float recip1x, const float recip1y, const float recip1z,
+  const float recip2x, const float recip2y, const float recip2z,
+  const float recip3x, const float recip3y, const float recip3z,
+  const double volume,
   const float* prefac1, const float* prefac2, const float* prefac3,
   const int k2_00, const int k3_00,
   const bool doEnergyVirial, double* energy, double* virial, float2* data,
-  const int cuda_arch, cudaStream_t stream) {
+  cudaStream_t stream) {
 
-  // Best performance:
-  // cuda_arch = 200:
-  // energy & virial & (C2075 | K40c) & 512x14: 102.7 (C2075) | 70.4 (K240c)
-  // C2075 & 768x12: 27.4
-  int nthread = 512;
-  int nblock = 10;
-
-  if (cuda_arch < 300) {
-    if (doEnergyVirial) {
-      nthread = 512;
-      nblock = 14;
-    } else {
-      nthread = 768;
-      nblock = 12;
-    }
-  } else {
-    if (doEnergyVirial) {
-      nthread = 1024;
-      nblock = 14;
-    } else {
-      nthread = 1024;
-      nblock = 14;
-    }
-  }
-
+  int nthread = 1024;
+  int nblock = 64;
 
   int shmem_size = sizeof(float)*(nfft1 + nfft2 + nfft3);
   if (doEnergyVirial) {
-    if (cuda_arch < 300) {
-      shmem_size = max(shmem_size, (int)(nthread*sizeof(RecipVirial_t)));
-    } else {
-      const int warpSize = 32;      
-      shmem_size = max(shmem_size, (int)((nthread/warpSize)*sizeof(RecipVirial_t)));
-    }
+    const int warpSize = 32;      
+    shmem_size = max(shmem_size, (int)((nthread/warpSize)*sizeof(RecipVirial_t)));
   }
 
-  double inv_vol = recip11*recip22*recip33;
-  float piv_inv = (float)(inv_vol/M_PI);
+  float piv_inv = (float)(1.0/(M_PI*volume));
   float fac = (float)(M_PI*M_PI/(kappa*kappa));
-
-  int nf1 = nfft1/2 + (nfft1 % 2);
-  int nf2 = nfft2/2 + (nfft2 % 2);
-  int nf3 = nfft3/2 + (nfft3 % 2);
 
   if (doEnergyVirial) {
     if (orderXYZ) {
-      scalar_sum_ortho_kernel<float, float2, true, true> <<< nblock, nthread, shmem_size, stream >>>
+      scalar_sum_kernel<float, float2, true, true, false> <<< nblock, nthread, shmem_size, stream >>>
       (nfft1, nfft2, nfft3, size1, size2, size3,
-        nf1, nf2, nf3, recip11, recip22, recip33,
+        recip1x, recip1y, recip1z,
+        recip2x, recip2y, recip2z,
+        recip3x, recip3y, recip3z,
         prefac1, prefac2, prefac3,
         fac, piv_inv, k2_00, k3_00, data, energy, virial);
     } else {
-      scalar_sum_ortho_kernel<float, float2, true, false> <<< nblock, nthread, shmem_size, stream >>>
+      scalar_sum_kernel<float, float2, true, false, false> <<< nblock, nthread, shmem_size, stream >>>
       (nfft1, nfft2, nfft3, size1, size2, size3,
-        nf1, nf2, nf3, recip11, recip22, recip33,
+        recip1x, recip1y, recip1z,
+        recip2x, recip2y, recip2z,
+        recip3x, recip3y, recip3z,
         prefac1, prefac2, prefac3,
         fac, piv_inv, k2_00, k3_00, data, energy, virial);
     }
   } else {
     if (orderXYZ) {
-      scalar_sum_ortho_kernel<float, float2, false, true> <<< nblock, nthread, shmem_size, stream >>>
+      scalar_sum_kernel<float, float2, false, true, false> <<< nblock, nthread, shmem_size, stream >>>
       (nfft1, nfft2, nfft3, size1, size2, size3,
-        nf1, nf2, nf3, recip11, recip22, recip33,
+        recip1x, recip1y, recip1z,
+        recip2x, recip2y, recip2z,
+        recip3x, recip3y, recip3z,
         prefac1, prefac2, prefac3,
         fac, piv_inv, k2_00, k3_00, data, NULL, NULL);
     } else {
-      scalar_sum_ortho_kernel<float, float2, false, false> <<< nblock, nthread, shmem_size, stream >>>
+      scalar_sum_kernel<float, float2, false, false, false> <<< nblock, nthread, shmem_size, stream >>>
       (nfft1, nfft2, nfft3, size1, size2, size3,
-        nf1, nf2, nf3, recip11, recip22, recip33,
+        recip1x, recip1y, recip1z,
+        recip2x, recip2y, recip2z,
+        recip3x, recip3y, recip3z,
         prefac1, prefac2, prefac3,
         fac, piv_inv, k2_00, k3_00, data, NULL, NULL);
     }
@@ -1743,16 +1191,14 @@ void scalar_sum_ortho(const bool orderXYZ, const int nfft1, const int nfft2, con
 
 }
 
-void gather_force_ortho(const float4 *atoms, const int numAtoms,
-  const float recip11, const float recip22, const float recip33,
+void gather_force(const float4 *atoms, const int numAtoms,
+  // const float recip11, const float recip22, const float recip33,
   const int nfftx, const int nffty, const int nfftz,
   const int xsize, const int ysize, const int zsize,
   const int xdim, const int y00, const int z00, 
   const bool periodicY, const bool periodicZ,
   const float* data, const int order, float3* force, 
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
   const cudaTextureObject_t gridTexObj,
-#endif
   cudaStream_t stream) {
 
   dim3 nthread(32, 2, 1);
@@ -1762,145 +1208,105 @@ void gather_force_ortho(const float4 *atoms, const int numAtoms,
   switch(order) {
     case 4:
     if (periodicY && periodicZ)
-      gather_force_ortho<float, float3, 4, true, true> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 4, true, true> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     else if (periodicY)
-      gather_force_ortho<float, float3, 4, true, false> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 4, true, false> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     else if (periodicZ)
-      gather_force_ortho<float, float3, 4, false, true> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 4, false, true> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     else
-      gather_force_ortho<float, float3, 4, false, false> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 4, false, false> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     break;
 
     case 6:
     if (periodicY && periodicZ)
-      gather_force_ortho<float, float3, 6, true, true> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 6, true, true> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     else if (periodicY)
-      gather_force_ortho<float, float3, 6, true, false> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 6, true, false> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     else if (periodicZ)
-      gather_force_ortho<float, float3, 6, false, true> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 6, false, true> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     else
-      gather_force_ortho<float, float3, 6, false, false> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 6, false, false> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     break;
  
     case 8:
     if (periodicY && periodicZ)
-      gather_force_ortho<float, float3, 8, true, true> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 8, true, true> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     else if (periodicY)
-      gather_force_ortho<float, float3, 8, true, false> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 8, true, false> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     else if (periodicZ)
-      gather_force_ortho<float, float3, 8, false, true> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 8, false, true> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     else
-      gather_force_ortho<float, float3, 8, false, false> <<< nblock, nthread, 0, stream >>>
+      gather_force<float, float3, 8, false, false> <<< nblock, nthread, 0, stream >>>
       (atoms, numAtoms, nfftx, nffty, nfftz, xsize, ysize, zsize, xdim, y00, z00,
-        recip11, recip22, recip33, data,
-  #ifndef DISABLE_CUDA_TEXTURE_OBJECTS
+        // recip11, recip22, recip33,
+        data,
         gridTexObj,
-  #endif
         1, force);
     break;
 
     default:
     char str[128];
-    sprintf(str, "gather_force_ortho, order %d not implemented",order);
+    sprintf(str, "gather_force, order %d not implemented",order);
     cudaNAMD_bug(str);
   }
   cudaCheck(cudaGetLastError());
 
 }
-
-#ifdef DISABLE_CUDA_TEXTURE_OBJECTS
-void bindGridTexture(float* data, int data_len) {
-  gridTexRef.normalized = 0;
-  gridTexRef.filterMode = cudaFilterModePoint;
-  gridTexRef.addressMode[0] = cudaAddressModeClamp;
-  gridTexRef.channelDesc.x = sizeof(float)*8;
-  gridTexRef.channelDesc.y = 0;
-  gridTexRef.channelDesc.z = 0;
-  gridTexRef.channelDesc.w = 0;
-  gridTexRef.channelDesc.f = cudaChannelFormatKindFloat;
-  cudaCheck(cudaBindTexture(NULL, gridTexRef, data, data_len*sizeof(float)));
-}
-#endif
-
-/*
-void calc_sum_charge_squared(const float4 *atoms, const int numAtoms, double* sum_charge_squared,
-  cudaStream_t stream) {
-  
-  int nthread = 256;
-  int nblock = (numAtoms-1)/nthread+1;
-  int shmem_size = nthread*sizeof(double);
-  calc_sum_charge_squared_kernel<<< nblock, nthread, shmem_size, stream >>>
-    (numAtoms, atoms, sum_charge_squared);
-  cudaCheck(cudaGetLastError());
-
-}
-*/
 
 //
 // Transpose

@@ -186,6 +186,21 @@ public:
 #endif
   }
 
+#ifdef NAMD_CUDA
+#ifdef BONDED_CUDA
+  // calculates scaled vector v such that vector pos1 - pos2 + v*a is the shortest
+  inline Vector wrap_delta_scaled(const Position &pos1, const Position &pos2) const
+  {
+    Vector diff = pos1 - pos2;
+    Vector result(0.,0.,0.);
+    if ( p1 ) result.x = -latticenearbyint(b1*diff);
+    if ( p2 ) result.y = -latticenearbyint(b2*diff);
+    if ( p3 ) result.z = -latticenearbyint(b3*diff);
+    return result;
+  }
+#endif
+#endif
+
   // calculates shortest vector from origin to p1 (equivalent to p1 - o)
   Vector delta(const Position &pos1) const
   {

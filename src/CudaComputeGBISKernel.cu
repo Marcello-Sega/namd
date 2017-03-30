@@ -303,7 +303,7 @@ GBIS_Kernel(const int numTileLists,
   const TileList* __restrict__ tileLists,
   const int* __restrict__ tileJatomStart,
   const PatchPairRecord* __restrict__ patchPairs,
-  const float latticeX, const float latticeY, const float latticeZ,
+  const float3 lata, const float3 latb, const float3 latc,
   const float4* __restrict__ xyzq,
   const float cutoff2,
   const GBISParam<phase> param,
@@ -325,9 +325,9 @@ GBIS_Kernel(const int numTileLists,
     int iatomSize     = PPStmp.iatomSize;
     int jatomSize     = PPStmp.jatomSize;
 
-    float shx = tmp.offsetXYZ.x*latticeX;
-    float shy = tmp.offsetXYZ.y*latticeY;
-    float shz = tmp.offsetXYZ.z*latticeZ;
+    float shx = tmp.offsetXYZ.x*lata.x + tmp.offsetXYZ.y*latb.x + tmp.offsetXYZ.z*latc.x;
+    float shy = tmp.offsetXYZ.x*lata.y + tmp.offsetXYZ.y*latb.y + tmp.offsetXYZ.z*latc.y;
+    float shz = tmp.offsetXYZ.x*lata.z + tmp.offsetXYZ.y*latb.z + tmp.offsetXYZ.z*latc.z;
 
     // Warp index (0...warpsize-1)
     const int wid = threadIdx.x % WARPSIZE;
@@ -489,7 +489,7 @@ void CudaComputeGBISKernel::update_dHdrPrefix(const int atomStorageSize, float* 
 // Phase 1
 //
 void CudaComputeGBISKernel::GBISphase1(CudaTileListKernel& tlKernel, const int atomStorageSize,
-  const float latticeX, const float latticeY, const float latticeZ, const float a_cut, float* h_psiSum,
+  const float3 lata, const float3 latb, const float3 latc, const float a_cut, float* h_psiSum,
   cudaStream_t stream) {
 
   reallocate_device<float>(&psiSum, &psiSumSize, atomStorageSize, 1.2f);
@@ -506,7 +506,7 @@ void CudaComputeGBISKernel::GBISphase1(CudaTileListKernel& tlKernel, const int a
 
   GBIS_Kernel<false, false, 1> <<< nblock, nthread, 0, stream >>>
   (tlKernel.getNumTileListsGBIS(), tlKernel.getTileListsGBIS(), tlKernel.getTileJatomStartGBIS(),
-    tlKernel.getPatchPairs(), latticeX, latticeY, latticeZ, tlKernel.get_xyzq(), cutoff2,
+    tlKernel.getPatchPairs(), lata, latb, latc, tlKernel.get_xyzq(), cutoff2,
     param, intRad0, intRadS, NULL, psiSum, NULL, NULL);
 
   cudaCheck(cudaGetLastError());
@@ -519,7 +519,7 @@ void CudaComputeGBISKernel::GBISphase1(CudaTileListKernel& tlKernel, const int a
 //
 void CudaComputeGBISKernel::GBISphase2(CudaTileListKernel& tlKernel, const int atomStorageSize,
   const bool doEnergy, const bool doSlow,
-  const float latticeX, const float latticeY, const float latticeZ,
+  const float3 lata, const float3 latb, const float3 latc,
   const float r_cut, const float scaling, const float kappa, const float smoothDist,
   const float epsilon_p, const float epsilon_s,
   float4* d_forces, float* h_dEdaSum, cudaStream_t stream) {
@@ -549,7 +549,7 @@ void CudaComputeGBISKernel::GBISphase2(CudaTileListKernel& tlKernel, const int a
 #define CALL(DOENERGY, DOSLOW) GBIS_Kernel<DOENERGY, DOSLOW, 2> \
      <<< nblock, nthread, 0, stream >>> \
     (tlKernel.getNumTileListsGBIS(), tlKernel.getTileListsGBIS(), tlKernel.getTileJatomStartGBIS(), \
-      tlKernel.getPatchPairs(), latticeX, latticeY, latticeZ, tlKernel.get_xyzq(), param.r_cut2, \
+      tlKernel.getPatchPairs(), lata, latb, latc, tlKernel.get_xyzq(), param.r_cut2, \
       param, bornRad, NULL, NULL, dEdaSum, d_forces, tlKernel.getTileListVirialEnergy())
 
   if (!doEnergy && !doSlow) CALL(false, false);
@@ -566,7 +566,7 @@ void CudaComputeGBISKernel::GBISphase2(CudaTileListKernel& tlKernel, const int a
 // Phase 3
 //
 void CudaComputeGBISKernel::GBISphase3(CudaTileListKernel& tlKernel, const int atomStorageSize,
-  const float latticeX, const float latticeY, const float latticeZ, const float a_cut,
+  const float3 lata, const float3 latb, const float3 latc, const float a_cut,
   float4* d_forces, cudaStream_t stream) {
 
   int nwarp = GBISKERNEL_NUM_WARP;
@@ -580,7 +580,7 @@ void CudaComputeGBISKernel::GBISphase3(CudaTileListKernel& tlKernel, const int a
 
   GBIS_Kernel<false, false, 3> <<< nblock, nthread, 0, stream >>>
   (tlKernel.getNumTileListsGBIS(), tlKernel.getTileListsGBIS(), tlKernel.getTileJatomStartGBIS(),
-    tlKernel.getPatchPairs(), latticeX, latticeY, latticeZ, tlKernel.get_xyzq(), cutoff2,
+    tlKernel.getPatchPairs(), lata, latb, latc, tlKernel.get_xyzq(), cutoff2,
     param, intRad0, intRadS, dHdrPrefix, NULL, d_forces, NULL);
 
   cudaCheck(cudaGetLastError());

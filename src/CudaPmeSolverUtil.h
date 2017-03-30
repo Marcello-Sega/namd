@@ -58,7 +58,6 @@ class CudaPmePencilZ;
 
 class CudaPmeKSpaceCompute : public PmeKSpaceCompute {
 private:
-	int cuda_arch;
 	int deviceID;
 	cudaStream_t stream;
 	// Device memory versions of (bm1, bm2, bm3)
@@ -79,7 +78,8 @@ private:
 	CudaPmePencilZ* pencilZPtr;
 public:
 	CudaPmeKSpaceCompute(PmeGrid pmeGrid, const int permutation,
-		const int jblock, const int kblock, double kappa, int cuda_arch, int deviceID, cudaStream_t stream);
+		const int jblock, const int kblock, double kappa,
+		int deviceID, cudaStream_t stream);
 	~CudaPmeKSpaceCompute();
 	void solve(Lattice &lattice, const bool doEnergy, const bool doVirial, float* data);
 	// void waitEnergyAndVirial();
@@ -97,11 +97,8 @@ class ComputePmeCUDADevice;
 
 class CudaPmeRealSpaceCompute : public PmeRealSpaceCompute {
 private:
-	int cuda_arch;
-#ifndef DISABLE_CUDA_TEXTURE_OBJECTS
   bool gridTexObjActive;
   cudaTextureObject_t gridTexObj;
-#endif
   int tex_data_len;
 	float* tex_data;
 	int deviceID;
@@ -127,7 +124,7 @@ private:
   static void cuda_gatherforce_check(void *arg, double walltime);
 public:
 	CudaPmeRealSpaceCompute(PmeGrid pmeGrid, const int jblock, const int kblock,
-		int cuda_arch, int deviceID, cudaStream_t stream);
+		int deviceID, cudaStream_t stream);
 	~CudaPmeRealSpaceCompute();
 	void copyAtoms(const int numAtoms, const CudaAtom* atoms);
 	void spreadCharge(Lattice &lattice);
