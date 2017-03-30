@@ -46,6 +46,9 @@ class infostream : public std::ostringstream
 #ifdef _MSC_VER
   LOCALMOD(__int64);
   LOCALMOD(unsigned __int64);
+#else
+  LOCALMOD(long long);
+  LOCALMOD(unsigned long long);
 #endif
   /** << floats **/
   LOCALMOD(float);
