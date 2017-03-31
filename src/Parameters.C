@@ -3279,9 +3279,22 @@ void Parameters::index_impropers()
     //  Save the multiplicity in another array
     maxImproperMults[index] = ptr->multiplicity;
 
-    //  Assign the multiplicity in the actual structure a bogus value
-    //  that we will update in assign_dihedral_index
-    improper_array[index].multiplicity = -1;
+
+    //****** BEGIN CHARMM/XPLOR type changes
+    if (paramType == paraXplor)
+    {
+      //  Assign the multiplicity in the actual structure a bogus value
+      //  that we will update in assign_improper_index
+      improper_array[index].multiplicity = -1;
+    }
+    else if (paramType == paraCharmm)
+    {
+      // In a CHARMM psf file each improper will be only listed once
+      // even if it has multiple terms. There is no point in comparing
+      // to the psf information
+      improper_array[index].multiplicity = ptr->multiplicity;
+    } 
+    //****** END CHARMM/XPLOR type changes
 
     for (i=0; i<ptr->multiplicity; i++)
     {
@@ -3985,6 +3998,7 @@ void Parameters::assign_dihedral_index(char *atom1, char *atom2, char *atom3,
     } else NAMD_die(err_msg);
   }
 
+ if (paramType == paraXplor) {
   //  Check to make sure the number of multiples specified in the psf
   //  file doesn't exceed the number of parameters in the parameter
   //  files
@@ -4002,6 +4016,7 @@ void Parameters::assign_dihedral_index(char *atom1, char *atom2, char *atom3,
   {
     dihedral_array[ptr->index].multiplicity = multiplicity;
   }
+ }
 
   dihedral_ptr->dihedral_type = ptr->index;
 
@@ -4096,6 +4111,7 @@ void Parameters::assign_improper_index(char *atom1, char *atom2, char *atom3,
     NAMD_die(err_msg);
   }
 
+ if (paramType == paraXplor) {
   //  Check to make sure the number of multiples specified in the psf
   //  file doesn't exceed the number of parameters in the parameter
   //  files
@@ -4113,6 +4129,7 @@ void Parameters::assign_improper_index(char *atom1, char *atom2, char *atom3,
   {
     improper_array[ptr->index].multiplicity = multiplicity;
   }
+ }
 
   /*  Assign the constants          */
   improper_ptr->improper_type = ptr->index;
