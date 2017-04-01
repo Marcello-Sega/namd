@@ -212,8 +212,10 @@ void master_init(int argc, char **argv){
 
   GroupInitMsg *msg = new GroupInitMsg;
   msg->group = group;
-  CProxy_Node::ckNew(msg);
+  CkGroupID node = CProxy_Node::ckNew(msg);
  
+  CkStartQD(CkCallback(CkIndex_Node::exitScheduler((CkQdMsg*)0), CkMyPe(), node));
+  CsdScheduler(-1);
 }
 
 char *gNAMDBinaryName = NULL;
