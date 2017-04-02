@@ -2804,10 +2804,8 @@ void Molecule::plgLoadAngles(int *plgAngles)
 
 void Molecule::plgLoadDihedrals(int *plgDihedrals)
 {
-    char atom1name[11];
-    char atom2name[11];
-    char atom3name[11];
-    char atom4name[11];
+    std::map< std::string, int > cache;
+
     int lastAtomIds[4];
     int multiplicity = 1; //multiplicity of the current bond
 
@@ -2825,11 +2823,6 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
             lastAtomIds[j] = atomid[j];
         }
 
-        strcpy(atom1name, atomNames[atomid[0]-1].atomtype);
-        strcpy(atom2name, atomNames[atomid[1]-1].atomtype);
-        strcpy(atom3name, atomNames[atomid[2]-1].atomtype);
-        strcpy(atom4name, atomNames[atomid[3]-1].atomtype);
-
         if(duplicate_bond) {
             multiplicity++;
             if(multiplicity==2) {
@@ -2845,6 +2838,26 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
         thisDihedral->atom3 = atomid[2]-1;
         thisDihedral->atom4 = atomid[3]-1;
 
+      char query[128];
+      sprintf(query,"%10s :: %10s :: %10s :: %10s :: %d",
+        atomNames[atomid[0]-1].atomtype,
+        atomNames[atomid[1]-1].atomtype,
+        atomNames[atomid[2]-1].atomtype,
+        atomNames[atomid[3]-1].atomtype,
+        multiplicity);
+      auto search = cache.find(query);
+      if ( search != cache.end() ) { 
+        thisDihedral->dihedral_type = search->second;
+      } else {
+        char atom1name[11];
+        char atom2name[11];
+        char atom3name[11];
+        char atom4name[11];
+        strcpy(atom1name, atomNames[atomid[0]-1].atomtype);
+        strcpy(atom2name, atomNames[atomid[1]-1].atomtype);
+        strcpy(atom3name, atomNames[atomid[2]-1].atomtype);
+        strcpy(atom4name, atomNames[atomid[3]-1].atomtype);
+
         params->assign_dihedral_index(atom1name, atom2name,
                                       atom3name, atom4name, thisDihedral,
                                       multiplicity, simParams->alchOn ? -1 : 0);
@@ -2852,6 +2865,8 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
           iout << iWARN << "ALCHEMY MODULE WILL REMOVE DIHEDRAL OR RAISE ERROR\n"
                << endi;
         }
+        cache[query] = thisDihedral->dihedral_type;
+      }
     }
 
     numDihedrals = numRealDihedrals;
