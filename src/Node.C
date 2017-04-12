@@ -670,39 +670,6 @@ void Node::startup() {
   break;
 
   case 7:
-    if ( simParameters->PMEOn ) {
-      if ( simParameters->useOptPME ) {
-	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-	pme[CkMyPe()].initialize(new CkQdMsg);
-      }
-      else {
-        #ifdef OPENATOM_VERSION
-        if ( simParameters->openatomOn ) { 
-          CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
-          moa[CkMyPe()].initialize(new CkQdMsg);
-        }
-        #endif // OPENATOM_VERSION
-#ifdef NAMD_CUDA
-        if ( simParameters->usePMECUDA ) {
-          if(CkMyRank()==0) {
-            CProxy_ComputePmeCUDAMgr pme(CkpvAccess(BOCclass_group).computePmeCUDAMgr);
-            pme.ckLocalBranch()->initialize(new CkQdMsg);  // must run on pe 0 to call ckNew
-          }
-        } else 
-#endif
-        {
-          CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-          pme[CkMyPe()].initialize(new CkQdMsg);          
-        }
-      }
-    }
-#ifdef NAMD_CUDA
-    if ( (simParameters->useCUDA2 || simParameters->bondedCUDA) && CkMyRank()==0 ) {
-      CProxy_ComputeCUDAMgr nb(CkpvAccess(BOCclass_group).computeCUDAMgr);
-      nb[CkMyNode()].initialize(new CkQdMsg);
-    }
-#endif
-
 #ifdef CHARM_HAS_MSA
     if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
       CProxy_ComputeMsmMsaMgr msm(CkpvAccess(BOCclass_group).computeMsmMsaMgr);
@@ -735,6 +702,39 @@ void Node::startup() {
       msg->smax = smax;
       msm[CkMyPe()].initialize(msg);
       */
+    }
+#endif
+
+    if ( simParameters->PMEOn ) {
+      if ( simParameters->useOptPME ) {
+	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+	pme[CkMyPe()].initialize(new CkQdMsg);
+      }
+      else {
+        #ifdef OPENATOM_VERSION
+        if ( simParameters->openatomOn ) { 
+          CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
+          moa[CkMyPe()].initialize(new CkQdMsg);
+        }
+        #endif // OPENATOM_VERSION
+#ifdef NAMD_CUDA
+        if ( simParameters->usePMECUDA ) {
+          if(CkMyRank()==0) {
+            CProxy_ComputePmeCUDAMgr pme(CkpvAccess(BOCclass_group).computePmeCUDAMgr);
+            pme.ckLocalBranch()->initialize(new CkQdMsg);  // must run on pe 0 to call ckNew
+          }
+        } else 
+#endif
+        {
+          CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+          pme[CkMyPe()].initialize(new CkQdMsg);          
+        }
+      }
+    }
+#ifdef NAMD_CUDA
+    if ( (simParameters->useCUDA2 || simParameters->bondedCUDA) && CkMyRank()==0 ) {
+      CProxy_ComputeCUDAMgr nb(CkpvAccess(BOCclass_group).computeCUDAMgr);
+      nb[CkMyNode()].initialize(new CkQdMsg);
     }
 #endif
 
