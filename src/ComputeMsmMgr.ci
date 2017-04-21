@@ -30,6 +30,7 @@ module ComputeMsmMgr {
   group ComputeMsmMgr {
     entry ComputeMsmMgr(void);
     entry void initialize(MsmInitMsg *);
+    entry void initialize_create(void);
     entry void recvMsmBlockProxy(MsmBlockProxyMsg *);
     entry void recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *);
     entry void recvMsmC1HermiteBlockProxy(MsmC1HermiteBlockProxyMsg *);

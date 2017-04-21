@@ -373,6 +373,7 @@ public:
   ~ComputeMsmMgr();
 
   void initialize(MsmInitMsg *);      // entry with message
+  void initialize_create();           // entry no message
 private:
   void initialize2();                 // split in two
 public:
@@ -4998,7 +4999,8 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   }
 
   initialize2();
-}
+} // ComputeMsmMgr::initialize()
+
 
 void ComputeMsmMgr::initialize2()
 {
@@ -5477,6 +5479,13 @@ if (CkMyPe() == 0) {
   } // end loop over levels
   // end of Map setup
 
+  // XXX
+  //
+  // NO, WAIT!
+  // More Map setup below for node mapping!
+  //
+  // XXX
+
   // allocate chare arrays
 
   if (1) {
@@ -5779,6 +5788,12 @@ if (CkMyPe() == 0) {
   } // end node aware initial assignment of chares
 #endif // MSM_NODE_MAPPING
 
+} // ComputeMsmMgr::initialize2()
+
+
+void ComputeMsmMgr::initialize_create() {
+  int i, j, k, n, level;
+
   if (CkMyPe() == 0) {
 
     // on PE 0, create 3D chare array of MsmBlock for each level;
@@ -5914,7 +5929,8 @@ if (CkMyPe() == 0) {
 #ifdef DEBUG_MSM_VERBOSE
   printf("end of initialization\n");
 #endif
-} // ComputeMsmMgr::initialize()
+} // ComputeMsmMgr::initialize_create()
+
 
 void ComputeMsmMgr::recvMsmBlockProxy(MsmBlockProxyMsg *msg)
 {

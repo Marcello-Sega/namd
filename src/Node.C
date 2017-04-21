@@ -749,6 +749,12 @@ void Node::startup() {
     break;
     
   case 8:
+    // part 2 of MSM init
+    if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
+      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      msm[CkMyPe()].initialize_create();  // call from my own PE
+    }
+
     if ( simParameters->PMEOn ) {
       if ( simParameters->useOptPME ) {
 	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
