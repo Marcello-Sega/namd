@@ -869,7 +869,7 @@ int colvarbias_restraint_harmonic_walls::init(std::string const &conf)
   if (!get_keyval(conf, "lowerWalls", lower_walls, lower_walls) &&
       b_null_lower_walls) {
     cvm::log("Lower walls were not provided.\n");
-    lower_walls.resize(0);
+    lower_walls.clear();
   }
 
   bool b_null_upper_walls = false;
@@ -884,7 +884,7 @@ int colvarbias_restraint_harmonic_walls::init(std::string const &conf)
   if (!get_keyval(conf, "upperWalls", upper_walls, upper_walls) &&
       b_null_upper_walls) {
     cvm::log("Upper walls were not provided.\n");
-    upper_walls.resize(0);
+    upper_walls.clear();
   }
 
   if ((lower_walls.size() == 0) && (upper_walls.size() == 0)) {
@@ -954,7 +954,8 @@ void colvarbias_restraint_harmonic_walls::communicate_forces()
       cvm::log("Communicating a force to colvar \""+
                variables(i)->name+"\".\n");
     }
-    variables(i)->add_bias_force_actual_value(colvar_forces[i]);
+    // Impulse-style multiple timestep
+    variables(i)->add_bias_force_actual_value(cvm::real(time_step_factor) * colvar_forces[i]);
   }
 }
 
@@ -1282,9 +1283,9 @@ int colvarbias_restraint_histogram::init(std::string const &conf)
 
 colvarbias_restraint_histogram::~colvarbias_restraint_histogram()
 {
-  p.resize(0);
-  ref_p.resize(0);
-  p_diff.resize(0);
+  p.clear();
+  ref_p.clear();
+  p_diff.clear();
 }
 
 
