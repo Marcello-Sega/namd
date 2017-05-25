@@ -9502,7 +9502,7 @@ void Molecule::compute_LJcorrection() {
   // First, calculate the average A and B coefficients. For TI/FEP, decompose
   // by alchemical group (1 or 2).
   BigReal LJAvgA, LJAvgB, LJAvgA1, LJAvgB1, LJAvgA2, LJAvgB2;
-
+  int numLJsites, numLJsites1, numLJsites2;
   /*This a shortcut to summing over all atoms since it is faster to count how 
     many atoms are of each LJ type.
 
@@ -9547,6 +9547,7 @@ void Molecule::compute_LJcorrection() {
   BigReal sumOfBs = 0;
   BigReal count = 0; // needed to avoid overflow
   BigReal npairs;
+  numLJsites = 0;
   for (int i=0; i < LJtypecount; i++) {
     for (int j=0; j < LJtypecount; j++) {
       A = ATable[i*LJtypecount + j];
@@ -9556,6 +9557,7 @@ void Molecule::compute_LJcorrection() {
       sumOfAs += npairs*A;
       sumOfBs += npairs*B;
       count += npairs;
+      if (i==j) numLJsites += numAtomsByLjType[i];
     }
   }
   delete [] numAtomsByLjType;
@@ -9581,9 +9583,29 @@ void Molecule::compute_LJcorrection() {
     BigReal sumOfBs2 = sumOfBs;
     BigReal count1 = count;
     BigReal count2 = count;
+    numLJsites1 = numLJsites2 = numLJsites;
     int alch_counter = 0;
     for (int i=0; i < numAtoms; ++i) {
       int alchFlagi = (get_fep_type(i) == 2 ? -1 : get_fep_type(i));
+      if (params->get_vdw_pair_params(atoms[i].vdw_type, atoms[i].vdw_type,
+                                      &A, &B, &A14, &B14)) {
+      }
+      else {
+        params->get_vdw_params(&sigma_i, &epsilon_i, &sigma_i14,
+                               &epsilon_i14, atoms[i].vdw_type);
+        BigReal sigma_ii = 
+          useGeom ? sqrt(sigma_i*sigma_i) : 0.5*(sigma_i+sigma_i);
+        BigReal epsilon_ii = sqrt(epsilon_i*epsilon_i);
+
+        sigma_ii *= sigma_ii*sigma_ii;
+        sigma_ii *= sigma_ii;
+        A = 4.0*sigma_ii*epsilon_ii*sigma_ii;
+        B = 4.0*sigma_ii*epsilon_ii;
+      }
+      if (A || B) { // zeroed interactions already removed from numLJsites
+        if (alchFlagi == 1) numLJsites2--;
+        else if (alchFlagi == -1) numLJsites1--;
+      }
       for (int j=i+1; j < numAtoms; ++j) {
         int alchFlagj = (get_fep_type(j) == 2 ? -1 : get_fep_type(j));
         int alchFlagSum = alchFlagi + alchFlagj;
@@ -9648,10 +9670,10 @@ void Molecule::compute_LJcorrection() {
     }
 
     // Pre-scale by the atom counts, as they differ from when alchemy is off.
-    LJAvgA1 *= BigReal(numAtoms - numFepInitial)*(numAtoms - numFepInitial);
-    LJAvgB1 *= BigReal(numAtoms - numFepInitial)*(numAtoms - numFepInitial);
-    LJAvgA2 *= BigReal(numAtoms - numFepFinal)*(numAtoms - numFepFinal);
-    LJAvgB2 *= BigReal(numAtoms - numFepFinal)*(numAtoms - numFepFinal);
+    LJAvgA1 *= BigReal(numLJsites1)*numLJsites1; 
+    LJAvgB1 *= BigReal(numLJsites1)*numLJsites1;
+    LJAvgA2 *= BigReal(numLJsites2)*numLJsites2;
+    LJAvgB2 *= BigReal(numLJsites2)*numLJsites2;
 
     LJAvgA = LJAvgA2;
     LJAvgB = LJAvgB2;
@@ -9669,8 +9691,8 @@ void Molecule::compute_LJcorrection() {
     }
 
     // Pre-scale by the atom counts, as they differ from when alchemy is on.
-    LJAvgA *= BigReal(numAtoms)*numAtoms;
-    LJAvgB *= BigReal(numAtoms)*numAtoms;
+    LJAvgA *= BigReal(numLJsites)*numLJsites;
+    LJAvgB *= BigReal(numLJsites)*numLJsites;
   }
 
   BigReal rcut = simParams->cutoff;
