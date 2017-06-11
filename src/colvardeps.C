@@ -227,8 +227,9 @@ int colvardeps::enable(int feature_id,
     }
     if (!ok) {
       if (!dry_run) {
-        cvm::log("No dependency satisfied among alternates:");
-        cvm::log("-----------------------------------------");
+        cvm::log("\"" + f->description + "\" in " + description + "requires one of\n");
+        cvm::log("the following features, none of which can be enabled:\n");
+        cvm::log("-----------------------------------------\n");
         for (j=0; j<f->requires_alt[i].size(); j++) {
           int g = f->requires_alt[i][j];
           cvm::log(cvm::to_str(j+1) + ". " + features()[g]->description);
@@ -237,7 +238,6 @@ int colvardeps::enable(int feature_id,
           cvm::decrease_depth();
         }
         cvm::log("-----------------------------------------");
-        cvm::log("for \"" + f->description + "\" in " + description);
         if (toplevel) {
           cvm::error("Error: Failed dependency in " + description + ".");
         }
@@ -389,6 +389,11 @@ void colvardeps::init_feature(int feature_id, const char *description, feature_t
   features()[f]->requires_alt.back()[0] = g;                                           \
   features()[f]->requires_alt.back()[1] = h;                                           \
   features()[f]->requires_alt.back()[2] = i
+#define f_req_alt4(f, g, h, i, j) features()[f]->requires_alt.push_back(std::vector<int>(4));\
+  features()[f]->requires_alt.back()[0] = g;                                           \
+  features()[f]->requires_alt.back()[1] = h;                                           \
+  features()[f]->requires_alt.back()[2] = i;                                           \
+  features()[f]->requires_alt.back()[3] = j
 
 void colvardeps::init_cvb_requires() {
   int i;
@@ -435,9 +440,9 @@ void colvardeps::init_cv_requires() {
     }
 
     init_feature(f_cv_active, "active", f_type_dynamic);
-    f_req_children(f_cv_active, f_cvc_active);
-    // Colvars must be either a linear combination, or scalar (and polynomial) or scripted
-    f_req_alt3(f_cv_active, f_cv_scalar, f_cv_linear, f_cv_scripted);
+    // Do not require f_cvc_active in children, as some components may be disabled
+    // Colvars must be either a linear combination, or scalar (and polynomial) or scripted/custom
+    f_req_alt4(f_cv_active, f_cv_scalar, f_cv_linear, f_cv_scripted, f_cv_custom_function);
 
     init_feature(f_cv_awake, "awake", f_type_static);
     f_req_self(f_cv_awake, f_cv_active);
@@ -451,7 +456,7 @@ void colvardeps::init_cv_requires() {
     // The following exlusion could be lifted by implementing the feature
     f_req_exclude(f_cv_collect_gradient, f_cv_scripted);
 
-    init_feature(f_cv_fdiff_velocity, "fdiff_velocity", f_type_dynamic);
+    init_feature(f_cv_fdiff_velocity, "velocity from finite differences", f_type_dynamic);
 
     // System force: either trivial (spring force); through extended Lagrangian, or calculated explicitly
     init_feature(f_cv_total_force, "total force", f_type_dynamic);
@@ -515,7 +520,11 @@ void colvardeps::init_cv_requires() {
 
     init_feature(f_cv_corrfunc, "correlation function", f_type_user);
 
-    init_feature(f_cv_scripted, "scripted", f_type_static);
+    init_feature(f_cv_scripted, "scripted", f_type_user);
+
+    init_feature(f_cv_custom_function, "custom function", f_type_user);
+    f_req_exclude(f_cv_custom_function, f_cv_scripted);
+
     init_feature(f_cv_periodic, "periodic", f_type_static);
     f_req_self(f_cv_periodic, f_cv_homogeneous);
     init_feature(f_cv_scalar, "scalar", f_type_static);
@@ -584,7 +593,7 @@ void colvardeps::init_cvc_requires() {
 
     // Compute total force on first site only to avoid unwanted
     // coupling to other colvars (see e.g. Ciccotti et al., 2005)
-    init_feature(f_cvc_one_site_total_force, "compute total collective force only from one group center", f_type_user);
+    init_feature(f_cvc_one_site_total_force, "compute total force from one group", f_type_user);
     f_req_self(f_cvc_one_site_total_force, f_cvc_com_based);
 
     init_feature(f_cvc_scalable, "scalable calculation", f_type_static);
@@ -607,6 +616,9 @@ void colvardeps::init_cvc_requires() {
     bool avail = is_dynamic(i) ? false : true;
     feature_states.push_back(feature_state(avail, false));
   }
+
+  // CVCs are enabled from the start - get disabled based on flags
+  feature_states[f_cvc_active].enabled = true;
 
   // Features that are implemented by all cvcs by default
   // Each cvc specifies what other features are available
