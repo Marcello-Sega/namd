@@ -3597,7 +3597,7 @@ void Controller::outputTiEnergy(int step) {
   const int alchEquilSteps = simParams->alchEquilSteps;
   const int alchLambdaFreq = simParams->alchLambdaFreq;
 
-  if (stepInRun == alchEquilSteps) {
+  if (stepInRun == 0 || stepInRun == alchEquilSteps) {
     TiNo = 0;
     net_dEdl_bond_1 = 0;
     net_dEdl_bond_2 = 0;
