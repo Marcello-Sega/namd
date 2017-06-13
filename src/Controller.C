@@ -3619,7 +3619,8 @@ void Controller::outputTiEnergy(int step) {
   // Don't accumulate block averages (you'll get a divide by zero!) or even 
   // open the TI output if alchOutFreq is zero.
   if (simParams->alchOutFreq) {
-    if (stepInRun == 0 || (! ((step - 1) % simParams->alchOutFreq))) {
+    if (stepInRun == 0 || stepInRun == alchEquilSteps 
+        || (! ((step - 1) % simParams->alchOutFreq))) {
       // output of instantaneous dU/dl now replaced with running average
       // over last alchOutFreq steps (except for step 0)
       recent_TiNo = 0;
